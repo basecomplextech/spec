@@ -9,7 +9,7 @@ Primitives:
 - `string`
 - ints: `int8`, `int16`, `int32`, `int64`
 - uints: `uint8`/`byte`, `uint16`, `uint32`, `uint64`
-- floags: `float32`, `float64`
+- floats: `float32`, `float64`
 - uids: `u128`, `u256`, `uuid`
 - timestamp: `timestamp`, `timestamptz`
 
