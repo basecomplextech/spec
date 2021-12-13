@@ -1,4 +1,4 @@
-package kproto
+package protocol
 
 import (
 	"math"

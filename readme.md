@@ -157,17 +157,20 @@ object {
 		}
 		
 		struct {
-			size      uint32
-			tableSize uint32 
-			table     structTable
-			fields    []object
+			size       uint32     // total struct size
+			count      uint32     // field count
+			offsets    []struct { // sorted offset map
+				tag    uint16
+				offset uint32
+			}
+			fields     []object   // indexed field values
 		}
 		
 		list {
-			size      uint32
-			tableSize uint32
-			offsets   []uint32
-			elements  []object
+			size      uint32    // total list size
+			count     uint32    // element count
+			offsets   []uint32  // element offsets
+			elements  []object  // indexed element values
 		}
 	}
 }
