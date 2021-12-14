@@ -59,7 +59,7 @@ type writer struct {
 	data     writeBuffer
 	stack    writeStack
 	fields   fieldStack
-	elements writeElements
+	elements elementStack
 }
 
 func newWriter() *writer {
@@ -111,7 +111,7 @@ func (w *writer) EndList() error {
 	if err != nil {
 		return err
 	}
-	elements := w.elements.pop(list.list.elementStart)
+	elements := w.elements.popList(list.list.elementStart)
 
 	// write elements
 	w.data.writeElements(elements)
@@ -158,7 +158,8 @@ func (w *writer) EndElement() error {
 
 	// append relative offset
 	offset := uint32(data.data.end - list.list.start)
-	w.elements.push(offset)
+	element := element{offset: offset}
+	w.elements.push(element)
 
 	// push data
 	start := elem.element.start

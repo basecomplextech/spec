@@ -5,13 +5,7 @@ import (
 	"fmt"
 )
 
-type element struct {
-	offset uint32
-}
-
-const elementSize = 4
-
-// fieldTable is a serialized array of list element offsets ordered by index.
+// elementTable is a serialized array of list element offsets ordered by index.
 //
 //  +--------------+--------------+--------------+
 // 	|    off0(4)   |    off1(4)   |    off2(4)   |

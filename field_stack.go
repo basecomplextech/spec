@@ -20,12 +20,12 @@ type field struct {
 //
 type fieldStack []field
 
-// offset returns the next field buffer offset.
+// offset returns the next message table buffer offset.
 func (s fieldStack) offset() int {
 	return len(s)
 }
 
-// insert inserts a new field into a table starting at offset, keeps the table sorted.
+// insert inserts a new field into the last table starting at offset, keeps the table sorted.
 func (sptr *fieldStack) insert(offset int, f field) {
 	sptr._grow(1)
 

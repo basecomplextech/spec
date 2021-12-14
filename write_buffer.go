@@ -102,7 +102,7 @@ func (b *writeBuffer) writeStringZero() {
 
 // list
 
-func (b *writeBuffer) writeElements(elements []writeElement) {
+func (b *writeBuffer) writeElements(elements []element) {
 
 }
 
