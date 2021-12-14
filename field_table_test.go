@@ -24,10 +24,12 @@ func testFieldsN(n int) []field {
 	return result
 }
 
+// Write/Read
+
 func TestFieldTable_Write_Read__should_write_and_read_field_table(t *testing.T) {
 	fields := testFields()
 
-	for i := 0; i < len(fields); i++ {
+	for i := 0; i <= len(fields); i++ {
 		fields0 := fields[i:]
 
 		table0 := writeFieldTable(fields0)

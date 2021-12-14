@@ -6,20 +6,25 @@ import (
 	"sort"
 )
 
-// fieldTable is a serialized array of message fields sorted by tags.
+// fieldTable is a serialized array of message fields ordered by tags.
 //
-//  +--------------------+--------------------+--------------------+
-// 	| tag0 |   offset0   | tag1 |   offset1   | tag2 |   offset3   |
-//  +--------------------+--------------------+--------------------+
+//  +---------------------+---------------------+---------------------+
+//  |       field0        |       field1        |       field2        |
+//  +---------------------+---------------------+---------------------+
+// 	|  tag0(2) |  off0(4) |  tag1(2) |  off1(4) |  tag2(2) |  off3(4) |
+//  +---------------------+---------------------+---------------------+
 //
 type fieldTable []byte
 
-// readFieldTable casts bytes into a field table, returns an error if length is not divisible by fieldSize.
+// readFieldTable casts bytes into a field table,
+// returns an error if length is not divisible by fieldSize.
 func readFieldTable(data []byte) (fieldTable, error) {
 	ln := len(data)
 	if (ln % fieldSize) != 0 {
-		return nil, fmt.Errorf("read field table: invalid length, must be divisible by %d, length=%v",
-			fieldSize, ln)
+		return nil, fmt.Errorf(
+			"read field table: invalid table length, must be divisible by %d, length=%v",
+			fieldSize, ln,
+		)
 	}
 
 	return data, nil
@@ -50,11 +55,11 @@ func writeFieldTable(fields []field) fieldTable {
 	return result
 }
 
-// get returns a field by its index, panics if i is out of range.
+// get returns a field by its index, panics if index is out of range.
 func (t fieldTable) get(i int) field {
 	n := t.count()
 	if i >= n {
-		panic("get field: index out of range")
+		panic(fmt.Sprintf("get field: index out of range, length=%d, index=%d", n, i))
 	}
 
 	off := i * fieldSize
