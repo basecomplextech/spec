@@ -6,20 +6,27 @@ const WriteBufferSize = 4096
 
 // Writer writes objects to a buffer.
 type Writer interface {
+	// End ends writing, returns the result bytes, and resets the writer.
 	End() ([]byte, error)
+
+	// Reset clears the writer.
 	Reset()
 
 	// List
 
 	BeginList() error
-	BeginElement() error
 	EndList() error
 
-	// Struct
+	BeginElement() error
+	EndElement() error
 
-	BeginStruct() error
+	// Message
+
+	BeginMessage() error
+	EndMessage() error
+
 	BeginField(tag uint16) error
-	EndStruct() error
+	EndField() error
 
 	// Values
 
@@ -49,372 +56,348 @@ func NewWriter() Writer {
 }
 
 type writer struct {
-	state writerState
-	err   error
-
-	data     writeBuffer   // data buffer
-	stack    writeStack    // nested objects (structs, lists)
-	fields   writeFields   // field buffer
-	elements writeElements // element buffer
+	data     writeBuffer
+	stack    writeStack
+	fields   writeFields
+	elements writeElements
 }
 
 func newWriter() *writer {
-	return &writer{
-		state: writerValue,
-	}
+	return &writer{}
 }
 
+// End ends writing, returns the result bytes, and resets the writer.
 func (w *writer) End() ([]byte, error) {
 	switch {
-	case w.state != writerValue:
-		return nil, fmt.Errorf("end: cannot end incomplete writer, state=%v", w.state)
-	case len(w.stack) > 0:
-		return nil, fmt.Errorf("end: cannot end incomplete writer, stack size=%v", len(w.stack))
+	case len(w.stack) == 0:
+		return []byte{}, nil
+	case len(w.stack) > 1:
+		return nil, fmt.Errorf("writer end: incomplete write, stack size=%d", len(w.stack))
 	}
 
-	data := w.data
+	// pop data
+	if _, err := w.stack.popType(entryTypeData); err != nil {
+		return nil, err
+	}
+
+	// return and reset
+	b := w.data[:]
 	w.Reset()
-	return data, nil
+	return b, nil
 }
 
+// Reset clears the writer.
 func (w *writer) Reset() {
 	w.data = w.data[:0]
 	w.stack = w.stack[:0]
 	w.fields = w.fields[:0]
 	w.elements = w.elements[:0]
-	w.state = writerValue
 }
 
 // List
 
 func (w *writer) BeginList() error {
-	if err := w.beginData("begin list: not data writer, state=%v"); err != nil {
-		return err
-	}
-
-	// get offsets
-	dataOffset := w.data.offset()
-	elemOffset := w.elements.offset()
-
-	// make list
-	obj := writeObject{
-		type_:         writeObjectList,
-		dataOffset:    dataOffset,
-		elementOffset: elemOffset,
-	}
-
 	// push list
-	w.state = writerList
-	w.stack.push(obj)
-	return nil
-}
+	start := w.data.offset()
+	elementStart := w.elements.offset()
 
-func (w *writer) BeginElement() error {
-	if w.state != writerList {
-		return fmt.Errorf("write element: not list writer, state=%v", w.state)
-	}
-
-	// get list
-	list := w.stack.last()
-
-	// compute element data offset
-	// relative to list start
-	element := uint32(w.data.offset() - list.dataOffset)
-
-	// push element
-	w.elements.push(element)
-
-	// await element data
-	w.state = writerElement
+	w.stack.pushList(start, elementStart)
 	return nil
 }
 
 func (w *writer) EndList() error {
-	if w.state != writerList {
-		return fmt.Errorf("end list: not list writer, state=%v", w.state)
+	// pop list and elements
+	list, err := w.stack.popType(entryTypeList)
+	if err != nil {
+		return err
 	}
+	elements := w.elements.pop(list.list.elementStart)
 
-	// pop list
-	list := w.stack.pop()
-	elements := w.elements.pop(list.elementOffset)
-
-	// write elements and count
+	// write elements
 	w.data.writeElements(elements)
 	w.data.writeElementCount(uint32(len(elements)))
 
-	// compute data size
-	offset := w.data.offset()
-	size := uint32(offset - list.dataOffset)
-
 	// write size and type
+	size := uint32(w.data.offset() - list.list.start)
 	w.data.writeSize(size)
 	w.data.writeType(TypeList)
 
-	// done
-	w.state = writerValue
+	// push data entry
+	start := list.list.start
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
-// Struct
-
-func (w *writer) BeginStruct() error {
-	if err := w.beginData("begin struct: not data writer, state=%v"); err != nil {
+func (w *writer) BeginElement() error {
+	// check parent
+	if _, err := w.stack.peekType(entryTypeList); err != nil {
 		return err
 	}
 
-	// get offsets
-	dataOffset := w.data.offset()
-	fieldOffset := w.fields.offset()
-
-	// make struct
-	obj := writeObject{
-		type_:       writeObjectStruct,
-		dataOffset:  dataOffset,
-		fieldOffset: fieldOffset,
-	}
-
-	// push struct
-	w.state = writerStruct
-	w.stack.push(obj)
+	// push element
+	start := w.data.offset()
+	w.stack.pushElement(start)
 	return nil
 }
 
-func (w *writer) BeginField(tag uint16) error {
-	if w.state != writerStruct {
-		return fmt.Errorf("write field: not struct writer, state=%v", w.state)
+func (w *writer) EndElement() error {
+	// pop data and element
+	data, err := w.stack.popType(entryTypeData)
+	if err != nil {
+		return err
+	}
+	elem, err := w.stack.popType(entryTypeElement)
+	if err != nil {
+		return err
+	}
+	list, err := w.stack.peekType(entryTypeList)
+	if err != nil {
+		return err
 	}
 
-	// get struct
-	struct_ := w.stack.last()
+	// append relative offset
+	offset := uint32(data.data.end - list.list.start)
+	w.elements.push(offset)
 
-	// compute field data offset
-	// relative to struct start
-	offset := uint32(w.data.offset() - struct_.dataOffset)
-
-	// insert field sorted
-	field := writeField{
-		tag:    tag,
-		offset: offset,
-	}
-	w.fields.insert(struct_.fieldOffset, field)
-
-	// await field data
-	w.state = writerField
+	// push data
+	start := elem.element.start
+	end := data.data.end
+	w.stack.pushData(start, end)
 	return nil
 }
 
-func (w *writer) EndStruct() error {
-	if w.state != writerStruct {
-		return fmt.Errorf("end struct: not struct writer, state=%v", w.state)
-	}
+// Message
 
-	// pop struct
-	struct_ := w.stack.pop()
-	fields := w.fields.pop(struct_.fieldOffset)
+func (w *writer) BeginMessage() error {
+	// push message
+	start := w.data.offset()
+	fieldStart := w.fields.offset()
+
+	w.stack.pushMessage(start, fieldStart)
+	return nil
+}
+
+func (w *writer) EndMessage() error {
+	// pop message and fields
+	message, err := w.stack.popType(entryTypeMessage)
+	if err != nil {
+		return err
+	}
+	fields := w.fields.pop(message.message.fieldStart)
 
 	// write fields and count
 	w.data.writeFields(fields)
 	w.data.writeFieldCount(uint32(len(fields)))
 
-	// compute data size
-	offset := w.data.offset()
-	size := uint32(offset - struct_.dataOffset)
-
 	// write size and type
+	size := uint32(w.data.offset() - message.message.start)
 	w.data.writeSize(size)
-	w.data.writeType(TypeStruct)
+	w.data.writeType(TypeMessage)
 
-	// done
-	w.state = writerValue
+	// push data
+	start := message.message.start
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
-// Data
-
-func (w *writer) WriteBool(v bool) error {
-	if err := w.beginData("write bool: not data writer, state=%v"); err != nil {
+func (w *writer) BeginField(tag uint16) error {
+	// check parent
+	if _, err := w.stack.peekType(entryTypeMessage); err != nil {
 		return err
 	}
+
+	// push field
+	start := w.data.offset()
+	w.stack.pushField(tag, start)
+	return nil
+}
+
+func (w *writer) EndField() error {
+	// pop data and field
+	data, err := w.stack.popType(entryTypeData)
+	if err != nil {
+		return err
+	}
+	field, err := w.stack.popType(entryTypeField)
+	if err != nil {
+		return err
+	}
+	message, err := w.stack.peekType(entryTypeMessage)
+	if err != nil {
+		return err
+	}
+
+	// insert tag and relative offset
+	f := writeField{
+		tag:    field.field.tag,
+		offset: uint32(data.data.end - message.message.start),
+	}
+	w.fields.insert(message.message.fieldStart, f)
+	return nil
+}
+
+// Values
+
+func (w *writer) WriteBool(v bool) error {
+	start := w.data.offset()
 
 	if v {
 		w.data.writeType(TypeTrue)
 	} else {
 		w.data.writeType(TypeFalse)
 	}
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteByte(v byte) error {
-	if err := w.beginData("write byte: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeByte(v)
 	w.data.writeType(TypeByte)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteInt8(v int8) error {
-	if err := w.beginData("write int8: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeInt8(v)
 	w.data.writeType(TypeInt8)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteInt16(v int16) error {
-	if err := w.beginData("write int16: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeInt16(v)
 	w.data.writeType(TypeInt16)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteInt32(v int32) error {
-	if err := w.beginData("write int32: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeInt32(v)
 	w.data.writeType(TypeInt32)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteInt64(v int64) error {
-	if err := w.beginData("write int64: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeInt64(v)
 	w.data.writeType(TypeInt64)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteUInt8(v uint8) error {
-	if err := w.beginData("write uint8: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeUInt8(v)
 	w.data.writeType(TypeUInt8)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteUInt16(v uint16) error {
-	if err := w.beginData("write uint16: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeUInt16(v)
 	w.data.writeType(TypeUInt16)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteUInt32(v uint32) error {
-	if err := w.beginData("write uint32: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeUInt32(v)
 	w.data.writeType(TypeUInt32)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteUInt64(v uint64) error {
-	if err := w.beginData("write uint64: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeUInt64(v)
 	w.data.writeType(TypeUInt64)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteFloat32(v float32) error {
-	if err := w.beginData("write float32: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeFloat32(v)
 	w.data.writeType(TypeFloat32)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteFloat64(v float64) error {
-	if err := w.beginData("write float64: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	w.data.writeFloat64(v)
 	w.data.writeType(TypeFloat64)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteBytes(v []byte) error {
-	if err := w.beginData("write bytes: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	size := uint32(len(v))
 	w.data.writeBytes(v)
 	w.data.writeSize(size)
 	w.data.writeType(TypeBytes)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
 }
 
 func (w *writer) WriteString(v string) error {
-	if err := w.beginData("write string: not data writer, state=%v"); err != nil {
-		return err
-	}
+	start := w.data.offset()
 
 	size := uint32(len(v) + 1) // plus zero byte
 	w.data.writeString(v)
 	w.data.writeStringZero()
 	w.data.writeSize(size)
 	w.data.writeType(TypeString)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
 	return nil
-}
-
-// private
-
-func (w *writer) beginData(msg string) error {
-	switch w.state {
-	case writerValue, writerField, writerElement:
-		// ok, data expected
-		return nil
-	}
-
-	return fmt.Errorf(msg, w.state)
-}
-
-// state
-
-type writerState int
-
-const (
-	writerValue   writerState = iota // write any value
-	writerStruct                     // write struct
-	writerField                      // write struct field data
-	writerList                       // write list
-	writerElement                    // write list element data
-)
-
-func (s writerState) String() string {
-	switch s {
-	case writerValue:
-		return "value"
-	case writerStruct:
-		return "struct"
-	case writerField:
-		return "field"
-	case writerList:
-		return "list"
-	case writerElement:
-		return "element"
-	}
-	return ""
 }

@@ -22,8 +22,8 @@ const (
 	TypeFloat32 Type = 0x30
 	TypeFloat64 Type = 0x31
 
-	TypeBytes  Type = 0x40
-	TypeString Type = 0x50
-	TypeStruct Type = 0x60
-	TypeList   Type = 0x70
+	TypeBytes   Type = 0x40
+	TypeString  Type = 0x50
+	TypeMessage Type = 0x60
+	TypeList    Type = 0x70
 )

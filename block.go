@@ -26,69 +26,80 @@ type BlockBody struct {
 // Write
 
 func (b Block) Write(w Writer) error {
-	w.BeginStruct()
+	w.BeginMessage()
 
 	// id
 	w.BeginField(1)
 	b.ID.Write(w)
+	w.EndField()
 
 	// head
 	w.BeginField(2)
 	b.Head.Write(w)
+	w.EndField()
 
 	// body
 	w.BeginField(3)
 	b.Body.Write(w)
+	w.EndField()
 
 	// checksum
 	w.BeginField(10)
 	w.WriteUInt32(b.Checksum)
+	w.EndField()
 
-	return w.EndStruct()
+	return w.EndMessage()
 }
 
 func (id BlockID) Write(w Writer) error {
-	w.BeginStruct()
+	w.BeginMessage()
 
 	// index
 	w.BeginField(1)
 	w.WriteInt64(id.Index)
+	w.EndField()
 
 	// hash
 	w.BeginField(2)
 	w.WriteUInt64(id.Hash)
+	w.EndField()
 
-	return w.EndStruct()
+	return w.EndMessage()
 }
 
 func (h BlockHead) Write(w Writer) error {
-	w.BeginStruct()
+	w.BeginMessage()
 
 	// type
 	w.BeginField(1)
 	w.WriteUInt8(h.Type)
+	w.EndField()
 
 	// index
 	w.BeginField(2)
 	w.WriteInt64(h.Index)
+	w.EndField()
 
 	// base
 	w.BeginField(3)
 	h.Base.Write(w)
+	w.EndField()
 
 	// parent
 	w.BeginField(4)
 	h.Parent.Write(w)
+	w.EndField()
 
-	return w.EndStruct()
+	return w.EndMessage()
 }
 
 func (b BlockBody) Write(w Writer) error {
-	w.BeginStruct()
+	w.BeginMessage()
 
 	// command
 	w.BeginField(1)
 	w.WriteString(b.Command)
+	w.EndField()
 
-	return w.EndStruct()
+	return w.EndMessage()
 }
