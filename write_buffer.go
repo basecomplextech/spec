@@ -113,7 +113,7 @@ func (b *writeBuffer) writeElementCount(count uint32) {
 
 // struct
 
-func (b *writeBuffer) writeFields(fields []writeField) {
+func (b *writeBuffer) writeFields(table []field) {
 
 }
 
@@ -124,19 +124,15 @@ func (b *writeBuffer) writeFieldCount(count uint32) {
 
 // private
 
-// _grow grows the buffer and returns an element buffer of `size`.
-func (b *writeBuffer) _grow(size int) []byte {
+// _grow grows the buffer and returns an element buffer of size `n`.
+func (b *writeBuffer) _grow(n int) []byte {
 	buf := (*b)
 
 	// realloc
 	rem := cap(buf) - len(buf)
-	if rem < size {
-		ln := cap(buf) * 2
-		if ln == 0 {
-			ln = WriteBufferSize
-		}
-
-		next := make([]byte, len(buf), ln)
+	if rem < n {
+		size := (cap(buf) * 2) + n
+		next := make([]byte, len(buf), size)
 		copy(next, buf)
 		*b = next
 		buf = (*b)
@@ -144,7 +140,7 @@ func (b *writeBuffer) _grow(size int) []byte {
 
 	// grow buffer
 	off := len(buf)
-	ln := off + size
+	ln := off + n
 	*b = buf[:ln]
 
 	// return element

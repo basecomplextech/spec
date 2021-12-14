@@ -58,7 +58,7 @@ func NewWriter() Writer {
 type writer struct {
 	data     writeBuffer
 	stack    writeStack
-	fields   writeFields
+	fields   fieldStack
 	elements writeElements
 }
 
@@ -184,7 +184,7 @@ func (w *writer) EndMessage() error {
 	if err != nil {
 		return err
 	}
-	fields := w.fields.pop(message.message.fieldStart)
+	fields := w.fields.popTable(message.message.fieldStart)
 
 	// write fields and count
 	w.data.writeFields(fields)
@@ -220,7 +220,7 @@ func (w *writer) EndField() error {
 	if err != nil {
 		return err
 	}
-	field, err := w.stack.popType(entryTypeField)
+	fentry, err := w.stack.popType(entryTypeField)
 	if err != nil {
 		return err
 	}
@@ -230,8 +230,8 @@ func (w *writer) EndField() error {
 	}
 
 	// insert tag and relative offset
-	f := writeField{
-		tag:    field.field.tag,
+	f := field{
+		tag:    fentry.field.tag,
 		offset: uint32(data.data.end - message.message.start),
 	}
 	w.fields.insert(message.message.fieldStart, f)

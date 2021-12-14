@@ -6,13 +6,12 @@ import (
 	"sort"
 )
 
-const fieldSize = 2 + 4 // tag(2) + offset(4)
-
-type field struct {
-	tag    uint16
-	offset uint32
-}
-
+// fieldTable is a serialized array of message fields sorted by tags.
+//
+//  +--------------------+--------------------+--------------------+
+// 	| tag0 |   offset0   | tag1 |   offset1   | tag2 |   offset3   |
+//  +--------------------+--------------------+--------------------+
+//
 type fieldTable []byte
 
 // readFieldTable casts bytes into a field table, returns an error if length is not divisible by fieldSize.
