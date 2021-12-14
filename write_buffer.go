@@ -102,8 +102,16 @@ func (b *writeBuffer) writeStringZero() {
 
 // list
 
-func (b *writeBuffer) writeElements(elements []element) {
+func (b *writeBuffer) writeElements(list []element) {
+	size := len(list) * elementSize
+	p := b._grow(size)
 
+	for i, elem := range list {
+		off := i * elementSize
+		q := p[off : off+elementSize]
+
+		binary.BigEndian.PutUint32(q, elem.offset)
+	}
 }
 
 func (b *writeBuffer) writeElementCount(count uint32) {
@@ -114,7 +122,16 @@ func (b *writeBuffer) writeElementCount(count uint32) {
 // struct
 
 func (b *writeBuffer) writeFields(table []field) {
+	size := len(table) * fieldSize
+	p := b._grow(size)
 
+	for i, field := range table {
+		off := i * fieldSize
+		q := p[off : off+fieldSize]
+
+		binary.BigEndian.PutUint16(q, field.tag)
+		binary.BigEndian.PutUint32(q[2:], field.offset)
+	}
 }
 
 func (b *writeBuffer) writeFieldCount(count uint32) {
