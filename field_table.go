@@ -79,6 +79,7 @@ func (t fieldTable) find(tag uint16) int {
 		return -1
 	}
 
+	// binary search table
 	left, right := 0, (n - 1)
 	for left <= right {
 		// calc offset
