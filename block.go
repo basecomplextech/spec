@@ -45,7 +45,7 @@ func (b Block) Write(w Writer) error {
 
 	// checksum
 	w.BeginField(10)
-	w.WriteUInt32(b.Checksum)
+	w.UInt32(b.Checksum)
 	w.EndField()
 
 	return w.EndMessage()
@@ -56,12 +56,12 @@ func (id BlockID) Write(w Writer) error {
 
 	// index
 	w.BeginField(1)
-	w.WriteInt64(id.Index)
+	w.Int64(id.Index)
 	w.EndField()
 
 	// hash
 	w.BeginField(2)
-	w.WriteUInt64(id.Hash)
+	w.UInt64(id.Hash)
 	w.EndField()
 
 	return w.EndMessage()
@@ -72,12 +72,12 @@ func (h BlockHead) Write(w Writer) error {
 
 	// type
 	w.BeginField(1)
-	w.WriteUInt8(h.Type)
+	w.UInt8(h.Type)
 	w.EndField()
 
 	// index
 	w.BeginField(2)
-	w.WriteInt64(h.Index)
+	w.Int64(h.Index)
 	w.EndField()
 
 	// base
@@ -98,7 +98,7 @@ func (b BlockBody) Write(w Writer) error {
 
 	// command
 	w.BeginField(1)
-	w.WriteString(b.Command)
+	w.String(b.Command)
 	w.EndField()
 
 	return w.EndMessage()

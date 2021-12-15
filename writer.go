@@ -4,58 +4,7 @@ import "fmt"
 
 const WriteBufferSize = 4096
 
-// Writer writes objects to a buffer.
-type Writer interface {
-	// End ends writing, returns the result bytes, and resets the writer.
-	End() ([]byte, error)
-
-	// Reset clears the writer.
-	Reset()
-
-	// List
-
-	BeginList() error
-	EndList() error
-
-	BeginElement() error
-	EndElement() error
-
-	// Message
-
-	BeginMessage() error
-	EndMessage() error
-
-	BeginField(tag uint16) error
-	EndField() error
-
-	// Values
-
-	WriteBool(v bool) error
-	WriteByte(v byte) error
-
-	WriteInt8(v int8) error
-	WriteInt16(v int16) error
-	WriteInt32(v int32) error
-	WriteInt64(v int64) error
-
-	WriteUInt8(v uint8) error
-	WriteUInt16(v uint16) error
-	WriteUInt32(v uint32) error
-	WriteUInt64(v uint64) error
-
-	WriteFloat32(v float32) error
-	WriteFloat64(v float64) error
-
-	WriteBytes(v []byte) error
-	WriteString(v string) error
-}
-
-// NewWriter returns a new writer.
-func NewWriter() Writer {
-	return newWriter()
-}
-
-type writer struct {
+type Writer struct {
 	data  writeBuffer
 	stack writeStack
 
@@ -63,12 +12,13 @@ type writer struct {
 	messageStack messageStack // stack of message tables
 }
 
-func newWriter() *writer {
-	return &writer{}
+// NewWriter returns a new writer with a default buffer.
+func NewWriter() *Writer {
+	return &Writer{}
 }
 
 // End ends writing, returns the result bytes, and resets the writer.
-func (w *writer) End() ([]byte, error) {
+func (w *Writer) End() ([]byte, error) {
 	switch {
 	case len(w.stack) == 0:
 		return []byte{}, nil
@@ -88,7 +38,7 @@ func (w *writer) End() ([]byte, error) {
 }
 
 // Reset clears the writer.
-func (w *writer) Reset() {
+func (w *Writer) Reset() {
 	w.data = w.data[:0]
 	w.stack = w.stack[:0]
 
@@ -96,9 +46,166 @@ func (w *writer) Reset() {
 	w.messageStack = w.messageStack[:0]
 }
 
+// Primitive
+
+func (w *Writer) Bool(v bool) error {
+	start := w.data.offset()
+
+	if v {
+		w.data.type_(TypeTrue)
+	} else {
+		w.data.type_(TypeFalse)
+	}
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) Byte(v byte) error {
+	return w.UInt8(v)
+}
+
+func (w *Writer) Int8(v int8) error {
+	start := w.data.offset()
+
+	w.data.int8(v)
+	w.data.type_(TypeInt8)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) Int16(v int16) error {
+	start := w.data.offset()
+
+	w.data.int16(v)
+	w.data.type_(TypeInt16)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) Int32(v int32) error {
+	start := w.data.offset()
+
+	w.data.int32(v)
+	w.data.type_(TypeInt32)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) Int64(v int64) error {
+	start := w.data.offset()
+
+	w.data.int64(v)
+	w.data.type_(TypeInt64)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) UInt8(v uint8) error {
+	start := w.data.offset()
+
+	w.data.uint8(v)
+	w.data.type_(TypeUInt8)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) UInt16(v uint16) error {
+	start := w.data.offset()
+
+	w.data.uint16(v)
+	w.data.type_(TypeUInt16)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) UInt32(v uint32) error {
+	start := w.data.offset()
+
+	w.data.uint32(v)
+	w.data.type_(TypeUInt32)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) UInt64(v uint64) error {
+	start := w.data.offset()
+
+	w.data.uint64(v)
+	w.data.type_(TypeUInt64)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) Float32(v float32) error {
+	start := w.data.offset()
+
+	w.data.float32(v)
+	w.data.type_(TypeFloat32)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) Float64(v float64) error {
+	start := w.data.offset()
+
+	w.data.float64(v)
+	w.data.type_(TypeFloat64)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+// Bytes/string
+
+func (w *Writer) Bytes(v []byte) error {
+	start := w.data.offset()
+
+	size := w.data.bytes(v)
+	w.data.bytesSize(size)
+	w.data.type_(TypeBytes)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
+func (w *Writer) String(v string) error {
+	start := w.data.offset()
+
+	size := w.data.string(v)
+	w.data.stringZero()
+	w.data.stringSize(size + 1) // plus zero byte
+	w.data.type_(TypeString)
+
+	end := w.data.offset()
+	w.stack.pushData(start, end)
+	return nil
+}
+
 // List
 
-func (w *writer) BeginList() error {
+func (w *Writer) BeginList() error {
 	// push list
 	start := w.data.offset()
 	tableStart := w.listStack.offset()
@@ -107,7 +214,7 @@ func (w *writer) BeginList() error {
 	return nil
 }
 
-func (w *writer) EndList() error {
+func (w *Writer) EndList() error {
 	// pop list
 	list, err := w.stack.popType(entryTypeList)
 	if err != nil {
@@ -131,7 +238,7 @@ func (w *writer) EndList() error {
 	return nil
 }
 
-func (w *writer) BeginElement() error {
+func (w *Writer) BeginElement() error {
 	// check parent
 	if _, err := w.stack.peekType(entryTypeList); err != nil {
 		return err
@@ -143,7 +250,7 @@ func (w *writer) BeginElement() error {
 	return nil
 }
 
-func (w *writer) EndElement() error {
+func (w *Writer) EndElement() error {
 	// pop data and element
 	data, err := w.stack.popType(entryTypeData)
 	if err != nil {
@@ -172,7 +279,7 @@ func (w *writer) EndElement() error {
 
 // Message
 
-func (w *writer) BeginMessage() error {
+func (w *Writer) BeginMessage() error {
 	// push message
 	start := w.data.offset()
 	tableStart := w.listStack.offset()
@@ -181,7 +288,7 @@ func (w *writer) BeginMessage() error {
 	return nil
 }
 
-func (w *writer) EndMessage() error {
+func (w *Writer) EndMessage() error {
 	// pop message
 	message, err := w.stack.popType(entryTypeMessage)
 	if err != nil {
@@ -205,7 +312,7 @@ func (w *writer) EndMessage() error {
 	return nil
 }
 
-func (w *writer) BeginField(tag uint16) error {
+func (w *Writer) BeginField(tag uint16) error {
 	// check parent
 	if _, err := w.stack.peekType(entryTypeMessage); err != nil {
 		return err
@@ -217,7 +324,7 @@ func (w *writer) BeginField(tag uint16) error {
 	return nil
 }
 
-func (w *writer) EndField() error {
+func (w *Writer) EndField() error {
 	// pop data and field
 	data, err := w.stack.popType(entryTypeData)
 	if err != nil {
@@ -238,160 +345,5 @@ func (w *writer) EndField() error {
 		offset: uint32(data.data.end - message.message.start),
 	}
 	w.messageStack.insert(message.message.tableStart, f)
-	return nil
-}
-
-// Values
-
-func (w *writer) WriteBool(v bool) error {
-	start := w.data.offset()
-
-	if v {
-		w.data.type_(TypeTrue)
-	} else {
-		w.data.type_(TypeFalse)
-	}
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteByte(v byte) error {
-	return w.WriteUInt8(v)
-}
-
-func (w *writer) WriteInt8(v int8) error {
-	start := w.data.offset()
-
-	w.data.int8(v)
-	w.data.type_(TypeInt8)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteInt16(v int16) error {
-	start := w.data.offset()
-
-	w.data.int16(v)
-	w.data.type_(TypeInt16)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteInt32(v int32) error {
-	start := w.data.offset()
-
-	w.data.int32(v)
-	w.data.type_(TypeInt32)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteInt64(v int64) error {
-	start := w.data.offset()
-
-	w.data.int64(v)
-	w.data.type_(TypeInt64)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteUInt8(v uint8) error {
-	start := w.data.offset()
-
-	w.data.uint8(v)
-	w.data.type_(TypeUInt8)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteUInt16(v uint16) error {
-	start := w.data.offset()
-
-	w.data.uint16(v)
-	w.data.type_(TypeUInt16)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteUInt32(v uint32) error {
-	start := w.data.offset()
-
-	w.data.uint32(v)
-	w.data.type_(TypeUInt32)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteUInt64(v uint64) error {
-	start := w.data.offset()
-
-	w.data.uint64(v)
-	w.data.type_(TypeUInt64)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteFloat32(v float32) error {
-	start := w.data.offset()
-
-	w.data.float32(v)
-	w.data.type_(TypeFloat32)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteFloat64(v float64) error {
-	start := w.data.offset()
-
-	w.data.float64(v)
-	w.data.type_(TypeFloat64)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteBytes(v []byte) error {
-	start := w.data.offset()
-
-	size := w.data.bytes(v)
-	w.data.bytesSize(size)
-	w.data.type_(TypeBytes)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *writer) WriteString(v string) error {
-	start := w.data.offset()
-
-	size := w.data.string(v)
-	w.data.stringZero()
-	w.data.stringSize(size + 1) // plus zero byte
-	w.data.type_(TypeString)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
 	return nil
 }

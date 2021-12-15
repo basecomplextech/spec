@@ -126,9 +126,9 @@ Example `"hello, world"`:
 +--------------------------+---------------+---------------+
 ```
 
-Object:
+Value:
 ```
-object {
+value {
 	union {
 		int8  int8
 		int16 varint

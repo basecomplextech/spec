@@ -1,6 +1,6 @@
 package protocol
 
-// Type specifies an object type.
+// Type specifies a value type.
 type Type byte
 
 const (
