@@ -1,12 +1,5 @@
 package protocol
 
-const fieldSize = 2 + 4 // tag(2) + offset(4)
-
-type field struct {
-	tag    uint16
-	offset uint32
-}
-
 // fieldStack acts as a buffer for nested message fields.
 //
 // Each message externally stores its start offset in the buffer, and provides the offset
@@ -18,7 +11,7 @@ type field struct {
 //	| f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 |
 //	+-------------------+-------------------+-------------------+
 //
-type fieldStack []field
+type fieldStack []messageField
 
 // offset returns the next message table buffer offset.
 func (s fieldStack) offset() int {
@@ -26,7 +19,7 @@ func (s fieldStack) offset() int {
 }
 
 // insert inserts a new field into the last table starting at offset, keeps the table sorted.
-func (sptr *fieldStack) insert(offset int, f field) {
+func (sptr *fieldStack) insert(offset int, f messageField) {
 	sptr._grow(1)
 
 	// append new field
@@ -56,7 +49,7 @@ func (sptr *fieldStack) insert(offset int, f field) {
 }
 
 // popTable pops a table starting at offset.
-func (sptr *fieldStack) popTable(offset int) []field {
+func (sptr *fieldStack) popTable(offset int) []messageField {
 	s := *sptr
 	table := s[offset:]
 
@@ -77,7 +70,7 @@ func (sptr *fieldStack) _grow(n int) {
 
 	// grow
 	size := (cap(s) * 2) + n
-	next := make([]field, len(s), size)
+	next := make([]messageField, len(s), size)
 	copy(next, s)
 
 	*sptr = s

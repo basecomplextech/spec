@@ -146,8 +146,8 @@ func (r reader) list() listReader {
 	return readList(r.buf)
 }
 
-func (r reader) message() messageReader {
-	return readMessage(r.buf)
+func (r reader) message() Message {
+	return ReadMessage(r.buf)
 }
 
 // list
@@ -192,50 +192,5 @@ func (r listReader) element(i int) (reader, bool) {
 	}
 
 	buf := r.data.listElement(elem.offset)
-	return read(buf), true
-}
-
-// message
-
-type messageReader struct {
-	bytes []byte
-
-	type_     Type
-	tableSize uint32
-	dataSize  uint32
-	table     fieldTable
-	data      readBuffer
-}
-
-func readMessage(buf readBuffer) messageReader {
-	type_, b := buf.type_()
-	if type_ != TypeMessage {
-		return messageReader{}
-	}
-
-	tableSize, b := b.messageTableSize()
-	dataSize, b := b.messageDataSize()
-	table, b := b.messageTable(tableSize)
-	data, _ := b.messageData(dataSize)
-	bytes, _ := buf.messageBytes(tableSize, dataSize) // slice initial buffer
-
-	return messageReader{
-		bytes: bytes,
-
-		type_:     type_,
-		tableSize: tableSize,
-		dataSize:  dataSize,
-		table:     table,
-		data:      data,
-	}
-}
-
-func (r messageReader) field(tag uint16) (reader, bool) {
-	field, ok := r.table.lookup(tag)
-	if !ok {
-		return reader{}, false
-	}
-
-	buf := r.data.messageField(field.offset)
 	return read(buf), true
 }

@@ -231,7 +231,7 @@ func (w *writer) EndField() error {
 	}
 
 	// insert tag and relative offset
-	f := field{
+	f := messageField{
 		tag:    fentry.field.tag,
 		offset: uint32(data.data.end - message.message.start),
 	}

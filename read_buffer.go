@@ -264,25 +264,25 @@ func (b readBuffer) messageBytes(tableSize uint32, dataSize uint32) ([]byte, rea
 	return b[off:], b[:off]
 }
 
-func (b readBuffer) messageTable(size uint32) (fieldTable, readBuffer) {
+func (b readBuffer) messageTable(size uint32) (messageTable, readBuffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return nil, nil
 	}
 
 	p := b[off:]
-	v := fieldTable(p)
+	v := messageTable(p)
 	return v, b[:off]
 }
 
-func (b readBuffer) messageData(size uint32) (readBuffer, readBuffer) {
+func (b readBuffer) messageData(size uint32) (messageData, readBuffer) {
 	off := len(b) - int(size)
 	if off < 0 {
-		return nil, nil
+		return messageData{}, nil
 	}
 
 	p := b[off:]
-	return p, b[:off]
+	return messageData{p}, b[:off]
 }
 
 func (b readBuffer) messageTableSize() (uint32, readBuffer) {
@@ -307,7 +307,7 @@ func (b readBuffer) messageDataSize() (uint32, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) messageField(off uint32) readBuffer {
+func (b readBuffer) messageField(off uint32) []byte {
 	if len(b) < int(off) {
 		return nil
 	}

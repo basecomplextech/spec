@@ -3,8 +3,8 @@ package protocol
 import "testing"
 
 func BenchmarkFieldTable_find(b *testing.B) {
-	fields := testFieldsN(100)
-	table := writeFieldTable(fields)
+	fields := testMessageFieldsN(100)
+	table := writeMessageTable(fields)
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -19,15 +19,15 @@ func BenchmarkFieldTable_find(b *testing.B) {
 }
 
 func BenchmarkFieldTable_lookup(b *testing.B) {
-	fields := testFieldsN(100)
-	table := writeFieldTable(fields)
+	fields := testMessageFieldsN(100)
+	table := writeMessageTable(fields)
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	last := len(fields) - 1
 	tag := fields[last].tag
 
-	var f field
+	var f messageField
 	var ok bool
 	for i := 0; i < b.N; i++ {
 		f, ok = table.lookup(tag)

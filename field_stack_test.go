@@ -8,14 +8,14 @@ import (
 )
 
 func TestFieldStack_Insert__should_insert_field_into_table_ordered_by_tags(t *testing.T) {
-	matrix := [][]field{
-		testFieldsN(1),
-		testFieldsN(10),
-		testFieldsN(100),
-		testFieldsN(10),
-		testFieldsN(1),
-		testFieldsN(0),
-		testFieldsN(3),
+	matrix := [][]messageField{
+		testMessageFieldsN(1),
+		testMessageFieldsN(10),
+		testMessageFieldsN(100),
+		testMessageFieldsN(10),
+		testMessageFieldsN(1),
+		testMessageFieldsN(0),
+		testMessageFieldsN(3),
 	}
 
 	stack := fieldStack{}
@@ -27,7 +27,7 @@ func TestFieldStack_Insert__should_insert_field_into_table_ordered_by_tags(t *te
 		offsets = append(offsets, offset)
 
 		// copy
-		ff := make([]field, len(fields))
+		ff := make([]messageField, len(fields))
 		copy(ff, fields)
 
 		// shuffle

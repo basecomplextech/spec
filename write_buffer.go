@@ -131,13 +131,13 @@ func (b *writeBuffer) listDataSize(size uint32) {
 
 // message
 
-func (b *writeBuffer) messageTable(table []field) uint32 {
-	size := len(table) * fieldSize
+func (b *writeBuffer) messageTable(table []messageField) uint32 {
+	size := len(table) * messageFieldSize
 	p := b._grow(size)
 
 	for i, field := range table {
-		off := i * fieldSize
-		q := p[off : off+fieldSize]
+		off := i * messageFieldSize
+		q := p[off : off+messageFieldSize]
 
 		binary.BigEndian.PutUint16(q, field.tag)
 		binary.BigEndian.PutUint32(q[2:], field.offset)
