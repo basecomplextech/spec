@@ -11,93 +11,96 @@ func (b *writeBuffer) offset() int {
 	return len(*b)
 }
 
-// type and size
+// type
 
-func (b *writeBuffer) writeType(type_ Type) {
+func (b *writeBuffer) type_(type_ Type) {
 	p := b._grow(1)
 	p[0] = byte(type_)
 }
 
-func (b *writeBuffer) writeSize(size uint32) {
-	p := b._grow(4)
-	binary.BigEndian.PutUint32(p, uint32(size))
-}
-
 // primitives
 
-func (b *writeBuffer) writeByte(v byte) {
-	p := b._grow(1)
-	p[0] = v
-}
-
-func (b *writeBuffer) writeInt8(v int8) {
+func (b *writeBuffer) int8(v int8) {
 	p := b._grow(1)
 	p[0] = byte(v)
 }
 
-func (b *writeBuffer) writeInt16(v int16) {
+func (b *writeBuffer) int16(v int16) {
 	p := b._grow(2)
 	binary.BigEndian.PutUint16(p, uint16(v))
 }
 
-func (b *writeBuffer) writeInt32(v int32) {
+func (b *writeBuffer) int32(v int32) {
 	p := b._grow(4)
 	binary.BigEndian.PutUint32(p, uint32(v))
 }
 
-func (b *writeBuffer) writeInt64(v int64) {
+func (b *writeBuffer) int64(v int64) {
 	p := b._grow(8)
 	binary.BigEndian.PutUint64(p, uint64(v))
 }
 
-func (b *writeBuffer) writeUInt8(v uint8) {
+func (b *writeBuffer) uint8(v uint8) {
 	p := b._grow(1)
 	p[0] = v
 }
 
-func (b *writeBuffer) writeUInt16(v uint16) {
+func (b *writeBuffer) uint16(v uint16) {
 	p := b._grow(2)
 	binary.BigEndian.PutUint16(p, v)
 }
 
-func (b *writeBuffer) writeUInt32(v uint32) {
+func (b *writeBuffer) uint32(v uint32) {
 	p := b._grow(4)
 	binary.BigEndian.PutUint32(p, v)
 }
 
-func (b *writeBuffer) writeUInt64(v uint64) {
+func (b *writeBuffer) uint64(v uint64) {
 	p := b._grow(8)
 	binary.BigEndian.PutUint64(p, v)
 }
 
-func (b *writeBuffer) writeFloat32(v float32) {
+func (b *writeBuffer) float32(v float32) {
 	p := b._grow(4)
 	binary.BigEndian.PutUint32(p, math.Float32bits(v))
 }
 
-func (b *writeBuffer) writeFloat64(v float64) {
+func (b *writeBuffer) float64(v float64) {
 	p := b._grow(8)
 	binary.BigEndian.PutUint64(p, math.Float64bits(v))
 }
 
 // bytes
 
-func (b *writeBuffer) writeBytes(v []byte) {
-	p := b._grow(len(v))
+func (b *writeBuffer) bytes(v []byte) uint32 {
+	size := len(v)
+	p := b._grow(size)
 	copy(p, v)
+	return uint32(size)
+}
+
+func (b *writeBuffer) bytesSize(size uint32) {
+	p := b._grow(4)
+	binary.BigEndian.PutUint32(p, uint32(size))
 }
 
 // string
 
-func (b *writeBuffer) writeString(s string) {
+func (b *writeBuffer) string(s string) uint32 {
 	size := len(s)
 	p := b._grow(size)
 	copy(p, s)
+	return uint32(size)
 }
 
-func (b *writeBuffer) writeStringZero() {
+func (b *writeBuffer) stringZero() {
 	p := b._grow(1)
 	p[0] = 0
+}
+
+func (b *writeBuffer) stringSize(size uint32) {
+	p := b._grow(4)
+	binary.BigEndian.PutUint32(p, uint32(size))
 }
 
 // list
@@ -163,9 +166,11 @@ func (b *writeBuffer) _grow(n int) []byte {
 	rem := cap(buf) - len(buf)
 	if rem < n {
 		size := (cap(buf) * 2) + n
-		next := make([]byte, len(buf), size)
-		copy(next, buf)
-		*b = next
+
+		p := make([]byte, len(buf), size)
+		copy(p, buf)
+
+		*b = p
 		buf = (*b)
 	}
 

@@ -120,7 +120,7 @@ func (w *writer) EndList() error {
 	// write sizes and type
 	w.data.listDataSize(dataSize)
 	w.data.listTableSize(tableSize)
-	w.data.writeType(TypeList)
+	w.data.type_(TypeList)
 
 	// push data entry
 	start := list.list.start
@@ -194,7 +194,7 @@ func (w *writer) EndMessage() error {
 	// write sizes and type
 	w.data.messageDataSize(dataSize)
 	w.data.messageTableSize(tableSize)
-	w.data.writeType(TypeMessage)
+	w.data.type_(TypeMessage)
 
 	// push data
 	start := message.message.start
@@ -245,9 +245,9 @@ func (w *writer) WriteBool(v bool) error {
 	start := w.data.offset()
 
 	if v {
-		w.data.writeType(TypeTrue)
+		w.data.type_(TypeTrue)
 	} else {
-		w.data.writeType(TypeFalse)
+		w.data.type_(TypeFalse)
 	}
 
 	end := w.data.offset()
@@ -262,8 +262,8 @@ func (w *writer) WriteByte(v byte) error {
 func (w *writer) WriteInt8(v int8) error {
 	start := w.data.offset()
 
-	w.data.writeInt8(v)
-	w.data.writeType(TypeInt8)
+	w.data.int8(v)
+	w.data.type_(TypeInt8)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -273,8 +273,8 @@ func (w *writer) WriteInt8(v int8) error {
 func (w *writer) WriteInt16(v int16) error {
 	start := w.data.offset()
 
-	w.data.writeInt16(v)
-	w.data.writeType(TypeInt16)
+	w.data.int16(v)
+	w.data.type_(TypeInt16)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -284,8 +284,8 @@ func (w *writer) WriteInt16(v int16) error {
 func (w *writer) WriteInt32(v int32) error {
 	start := w.data.offset()
 
-	w.data.writeInt32(v)
-	w.data.writeType(TypeInt32)
+	w.data.int32(v)
+	w.data.type_(TypeInt32)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -295,8 +295,8 @@ func (w *writer) WriteInt32(v int32) error {
 func (w *writer) WriteInt64(v int64) error {
 	start := w.data.offset()
 
-	w.data.writeInt64(v)
-	w.data.writeType(TypeInt64)
+	w.data.int64(v)
+	w.data.type_(TypeInt64)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -306,8 +306,8 @@ func (w *writer) WriteInt64(v int64) error {
 func (w *writer) WriteUInt8(v uint8) error {
 	start := w.data.offset()
 
-	w.data.writeUInt8(v)
-	w.data.writeType(TypeUInt8)
+	w.data.uint8(v)
+	w.data.type_(TypeUInt8)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -317,8 +317,8 @@ func (w *writer) WriteUInt8(v uint8) error {
 func (w *writer) WriteUInt16(v uint16) error {
 	start := w.data.offset()
 
-	w.data.writeUInt16(v)
-	w.data.writeType(TypeUInt16)
+	w.data.uint16(v)
+	w.data.type_(TypeUInt16)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -328,8 +328,8 @@ func (w *writer) WriteUInt16(v uint16) error {
 func (w *writer) WriteUInt32(v uint32) error {
 	start := w.data.offset()
 
-	w.data.writeUInt32(v)
-	w.data.writeType(TypeUInt32)
+	w.data.uint32(v)
+	w.data.type_(TypeUInt32)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -339,8 +339,8 @@ func (w *writer) WriteUInt32(v uint32) error {
 func (w *writer) WriteUInt64(v uint64) error {
 	start := w.data.offset()
 
-	w.data.writeUInt64(v)
-	w.data.writeType(TypeUInt64)
+	w.data.uint64(v)
+	w.data.type_(TypeUInt64)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -350,8 +350,8 @@ func (w *writer) WriteUInt64(v uint64) error {
 func (w *writer) WriteFloat32(v float32) error {
 	start := w.data.offset()
 
-	w.data.writeFloat32(v)
-	w.data.writeType(TypeFloat32)
+	w.data.float32(v)
+	w.data.type_(TypeFloat32)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -361,8 +361,8 @@ func (w *writer) WriteFloat32(v float32) error {
 func (w *writer) WriteFloat64(v float64) error {
 	start := w.data.offset()
 
-	w.data.writeFloat64(v)
-	w.data.writeType(TypeFloat64)
+	w.data.float64(v)
+	w.data.type_(TypeFloat64)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -372,10 +372,9 @@ func (w *writer) WriteFloat64(v float64) error {
 func (w *writer) WriteBytes(v []byte) error {
 	start := w.data.offset()
 
-	size := uint32(len(v))
-	w.data.writeBytes(v)
-	w.data.writeSize(size)
-	w.data.writeType(TypeBytes)
+	size := w.data.bytes(v)
+	w.data.bytesSize(size)
+	w.data.type_(TypeBytes)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
@@ -385,11 +384,10 @@ func (w *writer) WriteBytes(v []byte) error {
 func (w *writer) WriteString(v string) error {
 	start := w.data.offset()
 
-	size := uint32(len(v) + 1) // plus zero byte
-	w.data.writeString(v)
-	w.data.writeStringZero()
-	w.data.writeSize(size)
-	w.data.writeType(TypeString)
+	size := w.data.string(v)
+	w.data.stringZero()
+	w.data.stringSize(size + 1) // plus zero byte
+	w.data.type_(TypeString)
 
 	end := w.data.offset()
 	w.stack.pushData(start, end)
