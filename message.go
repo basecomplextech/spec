@@ -47,10 +47,10 @@ func (m Message) Bytes() []byte {
 }
 
 // Field returns a field value by a tag or an empty value.
-func (m Message) Field(tag uint16) (reader, bool) {
+func (m Message) Field(tag uint16) (Value, bool) {
 	field, ok := m.table.lookup(tag)
 	if !ok {
-		return reader{}, false
+		return Value{}, false
 	}
 
 	r := m.data.field(field.offset)
@@ -58,8 +58,8 @@ func (m Message) Field(tag uint16) (reader, bool) {
 }
 
 // FieldByIndex returns a field value by an index or an empty value.
-func (m Message) FieldByIndex(i int) (reader, bool) {
-	return reader{}, false
+func (m Message) FieldByIndex(i int) (Value, bool) {
+	return Value{}, false
 }
 
 // Fields returns the number of fields in the message.
@@ -222,9 +222,9 @@ type messageData struct {
 }
 
 // field returns a field value by offset or an empty value.
-func (d messageData) field(off uint32) reader {
+func (d messageData) field(off uint32) Value {
 	b := d.buf.messageField(off)
-	return read(b)
+	return ReadValue(b)
 }
 
 // messageStack acts as a buffer for nested message fields.

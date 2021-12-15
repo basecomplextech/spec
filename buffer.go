@@ -244,7 +244,7 @@ func (b readBuffer) listDataSize() (uint32, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) listElement(off uint32) readBuffer {
+func (b readBuffer) listElement(off uint32) []byte {
 	if len(b) < int(off) {
 		return nil
 	}

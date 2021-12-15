@@ -40,14 +40,14 @@ func ReadList(p []byte) List {
 }
 
 // Element returns an element value by an index or false.
-func (l List) Element(i int) (reader, bool) {
+func (l List) Element(i int) (Value, bool) {
 	elem, ok := l.table.lookup(i)
 	if !ok {
-		return reader{}, false
+		return Value{}, false
 	}
 
 	buf := l.data.listElement(elem.offset)
-	return read(buf), true
+	return ReadValue(buf), true
 }
 
 // Elements returns the number of elements in the list.
