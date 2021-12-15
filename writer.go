@@ -256,14 +256,7 @@ func (w *writer) WriteBool(v bool) error {
 }
 
 func (w *writer) WriteByte(v byte) error {
-	start := w.data.offset()
-
-	w.data.writeByte(v)
-	w.data.writeType(TypeByte)
-
-	end := w.data.offset()
-	w.stack.pushData(start, end)
-	return nil
+	return w.WriteUInt8(v)
 }
 
 func (w *writer) WriteInt8(v int8) error {

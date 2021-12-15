@@ -4,7 +4,7 @@ package protocol
 type Type byte
 
 const (
-	TypeNull  Type = 0x00
+	TypeNil   Type = 0x00
 	TypeTrue  Type = 0x01
 	TypeFalse Type = 0x02
 
@@ -13,7 +13,6 @@ const (
 	TypeInt32 Type = 0x12
 	TypeInt64 Type = 0x13
 
-	TypeByte        = TypeUInt8
 	TypeUInt8  Type = 0x20
 	TypeUInt16 Type = 0x21
 	TypeUInt32 Type = 0x22

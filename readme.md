@@ -156,14 +156,14 @@ object {
 			zero  byte
 		}
 		
-		struct {
-			size       uint32     // total struct size
-			count      uint32     // field count
-			offsets    []struct { // sorted offset map
+		message {
+			size       uint32      // total message size
+			count      uint32      // field count
+			fields     []field {   // field table ordered by tag
 				tag    uint16
 				offset uint32
 			}
-			fields     []object   // indexed field values
+			data       []object    // field data
 		}
 		
 		list {
@@ -200,7 +200,7 @@ const {
 	
 	typeBytes = 0x40
 	typeString = 0x50
-	typeStruct = 0x60
+	typeMessage = 0x60
 	typeList = 0x70
 }
 ```

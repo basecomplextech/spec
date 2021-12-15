@@ -58,6 +58,19 @@ func (t elementTable) get(i int) element {
 	return elem
 }
 
+// lookup returns an element by its index or false.
+func (t elementTable) lookup(i int) (element, bool) {
+	n := t.count()
+	if i >= n {
+		return element{}, false
+	}
+
+	off := i * elementSize
+	b := t[off : off+elementSize]
+	elem := element{offset: binary.BigEndian.Uint32(b)}
+	return elem, true
+}
+
 // count returns the number of elements in the table.
 func (t elementTable) count() int {
 	return len(t) / elementSize

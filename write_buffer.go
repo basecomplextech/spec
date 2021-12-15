@@ -23,7 +23,7 @@ func (b *writeBuffer) writeSize(size uint32) {
 	binary.BigEndian.PutUint32(p, uint32(size))
 }
 
-// values
+// primitives
 
 func (b *writeBuffer) writeByte(v byte) {
 	p := b._grow(1)
