@@ -56,10 +56,11 @@ func NewWriter() Writer {
 }
 
 type writer struct {
-	data     writeBuffer
-	stack    writeStack
-	fields   fieldStack
-	elements elementStack
+	data  writeBuffer
+	stack writeStack
+
+	listStack    listStack    // stack of list tables
+	messageStack messageStack // stack of message tables
 }
 
 func newWriter() *writer {
@@ -90,8 +91,9 @@ func (w *writer) End() ([]byte, error) {
 func (w *writer) Reset() {
 	w.data = w.data[:0]
 	w.stack = w.stack[:0]
-	w.fields = w.fields[:0]
-	w.elements = w.elements[:0]
+
+	w.listStack = w.listStack[:0]
+	w.messageStack = w.messageStack[:0]
 }
 
 // List
@@ -99,7 +101,7 @@ func (w *writer) Reset() {
 func (w *writer) BeginList() error {
 	// push list
 	start := w.data.offset()
-	tableStart := w.elements.offset()
+	tableStart := w.listStack.offset()
 
 	w.stack.pushList(start, tableStart)
 	return nil
@@ -114,7 +116,7 @@ func (w *writer) EndList() error {
 	dataSize := uint32(w.data.offset() - list.list.start)
 
 	// write table
-	table := w.elements.popList(list.list.tableStart)
+	table := w.listStack.pop(list.list.tableStart)
 	tableSize := w.data.listTable(table)
 
 	// write sizes and type
@@ -159,7 +161,7 @@ func (w *writer) EndElement() error {
 	// append relative offset
 	offset := uint32(data.data.end - list.list.start)
 	element := listElement{offset: offset}
-	w.elements.push(element)
+	w.listStack.push(element)
 
 	// push data
 	start := elem.element.start
@@ -173,9 +175,9 @@ func (w *writer) EndElement() error {
 func (w *writer) BeginMessage() error {
 	// push message
 	start := w.data.offset()
-	fieldStart := w.fields.offset()
+	tableStart := w.listStack.offset()
 
-	w.stack.pushMessage(start, fieldStart)
+	w.stack.pushMessage(start, tableStart)
 	return nil
 }
 
@@ -188,7 +190,7 @@ func (w *writer) EndMessage() error {
 	dataSize := uint32(w.data.offset() - message.message.start)
 
 	// write table
-	table := w.fields.popTable(message.message.tableStart)
+	table := w.messageStack.pop(message.message.tableStart)
 	tableSize := w.data.messageTable(table)
 
 	// write sizes and type
@@ -235,7 +237,7 @@ func (w *writer) EndField() error {
 		tag:    fentry.field.tag,
 		offset: uint32(data.data.end - message.message.start),
 	}
-	w.fields.insert(message.message.tableStart, f)
+	w.messageStack.insert(message.message.tableStart, f)
 	return nil
 }
 

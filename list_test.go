@@ -66,3 +66,43 @@ func TestListTable_get__should_panic_when_index_out_of_range(t *testing.T) {
 		table.get(n)
 	})
 }
+
+// Stack
+
+func TestListStack_Push__should_append_element_to_last_list(t *testing.T) {
+	matrix := [][]listElement{
+		testListElementsN(1),
+		testListElementsN(10),
+		testListElementsN(100),
+		testListElementsN(10),
+		testListElementsN(1),
+		testListElementsN(0),
+		testListElementsN(3),
+	}
+
+	stack := listStack{}
+	offsets := []int{}
+
+	// build stack
+	for _, elements := range matrix {
+		offset := stack.offset()
+		offsets = append(offsets, offset)
+
+		// push
+		for _, elem := range elements {
+			stack.push(elem)
+		}
+	}
+
+	// check stack
+	for i := len(offsets) - 1; i >= 0; i-- {
+		offset := offsets[i]
+
+		// pop table
+		ff := stack.pop(offset)
+		elements := matrix[i]
+
+		// check table
+		require.Equal(t, elements, ff)
+	}
+}
