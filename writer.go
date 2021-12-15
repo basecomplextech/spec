@@ -5,16 +5,31 @@ import "fmt"
 const WriteBufferSize = 4096
 
 type Writer struct {
-	data  writeBuffer
-	stack writeStack
+	data writeBuffer
 
+	stack        writeStack
 	listStack    listStack    // stack of list tables
 	messageStack messageStack // stack of message tables
+
+	// preallocated
+	_stack        [16]entry
+	_listStack    [64]listElement
+	_messageStack [128]messageField
 }
 
 // NewWriter returns a new writer with a default buffer.
 func NewWriter() *Writer {
-	return &Writer{}
+	buf := make([]byte, 0, WriteBufferSize)
+	return NewWriterBuffer(buf)
+}
+
+// NewWriterBuffer returns a new writer with a buffer.
+func NewWriterBuffer(buf []byte) *Writer {
+	w := &Writer{data: buf[:0]}
+	w.stack = w._stack[:]
+	w.listStack = w._listStack[:]
+	w.messageStack = w._messageStack[:]
+	return w
 }
 
 // End ends writing, returns the result bytes, and resets the writer.
@@ -39,9 +54,8 @@ func (w *Writer) End() ([]byte, error) {
 
 // Reset clears the writer.
 func (w *Writer) Reset() {
-	w.data = w.data[:0]
+	w.data = nil
 	w.stack = w.stack[:0]
-
 	w.listStack = w.listStack[:0]
 	w.messageStack = w.messageStack[:0]
 }
@@ -220,10 +234,10 @@ func (w *Writer) EndList() error {
 	if err != nil {
 		return err
 	}
-	dataSize := uint32(w.data.offset() - list.list.start)
+	dataSize := uint32(w.data.offset() - list.start)
 
 	// write table
-	table := w.listStack.pop(list.list.tableStart)
+	table := w.listStack.pop(list.tableStart)
 	tableSize := w.data.listTable(table)
 
 	// write sizes and type
@@ -232,7 +246,7 @@ func (w *Writer) EndList() error {
 	w.data.type_(TypeList)
 
 	// push data entry
-	start := list.list.start
+	start := list.start
 	end := w.data.offset()
 	w.stack.pushData(start, end)
 	return nil
@@ -266,13 +280,13 @@ func (w *Writer) EndElement() error {
 	}
 
 	// append relative offset
-	offset := uint32(data.data.end - list.list.start)
+	offset := uint32(data.end - list.start)
 	element := listElement{offset: offset}
 	w.listStack.push(element)
 
 	// push data
-	start := elem.element.start
-	end := data.data.end
+	start := elem.start
+	end := data.end
 	w.stack.pushData(start, end)
 	return nil
 }
@@ -294,10 +308,10 @@ func (w *Writer) EndMessage() error {
 	if err != nil {
 		return err
 	}
-	dataSize := uint32(w.data.offset() - message.message.start)
+	dataSize := uint32(w.data.offset() - message.start)
 
 	// write table
-	table := w.messageStack.pop(message.message.tableStart)
+	table := w.messageStack.pop(message.tableStart)
 	tableSize := w.data.messageTable(table)
 
 	// write sizes and type
@@ -306,7 +320,7 @@ func (w *Writer) EndMessage() error {
 	w.data.type_(TypeMessage)
 
 	// push data
-	start := message.message.start
+	start := message.start
 	end := w.data.offset()
 	w.stack.pushData(start, end)
 	return nil
@@ -320,7 +334,7 @@ func (w *Writer) BeginField(tag uint16) error {
 
 	// push field
 	start := w.data.offset()
-	w.stack.pushField(tag, start)
+	w.stack.pushField(start, tag)
 	return nil
 }
 
@@ -330,7 +344,7 @@ func (w *Writer) EndField() error {
 	if err != nil {
 		return err
 	}
-	fentry, err := w.stack.popType(entryTypeField)
+	field, err := w.stack.popType(entryTypeField)
 	if err != nil {
 		return err
 	}
@@ -341,9 +355,9 @@ func (w *Writer) EndField() error {
 
 	// insert tag and relative offset
 	f := messageField{
-		tag:    fentry.field.tag,
-		offset: uint32(data.data.end - message.message.start),
+		tag:    field.tag,
+		offset: uint32(data.end - message.start),
 	}
-	w.messageStack.insert(message.message.tableStart, f)
+	w.messageStack.insert(message.tableStart, f)
 	return nil
 }

@@ -15,41 +15,64 @@ const (
 	entryTypeField
 )
 
-type (
-	entry struct {
-		type_ entryType
+type entry struct {
+	type_ entryType
 
-		data    entryData
-		list    entryList
-		element entryElement
-		message entryMessage
-		field   entryField
-	}
+	// all
+	// start offset in data buffer
+	start int
 
-	entryData struct {
-		start int
-		end   int
-	}
+	// data
+	// end offset in data buffer
+	end int
 
-	entryList struct {
-		start      int
-		tableStart int
-	}
+	// list/message
+	// table offset in list/message stack
+	tableStart int
 
-	entryElement struct {
-		start int
-	}
+	// field
+	// message field tag
+	tag uint16
+}
 
-	entryMessage struct {
-		start      int
-		tableStart int
+func dataEntry(start int, end int) entry {
+	return entry{
+		type_: entryTypeData,
+		start: start,
+		end:   end,
 	}
+}
 
-	entryField struct {
-		tag   uint16
-		start int
+func listEntry(start int, tableStart int) entry {
+	return entry{
+		type_:      entryTypeList,
+		start:      start,
+		tableStart: tableStart,
 	}
-)
+}
+
+func listElementEntry(start int) entry {
+	return entry{
+		type_: entryTypeElement,
+		start: start,
+	}
+}
+
+func messageEntry(start int, tableStart int) entry {
+	return entry{
+		type_:      entryTypeMessage,
+		start:      start,
+		tableStart: tableStart,
+	}
+}
+
+func messageFieldEntry(start int, tag uint16) entry {
+	return entry{
+		type_: entryTypeField,
+		start: start,
+		tag:   tag,
+	}
+}
 
 // stack
 
@@ -113,62 +136,27 @@ func (s *writeStack) push(e entry) {
 }
 
 func (s *writeStack) pushData(start int, end int) {
-	e := entry{
-		type_: entryTypeData,
-		data: entryData{
-			start: start,
-			end:   end,
-		},
-	}
-
+	e := dataEntry(start, end)
 	s.push(e)
 }
 
 func (s *writeStack) pushList(start int, tableStart int) {
-	e := entry{
-		type_: entryTypeList,
-
-		list: entryList{
-			start:      start,
-			tableStart: tableStart,
-		},
-	}
+	e := listEntry(start, tableStart)
 	s.push(e)
 }
 
 func (s *writeStack) pushElement(start int) {
-	e := entry{
-		type_: entryTypeElement,
-		element: entryElement{
-			start: start,
-		},
-	}
-
+	e := listElementEntry(start)
 	s.push(e)
 }
 
 func (s *writeStack) pushMessage(start int, tableStart int) {
-	e := entry{
-		type_: entryTypeMessage,
-
-		message: entryMessage{
-			start:      start,
-			tableStart: tableStart,
-		},
-	}
-
+	e := messageEntry(start, tableStart)
 	s.push(e)
 }
 
-func (s *writeStack) pushField(tag uint16, start int) {
-	e := entry{
-		type_: entryTypeField,
-		field: entryField{
-			tag:   tag,
-			start: start,
-		},
-	}
-
+func (s *writeStack) pushField(start int, tag uint16) {
+	e := messageFieldEntry(start, tag)
 	s.push(e)
 }
 

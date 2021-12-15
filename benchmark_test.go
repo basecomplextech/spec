@@ -1,6 +1,8 @@
 package protocol
 
-import "testing"
+import (
+	"testing"
+)
 
 func BenchmarkFieldTable_find(b *testing.B) {
 	fields := testMessageFieldsN(100)
