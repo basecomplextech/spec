@@ -142,55 +142,10 @@ func (r reader) string() string {
 	return v
 }
 
-func (r reader) list() listReader {
-	return readList(r.buf)
+func (r reader) list() List {
+	return ReadList(r.buf)
 }
 
 func (r reader) message() Message {
 	return ReadMessage(r.buf)
-}
-
-// list
-
-type listReader struct {
-	bytes []byte
-
-	type_     Type
-	tableSize uint32
-	dataSize  uint32
-	table     elementTable
-	data      readBuffer
-}
-
-func readList(buf readBuffer) listReader {
-	type_, b := buf.type_()
-	if type_ != TypeList {
-		return listReader{}
-	}
-
-	tableSize, b := b.listTableSize()
-	dataSize, b := b.listDataSize()
-	table, b := b.listTable(tableSize)
-	data, _ := b.listData(dataSize)
-	bytes, _ := buf.listBytes(tableSize, dataSize) // slice initial buffer
-
-	return listReader{
-		bytes: bytes,
-
-		type_:     type_,
-		tableSize: tableSize,
-		dataSize:  dataSize,
-		table:     table,
-		data:      data,
-	}
-}
-
-func (r listReader) element(i int) (reader, bool) {
-	elem, ok := r.table.lookup(i)
-	if !ok {
-		return reader{}, false
-	}
-
-	buf := r.data.listElement(elem.offset)
-	return read(buf), true
 }

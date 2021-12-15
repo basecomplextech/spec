@@ -201,14 +201,14 @@ func (b readBuffer) listBytes(tableSize uint32, dataSize uint32) ([]byte, readBu
 	return b[off:], b[:off]
 }
 
-func (b readBuffer) listTable(size uint32) (elementTable, readBuffer) {
+func (b readBuffer) listTable(size uint32) (listTable, readBuffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return nil, nil
 	}
 
 	p := b[off:]
-	v := elementTable(p)
+	v := listTable(p)
 	return v, b[:off]
 }
 

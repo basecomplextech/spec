@@ -1,11 +1,5 @@
 package protocol
 
-const elementSize = 4
-
-type element struct {
-	offset uint32
-}
-
 // elementStack acts as a buffer for nested list elements.
 //
 // Each list externally stores its start offset in the buffer, and provides the offset
@@ -17,7 +11,7 @@ type element struct {
 //	| e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 |
 //	+-------------------+-------------------+-------------------+
 //
-type elementStack []element
+type elementStack []listElement
 
 // offset returns the next list buffer offset.
 func (s elementStack) offset() int {
@@ -25,7 +19,7 @@ func (s elementStack) offset() int {
 }
 
 // push appends a new element to the last list.
-func (sptr *elementStack) push(elem element) {
+func (sptr *elementStack) push(elem listElement) {
 	sptr._grow(1)
 
 	s := *sptr
@@ -34,7 +28,7 @@ func (sptr *elementStack) push(elem element) {
 }
 
 // popList pops a list starting at offset.
-func (sptr *elementStack) popList(offset int) []element {
+func (sptr *elementStack) popList(offset int) []listElement {
 	s := *sptr
 	list := s[offset:]
 
@@ -55,7 +49,7 @@ func (sptr *elementStack) _grow(n int) {
 
 	// grow
 	size := (cap(s) * 2) + n
-	next := make([]element, len(s), size)
+	next := make([]listElement, len(s), size)
 	copy(next, s)
 
 	*sptr = s

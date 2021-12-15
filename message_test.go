@@ -56,18 +56,16 @@ func TestMessageTable_get__should_return_field_by_index(t *testing.T) {
 	}
 }
 
-func TestMessageTable_get__should_panic_when_index_out_of_range(t *testing.T) {
+func TestMessageTable_get__should_return_false_when_index_out_of_range(t *testing.T) {
 	fields := testMessageFields()
 	table := writeMessageTable(fields)
 
-	assert.Panics(t, func() {
-		table.get(-1)
-	})
+	_, ok := table.get(-1)
+	assert.False(t, ok)
 
-	assert.Panics(t, func() {
-		n := table.count()
-		table.get(n)
-	})
+	n := table.count()
+	_, ok = table.get(n)
+	assert.False(t, ok)
 }
 
 // find

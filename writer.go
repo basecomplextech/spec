@@ -158,7 +158,7 @@ func (w *writer) EndElement() error {
 
 	// append relative offset
 	offset := uint32(data.data.end - list.list.start)
-	element := element{offset: offset}
+	element := listElement{offset: offset}
 	w.elements.push(element)
 
 	// push data

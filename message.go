@@ -132,7 +132,10 @@ func writeMessageTable(fields []messageField) messageTable {
 // get returns a field by its index or false.
 func (t messageTable) get(i int) (messageField, bool) {
 	n := t.count()
-	if i >= n {
+	switch {
+	case i < 0:
+		return messageField{}, false
+	case i >= n:
 		return messageField{}, false
 	}
 

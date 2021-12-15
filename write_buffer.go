@@ -105,13 +105,13 @@ func (b *writeBuffer) stringSize(size uint32) {
 
 // list
 
-func (b *writeBuffer) listTable(table []element) uint32 {
-	size := len(table) * elementSize
+func (b *writeBuffer) listTable(table []listElement) uint32 {
+	size := len(table) * listElementSize
 	p := b._grow(size)
 
 	for i, elem := range table {
-		off := i * elementSize
-		q := p[off : off+elementSize]
+		off := i * listElementSize
+		q := p[off : off+listElementSize]
 
 		binary.BigEndian.PutUint32(q, elem.offset)
 	}

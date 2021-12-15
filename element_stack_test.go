@@ -7,14 +7,14 @@ import (
 )
 
 func TestElementStack_Push__should_append_element_to_last_list(t *testing.T) {
-	matrix := [][]element{
-		testElementsN(1),
-		testElementsN(10),
-		testElementsN(100),
-		testElementsN(10),
-		testElementsN(1),
-		testElementsN(0),
-		testElementsN(3),
+	matrix := [][]listElement{
+		testListElementsN(1),
+		testListElementsN(10),
+		testListElementsN(100),
+		testListElementsN(10),
+		testListElementsN(1),
+		testListElementsN(0),
+		testListElementsN(3),
 	}
 
 	stack := elementStack{}
