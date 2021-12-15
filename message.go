@@ -17,7 +17,7 @@ type Message struct {
 }
 
 func ReadMessage(p []byte) Message {
-	buf := readBuffer(p)
+	buf := buffer(p)
 
 	type_, b := buf.type_()
 	if type_ != TypeMessage {
@@ -218,7 +218,7 @@ func (t messageTable) fields() []messageField {
 //  +----------+----------+----------+----------+
 //
 type messageData struct {
-	buf readBuffer
+	buf buffer
 }
 
 // field returns a field value by offset or an empty value.

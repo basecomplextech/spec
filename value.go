@@ -1,11 +1,11 @@
 package protocol
 
 type Value struct {
-	buf readBuffer
+	buf buffer
 }
 
 func ReadValue(b []byte) Value {
-	buf := readBuffer(b)
+	buf := buffer(b)
 	return Value{buf: buf}
 }
 

@@ -12,11 +12,12 @@ type List struct {
 	tableSize uint32
 	dataSize  uint32
 	table     listTable
-	data      readBuffer
+	data      buffer
 }
 
 func ReadList(p []byte) List {
-	buf := readBuffer(p)
+	buf := buffer(p)
+
 	type_, b := buf.type_()
 	if type_ != TypeList {
 		return List{}

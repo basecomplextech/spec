@@ -6,11 +6,11 @@ import (
 	"unsafe"
 )
 
-type readBuffer []byte
+type buffer []byte
 
 // type and size
 
-func (b readBuffer) peekType() Type {
+func (b buffer) peekType() Type {
 	if len(b) == 0 {
 		return TypeNil
 	}
@@ -20,7 +20,7 @@ func (b readBuffer) peekType() Type {
 	return Type(v)
 }
 
-func (b readBuffer) type_() (Type, readBuffer) {
+func (b buffer) type_() (Type, buffer) {
 	if len(b) == 0 {
 		return TypeNil, nil
 	}
@@ -30,7 +30,7 @@ func (b readBuffer) type_() (Type, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) size() (uint32, readBuffer) {
+func (b buffer) size() (uint32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -43,7 +43,7 @@ func (b readBuffer) size() (uint32, readBuffer) {
 
 // primitives
 
-func (b readBuffer) byte() (byte, readBuffer) {
+func (b buffer) byte() (byte, buffer) {
 	off := len(b) - 1
 	if off < 0 {
 		return 0, nil
@@ -54,7 +54,7 @@ func (b readBuffer) byte() (byte, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) int8() (int8, readBuffer) {
+func (b buffer) int8() (int8, buffer) {
 	off := len(b) - 1
 	if off < 0 {
 		return 0, nil
@@ -65,7 +65,7 @@ func (b readBuffer) int8() (int8, readBuffer) {
 	return int8(v), b[:off]
 }
 
-func (b readBuffer) int16() (int16, readBuffer) {
+func (b buffer) int16() (int16, buffer) {
 	off := len(b) - 2
 	if off < 0 {
 		return 0, nil
@@ -76,7 +76,7 @@ func (b readBuffer) int16() (int16, readBuffer) {
 	return int16(v), b[:off]
 }
 
-func (b readBuffer) int32() (int32, readBuffer) {
+func (b buffer) int32() (int32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -87,7 +87,7 @@ func (b readBuffer) int32() (int32, readBuffer) {
 	return int32(v), b[:off]
 }
 
-func (b readBuffer) int64() (int64, readBuffer) {
+func (b buffer) int64() (int64, buffer) {
 	off := len(b) - 8
 	if off < 0 {
 		return 0, nil
@@ -98,7 +98,7 @@ func (b readBuffer) int64() (int64, readBuffer) {
 	return int64(v), b[:off]
 }
 
-func (b readBuffer) uint8() (uint8, readBuffer) {
+func (b buffer) uint8() (uint8, buffer) {
 	off := len(b) - 1
 	if off < 0 {
 		return 0, nil
@@ -109,7 +109,7 @@ func (b readBuffer) uint8() (uint8, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) uint16() (uint16, readBuffer) {
+func (b buffer) uint16() (uint16, buffer) {
 	off := len(b) - 2
 	if off < 0 {
 		return 0, nil
@@ -120,7 +120,7 @@ func (b readBuffer) uint16() (uint16, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) uint32() (uint32, readBuffer) {
+func (b buffer) uint32() (uint32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -131,7 +131,7 @@ func (b readBuffer) uint32() (uint32, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) uint64() (uint64, readBuffer) {
+func (b buffer) uint64() (uint64, buffer) {
 	off := len(b) - 8
 	if off < 0 {
 		return 0, nil
@@ -142,7 +142,7 @@ func (b readBuffer) uint64() (uint64, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) float32() (float32, readBuffer) {
+func (b buffer) float32() (float32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -153,7 +153,7 @@ func (b readBuffer) float32() (float32, readBuffer) {
 	return math.Float32frombits(v), b[:off]
 }
 
-func (b readBuffer) float64() (float64, readBuffer) {
+func (b buffer) float64() (float64, buffer) {
 	off := len(b) - 8
 	if off < 0 {
 		return 0, nil
@@ -166,7 +166,7 @@ func (b readBuffer) float64() (float64, readBuffer) {
 
 // bytes
 
-func (b readBuffer) bytes(size uint32) ([]byte, readBuffer) {
+func (b buffer) bytes(size uint32) ([]byte, buffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return nil, nil
@@ -178,7 +178,7 @@ func (b readBuffer) bytes(size uint32) ([]byte, readBuffer) {
 
 // string
 
-func (b readBuffer) string(size uint32) (string, readBuffer) {
+func (b buffer) string(size uint32) (string, buffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return "", nil
@@ -191,7 +191,7 @@ func (b readBuffer) string(size uint32) (string, readBuffer) {
 
 // list
 
-func (b readBuffer) listBytes(tableSize uint32, dataSize uint32) ([]byte, readBuffer) {
+func (b buffer) listBytes(tableSize uint32, dataSize uint32) ([]byte, buffer) {
 	size := int(1 + 4 + 4 + tableSize + dataSize) // type(1) + table size (4) + data size (4)
 	off := len(b) - size
 	if off < 0 {
@@ -201,7 +201,7 @@ func (b readBuffer) listBytes(tableSize uint32, dataSize uint32) ([]byte, readBu
 	return b[off:], b[:off]
 }
 
-func (b readBuffer) listTable(size uint32) (listTable, readBuffer) {
+func (b buffer) listTable(size uint32) (listTable, buffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return nil, nil
@@ -212,7 +212,7 @@ func (b readBuffer) listTable(size uint32) (listTable, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) listData(size uint32) (readBuffer, readBuffer) {
+func (b buffer) listData(size uint32) (buffer, buffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return nil, nil
@@ -222,7 +222,7 @@ func (b readBuffer) listData(size uint32) (readBuffer, readBuffer) {
 	return p, b[:off]
 }
 
-func (b readBuffer) listTableSize() (uint32, readBuffer) {
+func (b buffer) listTableSize() (uint32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -233,7 +233,7 @@ func (b readBuffer) listTableSize() (uint32, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) listDataSize() (uint32, readBuffer) {
+func (b buffer) listDataSize() (uint32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -244,7 +244,7 @@ func (b readBuffer) listDataSize() (uint32, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) listElement(off uint32) []byte {
+func (b buffer) listElement(off uint32) []byte {
 	if len(b) < int(off) {
 		return nil
 	}
@@ -254,7 +254,7 @@ func (b readBuffer) listElement(off uint32) []byte {
 
 // message
 
-func (b readBuffer) messageBytes(tableSize uint32, dataSize uint32) ([]byte, readBuffer) {
+func (b buffer) messageBytes(tableSize uint32, dataSize uint32) ([]byte, buffer) {
 	size := int(1 + 4 + 4 + tableSize + dataSize) // type(1) + table size(4) + data size(4)
 	off := len(b) - size
 	if off < 0 {
@@ -264,7 +264,7 @@ func (b readBuffer) messageBytes(tableSize uint32, dataSize uint32) ([]byte, rea
 	return b[off:], b[:off]
 }
 
-func (b readBuffer) messageTable(size uint32) (messageTable, readBuffer) {
+func (b buffer) messageTable(size uint32) (messageTable, buffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return nil, nil
@@ -275,7 +275,7 @@ func (b readBuffer) messageTable(size uint32) (messageTable, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) messageData(size uint32) (messageData, readBuffer) {
+func (b buffer) messageData(size uint32) (messageData, buffer) {
 	off := len(b) - int(size)
 	if off < 0 {
 		return messageData{}, nil
@@ -285,7 +285,7 @@ func (b readBuffer) messageData(size uint32) (messageData, readBuffer) {
 	return messageData{p}, b[:off]
 }
 
-func (b readBuffer) messageTableSize() (uint32, readBuffer) {
+func (b buffer) messageTableSize() (uint32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -296,7 +296,7 @@ func (b readBuffer) messageTableSize() (uint32, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) messageDataSize() (uint32, readBuffer) {
+func (b buffer) messageDataSize() (uint32, buffer) {
 	off := len(b) - 4
 	if off < 0 {
 		return 0, nil
@@ -307,7 +307,7 @@ func (b readBuffer) messageDataSize() (uint32, readBuffer) {
 	return v, b[:off]
 }
 
-func (b readBuffer) messageField(off uint32) []byte {
+func (b buffer) messageField(off uint32) []byte {
 	if len(b) < int(off) {
 		return nil
 	}
