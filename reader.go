@@ -153,13 +153,13 @@ func (r reader) message() messageReader {
 // list
 
 type listReader struct {
-	bytes readBuffer
+	bytes []byte
 
-	type_ Type
-	size  uint32
-	count uint32
-	table elementTable
-	data  readBuffer
+	type_     Type
+	tableSize uint32
+	dataSize  uint32
+	table     elementTable
+	data      readBuffer
 }
 
 func readList(buf readBuffer) listReader {
@@ -168,19 +168,20 @@ func readList(buf readBuffer) listReader {
 		return listReader{}
 	}
 
-	size, b := b.listSize()
-	count, b := b.listCount()
-	table, b := b.listTable(count)
-	data, b := b.listData(size, count)
+	tableSize, b := b.listTableSize()
+	dataSize, b := b.listDataSize()
+	table, b := b.listTable(tableSize)
+	data, _ := b.listData(dataSize)
+	bytes, _ := buf.listBytes(tableSize, dataSize) // slice initial buffer
 
 	return listReader{
-		bytes: buf,
+		bytes: bytes,
 
-		type_: type_,
-		size:  size,
-		count: count,
-		table: table,
-		data:  data,
+		type_:     type_,
+		tableSize: tableSize,
+		dataSize:  dataSize,
+		table:     table,
+		data:      data,
 	}
 }
 
@@ -197,13 +198,13 @@ func (r listReader) element(i int) (reader, bool) {
 // message
 
 type messageReader struct {
-	bytes readBuffer
+	bytes []byte
 
-	type_ Type
-	size  uint32
-	count uint32
-	table fieldTable
-	data  readBuffer
+	type_     Type
+	tableSize uint32
+	dataSize  uint32
+	table     fieldTable
+	data      readBuffer
 }
 
 func readMessage(buf readBuffer) messageReader {
@@ -212,19 +213,20 @@ func readMessage(buf readBuffer) messageReader {
 		return messageReader{}
 	}
 
-	size, b := b.messageSize()
-	count, b := b.messageCount()
-	table, b := b.messageTable(count)
-	data, _ := b.messageData(size, count)
+	tableSize, b := b.messageTableSize()
+	dataSize, b := b.messageDataSize()
+	table, b := b.messageTable(tableSize)
+	data, _ := b.messageData(dataSize)
+	bytes, _ := buf.messageBytes(tableSize, dataSize) // slice initial buffer
 
 	return messageReader{
-		bytes: buf,
+		bytes: bytes,
 
-		type_: type_,
-		size:  size,
-		count: count,
-		table: table,
-		data:  data,
+		type_:     type_,
+		tableSize: tableSize,
+		dataSize:  dataSize,
+		table:     table,
+		data:      data,
 	}
 }
 

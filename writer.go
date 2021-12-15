@@ -99,27 +99,27 @@ func (w *writer) Reset() {
 func (w *writer) BeginList() error {
 	// push list
 	start := w.data.offset()
-	elementStart := w.elements.offset()
+	tableStart := w.elements.offset()
 
-	w.stack.pushList(start, elementStart)
+	w.stack.pushList(start, tableStart)
 	return nil
 }
 
 func (w *writer) EndList() error {
-	// pop list and elements
+	// pop list
 	list, err := w.stack.popType(entryTypeList)
 	if err != nil {
 		return err
 	}
-	elements := w.elements.popList(list.list.elementStart)
+	dataSize := uint32(w.data.offset() - list.list.start)
 
-	// write elements
-	w.data.writeElements(elements)
-	w.data.writeElementCount(uint32(len(elements)))
+	// write table
+	table := w.elements.popList(list.list.tableStart)
+	tableSize := w.data.listTable(table)
 
-	// write size and type
-	size := uint32(w.data.offset() - list.list.start)
-	w.data.writeSize(size)
+	// write sizes and type
+	w.data.listDataSize(dataSize)
+	w.data.listTableSize(tableSize)
 	w.data.writeType(TypeList)
 
 	// push data entry
@@ -180,20 +180,20 @@ func (w *writer) BeginMessage() error {
 }
 
 func (w *writer) EndMessage() error {
-	// pop message and fields
+	// pop message
 	message, err := w.stack.popType(entryTypeMessage)
 	if err != nil {
 		return err
 	}
-	fields := w.fields.popTable(message.message.fieldStart)
+	dataSize := uint32(w.data.offset() - message.message.start)
 
-	// write fields and count
-	w.data.writeFields(fields)
-	w.data.writeFieldCount(uint32(len(fields)))
+	// write table
+	table := w.fields.popTable(message.message.tableStart)
+	tableSize := w.data.messageTable(table)
 
-	// write size and type
-	size := uint32(w.data.offset() - message.message.start)
-	w.data.writeSize(size)
+	// write sizes and type
+	w.data.messageDataSize(dataSize)
+	w.data.messageTableSize(tableSize)
 	w.data.writeType(TypeMessage)
 
 	// push data
@@ -235,7 +235,7 @@ func (w *writer) EndField() error {
 		tag:    fentry.field.tag,
 		offset: uint32(data.data.end - message.message.start),
 	}
-	w.fields.insert(message.message.fieldStart, f)
+	w.fields.insert(message.message.tableStart, f)
 	return nil
 }
 

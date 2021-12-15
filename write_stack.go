@@ -32,8 +32,8 @@ type (
 	}
 
 	entryList struct {
-		start        int
-		elementStart int
+		start      int
+		tableStart int
 	}
 
 	entryElement struct {
@@ -42,7 +42,7 @@ type (
 
 	entryMessage struct {
 		start      int
-		fieldStart int
+		tableStart int
 	}
 
 	entryField struct {
@@ -124,13 +124,13 @@ func (s *writeStack) pushData(start int, end int) {
 	s.push(e)
 }
 
-func (s *writeStack) pushList(start int, elementStart int) {
+func (s *writeStack) pushList(start int, tableStart int) {
 	e := entry{
 		type_: entryTypeList,
 
 		list: entryList{
-			start:        start,
-			elementStart: elementStart,
+			start:      start,
+			tableStart: tableStart,
 		},
 	}
 	s.push(e)
@@ -147,13 +147,13 @@ func (s *writeStack) pushElement(start int) {
 	s.push(e)
 }
 
-func (s *writeStack) pushMessage(start int, fieldStart int) {
+func (s *writeStack) pushMessage(start int, tableStart int) {
 	e := entry{
 		type_: entryTypeMessage,
 
 		message: entryMessage{
 			start:      start,
-			fieldStart: fieldStart,
+			tableStart: tableStart,
 		},
 	}
 

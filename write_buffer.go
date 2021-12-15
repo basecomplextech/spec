@@ -102,26 +102,33 @@ func (b *writeBuffer) writeStringZero() {
 
 // list
 
-func (b *writeBuffer) writeElements(list []element) {
-	size := len(list) * elementSize
+func (b *writeBuffer) listTable(table []element) uint32 {
+	size := len(table) * elementSize
 	p := b._grow(size)
 
-	for i, elem := range list {
+	for i, elem := range table {
 		off := i * elementSize
 		q := p[off : off+elementSize]
 
 		binary.BigEndian.PutUint32(q, elem.offset)
 	}
+
+	return uint32(size)
 }
 
-func (b *writeBuffer) writeElementCount(count uint32) {
+func (b *writeBuffer) listTableSize(size uint32) {
 	p := b._grow(4)
-	binary.BigEndian.PutUint32(p, count)
+	binary.BigEndian.PutUint32(p, size)
 }
 
-// struct
+func (b *writeBuffer) listDataSize(size uint32) {
+	p := b._grow(4)
+	binary.BigEndian.PutUint32(p, size)
+}
 
-func (b *writeBuffer) writeFields(table []field) {
+// message
+
+func (b *writeBuffer) messageTable(table []field) uint32 {
 	size := len(table) * fieldSize
 	p := b._grow(size)
 
@@ -132,11 +139,18 @@ func (b *writeBuffer) writeFields(table []field) {
 		binary.BigEndian.PutUint16(q, field.tag)
 		binary.BigEndian.PutUint32(q[2:], field.offset)
 	}
+
+	return uint32(size)
 }
 
-func (b *writeBuffer) writeFieldCount(count uint32) {
+func (b *writeBuffer) messageTableSize(size uint32) {
 	p := b._grow(4)
-	binary.BigEndian.PutUint32(p, count)
+	binary.BigEndian.PutUint32(p, size)
+}
+
+func (b *writeBuffer) messageDataSize(size uint32) {
+	p := b._grow(4)
+	binary.BigEndian.PutUint32(p, size)
 }
 
 // private
