@@ -46,7 +46,7 @@ func BenchmarkFieldTable_lookup(b *testing.B) {
 	}
 }
 
-func BenchmarkWrite(b *testing.B) {
+func BenchmarkSpec_Write(b *testing.B) {
 	msg := newTestMessage()
 
 	buf := make([]byte, 0, 4096)
@@ -93,7 +93,7 @@ func BenchmarkWrite(b *testing.B) {
 	b.ReportMetric(rps, "rps")
 }
 
-func BenchmarkJSON(b *testing.B) {
+func BenchmarkJSON_Write(b *testing.B) {
 	msg := newTestMessage()
 
 	buf := make([]byte, 0, 4096)

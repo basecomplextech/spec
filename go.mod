@@ -3,6 +3,7 @@ module github.com/baseone-run/spec
 go 1.17
 
 require (
+	github.com/gogo/protobuf v1.3.2
 	github.com/google/flatbuffers v2.0.0+incompatible
 	github.com/stretchr/testify v1.7.0
 )
