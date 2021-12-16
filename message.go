@@ -218,12 +218,15 @@ func (t messageTable) fields() []messageField {
 //  +----------+----------+----------+----------+
 //
 type messageData struct {
-	buf buffer
+	data []byte
 }
 
 // field returns a field value by offset or an empty value.
 func (d messageData) field(off uint32) Value {
-	b := d.buf.messageField(off)
+	if len(d.data) < int(off) {
+		return Value{}
+	}
+	b := d.data[:off]
 	return ReadValue(b)
 }
 
@@ -238,24 +241,26 @@ func (d messageData) field(off uint32) Value {
 //	| f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 |
 //	+-------------------+-------------------+-------------------+
 //
-type messageStack []messageField
+type messageStack struct {
+	stack []messageField
+}
+
+func (s *messageStack) reset() {
+	s.stack = s.stack[:0]
+}
 
 // offset returns the next message table buffer offset.
-func (s messageStack) offset() int {
-	return len(s)
+func (s *messageStack) offset() int {
+	return len(s.stack)
 }
 
 // insert inserts a new field into the last table starting at offset, keeps the table sorted.
-func (sptr *messageStack) insert(offset int, f messageField) {
-	sptr._grow(1)
-
+func (s *messageStack) insert(offset int, f messageField) {
 	// append new field
-	s := *sptr
-	s = append(s, f)
-	*sptr = s
+	s.stack = append(s.stack, f)
 
 	// get table
-	table := s[offset:]
+	table := s.stack[offset:]
 
 	// walk table in reverse order
 	// move new field to its position
@@ -276,29 +281,8 @@ func (sptr *messageStack) insert(offset int, f messageField) {
 }
 
 // pop pops a message table starting at offset.
-func (sptr *messageStack) pop(offset int) []messageField {
-	s := *sptr
-	table := s[offset:]
-
-	s = s[:offset]
-	*sptr = s
+func (s *messageStack) pop(offset int) []messageField {
+	table := s.stack[offset:]
+	s.stack = s.stack[:offset]
 	return table
-}
-
-// grow grows field stack capacity to store at least n fields.
-func (sptr *messageStack) _grow(n int) {
-	s := *sptr
-
-	// check remaining
-	rem := cap(s) - len(s)
-	if rem >= n {
-		return
-	}
-
-	// grow
-	size := (cap(s) * 2) + n
-	next := make([]messageField, len(s), size)
-	copy(next, s)
-
-	*sptr = s
 }

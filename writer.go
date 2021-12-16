@@ -25,39 +25,41 @@ func NewWriter() *Writer {
 
 // NewWriterBuffer returns a new writer with a buffer.
 func NewWriterBuffer(buf []byte) *Writer {
-	w := &Writer{data: buf[:0]}
-	w.stack = w._stack[:]
-	w.listStack = w._listStack[:]
-	w.messageStack = w._messageStack[:]
+	w := &Writer{}
+	w.data.buffer = buf[:0]
+	w.stack.stack = w._stack[:0]
+	w.listStack = w._listStack[:0]
+	w.messageStack.stack = w._messageStack[:0]
 	return w
 }
 
 // End ends writing, returns the result bytes, and resets the writer.
 func (w *Writer) End() ([]byte, error) {
+	ln := w.stack.len()
 	switch {
-	case len(w.stack) == 0:
+	case ln == 0:
 		return []byte{}, nil
-	case len(w.stack) > 1:
-		return nil, fmt.Errorf("writer end: incomplete write, stack size=%d", len(w.stack))
+	case ln > 1:
+		return nil, fmt.Errorf("writer end: incomplete write, stack size=%d", ln)
 	}
 
 	// pop data
-	if _, err := w.stack.popType(entryTypeData); err != nil {
+	if _, err := w.stack.pop(entryTypeData); err != nil {
 		return nil, err
 	}
 
 	// return and reset
-	b := w.data[:]
+	b := w.data.buffer[:]
 	w.Reset()
 	return b, nil
 }
 
 // Reset clears the writer.
 func (w *Writer) Reset() {
-	w.data = nil
-	w.stack = w.stack[:0]
+	w.data.reset()
+	w.stack.reset()
 	w.listStack = w.listStack[:0]
-	w.messageStack = w.messageStack[:0]
+	w.messageStack.reset()
 }
 
 // Primitive
@@ -230,7 +232,7 @@ func (w *Writer) BeginList() error {
 
 func (w *Writer) EndList() error {
 	// pop list
-	list, err := w.stack.popType(entryTypeList)
+	list, err := w.stack.pop(entryTypeList)
 	if err != nil {
 		return err
 	}
@@ -254,7 +256,7 @@ func (w *Writer) EndList() error {
 
 func (w *Writer) BeginElement() error {
 	// check parent
-	if _, err := w.stack.peekType(entryTypeList); err != nil {
+	if _, err := w.stack.peek(entryTypeList); err != nil {
 		return err
 	}
 
@@ -266,15 +268,15 @@ func (w *Writer) BeginElement() error {
 
 func (w *Writer) EndElement() error {
 	// pop data and element
-	data, err := w.stack.popType(entryTypeData)
+	data, err := w.stack.pop(entryTypeData)
 	if err != nil {
 		return err
 	}
-	elem, err := w.stack.popType(entryTypeElement)
+	elem, err := w.stack.pop(entryTypeElement)
 	if err != nil {
 		return err
 	}
-	list, err := w.stack.peekType(entryTypeList)
+	list, err := w.stack.peek(entryTypeList)
 	if err != nil {
 		return err
 	}
@@ -296,7 +298,7 @@ func (w *Writer) EndElement() error {
 func (w *Writer) BeginMessage() error {
 	// push message
 	start := w.data.offset()
-	tableStart := w.listStack.offset()
+	tableStart := w.messageStack.offset()
 
 	w.stack.pushMessage(start, tableStart)
 	return nil
@@ -304,7 +306,7 @@ func (w *Writer) BeginMessage() error {
 
 func (w *Writer) EndMessage() error {
 	// pop message
-	message, err := w.stack.popType(entryTypeMessage)
+	message, err := w.stack.pop(entryTypeMessage)
 	if err != nil {
 		return err
 	}
@@ -326,36 +328,20 @@ func (w *Writer) EndMessage() error {
 	return nil
 }
 
-func (w *Writer) BeginField(tag uint16) error {
-	// check parent
-	if _, err := w.stack.peekType(entryTypeMessage); err != nil {
-		return err
-	}
-
-	// push field
-	start := w.data.offset()
-	w.stack.pushField(start, tag)
-	return nil
-}
-
-func (w *Writer) EndField() error {
-	// pop data and field
-	data, err := w.stack.popType(entryTypeData)
+func (w *Writer) Field(tag uint16) error {
+	// pop data
+	data, err := w.stack.pop(entryTypeData)
 	if err != nil {
 		return err
 	}
-	field, err := w.stack.popType(entryTypeField)
-	if err != nil {
-		return err
-	}
-	message, err := w.stack.peekType(entryTypeMessage)
+	message, err := w.stack.peek(entryTypeMessage)
 	if err != nil {
 		return err
 	}
 
 	// insert tag and relative offset
 	f := messageField{
-		tag:    field.tag,
+		tag:    tag,
 		offset: uint32(data.end - message.start),
 	}
 	w.messageStack.insert(message.tableStart, f)

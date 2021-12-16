@@ -244,12 +244,13 @@ func (b buffer) listDataSize() (uint32, buffer) {
 	return v, b[:off]
 }
 
+// TODO: Replace with list data
 func (b buffer) listElement(off uint32) []byte {
 	if len(b) < int(off) {
 		return nil
 	}
 
-	return b[off:]
+	return b[:off]
 }
 
 // message
@@ -305,11 +306,4 @@ func (b buffer) messageDataSize() (uint32, buffer) {
 	p := b[off:]
 	v := binary.BigEndian.Uint32(p)
 	return v, b[:off]
-}
-
-func (b buffer) messageField(off uint32) []byte {
-	if len(b) < int(off) {
-		return nil
-	}
-	return b[off:]
 }

@@ -4,26 +4,26 @@ package protocol
 type Type byte
 
 const (
-	TypeNil   Type = 0x00
-	TypeTrue  Type = 0x01
-	TypeFalse Type = 0x02
+	TypeNil   Type = 00
+	TypeTrue  Type = 01
+	TypeFalse Type = 02
 
-	TypeInt8  Type = 0x10
-	TypeInt16 Type = 0x11
-	TypeInt32 Type = 0x12
-	TypeInt64 Type = 0x13
+	TypeInt8  Type = 10
+	TypeInt16 Type = 11
+	TypeInt32 Type = 12
+	TypeInt64 Type = 13
 
-	TypeUInt8  Type = 0x20
-	TypeUInt16 Type = 0x21
-	TypeUInt32 Type = 0x22
-	TypeUInt64 Type = 0x23
+	TypeUInt8  Type = 20
+	TypeUInt16 Type = 21
+	TypeUInt32 Type = 22
+	TypeUInt64 Type = 23
 
-	TypeFloat32 Type = 0x30
-	TypeFloat64 Type = 0x31
+	TypeFloat32 Type = 30
+	TypeFloat64 Type = 31
 
-	TypeBytes  Type = 0x40
-	TypeString Type = 0x41
+	TypeBytes  Type = 40
+	TypeString Type = 41
 
-	TypeList    Type = 0x50
-	TypeMessage Type = 0x60
+	TypeList    Type = 50
+	TypeMessage Type = 60
 )
