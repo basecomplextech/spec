@@ -10,9 +10,7 @@ const (
 	entryTypeUndefined entryType = iota
 	entryTypeData
 	entryTypeList
-	entryTypeElement
 	entryTypeMessage
-	entryTypeField
 )
 
 type entry struct {
@@ -35,7 +33,7 @@ func dataEntry(start int, end int) entry {
 	return entry{
 		type_: entryTypeData,
 		start: start,
-		// end:   end,
+		end:   end,
 	}
 }
 
@@ -44,13 +42,6 @@ func listEntry(start int, tableStart int) entry {
 		type_:      entryTypeList,
 		start:      start,
 		tableStart: tableStart,
-	}
-}
-
-func listElementEntry(start int) entry {
-	return entry{
-		type_: entryTypeElement,
-		start: start,
 	}
 }
 
@@ -121,20 +112,10 @@ func (s *writeStack) pushList(start int, tableStart int) {
 	s.push(e)
 }
 
-func (s *writeStack) pushElement(start int) {
-	e := listElementEntry(start)
-	s.push(e)
-}
-
 func (s *writeStack) pushMessage(start int, tableStart int) {
 	e := messageEntry(start, tableStart)
 	s.push(e)
 }
-
-// func (s *writeStack) pushField(start int, tag uint16) {
-// 	e := messageFieldEntry(start, tag)
-// 	s.push(e)
-// }
 
 // util
 
@@ -146,12 +127,8 @@ func (t entryType) String() string {
 		return "data"
 	case entryTypeList:
 		return "list"
-	case entryTypeElement:
-		return "element"
 	case entryTypeMessage:
 		return "message"
-	case entryTypeField:
-		return "field"
 	}
 	return ""
 }

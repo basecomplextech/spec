@@ -20,6 +20,16 @@ type TestMessage struct {
 
 	Float32 float32 `tag:"30"`
 	Float64 float64 `tag:"31"`
+
+	List     []int64           `tag:"40"`
+	Messages []*TestSubMessage `tag:"41"`
+}
+
+type TestSubMessage struct {
+	Int8  int8  `tag:"1"`
+	Int16 int16 `tag:"2"`
+	Int32 int32 `tag:"3"`
+	Int64 int64 `tag:"4"`
 }
 
 func (msg *TestMessage) Read(v Value) error {
@@ -73,6 +83,43 @@ func (msg *TestMessage) Read(v Value) error {
 		msg.Float64 = f.Float64()
 	}
 
+	// list:40
+	f, ok = m.Field(40)
+	if ok {
+		list := f.List()
+		msg.List = make([]int64, 0, list.Len())
+
+		for i := 0; i < list.Len(); i++ {
+			el, ok := list.Element(i)
+			if !ok {
+				continue
+			}
+
+			val := el.Int64()
+			msg.List = append(msg.List, val)
+		}
+	}
+
+	// list:41
+	f, ok = m.Field(41)
+	if ok {
+		list := f.List()
+		msg.Messages = make([]*TestSubMessage, 0, list.Len())
+
+		for i := 0; i < list.Len(); i++ {
+			el, ok := list.Element(i)
+			if !ok {
+				continue
+			}
+
+			msg1 := &TestSubMessage{}
+			if err := msg1.Read(el); err != nil {
+				return err
+			}
+			msg.Messages = append(msg.Messages, msg1)
+		}
+	}
+
 	return nil
 }
 
@@ -105,12 +152,102 @@ func (msg TestMessage) Write(w *Writer) error {
 	w.Float64(msg.Float64)
 	w.Field(31)
 
+	// list:40
+	if err := w.BeginList(); err != nil {
+		return err
+	}
+	for _, val := range msg.List {
+		if err := w.Int64(val); err != nil {
+			return err
+		}
+		if err := w.Element(); err != nil {
+			return err
+		}
+	}
+	if err := w.EndList(); err != nil {
+		return err
+	}
+	if err := w.Field(40); err != nil {
+		return err
+	}
+
+	// list:41
+	if err := w.BeginList(); err != nil {
+		return err
+	}
+	for _, msg1 := range msg.Messages {
+		if err := msg1.Write(w); err != nil {
+			return err
+		}
+		if err := w.Element(); err != nil {
+			return err
+		}
+	}
+	if err := w.EndList(); err != nil {
+		return err
+	}
+	if err := w.Field(41); err != nil {
+		return err
+	}
+
+	return w.EndMessage()
+}
+
+func (msg *TestSubMessage) Read(v Value) error {
+	var m = v.Message()
+	var f Value
+	var ok bool
+
+	// int:1-4
+	f, ok = m.Field(1)
+	if ok {
+		msg.Int8 = f.Int8()
+	}
+	f, ok = m.Field(2)
+	if ok {
+		msg.Int16 = f.Int16()
+	}
+	f, ok = m.Field(3)
+	if ok {
+		msg.Int32 = f.Int32()
+	}
+	f, ok = m.Field(4)
+	if ok {
+		msg.Int64 = f.Int64()
+	}
+	return nil
+}
+
+func (msg TestSubMessage) Write(w *Writer) error {
+	w.BeginMessage()
+
+	// int:1-4
+	w.Int8(msg.Int8)
+	w.Field(1)
+	w.Int16(msg.Int16)
+	w.Field(2)
+	w.Int32(msg.Int32)
+	w.Field(3)
+	w.Int64(msg.Int64)
+	w.Field(4)
+
 	return w.EndMessage()
 }
 
 // Tests
 
 func newTestMessage() *TestMessage {
+	list := make([]int64, 0, 10)
+	for i := 0; i < cap(list); i++ {
+		list = append(list, int64(i))
+	}
+
+	messages := make([]*TestSubMessage, 0, 10)
+	for i := 0; i < cap(messages); i++ {
+		sub := newTestSubMessage(i)
+		messages = append(messages, sub)
+	}
+
 	return &TestMessage{
 		Int8:  math.MaxInt8,
 		Int16: math.MaxInt16,
@@ -124,6 +261,18 @@ func newTestMessage() *TestMessage {
 
 		Float32: math.MaxFloat32,
 		Float64: math.MaxFloat64,
+
+		List:     list,
+		Messages: messages,
+	}
+}
+
+func newTestSubMessage(i int) *TestSubMessage {
+	return &TestSubMessage{
+		Int8:  int8(i + 0),
+		Int16: int16(i + 10),
+		Int32: int32(i + 100),
+		Int64: int64(i + 1000),
 	}
 }
 

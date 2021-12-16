@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+	"time"
 )
 
 func BenchmarkFieldTable_find(b *testing.B) {
@@ -66,6 +67,8 @@ func BenchmarkWrite(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
+	t0 := time.Now()
+
 	for i := 0; i < b.N; i++ {
 		if err := msg.Write(w); err != nil {
 			b.Fatal(err)
@@ -79,9 +82,15 @@ func BenchmarkWrite(b *testing.B) {
 			b.Fatal(len(data))
 		}
 
+		// b.Fatal(len(data))
 		w.Reset()
 		w.data.buffer = buf[:0]
 	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+	b.ReportMetric(rps, "rps")
 }
 
 func BenchmarkJSON(b *testing.B) {
@@ -101,6 +110,8 @@ func BenchmarkJSON(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
+	t0 := time.Now()
+
 	for i := 0; i < b.N; i++ {
 		e := json.NewEncoder(buffer)
 		if err := e.Encode(msg); err != nil {
@@ -110,8 +121,12 @@ func BenchmarkJSON(b *testing.B) {
 			b.Fatal(buffer.Len())
 		}
 
-		// b.Fatal(buffer.Len())
-		// b.Fatal(buffer.String())
+		// b.Fatal(buffer.Len(), buffer.String())
 		buffer.Reset()
 	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+	b.ReportMetric(rps, "rps")
 }

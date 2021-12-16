@@ -230,6 +230,24 @@ func (w *Writer) BeginList() error {
 	return nil
 }
 
+func (w *Writer) Element() error {
+	// pop data
+	data, err := w.stack.pop(entryTypeData)
+	if err != nil {
+		return err
+	}
+	list, err := w.stack.peek(entryTypeList)
+	if err != nil {
+		return err
+	}
+
+	// append element relative offset
+	offset := uint32(data.end - list.start)
+	element := listElement{offset: offset}
+	w.listStack.push(element)
+	return nil
+}
+
 func (w *Writer) EndList() error {
 	// pop list
 	list, err := w.stack.pop(entryTypeList)
@@ -254,45 +272,6 @@ func (w *Writer) EndList() error {
 	return nil
 }
 
-func (w *Writer) BeginElement() error {
-	// check parent
-	if _, err := w.stack.peek(entryTypeList); err != nil {
-		return err
-	}
-
-	// push element
-	start := w.data.offset()
-	w.stack.pushElement(start)
-	return nil
-}
-
-func (w *Writer) EndElement() error {
-	// pop data and element
-	data, err := w.stack.pop(entryTypeData)
-	if err != nil {
-		return err
-	}
-	elem, err := w.stack.pop(entryTypeElement)
-	if err != nil {
-		return err
-	}
-	list, err := w.stack.peek(entryTypeList)
-	if err != nil {
-		return err
-	}
-
-	// append relative offset
-	offset := uint32(data.end - list.start)
-	element := listElement{offset: offset}
-	w.listStack.push(element)
-
-	// push data
-	start := elem.start
-	end := data.end
-	w.stack.pushData(start, end)
-	return nil
-}
-
 // Message
 
 func (w *Writer) BeginMessage() error {
@@ -301,6 +280,26 @@ func (w *Writer) BeginMessage() error {
 	tableStart := w.messageStack.offset()
 
 	w.stack.pushMessage(start, tableStart)
+	return nil
+}
+
+func (w *Writer) Field(tag uint16) error {
+	// pop data
+	data, err := w.stack.pop(entryTypeData)
+	if err != nil {
+		return err
+	}
+	message, err := w.stack.peek(entryTypeMessage)
+	if err != nil {
+		return err
+	}
+
+	// insert field tag and relative offset
+	f := messageField{
+		tag:    tag,
+		offset: uint32(data.end - message.start),
+	}
+	w.messageStack.insert(message.tableStart, f)
 	return nil
 }
 
@@ -325,25 +324,5 @@ func (w *Writer) EndMessage() error {
 	start := message.start
 	end := w.data.offset()
 	w.stack.pushData(start, end)
-	return nil
-}
-
-func (w *Writer) Field(tag uint16) error {
-	// pop data
-	data, err := w.stack.pop(entryTypeData)
-	if err != nil {
-		return err
-	}
-	message, err := w.stack.peek(entryTypeMessage)
-	if err != nil {
-		return err
-	}
-
-	// insert tag and relative offset
-	f := messageField{
-		tag:    tag,
-		offset: uint32(data.end - message.start),
-	}
-	w.messageStack.insert(message.tableStart, f)
 	return nil
 }

@@ -51,8 +51,8 @@ func (l List) Element(i int) (Value, bool) {
 	return ReadValue(buf), true
 }
 
-// Elements returns the number of elements in the list.
-func (l List) Elements() int {
+// Len returns the number of elements in the list.
+func (l List) Len() int {
 	return l.table.count()
 }
 
