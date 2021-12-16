@@ -1,4 +1,4 @@
-package protocol
+package spec
 
 // Type specifies a value type.
 type Type byte

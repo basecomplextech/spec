@@ -1,4 +1,4 @@
-module github.com/baseone-run/protocol
+module github.com/baseone-run/spec
 
 go 1.17
 

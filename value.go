@@ -1,4 +1,4 @@
-package protocol
+package spec
 
 type Value struct {
 	buf buffer
