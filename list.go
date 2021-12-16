@@ -164,46 +164,27 @@ func (t listTable) elements() []listElement {
 //	| e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 |
 //	+-------------------+-------------------+-------------------+
 //
-type listStack []listElement
+type listStack struct {
+	stack []listElement
+}
+
+func (s *listStack) reset() {
+	s.stack = s.stack[:0]
+}
 
 // offset returns the next list buffer offset.
-func (s listStack) offset() int {
-	return len(s)
+func (s *listStack) offset() int {
+	return len(s.stack)
 }
 
 // push appends a new element to the last list.
-func (sptr *listStack) push(elem listElement) {
-	sptr._grow(1)
-
-	s := *sptr
-	s = append(s, elem)
-	*sptr = s
+func (s *listStack) push(elem listElement) {
+	s.stack = append(s.stack, elem)
 }
 
 // pop pops a list table starting at offset.
-func (sptr *listStack) pop(offset int) []listElement {
-	s := *sptr
-	list := s[offset:]
-
-	s = s[:offset]
-	*sptr = s
-	return list
-}
-
-// grow grows element stack capacity to store at least n elements.
-func (sptr *listStack) _grow(n int) {
-	s := *sptr
-
-	// check remaining
-	rem := cap(s) - len(s)
-	if rem >= n {
-		return
-	}
-
-	// grow
-	size := (cap(s) * 2) + n
-	next := make([]listElement, len(s), size)
-	copy(next, s)
-
-	*sptr = s
+func (s *listStack) pop(offset int) []listElement {
+	table := s.stack[offset:]
+	s.stack = s.stack[:offset]
+	return table
 }

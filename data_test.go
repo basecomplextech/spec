@@ -276,7 +276,7 @@ func newTestSubMessage(i int) *TestSubMessage {
 	}
 }
 
-func TestMessage_Write(t *testing.T) {
+func TestMessage_Write_Read(t *testing.T) {
 	msg := newTestMessage()
 
 	w := NewWriter()
