@@ -32,28 +32,29 @@ func (s *objectStack) len() int {
 	return len(s.stack)
 }
 
-// peek
+// last
 
-func (s *objectStack) peekList() (objectEntry, error) {
-	return s.peek(objectTypeList)
-}
-
-func (s *objectStack) peekMessage() (objectEntry, error) {
-	return s.peek(objectTypeMessage)
-}
-
-// peek returns the top object on the stack and checks its type.
-func (s *objectStack) peek(type_ objectType) (objectEntry, error) {
+// last returns the last object and checks its type.
+func (s *objectStack) last(type_ objectType) (objectEntry, error) {
 	ln := len(s.stack)
 	if ln == 0 {
-		return objectEntry{}, fmt.Errorf("peek: stack is empty")
+		return objectEntry{}, fmt.Errorf("last: object stack is empty")
 	}
 
 	e := s.stack[ln-1]
 	if e.type_ != type_ {
-		return e, fmt.Errorf("peek: unexpected stack object, expected=%v, actual=%v, ", type_, e.type_)
+		return e, fmt.Errorf("last: unexpected stack object, expected=%v, actual=%v, ",
+			objectTypeList, e.type_)
 	}
 	return e, nil
+}
+
+func (s *objectStack) lastList() (objectEntry, error) {
+	return s.last(objectTypeList)
+}
+
+func (s *objectStack) lastMessage() (objectEntry, error) {
+	return s.last(objectTypeMessage)
 }
 
 // pop

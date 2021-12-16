@@ -5,17 +5,16 @@ import "fmt"
 const WriteBufferSize = 4096
 
 type Writer struct {
-	buffer writeBuffer
+	buf  writeBuffer
+	data writeData
 
-	data     dataStack
 	objects  objectStack
 	elements listStack    // stack of list element tables
 	fields   messageStack // stack of message field tables
 
 	// preallocated
-	_data     [16]dataEntry
 	_objects  [16]objectEntry
-	_elements [64]listElement
+	_elements [128]listElement
 	_fields   [128]messageField
 }
 
@@ -28,9 +27,10 @@ func NewWriter() *Writer {
 // NewWriterBuffer returns a new writer with a buffer.
 func NewWriterBuffer(buf []byte) *Writer {
 	w := &Writer{}
-	w.buffer.buffer = buf[:0]
 
-	w.data.stack = w._data[:0]
+	w.buf.buffer = buf[:0]
+	w.data = writeData{}
+
 	w.objects.stack = w._objects[:0]
 	w.elements.stack = w._elements[:0]
 	w.fields.stack = w._fields[:0]
@@ -39,31 +39,24 @@ func NewWriterBuffer(buf []byte) *Writer {
 
 // End ends writing, returns the result bytes, and resets the writer.
 func (w *Writer) End() ([]byte, error) {
-	switch {
-	case w.objects.len() > 0:
+	if w.objects.len() > 0 {
 		return nil, fmt.Errorf("end: incomplete objects, object stack size=%d", w.objects.len())
-	case w.data.len() > 1:
-		return nil, fmt.Errorf("end: incomplete write, data stack size=%d", w.data.len())
-	case w.data.len() == 0:
-		return nil, fmt.Errorf("end: empty writer")
 	}
 
 	// pop data
-	data, err := w.data.pop()
-	if err != nil {
-		return nil, err
-	}
+	data := w.popData()
 
 	// return and reset
-	b := w.buffer.buffer[data.start:data.end]
+	b := w.buf.buffer[data.start:data.end]
 	w.Reset()
 	return b, nil
 }
 
 // Reset clears the writer.
 func (w *Writer) Reset() {
-	w.buffer.reset()
-	w.data.reset()
+	w.buf.reset()
+	w.data = writeData{}
+
 	w.objects.reset()
 	w.elements.reset()
 	w.fields.reset()
@@ -72,16 +65,16 @@ func (w *Writer) Reset() {
 // Primitive
 
 func (w *Writer) Bool(v bool) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
 	if v {
-		w.buffer.type_(TypeTrue)
+		w.buf.type_(TypeTrue)
 	} else {
-		w.buffer.type_(TypeFalse)
+		w.buf.type_(TypeFalse)
 	}
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
@@ -90,139 +83,139 @@ func (w *Writer) Byte(v byte) error {
 }
 
 func (w *Writer) Int8(v int8) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.int8(v)
-	w.buffer.type_(TypeInt8)
+	w.buf.int8(v)
+	w.buf.type_(TypeInt8)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Int16(v int16) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.int16(v)
-	w.buffer.type_(TypeInt16)
+	w.buf.int16(v)
+	w.buf.type_(TypeInt16)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Int32(v int32) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.int32(v)
-	w.buffer.type_(TypeInt32)
+	w.buf.int32(v)
+	w.buf.type_(TypeInt32)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Int64(v int64) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.int64(v)
-	w.buffer.type_(TypeInt64)
+	w.buf.int64(v)
+	w.buf.type_(TypeInt64)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt8(v uint8) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.uint8(v)
-	w.buffer.type_(TypeUInt8)
+	w.buf.uint8(v)
+	w.buf.type_(TypeUInt8)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt16(v uint16) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.uint16(v)
-	w.buffer.type_(TypeUInt16)
+	w.buf.uint16(v)
+	w.buf.type_(TypeUInt16)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt32(v uint32) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.uint32(v)
-	w.buffer.type_(TypeUInt32)
+	w.buf.uint32(v)
+	w.buf.type_(TypeUInt32)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt64(v uint64) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.uint64(v)
-	w.buffer.type_(TypeUInt64)
+	w.buf.uint64(v)
+	w.buf.type_(TypeUInt64)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Float32(v float32) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.float32(v)
-	w.buffer.type_(TypeFloat32)
+	w.buf.float32(v)
+	w.buf.type_(TypeFloat32)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Float64(v float64) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	w.buffer.float64(v)
-	w.buffer.type_(TypeFloat64)
+	w.buf.float64(v)
+	w.buf.type_(TypeFloat64)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 // Bytes/string
 
 func (w *Writer) Bytes(v []byte) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	size := w.buffer.bytes(v)
-	w.buffer.bytesSize(size)
-	w.buffer.type_(TypeBytes)
+	size := w.buf.bytes(v)
+	w.buf.bytesSize(size)
+	w.buf.type_(TypeBytes)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) String(v string) error {
-	start := w.buffer.offset()
+	start := w.buf.offset()
 
-	size := w.buffer.string(v)
-	w.buffer.stringZero()
-	w.buffer.stringSize(size + 1) // plus zero byte
-	w.buffer.type_(TypeString)
+	size := w.buf.string(v)
+	w.buf.stringZero()
+	w.buf.stringSize(size + 1) // plus zero byte
+	w.buf.type_(TypeString)
 
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
@@ -230,7 +223,7 @@ func (w *Writer) String(v string) error {
 
 func (w *Writer) BeginList() error {
 	// push list
-	start := w.buffer.offset()
+	start := w.buf.offset()
 	tableStart := w.elements.offset()
 
 	w.objects.pushList(start, tableStart)
@@ -239,11 +232,8 @@ func (w *Writer) BeginList() error {
 
 func (w *Writer) Element() error {
 	// pop data
-	data, err := w.data.pop()
-	if err != nil {
-		return err
-	}
-	list, err := w.objects.peekList()
+	data := w.popData()
+	list, err := w.objects.lastList()
 	if err != nil {
 		return err
 	}
@@ -261,21 +251,21 @@ func (w *Writer) EndList() error {
 	if err != nil {
 		return err
 	}
-	dataSize := uint32(w.buffer.offset() - list.start)
+	dataSize := uint32(w.buf.offset() - list.start)
 
 	// write table
 	table := w.elements.pop(list.tableStart)
-	tableSize := w.buffer.listTable(table)
+	tableSize := w.buf.listTable(table)
 
 	// write sizes and type
-	w.buffer.listDataSize(dataSize)
-	w.buffer.listTableSize(tableSize)
-	w.buffer.type_(TypeList)
+	w.buf.listDataSize(dataSize)
+	w.buf.listTableSize(tableSize)
+	w.buf.type_(TypeList)
 
 	// push data entry
 	start := list.start
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
 }
 
@@ -283,7 +273,7 @@ func (w *Writer) EndList() error {
 
 func (w *Writer) BeginMessage() error {
 	// push message
-	start := w.buffer.offset()
+	start := w.buf.offset()
 	tableStart := w.fields.offset()
 
 	w.objects.pushMessage(start, tableStart)
@@ -292,11 +282,8 @@ func (w *Writer) BeginMessage() error {
 
 func (w *Writer) Field(tag uint16) error {
 	// pop data
-	data, err := w.data.pop()
-	if err != nil {
-		return err
-	}
-	message, err := w.objects.peekMessage()
+	data := w.popData()
+	message, err := w.objects.lastMessage()
 	if err != nil {
 		return err
 	}
@@ -316,20 +303,46 @@ func (w *Writer) EndMessage() error {
 	if err != nil {
 		return err
 	}
-	dataSize := uint32(w.buffer.offset() - message.start)
+	dataSize := uint32(w.buf.offset() - message.start)
 
 	// write table
 	table := w.fields.pop(message.tableStart)
-	tableSize := w.buffer.messageTable(table)
+	tableSize := w.buf.messageTable(table)
 
 	// write sizes and type
-	w.buffer.messageDataSize(dataSize)
-	w.buffer.messageTableSize(tableSize)
-	w.buffer.type_(TypeMessage)
+	w.buf.messageDataSize(dataSize)
+	w.buf.messageTableSize(tableSize)
+	w.buf.type_(TypeMessage)
 
 	// push data
 	start := message.start
-	end := w.buffer.offset()
-	w.data.push(start, end)
+	end := w.buf.offset()
+	w.setData(start, end)
 	return nil
+}
+
+// private
+
+// writeData holds the last written data start/end.
+// There is no data stack because the data must be consumed immediatelly after it is written.
+type writeData struct {
+	start int
+	end   int
+}
+
+func (w *Writer) setData(start, end int) {
+	if w.popData().start != 0 || w.popData().end != 0 {
+		panic("cannot set data, previous data not consumed")
+	}
+
+	w.data = writeData{
+		start: start,
+		end:   end,
+	}
+}
+
+func (w *Writer) popData() writeData {
+	d := w.data
+	w.data = writeData{}
+	return d
 }

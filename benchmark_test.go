@@ -84,7 +84,7 @@ func BenchmarkWrite(b *testing.B) {
 
 		// b.Fatal(len(data))
 		w.Reset()
-		w.buffer.buffer = buf[:0]
+		w.buf.buffer = buf[:0]
 	}
 
 	t1 := time.Now()
