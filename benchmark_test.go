@@ -50,8 +50,8 @@ func BenchmarkSpec_Write(b *testing.B) {
 	msg := newTestMessage()
 
 	buf := make([]byte, 0, 4096)
+	size := int64(0)
 	w := NewWriterBuffer(buf)
-
 	{
 		if err := msg.Write(w); err != nil {
 			b.Fatal(err)
@@ -61,7 +61,8 @@ func BenchmarkSpec_Write(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		b.SetBytes(int64(len(data)))
+		size = int64(len(data))
+		b.SetBytes(size)
 	}
 
 	b.ReportAllocs()
@@ -90,7 +91,9 @@ func BenchmarkSpec_Write(b *testing.B) {
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
 	rps := float64(b.N) / sec
+
 	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
 }
 
 func BenchmarkJSON_Write(b *testing.B) {
@@ -98,13 +101,16 @@ func BenchmarkJSON_Write(b *testing.B) {
 
 	buf := make([]byte, 0, 4096)
 	buffer := bytes.NewBuffer(buf)
+	size := int64(0)
 
 	{
 		data, err := json.Marshal(msg)
 		if err != nil {
 			b.Fatal(err)
 		}
-		b.SetBytes(int64(len(data)))
+
+		size = int64(len(data))
+		b.SetBytes(size)
 	}
 
 	b.ReportAllocs()
@@ -128,5 +134,7 @@ func BenchmarkJSON_Write(b *testing.B) {
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
 	rps := float64(b.N) / sec
+
 	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
 }
