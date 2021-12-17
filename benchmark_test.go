@@ -7,46 +7,41 @@ import (
 	"time"
 )
 
-func BenchmarkFieldTable_find(b *testing.B) {
-	fields := testMessageFieldsN(100)
-	table := writeMessageTable(fields)
+func Benchmark_Read(b *testing.B) {
+	msg := newTestMessage()
+
+	buf := make([]byte, 0, 4096)
+	w := NewWriterBuffer(buf)
+	if err := msg.Write(w); err != nil {
+		b.Fatal(err)
+	}
+	data, err := w.End()
+	if err != nil {
+		b.Fatal(err)
+	}
+	reader := readTestMessageData(data)
+
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	last := len(fields) - 1
-	tag := fields[last].tag
+	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		j := table.find(tag)
-		if j < 0 {
-			b.Fatal()
-		}
-	}
-}
-
-func BenchmarkFieldTable_lookup(b *testing.B) {
-	fields := testMessageFieldsN(100)
-	table := writeMessageTable(fields)
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	last := len(fields) - 1
-	tag := fields[last].tag
-
-	var f messageField
-	var ok bool
-	for i := 0; i < b.N; i++ {
-		f, ok = table.lookup(tag)
-		if !ok {
-			b.Fatal()
+		v := walkMessageData(reader)
+		if v == 0 {
+			b.Fatal(v)
 		}
 	}
 
-	if f.tag == 0 {
-		b.Fatal()
-	}
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
 }
 
-func BenchmarkSpec_Write(b *testing.B) {
+// Write
+
+func Benchmark_Write(b *testing.B) {
 	msg := newTestMessage()
 
 	buf := make([]byte, 0, 4096)
@@ -85,7 +80,7 @@ func BenchmarkSpec_Write(b *testing.B) {
 
 		// b.Fatal(len(data))
 		w.Reset()
-		w.buf.buffer = buf[:0]
+		w.buf = buf[:0]
 	}
 
 	t1 := time.Now()
@@ -94,6 +89,40 @@ func BenchmarkSpec_Write(b *testing.B) {
 
 	b.ReportMetric(rps, "rps")
 	b.ReportMetric(float64(size), "size")
+}
+
+// JSON
+
+func BenchmarkJSON_Read(b *testing.B) {
+	msg := newTestMessage()
+
+	data, err := json.Marshal(msg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+
+	msg1 := &TestMessage{}
+	for i := 0; i < b.N; i++ {
+		if err := json.Unmarshal(data, msg1); err != nil {
+			b.Fatal(err)
+		}
+
+		v := walkMessage(msg1)
+		if v == 0 {
+			b.Fatal(v)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
 }
 
 func BenchmarkJSON_Write(b *testing.B) {
@@ -137,4 +166,44 @@ func BenchmarkJSON_Write(b *testing.B) {
 
 	b.ReportMetric(rps, "rps")
 	b.ReportMetric(float64(size), "size")
+}
+
+// private
+
+func walkMessage(m *TestMessage) int {
+	var v int
+
+	v += int(m.Int8)
+	v += int(m.Int16)
+	v += int(m.Int32)
+	v += int(m.Int64)
+
+	v += int(m.UInt8)
+	v += int(m.UInt16)
+	v += int(m.UInt32)
+	v += int(m.UInt64)
+
+	v += int(m.Float32)
+	v += int(m.Float64)
+
+	return v
+}
+
+func walkMessageData(m TestMessageData) int {
+	var v int
+
+	v += int(m.Int8())
+	v += int(m.Int16())
+	v += int(m.Int32())
+	v += int(m.Int64())
+
+	v += int(m.UInt8())
+	v += int(m.UInt16())
+	v += int(m.UInt32())
+	v += int(m.UInt64())
+
+	v += int(m.Float32())
+	v += int(m.Float64())
+
+	return v
 }

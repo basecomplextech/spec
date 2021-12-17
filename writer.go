@@ -5,7 +5,7 @@ import "fmt"
 const WriteBufferSize = 4096
 
 type Writer struct {
-	buf  writeBuffer
+	buf  []byte
 	data writeData
 
 	objects  objectStack
@@ -28,7 +28,7 @@ func NewWriter() *Writer {
 func NewWriterBuffer(buf []byte) *Writer {
 	w := &Writer{}
 
-	w.buf.buffer = buf[:0]
+	w.buf = buf[:0]
 	w.data = writeData{}
 
 	w.objects.stack = w._objects[:0]
@@ -47,14 +47,14 @@ func (w *Writer) End() ([]byte, error) {
 	data := w.popData()
 
 	// return and reset
-	b := w.buf.buffer[data.start:data.end]
+	b := w.buf[data.start:data.end]
 	w.Reset()
 	return b, nil
 }
 
 // Reset clears the writer.
 func (w *Writer) Reset() {
-	w.buf.reset()
+	w.buf = nil
 	w.data = writeData{}
 
 	w.objects.reset()
@@ -65,15 +65,15 @@ func (w *Writer) Reset() {
 // Primitive
 
 func (w *Writer) Bool(v bool) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
 	if v {
-		w.buf.type_(TypeTrue)
+		w.buf = writeType(w.buf, TypeTrue)
 	} else {
-		w.buf.type_(TypeFalse)
+		w.buf = writeType(w.buf, TypeFalse)
 	}
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
@@ -83,111 +83,111 @@ func (w *Writer) Byte(v byte) error {
 }
 
 func (w *Writer) Int8(v int8) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.int8(v)
-	w.buf.type_(TypeInt8)
+	w.buf = writeInt8(w.buf, v)
+	w.buf = writeType(w.buf, TypeInt8)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Int16(v int16) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.int16(v)
-	w.buf.type_(TypeInt16)
+	w.buf = writeInt16(w.buf, v)
+	w.buf = writeType(w.buf, TypeInt16)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Int32(v int32) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.int32(v)
-	w.buf.type_(TypeInt32)
+	w.buf = writeInt32(w.buf, v)
+	w.buf = writeType(w.buf, TypeInt32)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Int64(v int64) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.int64(v)
-	w.buf.type_(TypeInt64)
+	w.buf = writeInt64(w.buf, v)
+	w.buf = writeType(w.buf, TypeInt64)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt8(v uint8) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.uint8(v)
-	w.buf.type_(TypeUInt8)
+	w.buf = writeUInt8(w.buf, v)
+	w.buf = writeType(w.buf, TypeUInt8)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt16(v uint16) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.uint16(v)
-	w.buf.type_(TypeUInt16)
+	w.buf = writeUInt16(w.buf, v)
+	w.buf = writeType(w.buf, TypeUInt16)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt32(v uint32) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.uint32(v)
-	w.buf.type_(TypeUInt32)
+	w.buf = writeUInt32(w.buf, v)
+	w.buf = writeType(w.buf, TypeUInt32)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) UInt64(v uint64) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.uint64(v)
-	w.buf.type_(TypeUInt64)
+	w.buf = writeUInt64(w.buf, v)
+	w.buf = writeType(w.buf, TypeUInt64)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Float32(v float32) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.float32(v)
-	w.buf.type_(TypeFloat32)
+	w.buf = writeFloat32(w.buf, v)
+	w.buf = writeType(w.buf, TypeFloat32)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) Float64(v float64) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	w.buf.float64(v)
-	w.buf.type_(TypeFloat64)
+	w.buf = writeFloat64(w.buf, v)
+	w.buf = writeType(w.buf, TypeFloat64)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
@@ -195,26 +195,28 @@ func (w *Writer) Float64(v float64) error {
 // Bytes/string
 
 func (w *Writer) Bytes(v []byte) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	size := w.buf.bytes(v)
-	w.buf.bytesSize(size)
-	w.buf.type_(TypeBytes)
+	var size uint32
+	w.buf, size = writeBytes(w.buf, v)
+	w.buf = writeBytesSize(w.buf, size)
+	w.buf = writeType(w.buf, TypeBytes)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
 func (w *Writer) String(v string) error {
-	start := w.buf.offset()
+	start := len(w.buf)
 
-	size := w.buf.string(v)
-	w.buf.stringZero()
-	w.buf.stringSize(size + 1) // plus zero byte
-	w.buf.type_(TypeString)
+	var size uint32
+	w.buf, size = writeString(w.buf, v)
+	w.buf = writeStringZero(w.buf)
+	w.buf = writeStringSize(w.buf, size+1) // plus zero byte
+	w.buf = writeType(w.buf, TypeString)
 
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
@@ -223,7 +225,7 @@ func (w *Writer) String(v string) error {
 
 func (w *Writer) BeginList() error {
 	// push list
-	start := w.buf.offset()
+	start := len(w.buf)
 	tableStart := w.elements.offset()
 
 	w.objects.pushList(start, tableStart)
@@ -251,20 +253,21 @@ func (w *Writer) EndList() error {
 	if err != nil {
 		return err
 	}
-	dataSize := uint32(w.buf.offset() - list.start)
+	dsize := uint32(len(w.buf) - list.start)
+	tsize := uint32(0)
 
 	// write table
 	table := w.elements.pop(list.tableStart)
-	tableSize := w.buf.listTable(table)
+	w.buf, tsize = writeListTable(w.buf, table)
 
 	// write sizes and type
-	w.buf.listDataSize(dataSize)
-	w.buf.listTableSize(tableSize)
-	w.buf.type_(TypeList)
+	w.buf = writeListDataSize(w.buf, dsize)
+	w.buf = writeListTableSize(w.buf, tsize)
+	w.buf = writeType(w.buf, TypeList)
 
 	// push data entry
 	start := list.start
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
@@ -273,7 +276,7 @@ func (w *Writer) EndList() error {
 
 func (w *Writer) BeginMessage() error {
 	// push message
-	start := w.buf.offset()
+	start := len(w.buf)
 	tableStart := w.fields.offset()
 
 	w.objects.pushMessage(start, tableStart)
@@ -303,28 +306,29 @@ func (w *Writer) EndMessage() error {
 	if err != nil {
 		return err
 	}
-	dataSize := uint32(w.buf.offset() - message.start)
+	dsize := uint32(len(w.buf) - message.start)
+	tsize := uint32(0)
 
 	// write table
 	table := w.fields.pop(message.tableStart)
-	tableSize := w.buf.messageTable(table)
+	w.buf, tsize = writeMessageTable(w.buf, table)
 
 	// write sizes and type
-	w.buf.messageDataSize(dataSize)
-	w.buf.messageTableSize(tableSize)
-	w.buf.type_(TypeMessage)
+	w.buf = writeMessageDataSize(w.buf, dsize)
+	w.buf = writeMessageTableSize(w.buf, tsize)
+	w.buf = writeType(w.buf, TypeMessage)
 
 	// push data
 	start := message.start
-	end := w.buf.offset()
+	end := len(w.buf)
 	w.setData(start, end)
 	return nil
 }
 
-// private
+// data
 
 // writeData holds the last written data start/end.
-// There is no data stack because the data must be consumed immediatelly after it is written.
+// there is no data stack because the data must be consumed immediatelly after it is written.
 type writeData struct {
 	start int
 	end   int
@@ -345,4 +349,119 @@ func (w *Writer) popData() writeData {
 	d := w.data
 	w.data = writeData{}
 	return d
+}
+
+// object
+
+type objectType byte
+
+const (
+	objectTypeUndefined objectType = iota
+	objectTypeList
+	objectTypeMessage
+)
+
+type objectEntry struct {
+	start      int // start offset in data buffer
+	tableStart int // table offset in list/message stack
+	type_      objectType
+}
+
+// stack
+
+type objectStack struct {
+	stack []objectEntry
+}
+
+func (s *objectStack) reset() {
+	s.stack = s.stack[:0]
+}
+
+func (s *objectStack) len() int {
+	return len(s.stack)
+}
+
+// last
+
+// last returns the last object and checks its type.
+func (s *objectStack) last(type_ objectType) (objectEntry, error) {
+	ln := len(s.stack)
+	if ln == 0 {
+		return objectEntry{}, fmt.Errorf("last: object stack is empty")
+	}
+
+	e := s.stack[ln-1]
+	if e.type_ != type_ {
+		return e, fmt.Errorf("last: unexpected stack object, expected=%v, actual=%v, ",
+			objectTypeList, e.type_)
+	}
+	return e, nil
+}
+
+func (s *objectStack) lastList() (objectEntry, error) {
+	return s.last(objectTypeList)
+}
+
+func (s *objectStack) lastMessage() (objectEntry, error) {
+	return s.last(objectTypeMessage)
+}
+
+// pop
+
+// pop removes the top object from the stack and checks its type.
+func (s *objectStack) pop(type_ objectType) (objectEntry, error) {
+	ln := len(s.stack)
+	if ln == 0 {
+		return objectEntry{}, fmt.Errorf("pop: stack is empty")
+	}
+
+	e := s.stack[ln-1]
+	if e.type_ != type_ {
+		return e, fmt.Errorf("peek: unexpected object, expected=%v, actual=%v, ", type_, e.type_)
+	}
+
+	s.stack = s.stack[:ln-1]
+	return e, nil
+}
+
+func (s *objectStack) popList() (objectEntry, error) {
+	return s.pop(objectTypeList)
+}
+
+func (s *objectStack) popMessage() (objectEntry, error) {
+	return s.pop(objectTypeMessage)
+}
+
+// push
+
+func (s *objectStack) pushList(start int, tableStart int) {
+	e := objectEntry{
+		type_:      objectTypeList,
+		start:      start,
+		tableStart: tableStart,
+	}
+	s.stack = append(s.stack, e)
+}
+
+func (s *objectStack) pushMessage(start int, tableStart int) {
+	e := objectEntry{
+		type_:      objectTypeMessage,
+		start:      start,
+		tableStart: tableStart,
+	}
+	s.stack = append(s.stack, e)
+}
+
+// util
+
+func (t objectType) String() string {
+	switch t {
+	case objectTypeUndefined:
+		return "undefined"
+	case objectTypeList:
+		return "list"
+	case objectTypeMessage:
+		return "message"
+	}
+	return ""
 }

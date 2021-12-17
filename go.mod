@@ -6,6 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/flatbuffers v2.0.0+incompatible
 	github.com/stretchr/testify v1.7.0
+	google.golang.org/protobuf v1.27.1
 )
 
 require (

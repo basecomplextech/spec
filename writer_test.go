@@ -15,3 +15,23 @@ func TestWriter_size__must_be_less_or_equal_2048(t *testing.T) {
 
 	assert.LessOrEqual(t, int(size), 2048)
 }
+
+func TestWriter_Write(t *testing.T) {
+	msg := newTestMessage()
+
+	w := NewWriter()
+	if err := msg.Write(w); err != nil {
+		t.Fatal(err)
+	}
+	b, err := w.End()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msg1 := &TestMessage{}
+	if err := msg1.Read(ReadData(b)); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, msg, msg1)
+}
