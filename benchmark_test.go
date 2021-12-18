@@ -21,6 +21,8 @@ func Benchmark_Read(b *testing.B) {
 	}
 	reader := readTestMessageData(data)
 
+	size := len(data)
+	b.SetBytes(int64(size))
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -37,6 +39,7 @@ func Benchmark_Read(b *testing.B) {
 	rps := float64(b.N) / sec
 
 	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
 }
 
 // Write

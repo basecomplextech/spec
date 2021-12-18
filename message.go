@@ -72,7 +72,8 @@ func (m Message) Int16(tag uint16) int16 {
 		return 0
 	}
 	b := m.buffer[:off]
-	return ReadInt16(b)
+	v, _ := ReadInt16(b)
+	return v
 }
 
 func (m Message) Int32(tag uint16) int32 {
@@ -81,7 +82,8 @@ func (m Message) Int32(tag uint16) int32 {
 		return 0
 	}
 	b := m.buffer[:off]
-	return ReadInt32(b)
+	v, _ := ReadInt32(b)
+	return v
 }
 
 func (m Message) Int64(tag uint16) int64 {
@@ -90,7 +92,8 @@ func (m Message) Int64(tag uint16) int64 {
 		return 0
 	}
 	b := m.buffer[:off]
-	return ReadInt64(b)
+	v, _ := ReadInt64(b)
+	return v
 }
 
 func (m Message) UInt8(tag uint16) uint8 {
@@ -108,7 +111,8 @@ func (m Message) UInt16(tag uint16) uint16 {
 		return 0
 	}
 	b := m.buffer[:off]
-	return ReadUInt16(b)
+	v, _ := ReadUInt16(b)
+	return v
 }
 
 func (m Message) UInt32(tag uint16) uint32 {
@@ -117,7 +121,8 @@ func (m Message) UInt32(tag uint16) uint32 {
 		return 0
 	}
 	b := m.buffer[:off]
-	return ReadUInt32(b)
+	v, _ := ReadUInt32(b)
+	return v
 }
 
 func (m Message) UInt64(tag uint16) uint64 {
@@ -126,7 +131,8 @@ func (m Message) UInt64(tag uint16) uint64 {
 		return 0
 	}
 	b := m.buffer[:off]
-	return ReadUInt64(b)
+	v, _ := ReadUInt64(b)
+	return v
 }
 
 func (m Message) Float32(tag uint16) float32 {

@@ -34,57 +34,53 @@ func ReadInt8(b []byte) int8 {
 		return 0
 	}
 
-	off -= 1
-	v := b[off]
+	v := b[off-1]
 	return int8(v)
 }
 
-func ReadInt16(b []byte) int16 {
-	if len(b) < 3 {
-		return 0
+func ReadInt16(b []byte) (int16, int) {
+	if len(b) == 0 {
+		return 0, 0
 	}
 
 	off := len(b) - 1
 	t := Type(b[off])
 	if t != TypeInt16 {
-		return 0
+		return 0, -1
 	}
 
-	off -= 2
-	v := binary.BigEndian.Uint16(b[off:])
-	return int16(v)
+	v, rem := reverseVarint(b[:off])
+	return int16(v), rem
 }
 
-func ReadInt32(b []byte) int32 {
-	if len(b) < 5 {
-		return 0
+func ReadInt32(b []byte) (int32, int) {
+	if len(b) == 0 {
+		return 0, 0
 	}
 
 	off := len(b) - 1
 	t := Type(b[off])
 	if t != TypeInt32 {
-		return 0
+		return 0, -1
 	}
 
-	off -= 4
-	v := binary.BigEndian.Uint32(b[off:])
-	return int32(v)
+	v, rem := reverseVarint(b[:off])
+	return int32(v), rem
 }
 
-func ReadInt64(b []byte) int64 {
-	if len(b) < 9 {
-		return 0
+func ReadInt64(b []byte) (int64, int) {
+	if len(b) == 0 {
+		return 0, 0
 	}
 
 	off := len(b) - 1
 	t := Type(b[off])
 	if t != TypeInt64 {
-		return 0
+		return 0, -1
 	}
 
-	off -= 8
-	v := binary.BigEndian.Uint64(b[off:])
-	return int64(v)
+	v, rem := reverseVarint(b[:off])
+	return v, rem
 }
 
 func ReadUInt8(b []byte) uint8 {
@@ -98,57 +94,52 @@ func ReadUInt8(b []byte) uint8 {
 		return 0
 	}
 
-	off -= 1
-	v := b[off]
-	return v
+	return b[off-1]
 }
 
-func ReadUInt16(b []byte) uint16 {
-	if len(b) < 3 {
-		return 0
+func ReadUInt16(b []byte) (uint16, int) {
+	if len(b) == 0 {
+		return 0, 0
 	}
 
 	off := len(b) - 1
 	t := Type(b[off])
 	if t != TypeUInt16 {
-		return 0
+		return 0, -1
 	}
 
-	off -= 2
-	v := binary.BigEndian.Uint16(b[off:])
-	return v
+	v, rem := reverseUvarint(b[:off])
+	return uint16(v), rem
 }
 
-func ReadUInt32(b []byte) uint32 {
-	if len(b) < 5 {
-		return 0
+func ReadUInt32(b []byte) (uint32, int) {
+	if len(b) == 0 {
+		return 0, 0
 	}
 
 	off := len(b) - 1
 	t := Type(b[off])
 	if t != TypeUInt32 {
-		return 0
+		return 0, -1
 	}
 
-	off -= 4
-	v := binary.BigEndian.Uint32(b[off:])
-	return v
+	v, rem := reverseUvarint(b[:off])
+	return uint32(v), rem
 }
 
-func ReadUInt64(b []byte) uint64 {
-	if len(b) < 9 {
-		return 0
+func ReadUInt64(b []byte) (uint64, int) {
+	if len(b) == 0 {
+		return 0, 0
 	}
 
 	off := len(b) - 1
 	t := Type(b[off])
 	if t != TypeUInt64 {
-		return 0
+		return 0, -1
 	}
 
-	off -= 8
-	v := binary.BigEndian.Uint64(b[off:])
-	return v
+	v, rem := reverseUvarint(b[:off])
+	return v, rem
 }
 
 func ReadFloat32(b []byte) float32 {

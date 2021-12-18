@@ -14,21 +14,21 @@ func writeInt8(b []byte, v int8) []byte {
 }
 
 func writeInt16(b []byte, v int16) []byte {
-	p := [2]byte{}
-	binary.BigEndian.PutUint16(p[:], uint16(v))
-	return append(b, p[:]...)
+	p := [maxVarintLen16]byte{}
+	off := putReverseVarint(p[:], int64(v))
+	return append(b, p[off:]...)
 }
 
 func writeInt32(b []byte, v int32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], uint32(v))
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseVarint(p[:], int64(v))
+	return append(b, p[off:]...)
 }
 
 func writeInt64(b []byte, v int64) []byte {
-	p := [8]byte{}
-	binary.BigEndian.PutUint64(p[:], uint64(v))
-	return append(b, p[:]...)
+	p := [maxVarintLen64]byte{}
+	off := putReverseVarint(p[:], v)
+	return append(b, p[off:]...)
 }
 
 func writeUInt8(b []byte, v uint8) []byte {
@@ -36,21 +36,21 @@ func writeUInt8(b []byte, v uint8) []byte {
 }
 
 func writeUInt16(b []byte, v uint16) []byte {
-	p := [2]byte{}
-	binary.BigEndian.PutUint16(p[:], v)
-	return append(b, p[:]...)
+	p := [maxVarintLen16]byte{}
+	off := putReverseUvarint(p[:], uint64(v))
+	return append(b, p[off:]...)
 }
 
 func writeUInt32(b []byte, v uint32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], v)
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseUvarint(p[:], uint64(v))
+	return append(b, p[off:]...)
 }
 
 func writeUInt64(b []byte, v uint64) []byte {
-	p := [8]byte{}
-	binary.BigEndian.PutUint64(p[:], v)
-	return append(b, p[:]...)
+	p := [maxVarintLen64]byte{}
+	off := putReverseUvarint(p[:], v)
+	return append(b, p[off:]...)
 }
 
 func writeFloat32(b []byte, v float32) []byte {

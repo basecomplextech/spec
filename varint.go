@@ -1,14 +1,36 @@
 package spec
 
-// maxReverseVarintLenN is the maximum length of a reverse varint-encoded N-bit integer.
+// maxVarintLenN is the maximum length of a reverse varint-encoded N-bit integer.
 const (
-	maxReverseVarintLen16 = 3
-	maxReverseVarintLen32 = 5
-	maxReverseVarintLen64 = 10
+	maxVarintLen16 = 3
+	maxVarintLen32 = 5
+	maxVarintLen64 = 10
 )
 
+// reverseVarint decodes an int64 from the buf in reverse order starting from
+// the buf end and returns that value and the number of remaining bytes.
+func reverseVarint(buf []byte) (int64, int) {
+	ux, off := reverseUvarint(buf) // ok to continue in presence of error
+	x := int64(ux >> 1)
+	if ux&1 != 0 {
+		x = ^x
+	}
+	return x, off
+}
+
+// putReverseVarint encodes an int64 into buf in reverse order
+// starting from the buf end and returns the remaining buf offset.
+// If the buffer is too small, putReverseVarint will panic.
+func putReverseVarint(buf []byte, x int64) int {
+	ux := uint64(x) << 1
+	if x < 0 {
+		ux = ^ux
+	}
+	return putReverseUvarint(buf, ux)
+}
+
 // reverseUvarint decodes a uint64 from the buf in reverse order starting from
-// the buf end and returns that value and the number of bytes read (> 0).
+// the buf end and returns that value and the number of remaining bytes.
 // If an error occurred, the value is 0 and the number of bytes n is <= 0 meaning:
 //
 // 	n == 0: buf too small
@@ -23,8 +45,9 @@ func reverseUvarint(buf []byte) (uint64, int) {
 	var shift uint
 
 	// slice last bytes upto max varint64 len
-	if len(buf) > maxReverseVarintLen64 {
-		buf = buf[len(buf)-maxReverseVarintLen64:]
+	ln := len(buf)
+	if ln > maxVarintLen64 {
+		buf = buf[ln-maxVarintLen64:]
 	}
 
 	// iterate in reverse order
@@ -50,18 +73,17 @@ func reverseUvarint(buf []byte) (uint64, int) {
 
 		// no most significat bit (msb)
 		// this is the last byte
-		return result | uint64(b)<<shift, n + 1
+		return result | uint64(b)<<shift, ln - (n + 1)
 	}
 
 	return 0, 0
 }
 
-// putReverseUvarint encodes a uint64 into buf in reverse order starting from
-// the buf end and returns the number of bytes written.
+// putReverseUvarint encodes a uint64 into buf in reverse order
+// starting from the buf end and returns the remaining buf offset.
 // If the buffer is too small, PutUvarint will panic.
 func putReverseUvarint(buf []byte, v uint64) int {
 	i := len(buf) - 1
-	n := 0
 
 	// while v is >= most significat bit
 	for v >= 0b1000_0000 {
@@ -72,10 +94,9 @@ func putReverseUvarint(buf []byte, v uint64) int {
 		v >>= 7
 
 		i--
-		n++
 	}
 
 	// last byte without msb
 	buf[i] = byte(v)
-	return n + 1
+	return i
 }

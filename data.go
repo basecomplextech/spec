@@ -25,15 +25,18 @@ func (d Data) Int8() int8 {
 }
 
 func (d Data) Int16() int16 {
-	return ReadInt16(d)
+	v, _ := ReadInt16(d)
+	return v
 }
 
 func (d Data) Int32() int32 {
-	return ReadInt32(d)
+	v, _ := ReadInt32(d)
+	return v
 }
 
 func (d Data) Int64() int64 {
-	return ReadInt64(d)
+	v, _ := ReadInt64(d)
+	return v
 }
 
 func (d Data) UInt8() uint8 {
@@ -41,15 +44,18 @@ func (d Data) UInt8() uint8 {
 }
 
 func (d Data) UInt16() uint16 {
-	return ReadUInt16(d)
+	v, _ := ReadUInt16(d)
+	return v
 }
 
 func (d Data) UInt32() uint32 {
-	return ReadUInt32(d)
+	v, _ := ReadUInt32(d)
+	return v
 }
 
 func (d Data) UInt64() uint64 {
-	return ReadUInt64(d)
+	v, _ := ReadUInt64(d)
+	return v
 }
 
 func (d Data) Float32() float32 {

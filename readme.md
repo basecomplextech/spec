@@ -126,6 +126,7 @@ Example `"hello, world"`:
 +--------------------------+---------------+---------------+
 ```
 
+
 Data:
 ```
 value {
@@ -151,7 +152,7 @@ value {
 		string {
 			data  []byte
 			zero  byte
-			size  uint32          // size inclusing zero byte
+			size  varint          // size inclusing zero byte
 		}
 
 		list {
@@ -160,8 +161,8 @@ value {
 				offset uint32     // data offset
 			}
 
-			dataSize  uint32
-			tableSize uint32
+			dataSize  varint
+			tableSize varint
 		}
 		
 		message {
@@ -171,8 +172,8 @@ value {
 				offset uint32    // data offset
 			}
 
-			dataSize   uint32
-			tableSize  uint32
+			dataSize   varint
+			tableSize  varint
 		}
 	}
 

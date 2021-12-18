@@ -9,7 +9,7 @@ import (
 // get
 
 func BenchmarkReverseUvarint32(b *testing.B) {
-	buf := make([]byte, maxReverseVarintLen64)
+	buf := make([]byte, maxVarintLen32)
 	putReverseUvarint(buf, math.MaxUint32)
 	b.SetBytes(8)
 
@@ -18,14 +18,14 @@ func BenchmarkReverseUvarint32(b *testing.B) {
 		if v != math.MaxUint32 {
 			b.Fatal()
 		}
-		if n != maxReverseVarintLen32 {
+		if n != 0 {
 			b.Fatal()
 		}
 	}
 }
 
 func BenchmarkReverseUvarint64(b *testing.B) {
-	buf := make([]byte, maxReverseVarintLen64)
+	buf := make([]byte, maxVarintLen64)
 	putReverseUvarint(buf, math.MaxUint64)
 	b.SetBytes(8)
 
@@ -34,7 +34,7 @@ func BenchmarkReverseUvarint64(b *testing.B) {
 		if v != math.MaxUint64 {
 			b.Fatal()
 		}
-		if n != maxReverseVarintLen64 {
+		if n != 0 {
 			b.Fatal()
 		}
 	}
@@ -43,24 +43,24 @@ func BenchmarkReverseUvarint64(b *testing.B) {
 // put
 
 func BenchmarkPutReverseUvarint32(b *testing.B) {
-	buf := make([]byte, maxReverseVarintLen32)
+	buf := make([]byte, maxVarintLen32)
 	b.SetBytes(4)
 
 	for i := 0; i < b.N; i++ {
 		n := putReverseUvarint(buf, math.MaxUint32)
-		if n != maxReverseVarintLen32 {
+		if n != 0 {
 			b.Fatal()
 		}
 	}
 }
 
 func BenchmarkPutReverseUvarint64(b *testing.B) {
-	buf := make([]byte, maxReverseVarintLen64)
+	buf := make([]byte, maxVarintLen64)
 	b.SetBytes(8)
 
 	for i := 0; i < b.N; i++ {
 		n := putReverseUvarint(buf, math.MaxUint64)
-		if n != maxReverseVarintLen64 {
+		if n != 0 {
 			b.Fatal()
 		}
 	}

@@ -8,15 +8,15 @@ import (
 
 func TestReverseUvarint(t *testing.T) {
 	fn := func(v uint64) {
-		buf := make([]byte, maxReverseVarintLen64)
-		n := putReverseUvarint(buf, v)
-		v1, m := reverseUvarint(buf[len(buf)-n:])
+		buf := make([]byte, maxVarintLen64)
+		off := putReverseUvarint(buf, v)
+		v1, off1 := reverseUvarint(buf)
 
 		if v != v1 {
 			t.Errorf("reverseUvarint(%d): got %d", v, v1)
 		}
-		if n != m {
-			t.Errorf("reverseUvarint(%d): got n = %d; want %d", v, m, n)
+		if off != off1 {
+			t.Errorf("reverseUvarint(%d): expected offset=%d; actual=%d", v, off, off1)
 		}
 	}
 
@@ -53,14 +53,15 @@ func TestReverseUvarint(t *testing.T) {
 
 func TestReverseUvarint_max(t *testing.T) {
 	fn := func(w uint, max int) {
-		buf := make([]byte, maxReverseVarintLen64)
+		buf := make([]byte, maxVarintLen64)
 		n := putReverseUvarint(buf, 1<<w-1)
-		if n != max {
-			t.Errorf("invalid length, expected=%d, actual=%v", max, n)
+		exp := maxVarintLen64 - max
+		if n != exp {
+			t.Errorf("invalid length, expected=%d, actual=%v", exp, n)
 		}
 	}
 
-	fn(16, maxReverseVarintLen16)
-	fn(32, maxReverseVarintLen32)
-	fn(64, maxReverseVarintLen64)
+	fn(16, maxVarintLen16)
+	fn(32, maxVarintLen32)
+	fn(64, maxVarintLen64)
 }
