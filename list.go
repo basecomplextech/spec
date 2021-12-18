@@ -11,10 +11,11 @@ func ReadList(buf []byte) List {
 		return List{}
 	}
 
-	tsize, b := readListTableSize(b)
-	dsize, b := readListDataSize(b)
-	table, _ := readListTable(b, tsize)
-	buffer := readListBuffer(buf, tsize, dsize) // slice initial buf
+	ln := len(b)
+	tsize, tn := readListTableSize(b)
+	dsize, dn := readListDataSize(b[:ln-tn])
+	table, _ := readListTable(b[:ln-tn-dn], tsize)
+	buffer := readListBuffer(buf, tn, dn, tsize, dsize) // slice initial buf
 
 	return List{
 		buffer: buffer,

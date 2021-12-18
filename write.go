@@ -74,9 +74,9 @@ func writeBytes(b []byte, v []byte) ([]byte, uint32) {
 }
 
 func writeBytesSize(b []byte, size uint32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], uint32(size))
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseUvarint(p[:], uint64(size))
+	return append(b, p[off:]...)
 }
 
 // string
@@ -92,9 +92,9 @@ func writeStringZero(b []byte) []byte {
 }
 
 func writeStringSize(b []byte, size uint32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], uint32(size))
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseUvarint(p[:], uint64(size))
+	return append(b, p[off:]...)
 }
 
 // list
@@ -114,15 +114,15 @@ func writeListTable(b []byte, table []listElement) ([]byte, uint32) {
 }
 
 func writeListTableSize(b []byte, size uint32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], size)
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseUvarint(p[:], uint64(size))
+	return append(b, p[off:]...)
 }
 
 func writeListDataSize(b []byte, size uint32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], size)
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseUvarint(p[:], uint64(size))
+	return append(b, p[off:]...)
 }
 
 // message
@@ -145,15 +145,15 @@ func writeMessageTable(b []byte, table []messageField) ([]byte, uint32) {
 }
 
 func writeMessageTableSize(b []byte, size uint32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], size)
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseUvarint(p[:], uint64(size))
+	return append(b, p[off:]...)
 }
 
 func writeMessageDataSize(b []byte, size uint32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], size)
-	return append(b, p[:]...)
+	p := [maxVarintLen32]byte{}
+	off := putReverseUvarint(p[:], uint64(size))
+	return append(b, p[off:]...)
 }
 
 // private

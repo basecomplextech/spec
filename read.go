@@ -209,14 +209,9 @@ func readType(b []byte) (Type, []byte) {
 // bytes
 
 func readBytesSize(b []byte) (uint32, []byte) {
-	off := len(b) - 4
-	if off < 0 {
-		return 0, nil
-	}
-
-	p := b[off:]
-	v := binary.BigEndian.Uint32(p)
-	return v, b[:off]
+	// TODO: Unsafe, rem can be < 0
+	v, rem := reverseUvarint32(b)
+	return uint32(v), b[:rem]
 }
 
 func readBytesBody(b []byte, size uint32) []byte {
@@ -234,14 +229,8 @@ func readBytesBody(b []byte, size uint32) []byte {
 // string
 
 func readStringSize(b []byte) (uint32, []byte) {
-	off := len(b) - 4
-	if off < 0 {
-		return 0, nil
-	}
-
-	p := b[off:]
-	v := binary.BigEndian.Uint32(p)
-	return v, b[:off]
+	v, rem := reverseUvarint32(b)
+	return uint32(v), b[:rem]
 }
 
 func readStringBody(b []byte, size uint32) string {
@@ -263,8 +252,18 @@ func readStringBody(b []byte, size uint32) string {
 
 // list
 
-func readListBuffer(b []byte, tableSize uint32, dataSize uint32) []byte {
-	size := int(1 + 4 + 4 + tableSize + dataSize) // type(1) + table size (4) + data size (4)
+func readListBuffer(
+	b []byte,
+	tableSizeLen int,
+	dataSizeLen int,
+	tableSize uint32,
+	dataSize uint32,
+) []byte {
+	size := 1 + // type(1)
+		tableSizeLen +
+		dataSizeLen +
+		int(tableSize) +
+		int(dataSize)
 	off := len(b) - size
 	if off < 0 {
 		return nil
@@ -284,32 +283,28 @@ func readListTable(b []byte, size uint32) (listTable, []byte) {
 	return v, b[:off]
 }
 
-func readListTableSize(b []byte) (uint32, []byte) {
-	off := len(b) - 4
-	if off < 0 {
-		return 0, nil
-	}
-
-	p := b[off:]
-	v := binary.BigEndian.Uint32(p)
-	return v, b[:off]
+func readListTableSize(b []byte) (uint32, int) {
+	return reverseUvarint32(b)
 }
 
-func readListDataSize(b []byte) (uint32, []byte) {
-	off := len(b) - 4
-	if off < 0 {
-		return 0, nil
-	}
-
-	p := b[off:]
-	v := binary.BigEndian.Uint32(p)
-	return v, b[:off]
+func readListDataSize(b []byte) (uint32, int) {
+	return reverseUvarint32(b)
 }
 
 // message
 
-func readMessageBuffer(b []byte, tableSize uint32, dataSize uint32) []byte {
-	size := 1 + 4 + 4 + int(tableSize) + int(dataSize) // type(1) + table size(4) + data size(4)
+func readMessageBuffer(
+	b []byte,
+	tableSizeLen int,
+	dataSizeLen int,
+	tableSize uint32,
+	dataSize uint32,
+) []byte {
+	size := 1 + // type(1)
+		tableSizeLen +
+		dataSizeLen +
+		int(tableSize) +
+		int(dataSize)
 	off := len(b) - size
 	if off < 0 {
 		return nil
@@ -329,24 +324,10 @@ func readMessageTable(b []byte, size uint32) (messageTable, []byte) {
 	return v, b[:off]
 }
 
-func readMessageTableSize(b []byte) (uint32, []byte) {
-	off := len(b) - 4
-	if off < 0 {
-		return 0, nil
-	}
-
-	p := b[off:]
-	v := binary.BigEndian.Uint32(p)
-	return v, b[:off]
+func readMessageTableSize(b []byte) (uint32, int) {
+	return reverseUvarint32(b)
 }
 
-func readMessageDataSize(b []byte) (uint32, []byte) {
-	off := len(b) - 4
-	if off < 0 {
-		return 0, nil
-	}
-
-	p := b[off:]
-	v := binary.BigEndian.Uint32(p)
-	return v, b[:off]
+func readMessageDataSize(b []byte) (uint32, int) {
+	return reverseUvarint32(b)
 }

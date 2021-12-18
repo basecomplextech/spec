@@ -10,11 +10,12 @@ func ReadMessage(buf []byte) Message {
 	if type_ != TypeMessage {
 		return Message{}
 	}
-
-	tsize, b := readMessageTableSize(b)
-	dsize, b := readMessageDataSize(b)
-	table, _ := readMessageTable(b, tsize)
-	buffer := readMessageBuffer(buf, tsize, dsize) // slice initial buf
+	
+	ln := len(b)
+	tsize, tn := readMessageTableSize(b)
+	dsize, dn := readMessageDataSize(b[:ln-tn])
+	table, _ := readMessageTable(b[:ln-tn-dn], tsize)
+	buffer := readMessageBuffer(buf, tn, dn, tsize, dsize) // slice initial buf
 
 	return Message{
 		buffer: buffer,

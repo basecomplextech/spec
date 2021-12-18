@@ -208,5 +208,26 @@ func walkMessageData(m TestMessageData) int {
 	v += int(m.Float32())
 	v += int(m.Float64())
 
+	{
+		list := m.List()
+		for i := 0; i < list.Len(); i++ {
+			v1 := list.Element(i).Int64()
+			v += int(v1)
+		}
+	}
+
+	{
+		list := m.Messages()
+		for i := 0; i < list.Len(); i++ {
+			v1 := list.Element(i).Message()
+			sub := TestSubMessageData{v1}
+
+			v += int(sub.Int8())
+			v += int(sub.Int16())
+			v += int(sub.Int32())
+			v += int(sub.Int64())
+		}
+	}
+
 	return v
 }
