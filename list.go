@@ -3,24 +3,7 @@ package spec
 type List struct {
 	buffer []byte
 	table  listTable
-}
-
-func ReadList(buf []byte) List {
-	type_, b := readType(buf)
-	if type_ != TypeList {
-		return List{}
-	}
-
-	ln := len(b)
-	tsize, tn := readListTableSize(b)
-	dsize, dn := readListDataSize(b[:ln-tn])
-	table, _ := readListTable(b[:ln-tn-dn], tsize)
-	buffer := readListBuffer(buf, tn, dn, tsize, dsize) // slice initial buf
-
-	return List{
-		buffer: buffer,
-		table:  table,
-	}
+	data   []byte
 }
 
 // Data returns the exact list bytes.
@@ -34,7 +17,7 @@ func (l List) Element(i int) (d Data) {
 	if off < 0 {
 		return
 	}
-	b := l.buffer[:off]
+	b := l.data[:off]
 	return ReadData(b)
 }
 

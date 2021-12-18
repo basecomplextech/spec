@@ -3,24 +3,7 @@ package spec
 type Message struct {
 	buffer []byte
 	table  messageTable
-}
-
-func ReadMessage(buf []byte) Message {
-	type_, b := readType(buf)
-	if type_ != TypeMessage {
-		return Message{}
-	}
-	
-	ln := len(b)
-	tsize, tn := readMessageTableSize(b)
-	dsize, dn := readMessageDataSize(b[:ln-tn])
-	table, _ := readMessageTable(b[:ln-tn-dn], tsize)
-	buffer := readMessageBuffer(buf, tn, dn, tsize, dsize) // slice initial buf
-
-	return Message{
-		buffer: buffer,
-		table:  table,
-	}
+	data   []byte
 }
 
 // Data returns the exact message bytes.
@@ -34,7 +17,7 @@ func (m Message) Field(tag uint16) (d Data) {
 	if off < 0 {
 		return
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	return ReadData(b)
 }
 
@@ -63,8 +46,9 @@ func (m Message) Int8(tag uint16) int8 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
-	return ReadInt8(b)
+	b := m.data[:off]
+	v, _ := ReadInt8(b)
+	return v
 }
 
 func (m Message) Int16(tag uint16) int16 {
@@ -72,7 +56,7 @@ func (m Message) Int16(tag uint16) int16 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	v, _ := ReadInt16(b)
 	return v
 }
@@ -82,7 +66,7 @@ func (m Message) Int32(tag uint16) int32 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	v, _ := ReadInt32(b)
 	return v
 }
@@ -92,7 +76,7 @@ func (m Message) Int64(tag uint16) int64 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	v, _ := ReadInt64(b)
 	return v
 }
@@ -102,8 +86,9 @@ func (m Message) UInt8(tag uint16) uint8 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
-	return ReadUInt8(b)
+	b := m.data[:off]
+	v, _ := ReadUInt8(b)
+	return v
 }
 
 func (m Message) UInt16(tag uint16) uint16 {
@@ -111,7 +96,7 @@ func (m Message) UInt16(tag uint16) uint16 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	v, _ := ReadUInt16(b)
 	return v
 }
@@ -121,7 +106,7 @@ func (m Message) UInt32(tag uint16) uint32 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	v, _ := ReadUInt32(b)
 	return v
 }
@@ -131,7 +116,7 @@ func (m Message) UInt64(tag uint16) uint64 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	v, _ := ReadUInt64(b)
 	return v
 }
@@ -141,8 +126,9 @@ func (m Message) Float32(tag uint16) float32 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
-	return ReadFloat32(b)
+	b := m.data[:off]
+	v, _ := ReadFloat32(b)
+	return v
 }
 
 func (m Message) Float64(tag uint16) float64 {
@@ -150,8 +136,9 @@ func (m Message) Float64(tag uint16) float64 {
 	if off < 0 {
 		return 0
 	}
-	b := m.buffer[:off]
-	return ReadFloat64(b)
+	b := m.data[:off]
+	v, _ := ReadFloat64(b)
+	return v
 }
 
 func (m Message) Bytes(tag uint16) []byte {
@@ -159,8 +146,9 @@ func (m Message) Bytes(tag uint16) []byte {
 	if off < 0 {
 		return nil
 	}
-	b := m.buffer[:off]
-	return ReadBytes(b)
+	b := m.data[:off]
+	v, _ := ReadBytes(b)
+	return v
 }
 
 func (m Message) String(tag uint16) string {
@@ -168,8 +156,9 @@ func (m Message) String(tag uint16) string {
 	if off < 0 {
 		return ""
 	}
-	b := m.buffer[:off]
-	return ReadString(b)
+	b := m.data[:off]
+	v, _ := ReadString(b)
+	return v
 }
 
 func (m Message) List(tag uint16) List {
@@ -177,6 +166,6 @@ func (m Message) List(tag uint16) List {
 	if off < 0 {
 		return List{}
 	}
-	b := m.buffer[:off]
+	b := m.data[:off]
 	return ReadList(b)
 }

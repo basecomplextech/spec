@@ -169,7 +169,7 @@ func (t messageTable) offset(tag uint16) int {
 		// calc offset
 		middle := int(uint(left+right) >> 1) // avoid overflow
 		off := middle * messageFieldSize
-		b := t[off : off+6]
+		b := t[off : off+messageFieldSize]
 
 		// read current tag
 		cur := binary.BigEndian.Uint16(b)

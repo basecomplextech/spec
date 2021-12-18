@@ -2,6 +2,7 @@ package spec
 
 import (
 	"bytes"
+	"compress/zlib"
 	"encoding/json"
 	"testing"
 	"time"
@@ -40,6 +41,7 @@ func Benchmark_Read(b *testing.B) {
 
 	b.ReportMetric(rps, "rps")
 	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
 
 // Write
@@ -126,6 +128,8 @@ func BenchmarkJSON_Read(b *testing.B) {
 	rps := float64(b.N) / sec
 
 	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(len(data)), "size")
+	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
 
 func BenchmarkJSON_Write(b *testing.B) {
@@ -229,5 +233,26 @@ func walkMessageData(m TestMessageData) int {
 		}
 	}
 
+	{
+		list := m.Strings()
+		for i := 0; i < list.Len(); i++ {
+			el := list.Element(i)
+			s := el.String()
+			v += len(s)
+			if len(s) == 0 {
+				panic("empty string")
+			}
+		}
+	}
+
 	return v
+}
+
+func compressedSize(b []byte) int {
+	buf := &bytes.Buffer{}
+	w := zlib.NewWriter(buf)
+	w.Write(b)
+	w.Close()
+	c := buf.Bytes()
+	return len(c)
 }

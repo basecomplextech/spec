@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -22,6 +23,7 @@ type TestMessage struct {
 
 	List     []int64           `tag:"40"`
 	Messages []*TestSubMessage `tag:"41"`
+	Strings  []string          `tag:"42"`
 }
 
 func newTestMessage() *TestMessage {
@@ -34,6 +36,12 @@ func newTestMessage() *TestMessage {
 	for i := 0; i < cap(messages); i++ {
 		sub := newTestSubMessage(i)
 		messages = append(messages, sub)
+	}
+
+	strings := make([]string, 0, 10)
+	for i := 0; i < cap(strings); i++ {
+		s := fmt.Sprintf("hello, world %03d", i)
+		strings = append(strings, s)
 	}
 
 	return &TestMessage{
@@ -52,6 +60,7 @@ func newTestMessage() *TestMessage {
 
 		List:     list,
 		Messages: messages,
+		Strings:  strings,
 	}
 }
 
@@ -105,7 +114,7 @@ func (msg *TestMessage) Read(b []byte) error {
 		}
 	}
 
-	// list:41
+	// messages:41
 	{
 		list := m.List(41)
 		msg.Messages = make([]*TestSubMessage, 0, list.Len())
@@ -117,6 +126,17 @@ func (msg *TestMessage) Read(b []byte) error {
 				return err
 			}
 			msg.Messages = append(msg.Messages, val)
+		}
+	}
+
+	// strings:42
+	{
+		list := m.List(42)
+		msg.Strings = make([]string, 0, list.Len())
+
+		for i := 0; i < list.Len(); i++ {
+			s := list.Element(i).String()
+			msg.Strings = append(msg.Strings, s)
 		}
 	}
 	return nil
@@ -173,7 +193,7 @@ func (msg TestMessage) Write(w *Writer) error {
 	w.EndList()
 	w.Field(40)
 
-	// list:41
+	// messages:41
 	w.BeginList()
 	for _, val := range msg.Messages {
 		val.Write(w)
@@ -181,6 +201,15 @@ func (msg TestMessage) Write(w *Writer) error {
 	}
 	w.EndList()
 	w.Field(41)
+
+	// strings:42
+	w.BeginList()
+	for _, val := range msg.Strings {
+		w.String(val)
+		w.Element()
+	}
+	w.EndList()
+	w.Field(42)
 
 	return w.EndMessage()
 }
@@ -217,6 +246,7 @@ func (d TestMessageData) Float32() float32 { return d.m.Float32(30) }
 func (d TestMessageData) Float64() float64 { return d.m.Float64(31) }
 func (d TestMessageData) List() List       { return d.m.List(40) }
 func (d TestMessageData) Messages() List   { return d.m.List(41) }
+func (d TestMessageData) Strings() List    { return d.m.List(42) }
 
 func readTestMessageData(b []byte) TestMessageData {
 	d := ReadMessage(b)

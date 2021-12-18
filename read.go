@@ -6,36 +6,38 @@ import (
 	"unsafe"
 )
 
-func ReadType(b []byte) Type {
-	t, _ := readType(b)
-	return t
+func ReadType(b []byte) (Type, int) {
+	return readType(b)
 }
 
-func ReadBool(b []byte) bool {
-	t, _ := readType(b)
-	if t != TypeTrue {
-		return false
+func ReadBool(b []byte) (bool, int) {
+	t, n := readType(b)
+	if n < 0 {
+		return false, n
 	}
-	return true
+	return t == TypeTrue, 1
 }
 
-func ReadByte(b []byte) byte {
+func ReadByte(b []byte) (byte, int) {
 	return ReadUInt8(b)
 }
 
-func ReadInt8(b []byte) int8 {
+func ReadInt8(b []byte) (int8, int) {
 	if len(b) < 2 {
-		return 0
+		return 0, -1
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeInt8 {
-		return 0
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeInt8:
+		return 0, -1
 	}
 
-	v := b[off-1]
-	return int8(v)
+	off := len(b) - 2
+	v := b[off]
+	return int8(v), 2
 }
 
 func ReadInt16(b []byte) (int16, int) {
@@ -43,14 +45,17 @@ func ReadInt16(b []byte) (int16, int) {
 		return 0, 0
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeInt16 {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeInt16:
 		return 0, -1
 	}
 
-	v, rem := reverseVarint(b[:off])
-	return int16(v), rem
+	off := len(b) - n
+	v, n1 := reverseVarint(b[:off])
+	return int16(v), n + n1
 }
 
 func ReadInt32(b []byte) (int32, int) {
@@ -58,14 +63,17 @@ func ReadInt32(b []byte) (int32, int) {
 		return 0, 0
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeInt32 {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeInt32:
 		return 0, -1
 	}
 
-	v, rem := reverseVarint(b[:off])
-	return int32(v), rem
+	off := len(b) - n
+	v, n1 := reverseVarint(b[:off])
+	return int32(v), n + n1
 }
 
 func ReadInt64(b []byte) (int64, int) {
@@ -73,28 +81,34 @@ func ReadInt64(b []byte) (int64, int) {
 		return 0, 0
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeInt64 {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeInt64:
 		return 0, -1
 	}
 
-	v, rem := reverseVarint(b[:off])
-	return v, rem
+	off := len(b) - n
+	v, n1 := reverseVarint(b[:off])
+	return v, n + n1
 }
 
-func ReadUInt8(b []byte) uint8 {
+func ReadUInt8(b []byte) (uint8, int) {
 	if len(b) < 2 {
-		return 0
+		return 0, -1
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeUInt8 {
-		return 0
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeUInt8:
+		return 0, -1
 	}
 
-	return b[off-1]
+	off := len(b) - 2
+	return b[off], 2
 }
 
 func ReadUInt16(b []byte) (uint16, int) {
@@ -102,14 +116,17 @@ func ReadUInt16(b []byte) (uint16, int) {
 		return 0, 0
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeUInt16 {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeUInt16:
 		return 0, -1
 	}
 
-	v, rem := reverseUvarint(b[:off])
-	return uint16(v), rem
+	off := len(b) - n
+	v, n1 := reverseUvarint(b[:off])
+	return uint16(v), n + n1
 }
 
 func ReadUInt32(b []byte) (uint32, int) {
@@ -117,14 +134,17 @@ func ReadUInt32(b []byte) (uint32, int) {
 		return 0, 0
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeUInt32 {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeUInt32:
 		return 0, -1
 	}
 
-	v, rem := reverseUvarint(b[:off])
-	return uint32(v), rem
+	off := len(b) - n
+	v, n1 := reverseUvarint(b[:off])
+	return uint32(v), n + n1
 }
 
 func ReadUInt64(b []byte) (uint64, int) {
@@ -132,86 +152,76 @@ func ReadUInt64(b []byte) (uint64, int) {
 		return 0, 0
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeUInt64 {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeUInt64:
 		return 0, -1
 	}
 
-	v, rem := reverseUvarint(b[:off])
-	return v, rem
+	off := len(b) - 1
+	v, n1 := reverseUvarint(b[:off])
+	return v, n + n1
 }
 
-func ReadFloat32(b []byte) float32 {
+func ReadFloat32(b []byte) (float32, int) {
 	if len(b) < 5 {
-		return 0
+		return 0, -1
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeFloat32 {
-		return 0
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeFloat32:
+		return 0, -1
 	}
 
-	off -= 4
+	off := len(b) - 5
 	v := binary.BigEndian.Uint32(b[off:])
-	return math.Float32frombits(v)
+	v1 := math.Float32frombits(v)
+	return v1, 5
 }
 
-func ReadFloat64(b []byte) float64 {
+func ReadFloat64(b []byte) (float64, int) {
 	if len(b) < 9 {
-		return 0
+		return 0, -1
 	}
 
-	off := len(b) - 1
-	t := Type(b[off])
-	if t != TypeFloat64 {
-		return 0
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t != TypeFloat64:
+		return 0, -1
 	}
 
-	off -= 8
+	off := len(b) - 9
 	v := binary.BigEndian.Uint64(b[off:])
-	return math.Float64frombits(v)
+	v1 := math.Float64frombits(v)
+	return v1, 9
 }
 
-func ReadBytes(b []byte) []byte {
-	t, b := readType(b)
-	if t != TypeBytes {
-		return nil
+// Bytes
+
+func ReadBytes(b []byte) ([]byte, int) {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return nil, n
+	case t != TypeBytes:
+		return nil, -1
 	}
-
-	size, b := readBytesSize(b)
-	return readBytesBody(b, size)
-}
-
-func ReadString(b []byte) string {
-	t, b := readType(b)
-	if t != TypeString {
-		return ""
-	}
-
-	size, b := readStringSize(b)
-	return readStringBody(b, size)
-}
-
-// internal
-
-func readType(b []byte) (Type, []byte) {
-	if len(b) == 0 {
-		return TypeNil, nil
-	}
-
 	off := len(b) - 1
-	v := b[off]
-	return Type(v), b[:off]
-}
 
-// bytes
+	// bytes size
+	size, n1 := reverseUvarint32(b[:off])
+	off -= n1
 
-func readBytesSize(b []byte) (uint32, []byte) {
-	// TODO: Unsafe, rem can be < 0
-	v, rem := reverseUvarint32(b)
-	return uint32(v), b[:rem]
+	// bytes body
+	v := readBytesBody(b[:off], size)
+	return v, n + n1 + int(size)
 }
 
 func readBytesBody(b []byte, size uint32) []byte {
@@ -226,11 +236,25 @@ func readBytesBody(b []byte, size uint32) []byte {
 	return b[off:]
 }
 
-// string
+// String
 
-func readStringSize(b []byte) (uint32, []byte) {
-	v, rem := reverseUvarint32(b)
-	return uint32(v), b[:rem]
+func ReadString(b []byte) (string, int) {
+	t, n := readType(b)
+	switch {
+	case n < 0:
+		return "", n
+	case t != TypeString:
+		return "", -1
+	}
+	off := len(b) - 1
+
+	// string size
+	size, n1 := reverseUvarint32(b[:off])
+	off -= n1
+
+	// string body
+	s := readStringBody(b[:off], size)
+	return s, n + n1 + int(size)
 }
 
 func readStringBody(b []byte, size uint32) string {
@@ -239,73 +263,114 @@ func readStringBody(b []byte, size uint32) string {
 		return ""
 	}
 
-	off := len(b) - int(size)
-	if off < 0 {
+	start := len(b) - int(size)
+	if start < 0 {
 		return ""
 	}
+	end := len(b) - 1 // last zero byte
 
-	end := off + int(size) - 1
-	p := b[off:end]
+	p := b[start:end]
 	s := *(*string)(unsafe.Pointer(&p))
 	return s
 }
 
-// list
+// List
 
-func readListBuffer(
-	b []byte,
-	tableSizeLen int,
-	dataSizeLen int,
-	tableSize uint32,
-	dataSize uint32,
-) []byte {
-	size := 1 + // type(1)
-		tableSizeLen +
-		dataSizeLen +
-		int(tableSize) +
-		int(dataSize)
-	off := len(b) - size
-	if off < 0 {
-		return nil
+func ReadList(b []byte) List {
+	type_, _ := readType(b)
+	if type_ != TypeList {
+		return List{}
 	}
+	off := len(b) - 1
 
-	return b[off:]
+	// table size
+	tsize, tn := reverseUvarint32(b[:off])
+	off -= int(tn)
+
+	// data size
+	dsize, dn := reverseUvarint32(b[:off])
+	off -= int(dn)
+
+	// element table
+	table := readListTable(b[:off], tsize)
+	off -= int(tsize)
+
+	// element data
+	data := readListData(b[:off], dsize)
+	off -= int(dsize)
+
+	buffer := b[off:]
+	return List{
+		buffer: buffer,
+		table:  table,
+		data:   data,
+	}
 }
 
-func readListTable(b []byte, size uint32) (listTable, []byte) {
+func readListTable(b []byte, size uint32) listTable {
 	off := len(b) - int(size)
 	if off < 0 {
-		return nil, nil
+		return nil
 	}
 
 	p := b[off:]
 	v := listTable(p)
-	return v, b[:off]
+	return v
 }
 
-func readListTableSize(b []byte) (uint32, int) {
-	return reverseUvarint32(b)
+func readListData(b []byte, size uint32) []byte {
+	off := len(b) - int(size)
+	if off < 0 {
+		return nil
+	}
+	return b[off:]
 }
 
-func readListDataSize(b []byte) (uint32, int) {
-	return reverseUvarint32(b)
+// Message
+
+func ReadMessage(b []byte) Message {
+	type_, _ := readType(b)
+	if type_ != TypeMessage {
+		return Message{}
+	}
+	off := len(b) - 1
+
+	// table size
+	tsize, tn := reverseUvarint32(b[:off])
+	off -= int(tn)
+
+	// data size
+	dsize, dn := reverseUvarint32(b[:off])
+	off -= int(dn)
+
+	// field table
+	table := readMessageTable(b[:off], tsize)
+	off -= int(tsize)
+
+	// field data
+	data := readMessageData(b[:off], dsize)
+	off -= int(dsize)
+
+	buffer := b[off:]
+	return Message{
+		buffer: buffer,
+		table:  table,
+		data:   data,
+	}
 }
 
-// message
+func readMessageTable(b []byte, size uint32) messageTable {
+	off := len(b) - int(size)
+	if off < 0 {
+		return nil
+	}
 
-func readMessageBuffer(
-	b []byte,
-	tableSizeLen int,
-	dataSizeLen int,
-	tableSize uint32,
-	dataSize uint32,
-) []byte {
-	size := 1 + // type(1)
-		tableSizeLen +
-		dataSizeLen +
-		int(tableSize) +
-		int(dataSize)
-	off := len(b) - size
+	p := b[off:]
+	return messageTable(p)
+}
+
+func readMessageData(b []byte, size uint32) []byte {
+	off := len(b) - int(size)
 	if off < 0 {
 		return nil
 	}
@@ -313,21 +378,14 @@ func readMessageBuffer(
 	return b[off:]
 }
 
-func readMessageTable(b []byte, size uint32) (messageTable, []byte) {
-	off := len(b) - int(size)
-	if off < 0 {
-		return nil, nil
+// internal
+
+func readType(b []byte) (Type, int) {
+	if len(b) == 0 {
+		return TypeNil, 1
 	}
 
-	p := b[off:]
-	v := messageTable(p)
-	return v, b[:off]
-}
-
-func readMessageTableSize(b []byte) (uint32, int) {
-	return reverseUvarint32(b)
-}
-
-func readMessageDataSize(b []byte) (uint32, int) {
-	return reverseUvarint32(b)
+	off := len(b) - 1
+	v := b[off]
+	return Type(v), 1
 }

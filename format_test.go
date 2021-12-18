@@ -35,7 +35,7 @@ func TestReadListTable__should_read_list_table(t *testing.T) {
 		ee0 := elements[i:]
 
 		table0, size := writeListTable(nil, ee0)
-		table1, _ := readListTable(table0, size)
+		table1 := readListTable(table0, size)
 
 		ee1 := table1.elements()
 		require.Equal(t, ee0, ee1)
@@ -47,7 +47,7 @@ func TestReadListTable__should_read_list_table(t *testing.T) {
 func TestListTable_offset__should_return_offset_by_index(t *testing.T) {
 	elements := testListElements()
 	data, size := writeListTable(nil, elements)
-	table, _ := readListTable(data, size)
+	table := readListTable(data, size)
 
 	for i, elem := range elements {
 		off := table.offset(i)
@@ -58,7 +58,7 @@ func TestListTable_offset__should_return_offset_by_index(t *testing.T) {
 func TestListTable_offset__should_return_minus_one_when_out_of_range(t *testing.T) {
 	elements := testListElements()
 	data, size := writeListTable(nil, elements)
-	table, _ := readListTable(data, size)
+	table := readListTable(data, size)
 
 	off := table.offset(-1)
 	assert.Equal(t, -1, off)
@@ -131,7 +131,7 @@ func testMessageFieldsN(n int) []messageField {
 func TestMessageTable_count__should_return_number_of_fields(t *testing.T) {
 	fields := testMessageFieldsN(10)
 	data, size := writeMessageTable(nil, fields)
-	table, _ := readMessageTable(data, size)
+	table := readMessageTable(data, size)
 
 	n := table.count()
 	assert.Equal(t, 10, n)
@@ -146,7 +146,7 @@ func TestReadMessageTable__should_read_field_table(t *testing.T) {
 		fields0 := fields[i:]
 
 		data, size := writeMessageTable(nil, fields0)
-		table1, _ := readMessageTable(data, size)
+		table1 := readMessageTable(data, size)
 
 		fields1 := table1.fields()
 		require.Equal(t, fields0, fields1)
@@ -158,7 +158,7 @@ func TestReadMessageTable__should_read_field_table(t *testing.T) {
 func TestMessageTable_field__should_return_field_by_index(t *testing.T) {
 	fields := testMessageFields()
 	data, size := writeMessageTable(nil, fields)
-	table, _ := readMessageTable(data, size)
+	table := readMessageTable(data, size)
 
 	for i, field := range fields {
 		field1, ok := table.field(i)
@@ -170,7 +170,7 @@ func TestMessageTable_field__should_return_field_by_index(t *testing.T) {
 func TestMessageTable_field__should_return_false_when_index_out_of_range(t *testing.T) {
 	fields := testMessageFields()
 	data, size := writeMessageTable(nil, fields)
-	table, _ := readMessageTable(data, size)
+	table := readMessageTable(data, size)
 
 	_, ok := table.field(-1)
 	assert.False(t, ok)
@@ -185,7 +185,7 @@ func TestMessageTable_field__should_return_false_when_index_out_of_range(t *test
 func TestMessageTable_offset__should_return_field_offset_by_tag(t *testing.T) {
 	fields := testMessageFields()
 	data, size := writeMessageTable(nil, fields)
-	table, _ := readMessageTable(data, size)
+	table := readMessageTable(data, size)
 
 	for _, field := range fields {
 		off := table.offset(field.tag)
@@ -196,7 +196,7 @@ func TestMessageTable_offset__should_return_field_offset_by_tag(t *testing.T) {
 func TestMessageTable_offset__should_return_minus_one_when_field_not_found(t *testing.T) {
 	fields := testMessageFields()
 	data, size := writeMessageTable(nil, fields)
-	table, _ := readMessageTable(data, size)
+	table := readMessageTable(data, size)
 
 	off := table.offset(0)
 	assert.Equal(t, -1, off)

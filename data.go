@@ -5,23 +5,28 @@ type Data []byte
 func ReadData(b []byte) Data { return Data(b) }
 
 func (d Data) Type() Type {
-	return ReadType(d)
+	v, _ := ReadType(d)
+	return v
 }
 
 func (d Data) Nil() bool {
-	return ReadType(d) == TypeNil
+	v, _ := ReadBool(d)
+	return v
 }
 
 func (d Data) Bool() bool {
-	return ReadBool(d)
+	v, _ := ReadBool(d)
+	return v
 }
 
 func (d Data) Byte() byte {
-	return ReadByte(d)
+	v, _ := ReadByte(d)
+	return v
 }
 
 func (d Data) Int8() int8 {
-	return ReadInt8(d)
+	v, _ := ReadInt8(d)
+	return v
 }
 
 func (d Data) Int16() int16 {
@@ -40,7 +45,8 @@ func (d Data) Int64() int64 {
 }
 
 func (d Data) UInt8() uint8 {
-	return ReadUInt8(d)
+	v, _ := ReadUInt8(d)
+	return v
 }
 
 func (d Data) UInt16() uint16 {
@@ -59,19 +65,23 @@ func (d Data) UInt64() uint64 {
 }
 
 func (d Data) Float32() float32 {
-	return ReadFloat32(d)
+	v, _ := ReadFloat32(d)
+	return v
 }
 
 func (d Data) Float64() float64 {
-	return ReadFloat64(d)
+	v, _ := ReadFloat64(d)
+	return v
 }
 
 func (d Data) Bytes() []byte {
-	return ReadBytes(d)
+	v, _ := ReadBytes(d)
+	return v
 }
 
 func (d Data) String() string {
-	return ReadString(d)
+	v, _ := ReadString(d)
+	return v
 }
 
 func (d Data) List() List {

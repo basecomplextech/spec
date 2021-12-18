@@ -8,7 +8,7 @@ const (
 )
 
 // reverseVarint decodes an int64 from the buf in reverse order starting from
-// the buf end and returns that value and the number of remaining bytes.
+// the buf end and returns that value and the number of read bytes.
 func reverseVarint(buf []byte) (int64, int) {
 	ux, off := reverseUvarint(buf) // ok to continue in presence of error
 	x := int64(ux >> 1)
@@ -18,13 +18,15 @@ func reverseVarint(buf []byte) (int64, int) {
 	return x, off
 }
 
+// reverseVarint decodes a uint32 from the buf in reverse order starting from
+// the buf end and returns that value and the number of read bytes.
 func reverseUvarint32(buf []byte) (uint32, int) {
-	v, rem := reverseUvarint(buf)
-	return uint32(v), rem
+	v, n := reverseUvarint(buf)
+	return uint32(v), n
 }
 
 // putReverseVarint encodes an int64 into buf in reverse order
-// starting from the buf end and returns the remaining buf offset.
+// starting from the buf end and returns the number of written bytes.
 // If the buffer is too small, putReverseVarint will panic.
 func putReverseVarint(buf []byte, x int64) int {
 	ux := uint64(x) << 1
@@ -35,7 +37,7 @@ func putReverseVarint(buf []byte, x int64) int {
 }
 
 // reverseUvarint decodes a uint64 from the buf in reverse order starting from
-// the buf end and returns that value and the number of bytes read.
+// the buf end and returns that value and the number of read bytes.
 // If an error occurred, the value is 0 and the number of bytes n is <= 0 meaning:
 //
 // 	n == 0: buf too small
@@ -84,7 +86,7 @@ func reverseUvarint(buf []byte) (uint64, int) {
 }
 
 // putReverseUvarint encodes a uint64 into buf in reverse order
-// starting from the buf end and returns the remaining buf offset.
+// starting from the buf end and returns the number of written bytes.
 // If the buffer is too small, PutUvarint will panic.
 func putReverseUvarint(buf []byte, v uint64) int {
 	i := len(buf) - 1
