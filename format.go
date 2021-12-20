@@ -29,33 +29,38 @@ func (t listTable) count() int {
 	return len(t) / listElementSize
 }
 
+// offset returns an element start/end by its index or -1/-1.
+func (t listTable) offset(i int) (int, int) {
+	n := t.count()
+	switch {
+	case i < 0:
+		return -1, -1
+	case i >= n:
+		return -1, -1
+	}
+
+	off := i * listElementSize
+	start := uint32(0)
+	end := binary.BigEndian.Uint32(t[off:])
+
+	if i > 0 {
+		start = binary.BigEndian.Uint32(t[off-4:])
+	}
+
+	return int(start), int(end)
+}
+
 // elements parses the table and returns a slice of elements
 func (t listTable) elements() []listElement {
 	n := t.count()
 
 	result := make([]listElement, 0, n)
 	for i := 0; i < n; i++ {
-		off := t.offset(i)
-		elem := listElement{uint32(off)}
+		_, end := t.offset(i)
+		elem := listElement{uint32(end)}
 		result = append(result, elem)
 	}
 	return result
-}
-
-// offset returns an element offset by its index or -1.
-func (t listTable) offset(i int) int {
-	n := t.count()
-	switch {
-	case i < 0:
-		return -1
-	case i >= n:
-		return -1
-	}
-
-	off := i * listElementSize
-	b := t[off : off+listElementSize]
-	offset := binary.BigEndian.Uint32(b)
-	return int(offset)
 }
 
 // listStack acts as a buffer for nested list elements.

@@ -64,8 +64,8 @@ func TestListTable_offset__should_return_offset_by_index(t *testing.T) {
 	}
 
 	for i, elem := range elements {
-		off := table.offset(i)
-		require.Equal(t, elem.offset, uint32(off))
+		_, end := table.offset(i)
+		require.Equal(t, elem.offset, uint32(end))
 	}
 }
 
@@ -81,12 +81,14 @@ func TestListTable_offset__should_return_minus_one_when_out_of_range(t *testing.
 		t.Fatal(err)
 	}
 
-	off := table.offset(-1)
-	assert.Equal(t, -1, off)
+	start, end := table.offset(-1)
+	assert.Equal(t, -1, start)
+	assert.Equal(t, -1, end)
 
 	n := table.count()
-	off = table.offset(n)
-	assert.Equal(t, -1, off)
+	start, end = table.offset(n)
+	assert.Equal(t, -1, start)
+	assert.Equal(t, -1, end)
 }
 
 // stack

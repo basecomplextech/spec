@@ -46,14 +46,14 @@ func (l List) Validate() error {
 
 // Element returns a list element data or nil.
 func (l List) Element(i int) []byte {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off < 0:
+	case start < 0:
 		return nil
-	case off > len(l.data):
+	case end > len(l.data):
 		return nil
 	}
-	return l.data[:off]
+	return l.data[start:end]
 }
 
 // Len returns the number of elements in the list.
@@ -64,211 +64,211 @@ func (l List) Len() int {
 // Getters
 
 func (l List) Bool(i int) bool {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return false
-	case off > len(l.data):
+	case end > len(l.data):
 		return false
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadBool(b)
 	return v
 }
 
 func (l List) Int8(i int) int8 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadInt8(b)
 	return v
 }
 
 func (l List) Int16(i int) int16 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadInt16(b)
 	return v
 }
 
 func (l List) Int32(i int) int32 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadInt32(b)
 	return v
 }
 
 func (l List) Int64(i int) int64 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadInt64(b)
 	return v
 }
 
 func (l List) UInt8(i int) uint8 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadUInt8(b)
 	return v
 }
 
 func (l List) UInt16(i int) uint16 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadUInt16(b)
 	return v
 }
 
 func (l List) UInt32(i int) uint32 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadUInt32(b)
 	return v
 }
 
 func (l List) UInt64(i int) uint64 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadUInt64(b)
 	return v
 }
 
 func (l List) Float32(i int) float32 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadFloat32(b)
 	return v
 }
 
 func (l List) Float64(i int) float64 {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return 0
-	case off > len(l.data):
+	case end > len(l.data):
 		return 0
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadFloat64(b)
 	return v
 }
 
 func (l List) Bytes(i int) []byte {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return nil
-	case off > len(l.data):
+	case end > len(l.data):
 		return nil
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadBytes(b)
 	return v
 }
 
 func (l List) String(i int) string {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return ""
-	case off > len(l.data):
+	case end > len(l.data):
 		return ""
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := ReadString(b)
 	return v
 }
 
 func (l List) List(i int) List {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return List{}
-	case off > len(l.data):
+	case end > len(l.data):
 		return List{}
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := GetList(b)
 	return v
 }
 
 func (l List) Message(i int) Message {
-	off := l.table.offset(i)
+	start, end := l.table.offset(i)
 	switch {
-	case off <= 0:
+	case start < 0:
 		return Message{}
-	case off > len(l.data):
+	case end > len(l.data):
 		return Message{}
 	}
 
-	b := l.data[:off]
+	b := l.data[start:end]
 	v, _ := GetMessage(b)
 	return v
 }
