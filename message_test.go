@@ -1,0 +1,98 @@
+package spec
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func testWriteMessage(t *testing.T) []byte {
+	w := NewWriter()
+	w.BeginMessage()
+
+	w.Int8(1)
+	w.Field(1)
+	w.Int16(1)
+	w.Field(2)
+	w.Int32(1)
+	w.Field(3)
+	w.Int64(1)
+	w.Field(4)
+
+	w.UInt8(1)
+	w.Field(10)
+	w.UInt16(1)
+	w.Field(11)
+	w.UInt32(1)
+	w.Field(12)
+	w.UInt64(1)
+	w.Field(13)
+
+	w.Float32(1)
+	w.Field(20)
+	w.Float64(1)
+	w.Field(21)
+
+	w.String("hello, world")
+	w.Field(30)
+	w.Bytes([]byte("hello, world"))
+	w.Field(31)
+
+	w.BeginList()
+	w.String("element1")
+	w.Element()
+	w.EndList()
+	w.Field(40)
+
+	w.BeginMessage()
+	w.String("field1")
+	w.Field(1)
+	w.EndMessage()
+	w.Field(50)
+
+	w.EndMessage()
+	b, err := w.End()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+// ReadMessage
+
+func TestReadMessage__should_read_message(t *testing.T) {
+	b := testWriteMessage(t)
+	_, err := ReadMessage(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Getters
+
+func TestMessage_Getters__should_access_fields(t *testing.T) {
+	b := testWriteMessage(t)
+	m, err := GetMessage(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, int8(1), m.Int8(1))
+	assert.Equal(t, int16(1), m.Int16(2))
+	assert.Equal(t, int32(1), m.Int32(3))
+	assert.Equal(t, int64(1), m.Int64(4))
+
+	assert.Equal(t, uint8(1), m.UInt8(10))
+	assert.Equal(t, uint16(1), m.UInt16(11))
+	assert.Equal(t, uint32(1), m.UInt32(12))
+	assert.Equal(t, uint64(1), m.UInt64(13))
+
+	assert.Equal(t, float32(1), m.Float32(20))
+	assert.Equal(t, float64(1), m.Float64(21))
+
+	assert.Equal(t, "hello, world", m.String(30))
+	assert.Equal(t, []byte("hello, world"), m.Bytes(31))
+
+	assert.Equal(t, 1, m.List(40).Len())
+	assert.Equal(t, 1, m.Message(50).Len())
+}

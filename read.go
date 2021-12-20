@@ -203,7 +203,11 @@ func ReadString(b []byte) (string, error) {
 
 func readList(b []byte) (List, error) {
 	list := List{}
+	if len(b) == 0 {
+		return list, nil
+	}
 
+	// read type
 	t, n := _readType(b)
 	switch {
 	case n < 0:
@@ -211,37 +215,37 @@ func readList(b []byte) (List, error) {
 	case t != TypeList:
 		return list, fmt.Errorf("read list: unexpected type, expected=%d, actual=%d", TypeList, t)
 	}
-	off := len(b) - 1
 
 	// table size
+	off := len(b) - 1
 	tsize, tn := readReverseUvarint32(b[:off])
 	if tn < 0 {
 		return list, fmt.Errorf("read list: invalid table size")
 	}
-	off -= int(tn)
 
 	// data size
+	off -= int(tn)
 	dsize, dn := readReverseUvarint32(b[:off])
 	if dn < 0 {
 		return list, fmt.Errorf("read list: invalid data size")
 	}
-	off -= int(dn)
 
 	// element table
+	off -= int(dn)
 	table, err := _readListTable(b[:off], tsize)
 	if err != nil {
 		return list, err
 	}
-	off -= int(tsize)
 
 	// element data
+	off -= int(tsize)
 	data, err := _readListData(b[:off], dsize)
 	if err != nil {
 		return list, err
 	}
-	off -= int(dsize)
 
 	// done
+	off -= int(dsize)
 	list = List{
 		buffer: b[off:],
 		table:  table,
@@ -277,7 +281,11 @@ func _readListData(b []byte, size uint32) ([]byte, error) {
 
 func readMessage(b []byte) (Message, error) {
 	msg := Message{}
+	if len(b) == 0 {
+		return msg, nil
+	}
 
+	// read type
 	t, n := _readType(b)
 	switch {
 	case n < 0:
@@ -285,37 +293,37 @@ func readMessage(b []byte) (Message, error) {
 	case t != TypeMessage:
 		return msg, fmt.Errorf("read message: unexpected type, expected=%d, actual=%d", TypeMessage, t)
 	}
-	off := len(b) - 1
 
 	// table size
+	off := len(b) - 1
 	tsize, tn := readReverseUvarint32(b[:off])
 	if tn < 0 {
 		return msg, fmt.Errorf("read message: invalid table size")
 	}
-	off -= int(tn)
 
 	// data size
+	off -= int(tn)
 	dsize, dn := readReverseUvarint32(b[:off])
 	if dn < 0 {
 		return msg, fmt.Errorf("read message: invalid data size")
 	}
-	off -= int(dn)
 
 	// field table
+	off -= int(dn)
 	table, err := _readMessageTable(b[:off], tsize)
 	if err != nil {
 		return msg, err
 	}
-	off -= int(tsize)
 
 	// field data
+	off -= int(tsize)
 	data, err := _readMessageData(b[:off], dsize)
 	if err != nil {
 		return msg, err
 	}
-	off -= int(dsize)
 
 	// done
+	off -= int(dsize)
 	msg = Message{
 		buffer: b[off:],
 		table:  table,
@@ -379,7 +387,6 @@ func _readInt(b []byte) (int64, int) {
 		if len(b) < 1 {
 			return 0, -1
 		}
-
 		v := b[len(b)-1]
 		return int64(v), 2
 
@@ -418,7 +425,6 @@ func _readUint(b []byte) (uint64, int) {
 		if len(b) < 1 {
 			return 0, -1
 		}
-
 		v := b[len(b)-1]
 		return uint64(v), 2
 

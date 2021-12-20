@@ -51,7 +51,7 @@ func TestReadListTable__should_read_list_table(t *testing.T) {
 
 // offset
 
-func TestListTable_offset__should_return_offset_by_index(t *testing.T) {
+func TestListTable_offset__should_return_start_end_offset_by_index(t *testing.T) {
 	elements := testListElements()
 	data, size, err := _writeListTable(nil, elements)
 	if err != nil {
@@ -64,8 +64,14 @@ func TestListTable_offset__should_return_offset_by_index(t *testing.T) {
 	}
 
 	for i, elem := range elements {
-		_, end := table.offset(i)
-		require.Equal(t, elem.offset, uint32(end))
+		prev := 0
+		if i > 0 {
+			_, prev = table.offset(i - 1)
+		}
+
+		start, end := table.offset(i)
+		require.Equal(t, prev, start)
+		require.Equal(t, int(elem.offset), end)
 	}
 }
 
@@ -233,7 +239,7 @@ func TestMessageTable_field__should_return_false_when_index_out_of_range(t *test
 
 // offset
 
-func TestMessageTable_offset__should_return_field_offset_by_tag(t *testing.T) {
+func TestMessageTable_offset__should_return_start_end_offset_by_tag(t *testing.T) {
 	fields := testMessageFields()
 	data, size, err := _writeMessageTable(nil, fields)
 	if err != nil {
@@ -245,9 +251,15 @@ func TestMessageTable_offset__should_return_field_offset_by_tag(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, field := range fields {
-		_, end := table.offset(field.tag)
-		require.Equal(t, field.offset, uint32(end))
+	for i, field := range fields {
+		prev := 0
+		if i > 0 {
+			_, prev = table.offset(field.tag - 1)
+		}
+
+		start, end := table.offset(field.tag)
+		require.Equal(t, prev, start)
+		require.Equal(t, int(field.offset), end)
 	}
 }
 

@@ -300,12 +300,17 @@ func (w *Writer) Element() error {
 		return w.err
 	}
 
+	// check list
+	list, ok := w.objects.peek()
+	switch {
+	case !ok:
+		return w.fail(fmt.Errorf("element: cannot write element, not list writer"))
+	case list.type_ != objectTypeList:
+		return w.fail(fmt.Errorf("element: cannot write element, not list writer"))
+	}
+
 	// pop data
 	data := w.popData()
-	list, err := w.objects.lastList()
-	if err != nil {
-		return w.fail(err)
-	}
 
 	// append element relative offset
 	offset := uint32(data.end - list.start)
@@ -363,12 +368,17 @@ func (w *Writer) Field(tag uint16) error {
 		return w.err
 	}
 
+	// check message
+	message, ok := w.objects.peek()
+	switch {
+	case !ok:
+		return w.fail(fmt.Errorf("field: cannot write field, not message writer"))
+	case message.type_ != objectTypeMessage:
+		return w.fail(fmt.Errorf("field: cannot write field, not message writer"))
+	}
+
 	// pop data
 	data := w.popData()
-	message, err := w.objects.lastMessage()
-	if err != nil {
-		return w.fail(err)
-	}
 
 	// insert field tag and relative offset
 	f := messageField{
@@ -474,29 +484,17 @@ func (s *objectStack) len() int {
 	return len(s.stack)
 }
 
-// last
+// peek
 
-// last returns the last object and checks its type.
-func (s *objectStack) last(type_ objectType) (objectEntry, error) {
+// peek returns the last object.
+func (s *objectStack) peek() (objectEntry, bool) {
 	ln := len(s.stack)
 	if ln == 0 {
-		return objectEntry{}, fmt.Errorf("last: object stack is empty")
+		return objectEntry{}, false
 	}
 
 	e := s.stack[ln-1]
-	if e.type_ != type_ {
-		return e, fmt.Errorf("last: unexpected stack object, expected=%v, actual=%v, ",
-			objectTypeList, e.type_)
-	}
-	return e, nil
-}
-
-func (s *objectStack) lastList() (objectEntry, error) {
-	return s.last(objectTypeList)
-}
-
-func (s *objectStack) lastMessage() (objectEntry, error) {
-	return s.last(objectTypeMessage)
+	return e, true
 }
 
 // pop
