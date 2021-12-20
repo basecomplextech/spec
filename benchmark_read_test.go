@@ -123,7 +123,7 @@ func walkMessageData(m TestMessageData) int {
 	{
 		list := m.List()
 		for i := 0; i < list.Len(); i++ {
-			v1 := list.Element(i).Int64()
+			v1 := list.Int64(i)
 			v += int(v1)
 		}
 	}
@@ -131,8 +131,8 @@ func walkMessageData(m TestMessageData) int {
 	{
 		list := m.Messages()
 		for i := 0; i < list.Len(); i++ {
-			v1 := list.Element(i).Message()
-			sub := TestSubMessageData{v1}
+			data := list.Element(i)
+			sub, _ := readTestSubMessageData(data)
 
 			v += int(sub.Int8())
 			v += int(sub.Int16())
@@ -144,10 +144,8 @@ func walkMessageData(m TestMessageData) int {
 	{
 		list := m.Strings()
 		for i := 0; i < list.Len(); i++ {
-			el := list.Element(i)
-			s := el.String()
-			v += len(s)
-			if len(s) == 0 {
+			v := list.String(i)
+			if len(v) == 0 {
 				panic("empty string")
 			}
 		}

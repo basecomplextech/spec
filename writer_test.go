@@ -20,7 +20,7 @@ func TestWriter_Messsage__should_write_message(t *testing.T) {
 	}
 
 	msg1 := &TestMessage{}
-	if err := msg1.Read(ReadData(b)); err != nil {
+	if err := msg1.Read(b); err != nil {
 		t.Fatal(err)
 	}
 
@@ -55,9 +55,9 @@ func TestWriter_List__should_write_list(t *testing.T) {
 		t.Fatal(err)
 	}
 	items1 := []int64{
-		list.Element(0).Int64(),
-		list.Element(1).Int64(),
-		list.Element(2).Int64(),
+		list.Int64(0),
+		list.Int64(1),
+		list.Int64(2),
 	}
 
 	assert.Equal(t, []int64{1, 2, 3}, items1)

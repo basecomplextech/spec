@@ -33,7 +33,7 @@ func ReadInt8(b []byte) (int8, error) {
 	case n < 0:
 		return 0, fmt.Errorf("read int8: invalid data")
 	case v < math.MinInt8:
-		return 0, fmt.Errorf("read int8: overflow, value too little")
+		return 0, fmt.Errorf("read int8: overflow, value too small")
 	case v > math.MaxInt8:
 		return 0, fmt.Errorf("read int8: overflow, value too large")
 	}
@@ -46,7 +46,7 @@ func ReadInt16(b []byte) (int16, error) {
 	case n < 0:
 		return 0, fmt.Errorf("read int16: invalid data")
 	case v < math.MinInt16:
-		return 0, fmt.Errorf("read int16: overflow, value too little")
+		return 0, fmt.Errorf("read int16: overflow, value too small")
 	case v > math.MaxInt16:
 		return 0, fmt.Errorf("read int16: overflow, value too large")
 	}
@@ -59,7 +59,7 @@ func ReadInt32(b []byte) (int32, error) {
 	case n < 0:
 		return 0, fmt.Errorf("read int32: invalid data")
 	case v < math.MinInt32:
-		return 0, fmt.Errorf("read int32: overflow, value too little")
+		return 0, fmt.Errorf("read int32: overflow, value too small")
 	case v > math.MaxInt32:
 		return 0, fmt.Errorf("read int32: overflow, value too large")
 	}

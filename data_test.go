@@ -8,7 +8,7 @@ import (
 // Test messages
 
 type TestMessage struct {
-	Bool bool `tag:1`
+	Bool bool `tag:"1"`
 
 	Int8  int8  `tag:"10"`
 	Int16 int16 `tag:"11"`
@@ -119,7 +119,7 @@ func (msg *TestMessage) Read(b []byte) error {
 		msg.List = make([]int64, 0, list.Len())
 
 		for i := 0; i < list.Len(); i++ {
-			val := list.Element(i).Int64()
+			val := list.Int64(i)
 			msg.List = append(msg.List, val)
 		}
 	}
@@ -130,9 +130,9 @@ func (msg *TestMessage) Read(b []byte) error {
 		msg.Messages = make([]*TestSubMessage, 0, list.Len())
 
 		for i := 0; i < list.Len(); i++ {
-			el := list.Element(i)
+			data := list.Element(i)
 			val := &TestSubMessage{}
-			if err := val.Read(el); err != nil {
+			if err := val.Read(data); err != nil {
 				return err
 			}
 			msg.Messages = append(msg.Messages, val)
@@ -145,7 +145,7 @@ func (msg *TestMessage) Read(b []byte) error {
 		msg.Strings = make([]string, 0, list.Len())
 
 		for i := 0; i < list.Len(); i++ {
-			s := list.Element(i).String()
+			s := list.String(i)
 			msg.Strings = append(msg.Strings, s)
 		}
 	}
@@ -251,7 +251,7 @@ func (msg TestSubMessage) Write(w *Writer) error {
 	return w.EndMessage()
 }
 
-// Data
+// Value
 
 type TestMessageData struct{ m Message }
 
