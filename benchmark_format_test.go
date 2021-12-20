@@ -9,7 +9,10 @@ func BenchmarkFieldTable_field(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	table := readMessageTable(data, size)
+	table, err := _readMessageTable(data, size)
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -30,7 +33,10 @@ func BenchmarkFieldTable_offset(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	table := readMessageTable(data, size)
+	table, err := _readMessageTable(data, size)
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()

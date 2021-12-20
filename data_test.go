@@ -89,7 +89,10 @@ func newTestSubMessage(i int) *TestSubMessage {
 // Read
 
 func (msg *TestMessage) Read(b []byte) error {
-	m := ReadMessage(b)
+	m, err := ReadMessage(b)
+	if err != nil {
+		return err
+	}
 
 	// bool:1
 	msg.Bool = m.Bool(1)
@@ -150,7 +153,10 @@ func (msg *TestMessage) Read(b []byte) error {
 }
 
 func (msg *TestSubMessage) Read(b []byte) error {
-	m := ReadMessage(b)
+	m, err := ReadMessage(b)
+	if err != nil {
+		return err
+	}
 
 	// int:1-4
 	msg.Int8 = m.Int8(1)
@@ -264,9 +270,14 @@ func (d TestMessageData) List() List       { return d.m.List(40) }
 func (d TestMessageData) Messages() List   { return d.m.List(41) }
 func (d TestMessageData) Strings() List    { return d.m.List(42) }
 
-func readTestMessageData(b []byte) TestMessageData {
-	d := ReadMessage(b)
-	return TestMessageData{d}
+func readTestMessageData(b []byte) (data TestMessageData, err error) {
+	d, err := ReadMessage(b)
+	if err != nil {
+		return data, err
+	}
+
+	data = TestMessageData{d}
+	return
 }
 
 type TestSubMessageData struct{ m Message }
@@ -276,7 +287,12 @@ func (d TestSubMessageData) Int16() int16 { return d.m.Int16(2) }
 func (d TestSubMessageData) Int32() int32 { return d.m.Int32(3) }
 func (d TestSubMessageData) Int64() int64 { return d.m.Int64(4) }
 
-func readTestSubMessageData(b []byte) TestSubMessageData {
-	d := ReadMessage(b)
-	return TestSubMessageData{d}
+func readTestSubMessageData(b []byte) (data TestSubMessageData, err error) {
+	d, err := ReadMessage(b)
+	if err != nil {
+		return data, err
+	}
+
+	data = TestSubMessageData{d}
+	return data, nil
 }

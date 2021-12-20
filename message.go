@@ -177,5 +177,6 @@ func (m Message) List(tag uint16) List {
 		return List{}
 	}
 	b := m.data[:off]
-	return ReadList(b)
+	v, _ := ReadList(b)
+	return v
 }

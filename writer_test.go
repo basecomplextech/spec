@@ -50,7 +50,10 @@ func TestWriter_List__should_write_list(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	list := ReadList(b)
+	list, err := ReadList(b)
+	if err != nil {
+		t.Fatal(err)
+	}
 	items1 := []int64{
 		list.Element(0).Int64(),
 		list.Element(1).Int64(),

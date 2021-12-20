@@ -85,9 +85,11 @@ func (d Data) String() string {
 }
 
 func (d Data) List() List {
-	return ReadList(d)
+	v, _ := ReadList(d)
+	return v
 }
 
 func (d Data) Message() Message {
-	return ReadMessage(d)
+	v, _ := ReadMessage(d)
+	return v
 }

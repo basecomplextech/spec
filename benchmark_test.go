@@ -16,20 +16,23 @@ func Benchmark_Read(b *testing.B) {
 	if err := msg.Write(w); err != nil {
 		b.Fatal(err)
 	}
-	data, err := w.End()
+	bytes, err := w.End()
 	if err != nil {
 		b.Fatal(err)
 	}
-	reader := readTestMessageData(data)
+	data, err := readTestMessageData(bytes)
+	if err != nil {
+		b.Fatal(err)
+	}
 
-	size := len(data)
+	size := len(bytes)
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		v := walkMessageData(reader)
+		v := walkMessageData(data)
 		if v == 0 {
 			b.Fatal(v)
 		}
@@ -41,7 +44,7 @@ func Benchmark_Read(b *testing.B) {
 
 	b.ReportMetric(rps, "rps")
 	b.ReportMetric(float64(size), "size")
-	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
+	b.ReportMetric(float64(compressedSize(bytes)), "size-zlib")
 }
 
 // Write
