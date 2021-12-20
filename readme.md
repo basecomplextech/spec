@@ -152,7 +152,7 @@ value {
 		string {
 			data  []byte
 			zero  byte
-			size  varint          // size inclusing zero byte
+			size  varint          // size without zero byte
 		}
 
 		list {

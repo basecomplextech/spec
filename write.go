@@ -2,84 +2,123 @@ package spec
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 )
 
-func writeType(b []byte, type_ Type) []byte {
-	return append(b, byte(type_))
+func writeBool(b []byte, v bool) []byte {
+	if v {
+		return append(b, byte(TypeTrue))
+	} else {
+		return append(b, byte(TypeFalse))
+	}
 }
 
 func writeInt8(b []byte, v int8) []byte {
-	return append(b, uint8(v))
+	b = append(b, uint8(v))
+	b = append(b, byte(TypeInt8))
+	return b
 }
 
 func writeInt16(b []byte, v int16) []byte {
 	p := [maxVarintLen16]byte{}
 	n := writeReverseVarint(p[:], int64(v))
 	off := maxVarintLen16 - n
-	return append(b, p[off:]...)
+
+	b = append(b, p[off:]...)
+	b = append(b, byte(TypeInt16))
+	return b
 }
 
 func writeInt32(b []byte, v int32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseVarint(p[:], int64(v))
 	off := maxVarintLen32 - n
-	return append(b, p[off:]...)
+
+	b = append(b, p[off:]...)
+	b = append(b, byte(TypeInt32))
+	return b
 }
 
 func writeInt64(b []byte, v int64) []byte {
 	p := [maxVarintLen64]byte{}
 	n := writeReverseVarint(p[:], v)
 	off := maxVarintLen64 - n
-	return append(b, p[off:]...)
+
+	b = append(b, p[off:]...)
+	b = append(b, byte(TypeInt64))
+	return b
 }
 
 func writeUInt8(b []byte, v uint8) []byte {
-	return append(b, v)
+	b = append(b, v)
+	b = append(b, byte(TypeUInt8))
+	return b
 }
 
 func writeUInt16(b []byte, v uint16) []byte {
 	p := [maxVarintLen16]byte{}
 	n := writeReverseUvarint(p[:], uint64(v))
 	off := maxVarintLen16 - n
-	return append(b, p[off:]...)
+
+	b = append(b, p[off:]...)
+	b = append(b, byte(TypeUInt16))
+	return b
 }
 
 func writeUInt32(b []byte, v uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(v))
 	off := maxVarintLen32 - n
-	return append(b, p[off:]...)
+
+	b = append(b, p[off:]...)
+	b = append(b, byte(TypeUInt32))
+	return b
 }
 
 func writeUInt64(b []byte, v uint64) []byte {
 	p := [maxVarintLen64]byte{}
 	n := writeReverseUvarint(p[:], v)
 	off := maxVarintLen64 - n
-	return append(b, p[off:]...)
+
+	b = append(b, p[off:]...)
+	b = append(b, byte(TypeUInt64))
+	return b
 }
 
 func writeFloat32(b []byte, v float32) []byte {
 	p := [4]byte{}
 	binary.BigEndian.PutUint32(p[:], math.Float32bits(v))
-	return append(b, p[:]...)
+
+	b = append(b, p[:]...)
+	b = append(b, byte(TypeFloat32))
+	return b
 }
 
 func writeFloat64(b []byte, v float64) []byte {
 	p := [8]byte{}
 	binary.BigEndian.PutUint64(p[:], math.Float64bits(v))
-	return append(b, p[:]...)
+
+	b = append(b, p[:]...)
+	b = append(b, byte(TypeFloat64))
+	return b
 }
 
 // bytes
 
-func writeBytes(b []byte, v []byte) ([]byte, uint32) {
+func writeBytes(b []byte, v []byte) ([]byte, error) {
+	size := len(v)
+	if size > MaxSize {
+		return nil, fmt.Errorf("write: bytes too large, max size=%d, actual size=%d", MaxSize, size)
+	}
+
 	b = append(b, v...)
-	size := uint32(len(v))
-	return b, size
+	b = _writeBytesSize(b, uint32(size))
+	b = append(b, byte(TypeBytes))
+	return b, nil
 }
 
-func writeBytesSize(b []byte, size uint32) []byte {
+func _writeBytesSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n
@@ -88,17 +127,20 @@ func writeBytesSize(b []byte, size uint32) []byte {
 
 // string
 
-func writeString(b []byte, s string) ([]byte, uint32) {
+func writeString(b []byte, s string) ([]byte, error) {
+	size := len(s)
+	if size > MaxSize {
+		return nil, fmt.Errorf("write: string too large, max size=%d, actual size=%d", MaxSize, size)
+	}
+
 	b = append(b, s...)
-	size := uint32(len(s))
-	return b, size
+	b = append(b, 0) // zero byte
+	b = _writeStringSize(b, uint32(size))
+	b = append(b, byte(TypeString))
+	return b, nil
 }
 
-func writeStringZero(b []byte) []byte {
-	return append(b, 0)
-}
-
-func writeStringSize(b []byte, size uint32) []byte {
+func _writeStringSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n
@@ -107,28 +149,54 @@ func writeStringSize(b []byte, size uint32) []byte {
 
 // list
 
-func writeListTable(b []byte, table []listElement) ([]byte, uint32) {
-	size := len(table) * listElementSize
-	b, p := writeAlloc(b, size)
+func writeList(b []byte, dataSize int, table []listElement) ([]byte, error) {
+	if dataSize > MaxSize {
+		return nil, fmt.Errorf("write: list too large, max size=%d, actual size=%d", MaxSize, dataSize)
+	}
 
+	dsize := uint32(dataSize)
+	tsize := uint32(0)
+
+	// write table
+	var err error
+	b, tsize, err = _writeListTable(b, table)
+	if err != nil {
+		return nil, err
+	}
+
+	// write sizes and type
+	b = _writeListDataSize(b, dsize)
+	b = _writeListTableSize(b, tsize)
+	b = append(b, byte(TypeList))
+	return b, nil
+}
+
+func _writeListTable(b []byte, table []listElement) ([]byte, uint32, error) {
+	size := len(table) * listElementSize
+	if size > MaxSize {
+		return nil, 0, fmt.Errorf("write: list table too large, max size=%d, actual size=%d", MaxSize, size)
+	}
+
+	b, p := writeAlloc(b, size)
 	off := 0
+
 	for _, elem := range table {
 		q := p[off : off+listElementSize]
 		binary.BigEndian.PutUint32(q, elem.offset)
 		off += listElementSize
 	}
 
-	return b, uint32(size)
+	return b, uint32(size), nil
 }
 
-func writeListTableSize(b []byte, size uint32) []byte {
+func _writeListTableSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
-func writeListDataSize(b []byte, size uint32) []byte {
+func _writeListDataSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n
@@ -137,11 +205,37 @@ func writeListDataSize(b []byte, size uint32) []byte {
 
 // message
 
-func writeMessageTable(b []byte, table []messageField) ([]byte, uint32) {
-	size := len(table) * messageFieldSize
-	b, p := writeAlloc(b, size)
+func writeMessage(b []byte, dataSize int, table []messageField) ([]byte, error) {
+	if dataSize > MaxSize {
+		return nil, fmt.Errorf("write: message too large, max size=%d, actual size=%d", MaxSize, dataSize)
+	}
 
+	dsize := uint32(dataSize)
+	tsize := uint32(0)
+
+	// write table
+	var err error
+	b, tsize, err = _writeMessageTable(b, table)
+	if err != nil {
+		return nil, err
+	}
+
+	// write sizes and type
+	b = _writeMessageDataSize(b, dsize)
+	b = _writeMessageTableSize(b, tsize)
+	b = append(b, byte(TypeMessage))
+	return b, nil
+}
+
+func _writeMessageTable(b []byte, table []messageField) ([]byte, uint32, error) {
+	size := len(table) * messageFieldSize
+	if size > MaxSize {
+		return nil, 0, fmt.Errorf("write: message table too large, max size=%d, actual size=%d", MaxSize, size)
+	}
+
+	b, p := writeAlloc(b, size)
 	off := 0
+
 	for _, field := range table {
 		q := p[off : off+messageFieldSize]
 
@@ -151,17 +245,17 @@ func writeMessageTable(b []byte, table []messageField) ([]byte, uint32) {
 		off += messageFieldSize
 	}
 
-	return b, uint32(size)
+	return b, uint32(size), nil
 }
 
-func writeMessageTableSize(b []byte, size uint32) []byte {
+func _writeMessageTableSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
-func writeMessageDataSize(b []byte, size uint32) []byte {
+func _writeMessageDataSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n

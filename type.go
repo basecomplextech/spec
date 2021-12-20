@@ -1,5 +1,11 @@
 package spec
 
+import "math"
+
+const (
+	MaxSize = math.MaxInt32
+)
+
 // Type specifies a value type.
 type Type byte
 

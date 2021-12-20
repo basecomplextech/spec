@@ -258,16 +258,15 @@ func ReadString(b []byte) (string, int) {
 }
 
 func readStringBody(b []byte, size uint32) string {
-	// mind last zero byte
-	if size <= 1 {
+	if size == 0 {
 		return ""
 	}
 
-	start := len(b) - int(size)
+	start := len(b) - int(size) - 1 // zero byte
 	if start < 0 {
 		return ""
 	}
-	end := len(b) - 1 // last zero byte
+	end := start + int(size)
 
 	p := b[start:end]
 	s := *(*string)(unsafe.Pointer(&p))

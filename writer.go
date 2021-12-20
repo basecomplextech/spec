@@ -67,11 +67,7 @@ func (w *Writer) Reset() {
 func (w *Writer) Bool(v bool) error {
 	start := len(w.buf)
 
-	if v {
-		w.buf = writeType(w.buf, TypeTrue)
-	} else {
-		w.buf = writeType(w.buf, TypeFalse)
-	}
+	w.buf = writeBool(w.buf, v)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -86,7 +82,6 @@ func (w *Writer) Int8(v int8) error {
 	start := len(w.buf)
 
 	w.buf = writeInt8(w.buf, v)
-	w.buf = writeType(w.buf, TypeInt8)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -97,7 +92,6 @@ func (w *Writer) Int16(v int16) error {
 	start := len(w.buf)
 
 	w.buf = writeInt16(w.buf, v)
-	w.buf = writeType(w.buf, TypeInt16)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -108,7 +102,6 @@ func (w *Writer) Int32(v int32) error {
 	start := len(w.buf)
 
 	w.buf = writeInt32(w.buf, v)
-	w.buf = writeType(w.buf, TypeInt32)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -119,7 +112,6 @@ func (w *Writer) Int64(v int64) error {
 	start := len(w.buf)
 
 	w.buf = writeInt64(w.buf, v)
-	w.buf = writeType(w.buf, TypeInt64)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -130,7 +122,6 @@ func (w *Writer) UInt8(v uint8) error {
 	start := len(w.buf)
 
 	w.buf = writeUInt8(w.buf, v)
-	w.buf = writeType(w.buf, TypeUInt8)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -141,7 +132,6 @@ func (w *Writer) UInt16(v uint16) error {
 	start := len(w.buf)
 
 	w.buf = writeUInt16(w.buf, v)
-	w.buf = writeType(w.buf, TypeUInt16)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -152,7 +142,6 @@ func (w *Writer) UInt32(v uint32) error {
 	start := len(w.buf)
 
 	w.buf = writeUInt32(w.buf, v)
-	w.buf = writeType(w.buf, TypeUInt32)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -163,7 +152,6 @@ func (w *Writer) UInt64(v uint64) error {
 	start := len(w.buf)
 
 	w.buf = writeUInt64(w.buf, v)
-	w.buf = writeType(w.buf, TypeUInt64)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -174,7 +162,6 @@ func (w *Writer) Float32(v float32) error {
 	start := len(w.buf)
 
 	w.buf = writeFloat32(w.buf, v)
-	w.buf = writeType(w.buf, TypeFloat32)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -185,7 +172,6 @@ func (w *Writer) Float64(v float64) error {
 	start := len(w.buf)
 
 	w.buf = writeFloat64(w.buf, v)
-	w.buf = writeType(w.buf, TypeFloat64)
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -197,10 +183,11 @@ func (w *Writer) Float64(v float64) error {
 func (w *Writer) Bytes(v []byte) error {
 	start := len(w.buf)
 
-	var size uint32
-	w.buf, size = writeBytes(w.buf, v)
-	w.buf = writeBytesSize(w.buf, size)
-	w.buf = writeType(w.buf, TypeBytes)
+	var err error
+	w.buf, err = writeBytes(w.buf, v)
+	if err != nil {
+		return err
+	}
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -210,11 +197,11 @@ func (w *Writer) Bytes(v []byte) error {
 func (w *Writer) String(v string) error {
 	start := len(w.buf)
 
-	var size uint32
-	w.buf, size = writeString(w.buf, v)
-	w.buf = writeStringZero(w.buf)
-	w.buf = writeStringSize(w.buf, size+1) // plus zero byte
-	w.buf = writeType(w.buf, TypeString)
+	var err error
+	w.buf, err = writeString(w.buf, v)
+	if err != nil {
+		return err
+	}
 
 	end := len(w.buf)
 	w.setData(start, end)
@@ -253,17 +240,15 @@ func (w *Writer) EndList() error {
 	if err != nil {
 		return err
 	}
-	dsize := uint32(len(w.buf) - list.start)
-	tsize := uint32(0)
 
-	// write table
+	dsize := len(w.buf) - list.start
 	table := w.elements.pop(list.tableStart)
-	w.buf, tsize = writeListTable(w.buf, table)
 
-	// write sizes and type
-	w.buf = writeListDataSize(w.buf, dsize)
-	w.buf = writeListTableSize(w.buf, tsize)
-	w.buf = writeType(w.buf, TypeList)
+	// write list
+	w.buf, err = writeList(w.buf, dsize, table)
+	if err != nil {
+		return err
+	}
 
 	// push data entry
 	start := list.start
@@ -306,17 +291,15 @@ func (w *Writer) EndMessage() error {
 	if err != nil {
 		return err
 	}
-	dsize := uint32(len(w.buf) - message.start)
-	tsize := uint32(0)
 
-	// write table
+	dsize := len(w.buf) - message.start
 	table := w.fields.pop(message.tableStart)
-	w.buf, tsize = writeMessageTable(w.buf, table)
 
-	// write sizes and type
-	w.buf = writeMessageDataSize(w.buf, dsize)
-	w.buf = writeMessageTableSize(w.buf, tsize)
-	w.buf = writeType(w.buf, TypeMessage)
+	// write mesasge
+	w.buf, err = writeMessage(w.buf, dsize, table)
+	if err != nil {
+		return err
+	}
 
 	// push data
 	start := message.start

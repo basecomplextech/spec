@@ -4,7 +4,11 @@ import "testing"
 
 func BenchmarkFieldTable_field(b *testing.B) {
 	fields := testMessageFieldsN(100)
-	data, size := writeMessageTable(nil, fields)
+	data, size, err := _writeMessageTable(nil, fields)
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	table := readMessageTable(data, size)
 
 	b.ReportAllocs()
@@ -21,7 +25,11 @@ func BenchmarkFieldTable_field(b *testing.B) {
 
 func BenchmarkFieldTable_offset(b *testing.B) {
 	fields := testMessageFieldsN(100)
-	data, size := writeMessageTable(nil, fields)
+	data, size, err := _writeMessageTable(nil, fields)
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	table := readMessageTable(data, size)
 
 	b.ReportAllocs()
