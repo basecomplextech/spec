@@ -8,6 +8,8 @@ import (
 // Test messages
 
 type TestMessage struct {
+	Bool bool `tag:1`
+
 	Int8  int8  `tag:"10"`
 	Int16 int16 `tag:"11"`
 	Int32 int32 `tag:"12"`
@@ -45,6 +47,8 @@ func newTestMessage() *TestMessage {
 	}
 
 	return &TestMessage{
+		Bool: true,
+
 		Int8:  math.MaxInt8,
 		Int16: math.MaxInt16,
 		Int32: math.MaxInt32,
@@ -86,6 +90,9 @@ func newTestSubMessage(i int) *TestSubMessage {
 
 func (msg *TestMessage) Read(b []byte) error {
 	m := ReadMessage(b)
+
+	// bool:1
+	msg.Bool = m.Bool(1)
 
 	// int:10-13
 	msg.Int8 = m.Int8(10)
@@ -156,7 +163,13 @@ func (msg *TestSubMessage) Read(b []byte) error {
 // Write
 
 func (msg TestMessage) Write(w *Writer) error {
-	w.BeginMessage()
+	if err := w.BeginMessage(); err != nil {
+		return err
+	}
+
+	// bool:1
+	w.Bool(msg.Bool)
+	w.Field(1)
 
 	// int:10-13
 	w.Int8(msg.Int8)
@@ -215,7 +228,9 @@ func (msg TestMessage) Write(w *Writer) error {
 }
 
 func (msg TestSubMessage) Write(w *Writer) error {
-	w.BeginMessage()
+	if err := w.BeginMessage(); err != nil {
+		return err
+	}
 
 	// int:1-4
 	w.Int8(msg.Int8)
@@ -234,6 +249,7 @@ func (msg TestSubMessage) Write(w *Writer) error {
 
 type TestMessageData struct{ m Message }
 
+func (d TestMessageData) Bool() bool       { return d.m.Bool(1) }
 func (d TestMessageData) Int8() int8       { return d.m.Int8(10) }
 func (d TestMessageData) Int16() int16     { return d.m.Int16(11) }
 func (d TestMessageData) Int32() int32     { return d.m.Int32(12) }

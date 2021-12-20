@@ -41,6 +41,16 @@ func (m Message) Fields() int {
 
 // Readers
 
+func (m Message) Bool(tag uint16) bool {
+	off := m.table.offset(tag)
+	if off < 0 {
+		return false
+	}
+	b := m.data[:off]
+	v, _ := ReadBool(b)
+	return v
+}
+
 func (m Message) Int8(tag uint16) int8 {
 	off := m.table.offset(tag)
 	if off < 0 {

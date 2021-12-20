@@ -6,7 +6,8 @@ const WriteBufferSize = 4096
 
 type Writer struct {
 	buf  []byte
-	data writeData
+	err  error     // writer failed
+	data writeData // last written data, must be consumed before writing next data
 
 	objects  objectStack
 	elements listStack    // stack of list element tables
@@ -39,7 +40,10 @@ func NewWriterBuffer(buf []byte) *Writer {
 
 // End ends writing, returns the result bytes, and resets the writer.
 func (w *Writer) End() ([]byte, error) {
-	if w.objects.len() > 0 {
+	switch {
+	case w.err != nil:
+		return nil, w.err
+	case w.objects.len() > 0:
 		return nil, fmt.Errorf("end: incomplete objects, object stack size=%d", w.objects.len())
 	}
 
@@ -55,6 +59,7 @@ func (w *Writer) End() ([]byte, error) {
 // Reset clears the writer.
 func (w *Writer) Reset() {
 	w.buf = nil
+	w.err = nil
 	w.data = writeData{}
 
 	w.objects.reset()
@@ -65,12 +70,17 @@ func (w *Writer) Reset() {
 // Primitive
 
 func (w *Writer) Bool(v bool) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeBool(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
@@ -79,138 +89,204 @@ func (w *Writer) Byte(v byte) error {
 }
 
 func (w *Writer) Int8(v int8) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeInt8(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) Int16(v int16) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeInt16(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) Int32(v int32) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeInt32(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) Int64(v int64) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeInt64(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) UInt8(v uint8) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeUInt8(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) UInt16(v uint16) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeUInt16(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) UInt32(v uint32) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeUInt32(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) UInt64(v uint64) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeUInt64(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) Float32(v float32) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeFloat32(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) Float64(v float64) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
-
 	w.buf = writeFloat64(w.buf, v)
-
 	end := len(w.buf)
-	w.setData(start, end)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 // Bytes/string
 
 func (w *Writer) Bytes(v []byte) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
 
 	var err error
 	w.buf, err = writeBytes(w.buf, v)
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	end := len(w.buf)
-	w.setData(start, end)
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 func (w *Writer) String(v string) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	start := len(w.buf)
 
 	var err error
 	w.buf, err = writeString(w.buf, v)
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	end := len(w.buf)
-	w.setData(start, end)
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 // List
 
 func (w *Writer) BeginList() error {
+	if w.err != nil {
+		return w.err
+	}
+
 	// push list
 	start := len(w.buf)
 	tableStart := w.elements.offset()
@@ -220,11 +296,15 @@ func (w *Writer) BeginList() error {
 }
 
 func (w *Writer) Element() error {
+	if w.err != nil {
+		return w.err
+	}
+
 	// pop data
 	data := w.popData()
 	list, err := w.objects.lastList()
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	// append element relative offset
@@ -235,10 +315,14 @@ func (w *Writer) Element() error {
 }
 
 func (w *Writer) EndList() error {
+	if w.err != nil {
+		return w.err
+	}
+
 	// pop list
 	list, err := w.objects.popList()
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	dsize := len(w.buf) - list.start
@@ -247,19 +331,25 @@ func (w *Writer) EndList() error {
 	// write list
 	w.buf, err = writeList(w.buf, dsize, table)
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	// push data entry
 	start := list.start
 	end := len(w.buf)
-	w.setData(start, end)
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
 }
 
 // Message
 
 func (w *Writer) BeginMessage() error {
+	if w.err != nil {
+		return w.err
+	}
+
 	// push message
 	start := len(w.buf)
 	tableStart := w.fields.offset()
@@ -269,11 +359,15 @@ func (w *Writer) BeginMessage() error {
 }
 
 func (w *Writer) Field(tag uint16) error {
+	if w.err != nil {
+		return w.err
+	}
+
 	// pop data
 	data := w.popData()
 	message, err := w.objects.lastMessage()
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	// insert field tag and relative offset
@@ -286,10 +380,14 @@ func (w *Writer) Field(tag uint16) error {
 }
 
 func (w *Writer) EndMessage() error {
+	if w.err != nil {
+		return w.err
+	}
+
 	// pop message
 	message, err := w.objects.popMessage()
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	dsize := len(w.buf) - message.start
@@ -298,14 +396,25 @@ func (w *Writer) EndMessage() error {
 	// write mesasge
 	w.buf, err = writeMessage(w.buf, dsize, table)
 	if err != nil {
-		return err
+		return w.fail(err)
 	}
 
 	// push data
 	start := message.start
 	end := len(w.buf)
-	w.setData(start, end)
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
 	return nil
+}
+
+func (w *Writer) fail(err error) error {
+	if w.err != nil {
+		return err
+	}
+
+	w.err = err
+	return err
 }
 
 // data
@@ -317,15 +426,16 @@ type writeData struct {
 	end   int
 }
 
-func (w *Writer) setData(start, end int) {
-	if w.popData().start != 0 || w.popData().end != 0 {
-		panic("cannot set data, previous data not consumed")
+func (w *Writer) setData(start, end int) error {
+	if w.data.start != 0 || w.data.end != 0 {
+		return fmt.Errorf("write: cannot write more data, element/field must be written first")
 	}
 
 	w.data = writeData{
 		start: start,
 		end:   end,
 	}
+	return nil
 }
 
 func (w *Writer) popData() writeData {
