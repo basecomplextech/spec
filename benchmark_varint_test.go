@@ -6,61 +6,61 @@ import (
 	"testing"
 )
 
-// get
+// read
 
-func BenchmarkReverseUvarint32(b *testing.B) {
+func BenchmarkReadReverseUvarint32(b *testing.B) {
 	buf := make([]byte, maxVarintLen32)
-	putReverseUvarint(buf, math.MaxUint32)
+	writeReverseUvarint(buf, math.MaxUint32)
 	b.SetBytes(8)
 
 	for i := 0; i < b.N; i++ {
-		v, n := reverseUvarint(buf)
+		v, n := readReverseUvarint(buf)
 		if v != math.MaxUint32 {
 			b.Fatal()
 		}
-		if n != 0 {
+		if n <= 0 {
 			b.Fatal()
 		}
 	}
 }
 
-func BenchmarkReverseUvarint64(b *testing.B) {
+func BenchmarkReadReverseUvarint64(b *testing.B) {
 	buf := make([]byte, maxVarintLen64)
-	putReverseUvarint(buf, math.MaxUint64)
+	writeReverseUvarint(buf, math.MaxUint64)
 	b.SetBytes(8)
 
 	for i := 0; i < b.N; i++ {
-		v, n := reverseUvarint(buf)
+		v, n := readReverseUvarint(buf)
 		if v != math.MaxUint64 {
 			b.Fatal()
 		}
-		if n != 0 {
+		if n <= 0 {
 			b.Fatal()
 		}
 	}
 }
 
-// put
+// write
 
-func BenchmarkPutReverseUvarint32(b *testing.B) {
+func BenchmarkWriteReverseUvarint32(b *testing.B) {
 	buf := make([]byte, maxVarintLen32)
 	b.SetBytes(4)
 
 	for i := 0; i < b.N; i++ {
-		n := putReverseUvarint(buf, math.MaxUint32)
-		if n != 0 {
+		n := writeReverseUvarint(buf, math.MaxUint32)
+		if n <= 0 {
 			b.Fatal()
 		}
 	}
 }
 
-func BenchmarkPutReverseUvarint64(b *testing.B) {
+func BenchmarkWriteReverseUvarint64(b *testing.B) {
 	buf := make([]byte, maxVarintLen64)
 	b.SetBytes(8)
 
 	for i := 0; i < b.N; i++ {
-		n := putReverseUvarint(buf, math.MaxUint64)
-		if n != 0 {
+		n := writeReverseUvarint(buf, math.MaxUint64)
+		if n <= 0 {
 			b.Fatal()
 		}
 	}

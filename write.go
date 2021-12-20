@@ -15,19 +15,22 @@ func writeInt8(b []byte, v int8) []byte {
 
 func writeInt16(b []byte, v int16) []byte {
 	p := [maxVarintLen16]byte{}
-	off := putReverseVarint(p[:], int64(v))
+	n := writeReverseVarint(p[:], int64(v))
+	off := maxVarintLen16 - n
 	return append(b, p[off:]...)
 }
 
 func writeInt32(b []byte, v int32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseVarint(p[:], int64(v))
+	n := writeReverseVarint(p[:], int64(v))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
 func writeInt64(b []byte, v int64) []byte {
 	p := [maxVarintLen64]byte{}
-	off := putReverseVarint(p[:], v)
+	n := writeReverseVarint(p[:], v)
+	off := maxVarintLen64 - n
 	return append(b, p[off:]...)
 }
 
@@ -37,19 +40,22 @@ func writeUInt8(b []byte, v uint8) []byte {
 
 func writeUInt16(b []byte, v uint16) []byte {
 	p := [maxVarintLen16]byte{}
-	off := putReverseUvarint(p[:], uint64(v))
+	n := writeReverseUvarint(p[:], uint64(v))
+	off := maxVarintLen16 - n
 	return append(b, p[off:]...)
 }
 
 func writeUInt32(b []byte, v uint32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseUvarint(p[:], uint64(v))
+	n := writeReverseUvarint(p[:], uint64(v))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
 func writeUInt64(b []byte, v uint64) []byte {
 	p := [maxVarintLen64]byte{}
-	off := putReverseUvarint(p[:], v)
+	n := writeReverseUvarint(p[:], v)
+	off := maxVarintLen64 - n
 	return append(b, p[off:]...)
 }
 
@@ -75,7 +81,8 @@ func writeBytes(b []byte, v []byte) ([]byte, uint32) {
 
 func writeBytesSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseUvarint(p[:], uint64(size))
+	n := writeReverseUvarint(p[:], uint64(size))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
@@ -93,7 +100,8 @@ func writeStringZero(b []byte) []byte {
 
 func writeStringSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseUvarint(p[:], uint64(size))
+	n := writeReverseUvarint(p[:], uint64(size))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
@@ -115,13 +123,15 @@ func writeListTable(b []byte, table []listElement) ([]byte, uint32) {
 
 func writeListTableSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseUvarint(p[:], uint64(size))
+	n := writeReverseUvarint(p[:], uint64(size))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
 func writeListDataSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseUvarint(p[:], uint64(size))
+	n := writeReverseUvarint(p[:], uint64(size))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
@@ -146,13 +156,15 @@ func writeMessageTable(b []byte, table []messageField) ([]byte, uint32) {
 
 func writeMessageTableSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseUvarint(p[:], uint64(size))
+	n := writeReverseUvarint(p[:], uint64(size))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 
 func writeMessageDataSize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
-	off := putReverseUvarint(p[:], uint64(size))
+	n := writeReverseUvarint(p[:], uint64(size))
+	off := maxVarintLen32 - n
 	return append(b, p[off:]...)
 }
 

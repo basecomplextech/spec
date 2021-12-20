@@ -54,7 +54,7 @@ func ReadInt16(b []byte) (int16, int) {
 	}
 
 	off := len(b) - n
-	v, n1 := reverseVarint(b[:off])
+	v, n1 := readReverseVarint(b[:off])
 	return int16(v), n + n1
 }
 
@@ -72,7 +72,7 @@ func ReadInt32(b []byte) (int32, int) {
 	}
 
 	off := len(b) - n
-	v, n1 := reverseVarint(b[:off])
+	v, n1 := readReverseVarint(b[:off])
 	return int32(v), n + n1
 }
 
@@ -90,7 +90,7 @@ func ReadInt64(b []byte) (int64, int) {
 	}
 
 	off := len(b) - n
-	v, n1 := reverseVarint(b[:off])
+	v, n1 := readReverseVarint(b[:off])
 	return v, n + n1
 }
 
@@ -125,7 +125,7 @@ func ReadUInt16(b []byte) (uint16, int) {
 	}
 
 	off := len(b) - n
-	v, n1 := reverseUvarint(b[:off])
+	v, n1 := readReverseUvarint(b[:off])
 	return uint16(v), n + n1
 }
 
@@ -143,7 +143,7 @@ func ReadUInt32(b []byte) (uint32, int) {
 	}
 
 	off := len(b) - n
-	v, n1 := reverseUvarint(b[:off])
+	v, n1 := readReverseUvarint(b[:off])
 	return uint32(v), n + n1
 }
 
@@ -161,7 +161,7 @@ func ReadUInt64(b []byte) (uint64, int) {
 	}
 
 	off := len(b) - 1
-	v, n1 := reverseUvarint(b[:off])
+	v, n1 := readReverseUvarint(b[:off])
 	return v, n + n1
 }
 
@@ -216,7 +216,7 @@ func ReadBytes(b []byte) ([]byte, int) {
 	off := len(b) - 1
 
 	// bytes size
-	size, n1 := reverseUvarint32(b[:off])
+	size, n1 := readReverseUvarint32(b[:off])
 	off -= n1
 
 	// bytes body
@@ -249,7 +249,7 @@ func ReadString(b []byte) (string, int) {
 	off := len(b) - 1
 
 	// string size
-	size, n1 := reverseUvarint32(b[:off])
+	size, n1 := readReverseUvarint32(b[:off])
 	off -= n1
 
 	// string body
@@ -284,11 +284,11 @@ func ReadList(b []byte) List {
 	off := len(b) - 1
 
 	// table size
-	tsize, tn := reverseUvarint32(b[:off])
+	tsize, tn := readReverseUvarint32(b[:off])
 	off -= int(tn)
 
 	// data size
-	dsize, dn := reverseUvarint32(b[:off])
+	dsize, dn := readReverseUvarint32(b[:off])
 	off -= int(dn)
 
 	// element table
@@ -336,11 +336,11 @@ func ReadMessage(b []byte) Message {
 	off := len(b) - 1
 
 	// table size
-	tsize, tn := reverseUvarint32(b[:off])
+	tsize, tn := readReverseUvarint32(b[:off])
 	off -= int(tn)
 
 	// data size
-	dsize, dn := reverseUvarint32(b[:off])
+	dsize, dn := readReverseUvarint32(b[:off])
 	off -= int(dn)
 
 	// field table

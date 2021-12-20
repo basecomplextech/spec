@@ -7,10 +7,18 @@ const (
 	maxVarintLen64 = 10
 )
 
-// reverseVarint decodes an int64 from the buf in reverse order starting from
+// read
+
+// readReverseVarint decodes an int64 from the buf in reverse order starting from
 // the buf end and returns that value and the number of read bytes.
-func reverseVarint(buf []byte) (int64, int) {
-	ux, off := reverseUvarint(buf) // ok to continue in presence of error
+// If an error occurred, the value is 0 and the number of bytes n is <= 0 meaning:
+//
+// 	n == 0: buf too small
+// 	n  < 0: value larger than 64 bits (overflow)
+// 	        and -n is the number of bytes read
+//
+func readReverseVarint(buf []byte) (int64, int) {
+	ux, off := readReverseUvarint(buf) // ok to continue in presence of error
 	x := int64(ux >> 1)
 	if ux&1 != 0 {
 		x = ^x
@@ -18,25 +26,20 @@ func reverseVarint(buf []byte) (int64, int) {
 	return x, off
 }
 
-// reverseVarint decodes a uint32 from the buf in reverse order starting from
+// readReverseUvarint32 decodes a uint32 from the buf in reverse order starting from
 // the buf end and returns that value and the number of read bytes.
-func reverseUvarint32(buf []byte) (uint32, int) {
-	v, n := reverseUvarint(buf)
+// If an error occurred, the value is 0 and the number of bytes n is <= 0 meaning:
+//
+// 	n == 0: buf too small
+// 	n  < 0: value larger than 64 bits (overflow)
+// 	        and -n is the number of bytes read]
+//
+func readReverseUvarint32(buf []byte) (uint32, int) {
+	v, n := readReverseUvarint(buf)
 	return uint32(v), n
 }
 
-// putReverseVarint encodes an int64 into buf in reverse order
-// starting from the buf end and returns the number of written bytes.
-// If the buffer is too small, putReverseVarint will panic.
-func putReverseVarint(buf []byte, x int64) int {
-	ux := uint64(x) << 1
-	if x < 0 {
-		ux = ^ux
-	}
-	return putReverseUvarint(buf, ux)
-}
-
-// reverseUvarint decodes a uint64 from the buf in reverse order starting from
+// readReverseUvarint decodes a uint64 from the buf in reverse order starting from
 // the buf end and returns that value and the number of read bytes.
 // If an error occurred, the value is 0 and the number of bytes n is <= 0 meaning:
 //
@@ -47,7 +50,7 @@ func putReverseVarint(buf []byte, x int64) int {
 // This is a version of https://developers.google.com/protocol-buffers/docs/encoding#varints
 // which encodes uint64 in reverse byte order.
 //
-func reverseUvarint(buf []byte) (uint64, int) {
+func readReverseUvarint(buf []byte) (uint64, int) {
 	var result uint64
 	var shift uint
 
@@ -85,11 +88,25 @@ func reverseUvarint(buf []byte) (uint64, int) {
 	return 0, 0
 }
 
-// putReverseUvarint encodes a uint64 into buf in reverse order
+// write
+
+// writeReverseVarint encodes an int64 into buf in reverse order
+// starting from the buf end and returns the number of written bytes.
+// If the buffer is too small, writeReverseVarint will panic.
+func writeReverseVarint(buf []byte, x int64) int {
+	ux := uint64(x) << 1
+	if x < 0 {
+		ux = ^ux
+	}
+	return writeReverseUvarint(buf, ux)
+}
+
+// writeReverseUvarint encodes a uint64 into buf in reverse order
 // starting from the buf end and returns the number of written bytes.
 // If the buffer is too small, PutUvarint will panic.
-func putReverseUvarint(buf []byte, v uint64) int {
+func writeReverseUvarint(buf []byte, v uint64) int {
 	i := len(buf) - 1
+	n := 0
 
 	// while v is >= most significat bit
 	for v >= 0b1000_0000 {
@@ -100,9 +117,10 @@ func putReverseUvarint(buf []byte, v uint64) int {
 		v >>= 7
 
 		i--
+		n++
 	}
 
 	// last byte without msb
 	buf[i] = byte(v)
-	return i
+	return n + 1
 }
