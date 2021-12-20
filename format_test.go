@@ -244,8 +244,8 @@ func TestMessageTable_offset__should_return_field_offset_by_tag(t *testing.T) {
 	}
 
 	for _, field := range fields {
-		off := table.offset(field.tag)
-		require.Equal(t, field.offset, uint32(off))
+		_, end := table.offset(field.tag)
+		require.Equal(t, field.offset, uint32(end))
 	}
 }
 
@@ -261,11 +261,13 @@ func TestMessageTable_offset__should_return_minus_one_when_field_not_found(t *te
 		t.Fatal(err)
 	}
 
-	off := table.offset(0)
-	assert.Equal(t, -1, off)
+	start, end := table.offset(0)
+	assert.Equal(t, -1, start)
+	assert.Equal(t, -1, end)
 
-	off = table.offset(math.MaxUint16)
-	assert.Equal(t, -1, off)
+	start, end = table.offset(math.MaxUint16)
+	assert.Equal(t, -1, start)
+	assert.Equal(t, -1, end)
 }
 
 // stack

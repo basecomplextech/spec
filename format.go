@@ -156,11 +156,11 @@ func (t messageTable) fields() []messageField {
 	return result
 }
 
-// offset finds and returns a field offset by its tag or -1.
-func (t messageTable) offset(tag uint16) int {
+// offset returns field start/end by its tag or -1/-1.
+func (t messageTable) offset(tag uint16) (int, int) {
 	n := t.count()
 	if n == 0 {
-		return -1
+		return -1, -1
 	}
 
 	// binary search table
@@ -181,11 +181,36 @@ func (t messageTable) offset(tag uint16) int {
 		case cur > tag:
 			right = middle - 1
 		case cur == tag:
-			offset := binary.BigEndian.Uint32(b[2:])
-			return int(offset)
+			start := uint32(0)
+			end := binary.BigEndian.Uint32(b[2:])
+
+			if middle > 0 {
+				start = binary.BigEndian.Uint32(t[off-4 : off])
+			}
+			return int(start), int(end)
 		}
 	}
-	return -1
+
+	return -1, -1
+}
+
+// offsetByIndex returns field start/end by its index or -1/-1.
+func (t messageTable) offsetByIndex(i int) (int, int) {
+	n := t.count()
+	switch {
+	case i < 0:
+		return -1, -1
+	case i >= n:
+		return -1, -1
+	}
+
+	off := i * messageFieldSize
+	end := binary.BigEndian.Uint32(t[off+2:])
+	start := uint32(0)
+	if i > 0 {
+		start = binary.BigEndian.Uint32(t[off-4:])
+	}
+	return int(start), int(end)
 }
 
 // messageStack acts as a buffer for nested message fields.

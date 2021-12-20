@@ -44,8 +44,8 @@ func BenchmarkFieldTable_offset(b *testing.B) {
 	last := len(fields) - 1
 	tag := fields[last].tag
 	for i := 0; i < b.N; i++ {
-		off := table.offset(tag)
-		if off < 0 {
+		start, _ := table.offset(tag)
+		if start < 0 {
 			b.Fatal()
 		}
 	}
