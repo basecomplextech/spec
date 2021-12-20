@@ -20,6 +20,41 @@ func Benchmark_Read(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+
+	size := len(bytes)
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		_, err := readTestMessageData(bytes)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressedSize(bytes)), "size-zlib")
+}
+
+func Benchmark_Walk(b *testing.B) {
+	msg := newTestMessage()
+
+	buf := make([]byte, 0, 4096)
+	w := NewWriterBuffer(buf)
+	if err := msg.Write(w); err != nil {
+		b.Fatal(err)
+	}
+	bytes, err := w.End()
+	if err != nil {
+		b.Fatal(err)
+	}
 	data, err := readTestMessageData(bytes)
 	if err != nil {
 		b.Fatal(err)
@@ -32,9 +67,12 @@ func Benchmark_Read(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		v := walkMessageData(data)
+		v, err := walkMessageData(data)
+		if err != nil {
+			b.Fatal(err)
+		}
 		if v == 0 {
-			b.Fatal(v)
+			b.Fatal()
 		}
 	}
 
@@ -104,7 +142,7 @@ func walkMessage(m *TestMessage) int {
 	return v
 }
 
-func walkMessageData(m TestMessageData) int {
+func walkMessageData(m TestMessageData) (int, error) {
 	var v int
 
 	v += int(m.Int8())
@@ -120,6 +158,9 @@ func walkMessageData(m TestMessageData) int {
 	v += int(m.Float32())
 	v += int(m.Float64())
 
+	v += len(m.String())
+	v += len(m.Bytes())
+
 	{
 		list := m.List()
 		for i := 0; i < list.Len(); i++ {
@@ -132,7 +173,14 @@ func walkMessageData(m TestMessageData) int {
 		list := m.Messages()
 		for i := 0; i < list.Len(); i++ {
 			data := list.Element(i)
-			sub, _ := readTestSubMessageData(data)
+			if len(data) == 0 {
+				continue
+			}
+
+			sub, err := getTestSubMessageData(data)
+			if err != nil {
+				return 0, err
+			}
 
 			v += int(sub.Int8())
 			v += int(sub.Int16())
@@ -151,7 +199,7 @@ func walkMessageData(m TestMessageData) int {
 		}
 	}
 
-	return v
+	return v, nil
 }
 
 func compressedSize(b []byte) int {

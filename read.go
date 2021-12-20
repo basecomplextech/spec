@@ -157,12 +157,13 @@ func ReadBytes(b []byte) ([]byte, error) {
 	}
 
 	// bytes body
-	off -= n1 - int(size)
-	if off < 0 {
+	end := off - n1
+	start := end - int(size)
+	if start < 0 {
 		return nil, fmt.Errorf("read bytes: invalid data")
 	}
 
-	v := b[off:]
+	v := b[start:end]
 	return v, nil
 }
 
@@ -187,20 +188,20 @@ func ReadString(b []byte) (string, error) {
 	}
 
 	// string body
-	start := off - n1 - int(size) - 1 // zero byte
+	end := off - n1 - 1 // zero byte
+	start := end - int(size)
 	if start < 0 {
 		return "", fmt.Errorf("read string: invalid data")
 	}
-	end := start + int(size)
 
 	p := b[start:end]
 	s := *(*string)(unsafe.Pointer(&p))
 	return s, nil
 }
 
-// List
+// list
 
-func ReadList(b []byte) (List, error) {
+func readList(b []byte) (List, error) {
 	list := List{}
 
 	t, n := _readType(b)
@@ -272,9 +273,9 @@ func _readListData(b []byte, size uint32) ([]byte, error) {
 	return b[off:], nil
 }
 
-// Message
+// message
 
-func ReadMessage(b []byte) (Message, error) {
+func readMessage(b []byte) (Message, error) {
 	msg := Message{}
 
 	t, n := _readType(b)

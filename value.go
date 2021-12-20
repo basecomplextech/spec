@@ -2,8 +2,71 @@ package spec
 
 type Value []byte
 
-func ReadValue(b []byte) Value {
-	return Value(b)
+// GetValue parses and returns a value, but does not validate it.
+func GetValue(b []byte) (Value, error) {
+	t, err := ReadType(b)
+	if err != nil {
+		return Value{}, err
+	}
+	if err := CheckType(t); err != nil {
+		return Value{}, err
+	}
+	return Value(b), nil
+}
+
+// ReadValue reads, recursively validates and returns a value.
+func ReadValue(b []byte) (Value, error) {
+	v := Value(b)
+	if err := v.Validate(); err != nil {
+		return Value{}, err
+	}
+	return v, nil
+}
+
+func (v Value) Validate() error {
+	t, err := ReadType(v)
+	if err != nil {
+		return err
+	}
+
+	switch t {
+	case TypeNil, TypeTrue, TypeFalse:
+		return nil
+
+	case TypeInt8:
+		_, err = ReadInt8(v)
+	case TypeInt16:
+		_, err = ReadInt16(v)
+	case TypeInt32:
+		_, err = ReadInt32(v)
+	case TypeInt64:
+		_, err = ReadInt64(v)
+
+	case TypeUInt8:
+		_, err = ReadUInt8(v)
+	case TypeUInt16:
+		_, err = ReadUInt16(v)
+	case TypeUInt32:
+		_, err = ReadUInt32(v)
+	case TypeUInt64:
+		_, err = ReadUInt64(v)
+
+	case TypeFloat32:
+		_, err = ReadFloat32(v)
+	case TypeFloat64:
+		_, err = ReadFloat64(v)
+
+	case TypeBytes:
+		_, err = ReadBytes(v)
+	case TypeString:
+		_, err = ReadString(v)
+
+	case TypeList:
+		_, err = ReadList(v)
+	case TypeMessage:
+		_, err = ReadMessage(v)
+	}
+	return err
 }
 
 func (v Value) Type() Type {
@@ -87,11 +150,11 @@ func (v Value) String() string {
 }
 
 func (v Value) List() List {
-	p, _ := ReadList(v)
+	p, _ := GetList(v)
 	return p
 }
 
 func (v Value) Message() Message {
-	p, _ := ReadMessage(v)
+	p, _ := GetMessage(v)
 	return p
 }

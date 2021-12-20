@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWriter_Messsage__should_write_message(t *testing.T) {
+func TestWriter_Message__should_write_message(t *testing.T) {
 	msg := newTestMessage()
 
 	w := NewWriter()

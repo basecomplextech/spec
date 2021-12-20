@@ -6,12 +6,45 @@ type Message struct {
 	data   []byte
 }
 
+// GetMessage parses and returns a message, but does not validate it.
+func GetMessage(b []byte) (Message, error) {
+	return readMessage(b)
+}
+
+// ReadMessage reads, recursively validates and returns a message.
+func ReadMessage(b []byte) (Message, error) {
+	m, err := readMessage(b)
+	if err != nil {
+		return Message{}, err
+	}
+	if err := m.Validate(); err != nil {
+		return Message{}, err
+	}
+	return m, nil
+}
+
 // Data returns the exact message bytes.
 func (m Message) Data() []byte {
 	return m.buffer
 }
 
-// Field returns a field value by a tag or an empty value.
+// Validate recursively validates the message.
+func (m Message) Validate() error {
+	n := m.Len()
+
+	for i := 0; i < n; i++ {
+		data := m.FieldByIndex(i)
+		if len(data) == 0 {
+			continue
+		}
+		if _, err := ReadValue(data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Field returns a field data by a tag or nil.
 func (m Message) Field(tag uint16) []byte {
 	off := m.table.offset(tag)
 	switch {
@@ -23,23 +56,20 @@ func (m Message) Field(tag uint16) []byte {
 	return m.data[:off]
 }
 
-// FieldByIndex returns a field value by an index or an empty value.
-func (m Message) FieldByIndex(i int) (Value, bool) {
+// FieldByIndex returns a field data by an index or nil.
+func (m Message) FieldByIndex(i int) []byte {
 	f, ok := m.table.field(i)
 	switch {
 	case !ok:
-		return Value{}, false
+		return nil
 	case int(f.offset) > len(m.data):
-		return Value{}, false
+		return nil
 	}
-
-	b := m.buffer[:f.offset]
-	v := ReadValue(b)
-	return v, true
+	return m.data[:f.offset]
 }
 
-// Fields returns the number of fields in the message.
-func (m Message) Fields() int {
+// Len returns the number of fields in the message.
+func (m Message) Len() int {
 	return m.table.count()
 }
 
@@ -48,7 +78,7 @@ func (m Message) Fields() int {
 func (m Message) Bool(tag uint16) bool {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return false
 	case off > len(m.data):
 		return false
@@ -62,7 +92,7 @@ func (m Message) Bool(tag uint16) bool {
 func (m Message) Int8(tag uint16) int8 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -76,7 +106,7 @@ func (m Message) Int8(tag uint16) int8 {
 func (m Message) Int16(tag uint16) int16 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -90,7 +120,7 @@ func (m Message) Int16(tag uint16) int16 {
 func (m Message) Int32(tag uint16) int32 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -104,7 +134,7 @@ func (m Message) Int32(tag uint16) int32 {
 func (m Message) Int64(tag uint16) int64 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -118,7 +148,7 @@ func (m Message) Int64(tag uint16) int64 {
 func (m Message) UInt8(tag uint16) uint8 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -132,7 +162,7 @@ func (m Message) UInt8(tag uint16) uint8 {
 func (m Message) UInt16(tag uint16) uint16 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -146,7 +176,7 @@ func (m Message) UInt16(tag uint16) uint16 {
 func (m Message) UInt32(tag uint16) uint32 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -160,7 +190,7 @@ func (m Message) UInt32(tag uint16) uint32 {
 func (m Message) UInt64(tag uint16) uint64 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -174,7 +204,7 @@ func (m Message) UInt64(tag uint16) uint64 {
 func (m Message) Float32(tag uint16) float32 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -188,7 +218,7 @@ func (m Message) Float32(tag uint16) float32 {
 func (m Message) Float64(tag uint16) float64 {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return 0
 	case off > len(m.data):
 		return 0
@@ -202,7 +232,7 @@ func (m Message) Float64(tag uint16) float64 {
 func (m Message) Bytes(tag uint16) []byte {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return nil
 	case off > len(m.data):
 		return nil
@@ -216,7 +246,7 @@ func (m Message) Bytes(tag uint16) []byte {
 func (m Message) String(tag uint16) string {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return ""
 	case off > len(m.data):
 		return ""
@@ -230,14 +260,14 @@ func (m Message) String(tag uint16) string {
 func (m Message) List(tag uint16) List {
 	off := m.table.offset(tag)
 	switch {
-	case off < 0:
+	case off <= 0:
 		return List{}
 	case off > len(m.data):
 		return List{}
 	}
 
 	b := m.data[:off]
-	v, _ := ReadList(b)
+	v, _ := GetList(b)
 	return v
 }
 
@@ -251,6 +281,6 @@ func (m Message) Message(tag uint16) Message {
 	}
 
 	b := m.data[:off]
-	v, _ := ReadMessage(b)
+	v, _ := GetMessage(b)
 	return v
 }

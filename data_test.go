@@ -23,9 +23,12 @@ type TestMessage struct {
 	Float32 float32 `tag:"30"`
 	Float64 float64 `tag:"31"`
 
-	List     []int64           `tag:"40"`
-	Messages []*TestSubMessage `tag:"41"`
-	Strings  []string          `tag:"42"`
+	String string `tag:"40"`
+	Bytes  []byte `tag:"41"`
+
+	List     []int64           `tag:"50"`
+	Messages []*TestSubMessage `tag:"51"`
+	Strings  []string          `tag:"52"`
 }
 
 func newTestMessage() *TestMessage {
@@ -61,6 +64,9 @@ func newTestMessage() *TestMessage {
 
 		Float32: math.MaxFloat32,
 		Float64: math.MaxFloat64,
+
+		String: "hello, world",
+		Bytes:  []byte("goodbye, world"),
 
 		List:     list,
 		Messages: messages,
@@ -113,9 +119,13 @@ func (msg *TestMessage) Read(b []byte) error {
 	msg.Float32 = m.Float32(30)
 	msg.Float64 = m.Float64(31)
 
-	// list:40
+	// string/bytes:40-41
+	msg.String = m.String(40)
+	msg.Bytes = m.Bytes(41)
+
+	// list:50
 	{
-		list := m.List(40)
+		list := m.List(50)
 		msg.List = make([]int64, 0, list.Len())
 
 		for i := 0; i < list.Len(); i++ {
@@ -124,13 +134,17 @@ func (msg *TestMessage) Read(b []byte) error {
 		}
 	}
 
-	// messages:41
+	// messages:51
 	{
-		list := m.List(41)
+		list := m.List(51)
 		msg.Messages = make([]*TestSubMessage, 0, list.Len())
 
 		for i := 0; i < list.Len(); i++ {
 			data := list.Element(i)
+			if len(data) == 0 {
+				continue
+			}
+
 			val := &TestSubMessage{}
 			if err := val.Read(data); err != nil {
 				return err
@@ -139,9 +153,9 @@ func (msg *TestMessage) Read(b []byte) error {
 		}
 	}
 
-	// strings:42
+	// strings:52
 	{
-		list := m.List(42)
+		list := m.List(52)
 		msg.Strings = make([]string, 0, list.Len())
 
 		for i := 0; i < list.Len(); i++ {
@@ -203,32 +217,38 @@ func (msg TestMessage) Write(w *Writer) error {
 	w.Float64(msg.Float64)
 	w.Field(31)
 
-	// list:40
+	// bytes:40-41
+	w.String(msg.String)
+	w.Field(40)
+	w.Bytes(msg.Bytes)
+	w.Field(41)
+
+	// list:50
 	w.BeginList()
 	for _, val := range msg.List {
 		w.Int64(val)
 		w.Element()
 	}
 	w.EndList()
-	w.Field(40)
+	w.Field(50)
 
-	// messages:41
+	// messages:51
 	w.BeginList()
 	for _, val := range msg.Messages {
 		val.Write(w)
 		w.Element()
 	}
 	w.EndList()
-	w.Field(41)
+	w.Field(51)
 
-	// strings:42
+	// strings:52
 	w.BeginList()
 	for _, val := range msg.Strings {
 		w.String(val)
 		w.Element()
 	}
 	w.EndList()
-	w.Field(42)
+	w.Field(52)
 
 	return w.EndMessage()
 }
@@ -266,18 +286,26 @@ func (d TestMessageData) UInt32() uint32   { return d.m.UInt32(22) }
 func (d TestMessageData) UInt64() uint64   { return d.m.UInt64(23) }
 func (d TestMessageData) Float32() float32 { return d.m.Float32(30) }
 func (d TestMessageData) Float64() float64 { return d.m.Float64(31) }
-func (d TestMessageData) List() List       { return d.m.List(40) }
-func (d TestMessageData) Messages() List   { return d.m.List(41) }
-func (d TestMessageData) Strings() List    { return d.m.List(42) }
+func (d TestMessageData) String() string   { return d.m.String(40) }
+func (d TestMessageData) Bytes() []byte    { return d.m.Bytes(41) }
+func (d TestMessageData) List() List       { return d.m.List(50) }
+func (d TestMessageData) Messages() List   { return d.m.List(51) }
+func (d TestMessageData) Strings() List    { return d.m.List(52) }
 
-func readTestMessageData(b []byte) (data TestMessageData, err error) {
-	d, err := ReadMessage(b)
+func getTestMessageData(b []byte) (TestMessageData, error) {
+	msg, err := GetMessage(b)
 	if err != nil {
-		return data, err
+		return TestMessageData{}, err
 	}
+	return TestMessageData{msg}, nil
+}
 
-	data = TestMessageData{d}
-	return
+func readTestMessageData(b []byte) (TestMessageData, error) {
+	msg, err := ReadMessage(b)
+	if err != nil {
+		return TestMessageData{}, err
+	}
+	return TestMessageData{msg}, nil
 }
 
 type TestSubMessageData struct{ m Message }
@@ -287,12 +315,18 @@ func (d TestSubMessageData) Int16() int16 { return d.m.Int16(2) }
 func (d TestSubMessageData) Int32() int32 { return d.m.Int32(3) }
 func (d TestSubMessageData) Int64() int64 { return d.m.Int64(4) }
 
-func readTestSubMessageData(b []byte) (data TestSubMessageData, err error) {
-	d, err := ReadMessage(b)
+func getTestSubMessageData(b []byte) (TestSubMessageData, error) {
+	msg, err := GetMessage(b)
 	if err != nil {
-		return data, err
+		return TestSubMessageData{}, err
 	}
+	return TestSubMessageData{msg}, nil
+}
 
-	data = TestSubMessageData{d}
-	return data, nil
+func readTestSubMessageData(b []byte) (TestSubMessageData, error) {
+	msg, err := ReadMessage(b)
+	if err != nil {
+		return TestSubMessageData{}, err
+	}
+	return TestSubMessageData{msg}, nil
 }

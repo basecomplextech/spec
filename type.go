@@ -1,6 +1,9 @@
 package spec
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 const (
 	MaxSize = math.MaxInt32
@@ -33,3 +36,18 @@ const (
 	TypeList    Type = 50
 	TypeMessage Type = 60
 )
+
+func CheckType(t Type) error {
+	switch t {
+	case
+		TypeNil, TypeTrue, TypeFalse,
+		TypeInt8, TypeInt16, TypeInt32, TypeInt64,
+		TypeUInt8, TypeUInt16, TypeUInt32, TypeUInt64,
+		TypeFloat32, TypeFloat64,
+		TypeBytes, TypeString,
+		TypeList, TypeMessage:
+		return nil
+	}
+
+	return fmt.Errorf("unsupported type %d", t)
+}
