@@ -385,12 +385,16 @@ func readList(b []byte) (List, error) {
 
 	// read type
 	t, n := _readType(b)
-	switch {
-	case n < 0:
+	if n < 0 {
 		return list, fmt.Errorf("read list: invalid data")
-	case t == TypeNil:
+	}
+
+	// check type
+	switch t {
+	case TypeNil:
 		return list, nil
-	case t != TypeList:
+	case TypeList, TypeBigList:
+	default:
 		return list, fmt.Errorf("read list: unexpected type, expected=%d, actual=%d", TypeList, t)
 	}
 
@@ -424,10 +428,12 @@ func readList(b []byte) (List, error) {
 
 	// done
 	off -= int(dsize)
+	big := t == TypeBigList
 	list = List{
 		buffer: b[off:],
 		table:  table,
 		data:   data,
+		big:    big,
 	}
 	return list, nil
 }

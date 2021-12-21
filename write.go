@@ -154,12 +154,22 @@ func writeList(b []byte, dataSize int, table []listElement) ([]byte, error) {
 		return nil, fmt.Errorf("write: list too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
+	// type
+	big := isBigList(table)
+	var type_ Type
+	if big {
+		type_ = TypeBigList
+	} else {
+		type_ = TypeList
+	}
+
+	// sizes
 	dsize := uint32(dataSize)
 	tsize := uint32(0)
 
 	// write table
 	var err error
-	b, tsize, err = _writeListTable(b, table)
+	b, tsize, err = _writeListTable(b, table, big)
 	if err != nil {
 		return nil, err
 	}
@@ -167,23 +177,40 @@ func writeList(b []byte, dataSize int, table []listElement) ([]byte, error) {
 	// write sizes and type
 	b = _writeListDataSize(b, dsize)
 	b = _writeListTableSize(b, tsize)
-	b = append(b, byte(TypeList))
+	b = append(b, byte(type_))
 	return b, nil
 }
 
-func _writeListTable(b []byte, table []listElement) ([]byte, uint32, error) {
-	size := len(table) * listElementSize
+func _writeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, error) {
+	// element size
+	var elemSize int
+	if big {
+		elemSize = listElementBigSize
+	} else {
+		elemSize = listElementSize
+	}
+
+	// check table size
+	size := len(table) * elemSize
 	if size > MaxSize {
 		return nil, 0, fmt.Errorf("write: list table too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
+	// alloc table
 	b, p := writeAlloc(b, size)
 	off := 0
 
+	// write elements
 	for _, elem := range table {
-		q := p[off : off+listElementSize]
-		binary.BigEndian.PutUint32(q, elem.offset)
-		off += listElementSize
+		q := p[off : off+elemSize]
+
+		if big {
+			binary.BigEndian.PutUint32(q, elem.offset)
+		} else {
+			binary.BigEndian.PutUint16(q, uint16(elem.offset))
+		}
+
+		off += elemSize
 	}
 
 	return b, uint32(size), nil

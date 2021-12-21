@@ -34,6 +34,7 @@ const (
 	TypeString Type = 41
 
 	TypeList    Type = 50
+	TypeBigList Type = 51
 	TypeMessage Type = 60
 )
 
@@ -45,7 +46,8 @@ func CheckType(t Type) error {
 		TypeUInt8, TypeUInt16, TypeUInt32, TypeUInt64,
 		TypeFloat32, TypeFloat64,
 		TypeBytes, TypeString,
-		TypeList, TypeMessage:
+		TypeList, TypeBigList,
+		TypeMessage:
 		return nil
 	}
 
