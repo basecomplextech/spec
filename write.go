@@ -149,22 +149,22 @@ func _writeStringSize(b []byte, size uint32) []byte {
 
 // list
 
-func writeList(b []byte, dataSize int, table []listElement) ([]byte, error) {
-	if dataSize > MaxSize {
-		return nil, fmt.Errorf("write: list too large, max size=%d, actual size=%d", MaxSize, dataSize)
+func writeList(b []byte, bodySize int, table []listElement) ([]byte, error) {
+	if bodySize > MaxSize {
+		return nil, fmt.Errorf("write: list too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
 
 	// type
 	big := isBigList(table)
 	var type_ Type
 	if big {
-		type_ = TypeBigList
+		type_ = TypeListBig
 	} else {
 		type_ = TypeList
 	}
 
 	// sizes
-	dsize := uint32(dataSize)
+	bsize := uint32(bodySize)
 	tsize := uint32(0)
 
 	// write table
@@ -175,7 +175,7 @@ func writeList(b []byte, dataSize int, table []listElement) ([]byte, error) {
 	}
 
 	// write sizes and type
-	b = _writeListDataSize(b, dsize)
+	b = _writeListBodySize(b, bsize)
 	b = _writeListTableSize(b, tsize)
 	b = append(b, byte(type_))
 	return b, nil
@@ -223,7 +223,7 @@ func _writeListTableSize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
-func _writeListDataSize(b []byte, size uint32) []byte {
+func _writeListBodySize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n
@@ -232,22 +232,22 @@ func _writeListDataSize(b []byte, size uint32) []byte {
 
 // message
 
-func writeMessage(b []byte, dataSize int, table []messageField) ([]byte, error) {
-	if dataSize > MaxSize {
-		return nil, fmt.Errorf("write: message too large, max size=%d, actual size=%d", MaxSize, dataSize)
+func writeMessage(b []byte, bodySize int, table []messageField) ([]byte, error) {
+	if bodySize > MaxSize {
+		return nil, fmt.Errorf("write: message too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
 
 	// type
 	big := isBigMessage(table)
 	var type_ Type
 	if big {
-		type_ = TypeBigMessage
+		type_ = TypeMessageBig
 	} else {
 		type_ = TypeMessage
 	}
 
 	// sizes
-	dsize := uint32(dataSize)
+	bsize := uint32(bodySize)
 	tsize := uint32(0)
 
 	// write table
@@ -258,7 +258,7 @@ func writeMessage(b []byte, dataSize int, table []messageField) ([]byte, error) 
 	}
 
 	// write sizes and type
-	b = _writeMessageDataSize(b, dsize)
+	b = _writeMessageBodySize(b, bsize)
 	b = _writeMessageTableSize(b, tsize)
 	b = append(b, byte(type_))
 	return b, nil
@@ -308,7 +308,7 @@ func _writeMessageTableSize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
-func _writeMessageDataSize(b []byte, size uint32) []byte {
+func _writeMessageBodySize(b []byte, size uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(size))
 	off := maxVarintLen32 - n

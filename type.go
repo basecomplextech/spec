@@ -10,46 +10,64 @@ const (
 )
 
 // Type specifies a value type.
-type Type byte
+type Type uint8
 
 const (
-	TypeNil   Type = 00
-	TypeTrue  Type = 01
-	TypeFalse Type = 02
+	TypeNil   Type = 0x00
+	TypeTrue  Type = 0x01
+	TypeFalse Type = 0x02
 
-	TypeInt8  Type = 10
-	TypeInt16 Type = 11
-	TypeInt32 Type = 12
-	TypeInt64 Type = 13
+	TypeInt8  Type = 0x10
+	TypeInt16 Type = 0x11
+	TypeInt32 Type = 0x12
+	TypeInt64 Type = 0x13
 
-	TypeUInt8  Type = 20
-	TypeUInt16 Type = 21
-	TypeUInt32 Type = 22
-	TypeUInt64 Type = 23
+	TypeUInt8  Type = 0x20
+	TypeUInt16 Type = 0x21
+	TypeUInt32 Type = 0x22
+	TypeUInt64 Type = 0x23
 
-	TypeFloat32 Type = 30
-	TypeFloat64 Type = 31
+	TypeFloat32 Type = 0x30
+	TypeFloat64 Type = 0x31
 
-	TypeBytes  Type = 40
-	TypeString Type = 41
+	TypeBytes  Type = 0x40
+	TypeString Type = 0x41
 
-	TypeList    Type = 50
-	TypeBigList Type = 51
+	TypeList    Type = 0x50
+	TypeListBig Type = 0x51
 
-	TypeMessage    Type = 60
-	TypeBigMessage Type = 61
+	TypeMessage    Type = 0x60
+	TypeMessageBig Type = 0x61
 )
 
 func CheckType(t Type) error {
 	switch t {
 	case
-		TypeNil, TypeTrue, TypeFalse,
-		TypeInt8, TypeInt16, TypeInt32, TypeInt64,
-		TypeUInt8, TypeUInt16, TypeUInt32, TypeUInt64,
-		TypeFloat32, TypeFloat64,
-		TypeBytes, TypeString,
-		TypeList, TypeBigList,
-		TypeMessage, TypeBigMessage:
+		TypeNil,
+		TypeTrue,
+		TypeFalse,
+
+		TypeInt8,
+		TypeInt16,
+		TypeInt32,
+		TypeInt64,
+
+		TypeUInt8,
+		TypeUInt16,
+		TypeUInt32,
+		TypeUInt64,
+
+		TypeFloat32,
+		TypeFloat64,
+
+		TypeBytes,
+		TypeString,
+
+		TypeList,
+		TypeListBig,
+
+		TypeMessage,
+		TypeMessageBig:
 		return nil
 	}
 

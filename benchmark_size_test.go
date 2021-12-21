@@ -95,7 +95,7 @@ func computeSizeDistribution(b []byte) (*sizeDistrib, *sizeDistribPercent, error
 }
 
 func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
-	t, n := _readType(b)
+	t, n := readType(b)
 	if n < 0 {
 		return fmt.Errorf("invalid type")
 	}
@@ -111,19 +111,19 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		TypeInt16,
 		TypeInt32,
 		TypeInt64:
-		_, vn := _readInt(b)
+		_, vn := readInt(b)
 		d.values += vn - n
 
 	case TypeUInt8,
 		TypeUInt16,
 		TypeUInt32,
 		TypeUInt64:
-		_, vn := _readInt(b)
+		_, vn := readInt(b)
 		d.values += vn - n
 
 	case TypeFloat32,
 		TypeFloat64:
-		_, vn := _readFloat(b)
+		_, vn := readFloat(b)
 		d.values += vn - n
 
 	case TypeBytes:
@@ -156,7 +156,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 		// read data size
 		off -= tn
-		_, dn := _readListDataSize(b[:off])
+		_, dn := _readListBodySize(b[:off])
 		if dn < 0 {
 			return fmt.Errorf("invalid list data size")
 		}
@@ -188,7 +188,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 		// read data size
 		off -= tn
-		_, dn := _readMessageDataSize(b[:off])
+		_, dn := _readMessageBodySize(b[:off])
 		if dn < 0 {
 			return fmt.Errorf("invalid message data size")
 		}

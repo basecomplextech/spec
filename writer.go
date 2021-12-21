@@ -333,12 +333,12 @@ func (w *Writer) EndList() error {
 		return w.fail(fmt.Errorf("end list: not list writer"))
 	}
 
-	dsize := len(w.buf) - list.start
+	bsize := len(w.buf) - list.start
 	table := w.elements.pop(list.tableStart)
 
 	// write list
 	var err error
-	w.buf, err = writeList(w.buf, dsize, table)
+	w.buf, err = writeList(w.buf, bsize, table)
 	if err != nil {
 		return w.fail(err)
 	}
@@ -407,12 +407,12 @@ func (w *Writer) EndMessage() error {
 		return w.fail(fmt.Errorf("end message: not message writer"))
 	}
 
-	dsize := len(w.buf) - message.start
+	bsize := len(w.buf) - message.start
 	table := w.fields.pop(message.tableStart)
 
 	// write mesasge
 	var err error
-	w.buf, err = writeMessage(w.buf, dsize, table)
+	w.buf, err = writeMessage(w.buf, bsize, table)
 	if err != nil {
 		return w.fail(err)
 	}
