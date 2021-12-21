@@ -10,7 +10,7 @@ const (
 	listElementBigSize = 4
 )
 
-// isBigList returns true if a table exceeds a standard list count or offset.
+// isBigList returns true if table count > uint8 or element offset > uint16.
 func isBigList(table []listElement) bool {
 	ln := len(table)
 	if ln == 0 {
@@ -58,28 +58,21 @@ func (t listTable) count(big bool) int {
 
 // offset returns an element start/end by its index or -1/-1.
 func (t listTable) offset(big bool, i int) (int, int) {
-	// inline count
-	var n int
-	if big {
-		n = len(t) / listElementBigSize
-	} else {
-		n = len(t) / listElementSize
-	}
-
-	// check count
-	switch {
-	case i < 0:
-		return -1, -1
-	case i >= n:
-		return -1, -1
-	}
-
-	// size
+	// inline size
 	var size int
 	if big {
 		size = listElementBigSize
 	} else {
 		size = listElementSize
+	}
+
+	// count
+	n := len(t) / size
+	switch {
+	case i < 0:
+		return -1, -1
+	case i >= n:
+		return -1, -1
 	}
 
 	// offsets

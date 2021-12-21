@@ -29,17 +29,17 @@ func testMessageFieldsN(n int) []messageField {
 
 func TestMessageTable_count__should_return_number_of_fields(t *testing.T) {
 	fields := testMessageFieldsN(10)
-	data, size, err := _writeMessageTable(nil, fields)
+	data, size, err := _writeMessageTable(nil, fields, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size)
+	table, err := _readMessageTable(data, size, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	n := table.count()
+	n := table.count(false)
 	assert.Equal(t, 10, n)
 }
 
@@ -51,17 +51,17 @@ func TestReadMessageTable__should_read_field_table(t *testing.T) {
 	for i := 0; i <= len(fields); i++ {
 		fields0 := fields[i:]
 
-		data, size, err := _writeMessageTable(nil, fields0)
+		data, size, err := _writeMessageTable(nil, fields0, false)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		table1, err := _readMessageTable(data, size)
+		table1, err := _readMessageTable(data, size, false)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		fields1 := table1.fields()
+		fields1 := table1.fields(false)
 		require.Equal(t, fields0, fields1)
 	}
 }
@@ -70,18 +70,18 @@ func TestReadMessageTable__should_read_field_table(t *testing.T) {
 
 func TestMessageTable_field__should_return_field_by_index(t *testing.T) {
 	fields := testMessageFields()
-	data, size, err := _writeMessageTable(nil, fields)
+	data, size, err := _writeMessageTable(nil, fields, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size)
+	table, err := _readMessageTable(data, size, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for i, field := range fields {
-		field1, ok := table.field(i)
+		field1, ok := table.field(false, i)
 		assert.True(t, ok)
 		require.Equal(t, field, field1)
 	}
@@ -89,21 +89,21 @@ func TestMessageTable_field__should_return_field_by_index(t *testing.T) {
 
 func TestMessageTable_field__should_return_false_when_index_out_of_range(t *testing.T) {
 	fields := testMessageFields()
-	data, size, err := _writeMessageTable(nil, fields)
+	data, size, err := _writeMessageTable(nil, fields, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size)
+	table, err := _readMessageTable(data, size, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, ok := table.field(-1)
+	_, ok := table.field(false, -1)
 	assert.False(t, ok)
 
-	n := table.count()
-	_, ok = table.field(n)
+	n := table.count(false)
+	_, ok = table.field(false, n)
 	assert.False(t, ok)
 }
 
@@ -111,12 +111,12 @@ func TestMessageTable_field__should_return_false_when_index_out_of_range(t *test
 
 func TestMessageTable_offset__should_return_start_end_offset_by_tag(t *testing.T) {
 	fields := testMessageFields()
-	data, size, err := _writeMessageTable(nil, fields)
+	data, size, err := _writeMessageTable(nil, fields, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size)
+	table, err := _readMessageTable(data, size, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,10 +124,10 @@ func TestMessageTable_offset__should_return_start_end_offset_by_tag(t *testing.T
 	for i, field := range fields {
 		prev := 0
 		if i > 0 {
-			_, prev = table.offset(field.tag - 1)
+			_, prev = table.offset(false, field.tag-1)
 		}
 
-		start, end := table.offset(field.tag)
+		start, end := table.offset(false, field.tag)
 		require.Equal(t, prev, start)
 		require.Equal(t, int(field.offset), end)
 	}
@@ -135,21 +135,21 @@ func TestMessageTable_offset__should_return_start_end_offset_by_tag(t *testing.T
 
 func TestMessageTable_offset__should_return_minus_one_when_field_not_found(t *testing.T) {
 	fields := testMessageFields()
-	data, size, err := _writeMessageTable(nil, fields)
+	data, size, err := _writeMessageTable(nil, fields, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size)
+	table, err := _readMessageTable(data, size, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	start, end := table.offset(0)
+	start, end := table.offset(false, 0)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 
-	start, end = table.offset(math.MaxUint16)
+	start, end = table.offset(false, math.MaxUint16)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 }

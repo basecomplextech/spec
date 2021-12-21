@@ -2,20 +2,41 @@ package spec
 
 import (
 	"encoding/binary"
+	"math"
 )
+
+const (
+	messageFieldSize    = 1 + 2 // tag(1) + offset(2)
+	messageFieldBigSize = 2 + 4 // tag(2) + offset(4)
+)
+
+// isBigList returns true if table count > uint8 or field offset > uint16.
+func isBigMessage(table []messageField) bool {
+	ln := len(table)
+	if ln == 0 {
+		return false
+	}
+
+	// count > uint8
+	if ln > math.MaxUint8 {
+		return true
+	}
+
+	// or offset > uint16
+	last := table[ln-1]
+	return last.offset > math.MaxUint16
+}
 
 // messageField specifies a field tag and a field value offset in message data array.
 //
-//  +--------+-----------------+
-// 	| tag(2) |    offset(4)    |
-//  +--------+-----------------+
+//  +----------+-------------------+
+// 	| tag(1/2) |    offset(2/4)    |
+//  +----------+-------------------+
 //
 type messageField struct {
 	tag    uint16
 	offset uint32
 }
-
-const messageFieldSize = 2 + 4 // tag(2) + offset(4)
 
 // messageTable is a serialized array of message fields ordered by tags.
 //
@@ -27,13 +48,28 @@ const messageFieldSize = 2 + 4 // tag(2) + offset(4)
 type messageTable []byte
 
 // count returns the number of fields in the table.
-func (t messageTable) count() int {
-	return len(t) / messageFieldSize
+func (t messageTable) count(big bool) int {
+	var size int
+	if big {
+		size = messageFieldBigSize
+	} else {
+		size = messageFieldSize
+	}
+	return len(t) / size
 }
 
 // field returns a field by its index or false,
-func (t messageTable) field(i int) (f messageField, ok bool) {
-	n := t.count()
+func (t messageTable) field(big bool, i int) (f messageField, ok bool) {
+	// inline size
+	var size int
+	if big {
+		size = messageFieldBigSize
+	} else {
+		size = messageFieldSize
+	}
+
+	// count
+	n := len(t) / size
 	switch {
 	case i < 0:
 		return
@@ -41,24 +77,32 @@ func (t messageTable) field(i int) (f messageField, ok bool) {
 		return
 	}
 
-	off := i * messageFieldSize
-	b := t[off : off+messageFieldSize]
+	off := i * size
+	b := t[off : off+size]
 
-	f = messageField{
-		tag:    binary.BigEndian.Uint16(b),
-		offset: binary.BigEndian.Uint32(b[2:]),
+	if big {
+		f = messageField{
+			tag:    binary.BigEndian.Uint16(b),
+			offset: binary.BigEndian.Uint32(b[2:]),
+		}
+	} else {
+		f = messageField{
+			tag:    uint16(b[0]),
+			offset: uint32(binary.BigEndian.Uint16(b[1:])),
+		}
 	}
+
 	ok = true
 	return
 }
 
 // fields parses the table and returns a slice of fields.
-func (t messageTable) fields() []messageField {
-	n := t.count()
+func (t messageTable) fields(big bool) []messageField {
+	n := t.count(big)
 
 	result := make([]messageField, 0, n)
 	for i := 0; i < n; i++ {
-		field, ok := t.field(i)
+		field, ok := t.field(big, i)
 		if !ok {
 			continue
 		}
@@ -68,37 +112,64 @@ func (t messageTable) fields() []messageField {
 }
 
 // offset returns field start/end by its tag or -1/-1.
-func (t messageTable) offset(tag uint16) (int, int) {
-	n := t.count()
-	if n == 0 {
-		return -1, -1
+func (t messageTable) offset(big bool, tag uint16) (int, int) {
+	// inline size
+	var size int
+	if big {
+		size = messageFieldBigSize
+	} else {
+		size = messageFieldSize
 	}
+
+	// count
+	n := len(t) / size
 
 	// binary search table
 	left, right := 0, (n - 1)
 	for left <= right {
-		// calc offset
+		// middle
 		middle := int(uint(left+right) >> 1) // avoid overflow
-		off := middle * messageFieldSize
-		b := t[off : off+messageFieldSize]
 
-		// read current tag
-		cur := binary.BigEndian.Uint16(b)
+		// offset
+		off := middle * size
+		b := t[off : off+size]
+
+		// current tag
+		var cur uint16
+		if big {
+			cur = binary.BigEndian.Uint16(b)
+		} else {
+			cur = uint16(b[0])
+		}
 
 		// check current
 		switch {
 		case cur < tag:
 			left = middle + 1
+
 		case cur > tag:
 			right = middle - 1
-		case cur == tag:
-			start := uint32(0)
-			end := binary.BigEndian.Uint32(b[2:])
 
+		case cur == tag:
+			var start int
+			var end int
+
+			// start
 			if middle > 0 {
-				start = binary.BigEndian.Uint32(t[off-4 : off])
+				if big {
+					start = int(binary.BigEndian.Uint32(t[off-4:]))
+				} else {
+					start = int(binary.BigEndian.Uint16(t[off-2:]))
+				}
 			}
-			return int(start), int(end)
+
+			// end
+			if big {
+				end = int(binary.BigEndian.Uint32(b[2:]))
+			} else {
+				end = int(binary.BigEndian.Uint16(b[1:]))
+			}
+			return start, end
 		}
 	}
 
@@ -106,8 +177,17 @@ func (t messageTable) offset(tag uint16) (int, int) {
 }
 
 // offsetByIndex returns field start/end by its index or -1/-1.
-func (t messageTable) offsetByIndex(i int) (int, int) {
-	n := t.count()
+func (t messageTable) offsetByIndex(big bool, i int) (int, int) {
+	// inline size
+	var size int
+	if big {
+		size = messageFieldBigSize
+	} else {
+		size = messageFieldSize
+	}
+
+	// count
+	n := len(t) / size
 	switch {
 	case i < 0:
 		return -1, -1
@@ -115,13 +195,28 @@ func (t messageTable) offsetByIndex(i int) (int, int) {
 		return -1, -1
 	}
 
-	off := i * messageFieldSize
-	end := binary.BigEndian.Uint32(t[off+2:])
-	start := uint32(0)
+	// offsets
+	off := i * size
+	var start int
+	var end int
+
+	// start
 	if i > 0 {
-		start = binary.BigEndian.Uint32(t[off-4:])
+		if big {
+			start = int(binary.BigEndian.Uint32(t[off-4:]))
+		} else {
+			start = int(binary.BigEndian.Uint16(t[off-2:]))
+		}
 	}
-	return int(start), int(end)
+
+	// end
+	if big {
+		end = int(binary.BigEndian.Uint32(t[off+2:]))
+	} else {
+		end = int(binary.BigEndian.Uint16(t[off+1:]))
+	}
+
+	return start, end
 }
 
 // messageStack acts as a buffer for nested message fields.

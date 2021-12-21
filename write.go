@@ -237,12 +237,22 @@ func writeMessage(b []byte, dataSize int, table []messageField) ([]byte, error) 
 		return nil, fmt.Errorf("write: message too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
+	// type
+	big := isBigMessage(table)
+	var type_ Type
+	if big {
+		type_ = TypeBigMessage
+	} else {
+		type_ = TypeMessage
+	}
+
+	// sizes
 	dsize := uint32(dataSize)
 	tsize := uint32(0)
 
 	// write table
 	var err error
-	b, tsize, err = _writeMessageTable(b, table)
+	b, tsize, err = _writeMessageTable(b, table, big)
 	if err != nil {
 		return nil, err
 	}
@@ -250,26 +260,42 @@ func writeMessage(b []byte, dataSize int, table []messageField) ([]byte, error) 
 	// write sizes and type
 	b = _writeMessageDataSize(b, dsize)
 	b = _writeMessageTableSize(b, tsize)
-	b = append(b, byte(TypeMessage))
+	b = append(b, byte(type_))
 	return b, nil
 }
 
-func _writeMessageTable(b []byte, table []messageField) ([]byte, uint32, error) {
-	size := len(table) * messageFieldSize
+func _writeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint32, error) {
+	// field size
+	var fieldSize int
+	if big {
+		fieldSize = messageFieldBigSize
+	} else {
+		fieldSize = messageFieldSize
+	}
+
+	// check table size
+	size := len(table) * fieldSize
 	if size > MaxSize {
 		return nil, 0, fmt.Errorf("write: message table too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
+	// alloc table
 	b, p := writeAlloc(b, size)
 	off := 0
 
+	// write fields
 	for _, field := range table {
-		q := p[off : off+messageFieldSize]
+		q := p[off : off+fieldSize]
 
-		binary.BigEndian.PutUint16(q, field.tag)
-		binary.BigEndian.PutUint32(q[2:], field.offset)
+		if big {
+			binary.BigEndian.PutUint16(q, field.tag)
+			binary.BigEndian.PutUint32(q[2:], field.offset)
+		} else {
+			q[0] = byte(field.tag)
+			binary.BigEndian.PutUint16(q[1:], uint16(field.offset))
+		}
 
-		off += messageFieldSize
+		off += fieldSize
 	}
 
 	return b, uint32(size), nil

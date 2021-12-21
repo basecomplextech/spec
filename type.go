@@ -35,7 +35,9 @@ const (
 
 	TypeList    Type = 50
 	TypeBigList Type = 51
-	TypeMessage Type = 60
+
+	TypeMessage    Type = 60
+	TypeBigMessage Type = 61
 )
 
 func CheckType(t Type) error {
@@ -47,7 +49,7 @@ func CheckType(t Type) error {
 		TypeFloat32, TypeFloat64,
 		TypeBytes, TypeString,
 		TypeList, TypeBigList,
-		TypeMessage:
+		TypeMessage, TypeBigMessage:
 		return nil
 	}
 

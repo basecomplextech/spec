@@ -35,7 +35,7 @@ func TestReadListTable__should_read_list_table(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		table1, err := _readListTable(table0, size)
+		table1, err := _readListTable(table0, size, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -54,7 +54,7 @@ func TestListTable_offset__should_return_start_end_offset_by_index(t *testing.T)
 		t.Fatal(err)
 	}
 
-	table, err := _readListTable(data, size)
+	table, err := _readListTable(data, size, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestListTable_offset__should_return_minus_one_when_out_of_range(t *testing.
 		t.Fatal(err)
 	}
 
-	table, err := _readListTable(data, size)
+	table, err := _readListTable(data, size, false)
 	if err != nil {
 		t.Fatal(err)
 	}
