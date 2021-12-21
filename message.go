@@ -239,7 +239,7 @@ func (m Message) Bytes(tag uint16) []byte {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadBytes(b)
+	v, _ := readBytes(b)
 	return v
 }
 
@@ -253,7 +253,7 @@ func (m Message) String(tag uint16) string {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadString(b)
+	v, _ := readString(b)
 	return v
 }
 

@@ -20,8 +20,9 @@ func Benchmark_Read(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-
 	size := len(bytes)
+	compressed := compressedSize(bytes)
+
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -40,7 +41,7 @@ func Benchmark_Read(b *testing.B) {
 
 	b.ReportMetric(rps, "rps")
 	b.ReportMetric(float64(size), "size")
-	b.ReportMetric(float64(compressedSize(bytes)), "size-zlib")
+	b.ReportMetric(float64(compressed), "size-zlib")
 }
 
 func Benchmark_Walk(b *testing.B) {
@@ -59,8 +60,9 @@ func Benchmark_Walk(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-
 	size := len(bytes)
+	compressed := compressedSize(bytes)
+
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -82,7 +84,7 @@ func Benchmark_Walk(b *testing.B) {
 
 	b.ReportMetric(rps, "rps")
 	b.ReportMetric(float64(size), "size")
-	b.ReportMetric(float64(compressedSize(bytes)), "size-zlib")
+	b.ReportMetric(float64(compressed), "size-zlib")
 }
 
 // Standard JSON

@@ -227,7 +227,7 @@ func (l List) Bytes(i int) []byte {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadBytes(b)
+	v, _ := readBytes(b)
 	return v
 }
 
@@ -241,7 +241,7 @@ func (l List) String(i int) string {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadString(b)
+	v, _ := readString(b)
 	return v
 }
 

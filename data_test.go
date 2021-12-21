@@ -224,31 +224,37 @@ func (msg TestMessage) Write(w *Writer) error {
 	w.Field(41)
 
 	// list:50
-	w.BeginList()
-	for _, val := range msg.List {
-		w.Int64(val)
-		w.Element()
+	if len(msg.List) > 0 {
+		w.BeginList()
+		for _, val := range msg.List {
+			w.Int64(val)
+			w.Element()
+		}
+		w.EndList()
+		w.Field(50)
 	}
-	w.EndList()
-	w.Field(50)
 
 	// messages:51
-	w.BeginList()
-	for _, val := range msg.Messages {
-		val.Write(w)
-		w.Element()
+	if len(msg.Messages) > 0 {
+		w.BeginList()
+		for _, val := range msg.Messages {
+			val.Write(w)
+			w.Element()
+		}
+		w.EndList()
+		w.Field(51)
 	}
-	w.EndList()
-	w.Field(51)
 
 	// strings:52
-	w.BeginList()
-	for _, val := range msg.Strings {
-		w.String(val)
-		w.Element()
+	if len(msg.Strings) > 0 {
+		w.BeginList()
+		for _, val := range msg.Strings {
+			w.String(val)
+			w.Element()
+		}
+		w.EndList()
+		w.Field(52)
 	}
-	w.EndList()
-	w.Field(52)
 
 	return w.EndMessage()
 }

@@ -136,9 +136,165 @@ func ReadFloat64(b []byte) (float64, error) {
 	return v, nil
 }
 
-// Bytes
-
 func ReadBytes(b []byte) ([]byte, error) {
+	return readBytes(b)
+}
+
+func ReadString(b []byte) (string, error) {
+	return readString(b)
+}
+
+// internal
+
+func _readType(b []byte) (Type, int) {
+	if len(b) == 0 {
+		return TypeNil, 0
+	}
+
+	v := b[len(b)-1]
+	return Type(v), 1
+}
+
+// _readInt reads and returns any int as int64 and the number of read bytes n, or -n on error.
+func _readInt(b []byte) (int64, int) {
+	// type
+	t, n := _readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t == TypeNil:
+		return 0, n
+	}
+	off := len(b) - n
+	b = b[:off]
+
+	// read, cast int
+	switch t {
+	case TypeTrue:
+		return 1, n
+	case TypeFalse:
+		return 0, n
+
+	case TypeInt8,
+		TypeUInt8:
+		if len(b) < 1 {
+			return 0, -1
+		}
+		v := b[len(b)-1]
+		return int64(v), n + 1
+
+	case TypeInt16,
+		TypeInt32,
+		TypeInt64:
+		v, vn := readReverseVarint(b)
+		if vn < 0 {
+			return 0, vn
+		}
+		return v, n + vn
+
+	case TypeUInt16,
+		TypeUInt32,
+		TypeUInt64:
+		v, vn := readReverseUvarint(b)
+		if vn < 0 {
+			return 0, vn
+		}
+		return int64(v), n + vn
+	}
+
+	return 0, -1
+}
+
+// _readInt reads and returns any int as uint64 and the number of read bytes n, or -n on error.
+func _readUint(b []byte) (uint64, int) {
+	// type
+	t, n := _readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t == TypeNil:
+		return 0, n
+	}
+	off := len(b) - n
+	b = b[:off]
+
+	// read, cast uint
+	switch t {
+	case TypeTrue:
+		return 1, n
+	case TypeFalse:
+		return 0, n
+
+	case TypeInt8,
+		TypeUInt8:
+		if len(b) < 1 {
+			return 0, -1
+		}
+		v := b[len(b)-1]
+		return uint64(v), n + 1
+
+	case TypeInt16,
+		TypeInt32,
+		TypeInt64:
+		v, vn := readReverseVarint(b)
+		if vn < 0 {
+			return 0, vn
+		}
+		return uint64(v), n + vn
+
+	case TypeUInt16,
+		TypeUInt32,
+		TypeUInt64:
+		v, vn := readReverseUvarint(b)
+		if vn < 0 {
+			return 0, vn
+		}
+		return v, n + vn
+	}
+
+	return 0, -1
+}
+
+// _readInt reads and returns any float as float64 and the number of read bytes n, or -n on error.
+func _readFloat(b []byte) (float64, int) {
+	// type
+	t, n := _readType(b)
+	switch {
+	case n < 0:
+		return 0, n
+	case t == TypeNil:
+		return 0, n
+	}
+
+	// read, cast float
+	switch t {
+	case TypeFloat32:
+		off := len(b) - 5
+		if off < 0 {
+			return 0, -1
+		}
+
+		v := binary.BigEndian.Uint32(b[off:])
+		v1 := math.Float32frombits(v)
+		return float64(v1), 5
+
+	case TypeFloat64:
+		off := len(b) - 9
+		if off < 0 {
+			return 0, -1
+		}
+
+		v := binary.BigEndian.Uint64(b[off:])
+		v1 := math.Float64frombits(v)
+		return v1, 9
+	}
+
+	return 0, -1
+}
+
+// bytes
+
+func readBytes(b []byte) ([]byte, error) {
 	// type
 	t, n := _readType(b)
 	switch {
@@ -159,23 +315,27 @@ func ReadBytes(b []byte) ([]byte, error) {
 
 	// bytes body
 	off -= sn
-	end := off
-	start := off - int(size)
-	if start < 0 {
-		return nil, fmt.Errorf("read bytes: invalid data")
-	}
-
-	v := b[start:end]
-	return v, nil
+	return _readBytesBody(b[:off], size)
 }
 
 func _readBytesSize(b []byte) (uint32, int) {
 	return readReverseUvarint32(b)
 }
 
-// String
+func _readBytesBody(b []byte, size uint32) ([]byte, error) {
+	end := len(b)
+	start := end - int(size)
+	if start < 0 {
+		return nil, fmt.Errorf("read bytes: invalid data, expected size=%d, actual size=%d", size, len(b))
+	}
 
-func ReadString(b []byte) (string, error) {
+	v := b[start:end]
+	return v, nil
+}
+
+// strings
+
+func readString(b []byte) (string, error) {
 	// type
 	t, n := _readType(b)
 	switch {
@@ -196,19 +356,23 @@ func ReadString(b []byte) (string, error) {
 
 	// string body
 	off -= (sn + 1) // zero byte
-	end := off
-	start := off - int(size)
+	return _readStringBody(b[:off], size)
+}
+
+func _readStringSize(b []byte) (uint32, int) {
+	return readReverseUvarint32(b)
+}
+
+func _readStringBody(b []byte, size uint32) (string, error) {
+	end := len(b)
+	start := end - int(size)
 	if start < 0 {
-		return "", fmt.Errorf("read string: invalid data")
+		return "", fmt.Errorf("read string: invalid data, expected size=%d, actual size=%d", size, len(b))
 	}
 
 	p := b[start:end]
 	s := *(*string)(unsafe.Pointer(&p))
 	return s, nil
-}
-
-func _readStringSize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
 }
 
 // list
@@ -385,152 +549,4 @@ func _readMessageData(b []byte, size uint32) ([]byte, error) {
 		return nil, fmt.Errorf("read message: invalid data")
 	}
 	return b[off:], nil
-}
-
-// internal
-
-func _readType(b []byte) (Type, int) {
-	if len(b) == 0 {
-		return TypeNil, 0
-	}
-
-	v := b[len(b)-1]
-	return Type(v), 1
-}
-
-// _readInt reads and returns any int as int64 and the number of read bytes n, or -n on error.
-func _readInt(b []byte) (int64, int) {
-	// type
-	t, n := _readType(b)
-	switch {
-	case n < 0:
-		return 0, n
-	case t == TypeNil:
-		return 0, n
-	}
-	off := len(b) - n
-	b = b[:off]
-
-	// read, cast int
-	switch t {
-	case TypeTrue:
-		return 1, n
-	case TypeFalse:
-		return 0, n
-
-	case TypeInt8,
-		TypeUInt8:
-		if len(b) < 1 {
-			return 0, -1
-		}
-		v := b[len(b)-1]
-		return int64(v), n + 1
-
-	case TypeInt16,
-		TypeInt32,
-		TypeInt64:
-		v, vn := readReverseVarint(b)
-		if vn < 0 {
-			return 0, vn
-		}
-		return v, n + vn
-
-	case TypeUInt16,
-		TypeUInt32,
-		TypeUInt64:
-		v, vn := readReverseUvarint(b)
-		if vn < 0 {
-			return 0, vn
-		}
-		return int64(v), n + vn
-	}
-
-	return 0, -1
-}
-
-// _readInt reads and returns any int as uint64 and the number of read bytes n, or -n on error.
-func _readUint(b []byte) (uint64, int) {
-	// type
-	t, n := _readType(b)
-	switch {
-	case n < 0:
-		return 0, n
-	case t == TypeNil:
-		return 0, n
-	}
-	off := len(b) - n
-	b = b[:off]
-
-	// read, cast uint
-	switch t {
-	case TypeTrue:
-		return 1, n
-	case TypeFalse:
-		return 0, n
-
-	case TypeInt8,
-		TypeUInt8:
-		if len(b) < 1 {
-			return 0, -1
-		}
-		v := b[len(b)-1]
-		return uint64(v), n + 1
-
-	case TypeInt16,
-		TypeInt32,
-		TypeInt64:
-		v, vn := readReverseVarint(b)
-		if vn < 0 {
-			return 0, vn
-		}
-		return uint64(v), n + vn
-
-	case TypeUInt16,
-		TypeUInt32,
-		TypeUInt64:
-		v, vn := readReverseUvarint(b)
-		if vn < 0 {
-			return 0, vn
-		}
-		return v, n + vn
-	}
-
-	return 0, -1
-}
-
-// _readInt reads and returns any float as float64 and the number of read bytes n, or -n on error.
-func _readFloat(b []byte) (float64, int) {
-	// type
-	t, n := _readType(b)
-	switch {
-	case n < 0:
-		return 0, n
-	case t == TypeNil:
-		return 0, n
-	}
-
-	// read, cast float
-	switch t {
-	case TypeFloat32:
-		off := len(b) - 5
-		if off < 0 {
-			return 0, -1
-		}
-
-		v := binary.BigEndian.Uint32(b[off:])
-		v1 := math.Float32frombits(v)
-		return float64(v1), 5
-
-	case TypeFloat64:
-		off := len(b) - 9
-		if off < 0 {
-			return 0, -1
-		}
-
-		v := binary.BigEndian.Uint64(b[off:])
-		v1 := math.Float64frombits(v)
-		return v1, 9
-	}
-
-	return 0, -1
 }
