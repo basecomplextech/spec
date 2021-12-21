@@ -527,17 +527,18 @@ func readMessage(b []byte) (Message, error) {
 
 	// field data
 	off -= int(tsize)
-	// data, err := _readMessageData(b[:off], dsize)
-	// if err != nil {
-	// 	return msg, err
-	// }
+	data, err := _readMessageData(b[:off], dsize)
+	if err != nil {
+		return msg, err
+	}
 
 	// done
 	off -= int(dsize)
 	msg = Message{
-		data:  b[off:],
-		table: table,
-		// data:   data,
+		buffer: b[off:],
+		table:  table,
+		big:    big,
+		data:   data,
 	}
 	return msg, nil
 }

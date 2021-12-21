@@ -56,49 +56,6 @@ func (t listTable) count(big bool) int {
 	return len(t) / size
 }
 
-// offset returns an element start/end by its index or -1/-1.
-func (t listTable) offset(big bool, i int) (int, int) {
-	// inline size
-	var size int
-	if big {
-		size = listElementBigSize
-	} else {
-		size = listElementSize
-	}
-
-	// count
-	n := len(t) / size
-	switch {
-	case i < 0:
-		return -1, -1
-	case i >= n:
-		return -1, -1
-	}
-
-	// offsets
-	off := i * size
-	var start int
-	var end int
-
-	// start
-	if i > 0 {
-		if big {
-			start = int(binary.BigEndian.Uint32(t[off-4:]))
-		} else {
-			start = int(binary.BigEndian.Uint16(t[off-2:]))
-		}
-	}
-
-	// end
-	if big {
-		end = int(binary.BigEndian.Uint32(t[off:]))
-	} else {
-		end = int(binary.BigEndian.Uint16(t[off:]))
-	}
-
-	return start, end
-}
-
 // elements parses the table and returns a slice of elements
 func (t listTable) elements(big bool) []listElement {
 	n := t.count(big)
@@ -113,6 +70,67 @@ func (t listTable) elements(big bool) []listElement {
 		result = append(result, elem)
 	}
 	return result
+}
+
+// offset returns an element start/end by its index or -1/-1.
+func (t listTable) offset(big bool, i int) (int, int) {
+	if big {
+		return t._offset_big(i)
+	} else {
+		return t._offset_small(i)
+	}
+}
+
+func (t listTable) _offset_big(i int) (int, int) {
+	size := listElementBigSize
+	n := len(t) / size
+
+	// check count
+	switch {
+	case i < 0:
+		return -1, -1
+	case i >= n:
+		return -1, -1
+	}
+
+	// offset
+	off := i * size
+
+	// start
+	var start int
+	if i > 0 {
+		start = int(binary.BigEndian.Uint32(t[off-4:]))
+	}
+
+	// end
+	end := int(binary.BigEndian.Uint32(t[off:]))
+	return start, end
+}
+
+func (t listTable) _offset_small(i int) (int, int) {
+	size := listElementSize
+	n := len(t) / size
+
+	// check count
+	switch {
+	case i < 0:
+		return -1, -1
+	case i >= n:
+		return -1, -1
+	}
+
+	// offset
+	off := i * size
+
+	// start
+	var start int
+	if i > 0 {
+		start = int(binary.BigEndian.Uint16(t[off-2:]))
+	}
+
+	// end
+	end := int(binary.BigEndian.Uint16(t[off:]))
+	return start, end
 }
 
 // listStack acts as a buffer for nested list elements.

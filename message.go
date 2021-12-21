@@ -1,10 +1,10 @@
 package spec
 
 type Message struct {
-	data  []byte
-	table messageTable
-	// data   []byte
-	big bool
+	buffer []byte
+	table  messageTable
+	data   []byte
+	big    bool
 }
 
 // GetMessage parses and returns a message, but does not validate it.
