@@ -328,7 +328,7 @@ func _readBytesBody(b []byte, size uint32) ([]byte, error) {
 	end := len(b)
 	start := end - int(size)
 	if start < 0 {
-		return nil, fmt.Errorf("read bytes: invalid data, expected size=%d, actual size=%d", size, len(b))
+		return nil, fmt.Errorf("read bytes: invalid body, expected size=%d, actual size=%d", size, len(b))
 	}
 
 	v := b[start:end]
@@ -369,7 +369,7 @@ func _readStringBody(b []byte, size uint32) (string, error) {
 	end := len(b)
 	start := end - int(size)
 	if start < 0 {
-		return "", fmt.Errorf("read string: invalid data, expected size=%d, actual size=%d", size, len(b))
+		return "", fmt.Errorf("read string: invalid body, expected size=%d, actual size=%d", size, len(b))
 	}
 
 	p := b[start:end]
@@ -453,7 +453,7 @@ func _readListTable(b []byte, size uint32, big bool) (listTable, error) {
 	if big {
 		elemSize = listElementBigSize
 	} else {
-		elemSize = listElementSize
+		elemSize = listElementSmallSize
 	}
 
 	// check offset
@@ -549,7 +549,7 @@ func _readMessageTable(b []byte, size uint32, big bool) (messageTable, error) {
 	if big {
 		fieldSize = messageFieldBigSize
 	} else {
-		fieldSize = messageFieldSize
+		fieldSize = messageFieldSmallSize
 	}
 
 	// check offset

@@ -187,7 +187,7 @@ func _writeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, e
 	if big {
 		elemSize = listElementBigSize
 	} else {
-		elemSize = listElementSize
+		elemSize = listElementSmallSize
 	}
 
 	// check table size
@@ -270,7 +270,7 @@ func _writeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint3
 	if big {
 		fieldSize = messageFieldBigSize
 	} else {
-		fieldSize = messageFieldSize
+		fieldSize = messageFieldSmallSize
 	}
 
 	// check table size

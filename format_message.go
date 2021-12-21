@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	messageFieldSize    = 1 + 2 // tag(1) + offset(2)
-	messageFieldBigSize = 2 + 4 // tag(2) + offset(4)
+	messageFieldSmallSize = 1 + 2 // tag(1) + offset(2)
+	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
 // isBigList returns true if table count > uint8 or field offset > uint16.
@@ -53,7 +53,7 @@ func (t messageTable) count(big bool) int {
 	if big {
 		size = messageFieldBigSize
 	} else {
-		size = messageFieldSize
+		size = messageFieldSmallSize
 	}
 	return len(t) / size
 }
@@ -65,7 +65,7 @@ func (t messageTable) field(big bool, i int) (f messageField, ok bool) {
 	if big {
 		size = messageFieldBigSize
 	} else {
-		size = messageFieldSize
+		size = messageFieldSmallSize
 	}
 
 	// count
@@ -164,7 +164,7 @@ func (t messageTable) _offset_big(tag uint16) (int, int) {
 }
 
 func (t messageTable) _offset_small(tag uint16) (int, int) {
-	size := messageFieldSize
+	size := messageFieldSmallSize
 	n := len(t) / size
 
 	// binary search table
@@ -242,7 +242,7 @@ func (t messageTable) _offsetByIndex_big(i int) (int, int) {
 }
 
 func (t messageTable) _offsetByIndex_small(i int) (int, int) {
-	size := messageFieldSize
+	size := messageFieldSmallSize
 	n := len(t) / size
 
 	// check count

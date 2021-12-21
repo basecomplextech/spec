@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	listElementSize    = 2
-	listElementBigSize = 4
+	listElementSmallSize = 2
+	listElementBigSize   = 4
 )
 
 // isBigList returns true if table count > uint8 or element offset > uint16.
@@ -51,7 +51,7 @@ func (t listTable) count(big bool) int {
 	if big {
 		size = listElementBigSize
 	} else {
-		size = listElementSize
+		size = listElementSmallSize
 	}
 	return len(t) / size
 }
@@ -108,7 +108,7 @@ func (t listTable) _offset_big(i int) (int, int) {
 }
 
 func (t listTable) _offset_small(i int) (int, int) {
-	size := listElementSize
+	size := listElementSmallSize
 	n := len(t) / size
 
 	// check count
