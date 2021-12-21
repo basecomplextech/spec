@@ -415,26 +415,25 @@ func readList(b []byte) (List, error) {
 		return list, fmt.Errorf("read list: invalid body size")
 	}
 
-	// element table
+	// table
 	off -= int(dn)
 	table, err := _readListTable(b[:off], tsize, big)
 	if err != nil {
 		return list, err
 	}
 
-	// element data
+	// body
 	off -= int(tsize)
-	body, err := _readListBody(b[:off], bsize)
-	if err != nil {
-		return list, err
+	off -= int(bsize)
+	if off < 0 {
+		return list, fmt.Errorf("read list: invalid body")
 	}
 
 	// done
-	off -= int(bsize)
 	list = List{
 		data:  b[off:],
 		table: table,
-		body:  body,
+		body:  bsize,
 		big:   big,
 	}
 	return list, nil
@@ -472,14 +471,6 @@ func _readListTable(b []byte, size uint32, big bool) (listTable, error) {
 	p := b[off:]
 	v := listTable(p)
 	return v, nil
-}
-
-func _readListBody(b []byte, size uint32) ([]byte, error) {
-	off := len(b) - int(size)
-	if off < 0 {
-		return nil, fmt.Errorf("read list: invalid body")
-	}
-	return b[off:], nil
 }
 
 // message
@@ -529,17 +520,16 @@ func readMessage(b []byte) (Message, error) {
 
 	// body
 	off -= int(tsize)
-	body, err := _readMessageBody(b[:off], bsize)
-	if err != nil {
-		return msg, err
+	off -= int(bsize)
+	if off < 0 {
+		return msg, fmt.Errorf("read message: invalid body")
 	}
 
 	// done
-	off -= int(bsize)
 	msg = Message{
 		data:  b[off:],
 		table: table,
-		body:  body,
+		body:  bsize,
 		big:   big,
 	}
 	return msg, nil
@@ -577,12 +567,4 @@ func _readMessageTable(b []byte, size uint32, big bool) (messageTable, error) {
 	p := b[off:]
 	v := messageTable(p)
 	return v, nil
-}
-
-func _readMessageBody(b []byte, size uint32) ([]byte, error) {
-	off := len(b) - int(size)
-	if off < 0 {
-		return nil, fmt.Errorf("read message: invalid body")
-	}
-	return b[off:], nil
 }
