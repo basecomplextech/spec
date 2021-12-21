@@ -251,3 +251,23 @@ func TestReadString__should_read_string(t *testing.T) {
 
 	assert.Equal(t, v, v1)
 }
+
+// List
+
+func TestReadList__should_read_list(t *testing.T) {
+	b := testWriteList(t)
+	_, err := ReadList(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Message
+
+func TestReadMessage__should_read_message(t *testing.T) {
+	b := testWriteMessage(t)
+	_, err := ReadMessage(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

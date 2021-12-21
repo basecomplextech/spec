@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-// Test messages
+// Fixture messages
 
 type TestMessage struct {
 	Bool bool `tag:"1"`

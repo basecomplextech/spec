@@ -136,6 +136,8 @@ func ReadFloat64(b []byte) (float64, error) {
 	return v, nil
 }
 
+// Bytes/String
+
 func ReadBytes(b []byte) ([]byte, error) {
 	return readBytes(b)
 }

@@ -58,16 +58,6 @@ func testWriteList(t *testing.T) []byte {
 	return b
 }
 
-// ReadList
-
-func TestReadList__should_read_list(t *testing.T) {
-	b := testWriteList(t)
-	_, err := ReadList(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 // Getters
 
 func TestList_Getters__should_access_elements(t *testing.T) {

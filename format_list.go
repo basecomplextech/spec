@@ -132,38 +132,3 @@ func (t listTable) _offset_small(i int) (int, int) {
 	end := int(binary.BigEndian.Uint16(t[off:]))
 	return start, end
 }
-
-// listStack acts as a buffer for nested list elements.
-//
-// Each list externally stores its start offset in the buffer, and provides the offset
-// when inserting new elements.
-//
-//	        list0              sublist1            sublist2
-//	+-------------------+-------------------+-------------------+
-//	| e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 |
-//	+-------------------+-------------------+-------------------+
-//
-type listStack struct {
-	stack []listElement
-}
-
-func (s *listStack) reset() {
-	s.stack = s.stack[:0]
-}
-
-// offset returns the next list buffer offset.
-func (s *listStack) offset() int {
-	return len(s.stack)
-}
-
-// push appends a new element to the last list.
-func (s *listStack) push(elem listElement) {
-	s.stack = append(s.stack, elem)
-}
-
-// pop pops a list table starting at offset.
-func (s *listStack) pop(offset int) []listElement {
-	table := s.stack[offset:]
-	s.stack = s.stack[:offset]
-	return table
-}

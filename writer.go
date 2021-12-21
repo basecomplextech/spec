@@ -325,15 +325,19 @@ func (w *Writer) EndList() error {
 	}
 
 	// pop list
-	list, err := w.objects.popList()
-	if err != nil {
-		return w.fail(err)
+	list, ok := w.objects.pop()
+	switch {
+	case !ok:
+		return w.fail(fmt.Errorf("end list: not list writer"))
+	case list.type_ != objectTypeList:
+		return w.fail(fmt.Errorf("end list: not list writer"))
 	}
 
 	dsize := len(w.buf) - list.start
 	table := w.elements.pop(list.tableStart)
 
 	// write list
+	var err error
 	w.buf, err = writeList(w.buf, dsize, table)
 	if err != nil {
 		return w.fail(err)
@@ -395,15 +399,19 @@ func (w *Writer) EndMessage() error {
 	}
 
 	// pop message
-	message, err := w.objects.popMessage()
-	if err != nil {
-		return w.fail(err)
+	message, ok := w.objects.pop()
+	switch {
+	case !ok:
+		return w.fail(fmt.Errorf("end message: not message writer"))
+	case message.type_ != objectTypeMessage:
+		return w.fail(fmt.Errorf("end message: not message writer"))
 	}
 
 	dsize := len(w.buf) - message.start
 	table := w.fields.pop(message.tableStart)
 
 	// write mesasge
+	var err error
 	w.buf, err = writeMessage(w.buf, dsize, table)
 	if err != nil {
 		return w.fail(err)
@@ -452,107 +460,4 @@ func (w *Writer) popData() writeData {
 	d := w.data
 	w.data = writeData{}
 	return d
-}
-
-// object
-
-type objectType byte
-
-const (
-	objectTypeUndefined objectType = iota
-	objectTypeList
-	objectTypeMessage
-)
-
-type objectEntry struct {
-	start      int // start offset in data buffer
-	tableStart int // table offset in list/message stack
-	type_      objectType
-}
-
-// stack
-
-type objectStack struct {
-	stack []objectEntry
-}
-
-func (s *objectStack) reset() {
-	s.stack = s.stack[:0]
-}
-
-func (s *objectStack) len() int {
-	return len(s.stack)
-}
-
-// peek
-
-// peek returns the last object.
-func (s *objectStack) peek() (objectEntry, bool) {
-	ln := len(s.stack)
-	if ln == 0 {
-		return objectEntry{}, false
-	}
-
-	e := s.stack[ln-1]
-	return e, true
-}
-
-// pop
-
-// pop removes the top object from the stack and checks its type.
-func (s *objectStack) pop(type_ objectType) (objectEntry, error) {
-	ln := len(s.stack)
-	if ln == 0 {
-		return objectEntry{}, fmt.Errorf("pop: stack is empty")
-	}
-
-	e := s.stack[ln-1]
-	if e.type_ != type_ {
-		return e, fmt.Errorf("peek: unexpected object, expected=%v, actual=%v, ", type_, e.type_)
-	}
-
-	s.stack = s.stack[:ln-1]
-	return e, nil
-}
-
-func (s *objectStack) popList() (objectEntry, error) {
-	return s.pop(objectTypeList)
-}
-
-func (s *objectStack) popMessage() (objectEntry, error) {
-	return s.pop(objectTypeMessage)
-}
-
-// push
-
-func (s *objectStack) pushList(start int, tableStart int) {
-	e := objectEntry{
-		type_:      objectTypeList,
-		start:      start,
-		tableStart: tableStart,
-	}
-	s.stack = append(s.stack, e)
-}
-
-func (s *objectStack) pushMessage(start int, tableStart int) {
-	e := objectEntry{
-		type_:      objectTypeMessage,
-		start:      start,
-		tableStart: tableStart,
-	}
-	s.stack = append(s.stack, e)
-}
-
-// util
-
-func (t objectType) String() string {
-	switch t {
-	case objectTypeUndefined:
-		return "undefined"
-	case objectTypeList:
-		return "list"
-	case objectTypeMessage:
-		return "message"
-	}
-	return ""
 }

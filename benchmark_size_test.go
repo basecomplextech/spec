@@ -1,6 +1,32 @@
 package spec
 
-import "fmt"
+import (
+	"fmt"
+	"testing"
+)
+
+func _BenchmarkSizeDistribution(b *testing.B) {
+	msg := newTestMessage()
+
+	w := NewWriter()
+	if err := msg.Write(w); err != nil {
+		b.Fatal(err)
+	}
+	data, err := w.End()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	_, p, err := computeSizeDistribution(data)
+	if err != nil {
+		b.Fatal(err)
+	}
+	if p.size == 0 {
+		b.Fatal()
+	}
+
+	b.Fatalf("%+v", p)
+}
 
 type sizeDistrib struct {
 	// total size

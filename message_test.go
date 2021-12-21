@@ -58,18 +58,6 @@ func testWriteMessage(t *testing.T) []byte {
 	return b
 }
 
-// ReadMessage
-
-func TestReadMessage__should_read_message(t *testing.T) {
-	b := testWriteMessage(t)
-	_, err := ReadMessage(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-// Getters
-
 func TestMessage_Getters__should_access_fields(t *testing.T) {
 	b := testWriteMessage(t)
 	m, err := GetMessage(b)
