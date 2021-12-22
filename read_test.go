@@ -263,6 +263,27 @@ func TestReadList__should_read_list(t *testing.T) {
 	}
 }
 
+func TestReadListTable__should_read_list_table(t *testing.T) {
+	elements := testListElements()
+
+	for i := 0; i <= len(elements); i++ {
+		ee0 := elements[i:]
+
+		table0, size, err := _writeListTable(nil, ee0, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		table1, err := _readListTable(table0, size, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ee1 := table1.elements(false)
+		require.Equal(t, ee0, ee1)
+	}
+}
+
 func TestReadList__should_return_error_when_invalid_type(t *testing.T) {
 	b := testWriteList(t)
 	b[len(b)-1] = byte(TypeMessage)
@@ -321,27 +342,6 @@ func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid body")
 }
 
-func TestReadListTable__should_read_list_table(t *testing.T) {
-	elements := testListElements()
-
-	for i := 0; i <= len(elements); i++ {
-		ee0 := elements[i:]
-
-		table0, size, err := _writeListTable(nil, ee0, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		table1, err := _readListTable(table0, size, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		ee1 := table1.elements(false)
-		require.Equal(t, ee0, ee1)
-	}
-}
-
 // Message
 
 func TestReadMessage__should_read_message(t *testing.T) {
@@ -352,9 +352,7 @@ func TestReadMessage__should_read_message(t *testing.T) {
 	}
 }
 
-// Message table
-
-func TestReadMessageTable__should_read_field_table(t *testing.T) {
+func TestReadMessageTable__should_read_message_table(t *testing.T) {
 	fields := testMessageFields()
 
 	for i := 0; i <= len(fields); i++ {
@@ -373,4 +371,62 @@ func TestReadMessageTable__should_read_field_table(t *testing.T) {
 		fields1 := table1.fields(false)
 		require.Equal(t, fields0, fields1)
 	}
+}
+
+func TestReadMessage__should_return_error_when_invalid_type(t *testing.T) {
+	b := testWriteMessage(t)
+	b[len(b)-1] = byte(TypeList)
+
+	_, err := readMessage(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected type")
+}
+
+func TestReadMessage__should_return_error_when_invalid_table_size(t *testing.T) {
+	b := []byte{}
+	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
+	b = append(b, byte(TypeMessage))
+
+	_, err := readMessage(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid table size")
+}
+
+func TestReadMessage__should_return_error_when_invalid_body_size(t *testing.T) {
+	b := []byte{}
+	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
+	b = _writeListTableSize(b, 1000)
+	b = append(b, byte(TypeMessage))
+
+	_, err := readMessage(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid body size")
+}
+
+func TestReadMessage__should_return_error_when_invalid_table(t *testing.T) {
+	b, _, err := _writeMessageTable(nil, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b = _writeListBodySize(b, 0)
+	b = _writeListTableSize(b, 1000)
+	b = append(b, byte(TypeMessage))
+
+	_, err = readMessage(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid table")
+}
+
+func TestReadMessage__should_return_error_when_invalid_body(t *testing.T) {
+	b, _, err := _writeMessageTable(nil, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b = _writeListBodySize(b, 1000)
+	b = _writeListTableSize(b, 0)
+	b = append(b, byte(TypeMessage))
+
+	_, err = readMessage(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid body")
 }
