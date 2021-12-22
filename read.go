@@ -393,11 +393,11 @@ func readList(b []byte) (List, error) {
 
 	// check type
 	switch t {
+	default:
+		return list, fmt.Errorf("read list: unexpected type, expected=%d, actual=%d", TypeList, t)
 	case TypeNil:
 		return list, nil
 	case TypeList, TypeListBig:
-	default:
-		return list, fmt.Errorf("read list: unexpected type, expected=%d, actual=%d", TypeList, t)
 	}
 	big := t == TypeListBig
 
@@ -489,11 +489,11 @@ func readMessage(b []byte) (Message, error) {
 
 	// check type
 	switch t {
+	default:
+		return msg, fmt.Errorf("read message: unexpected type, expected=%d, actual=%d", TypeMessage, t)
 	case TypeNil:
 		return msg, nil
 	case TypeMessage, TypeMessageBig:
-	default:
-		return msg, fmt.Errorf("read message: unexpected type, expected=%d, actual=%d", TypeMessage, t)
 	}
 	big := t == TypeMessageBig
 

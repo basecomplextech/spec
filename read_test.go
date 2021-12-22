@@ -295,3 +295,26 @@ func TestReadMessage__should_read_message(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// Message table
+
+func TestReadMessageTable__should_read_field_table(t *testing.T) {
+	fields := testMessageFields()
+
+	for i := 0; i <= len(fields); i++ {
+		fields0 := fields[i:]
+
+		data, size, err := _writeMessageTable(nil, fields0, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		table1, err := _readMessageTable(data, size, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fields1 := table1.fields(false)
+		require.Equal(t, fields0, fields1)
+	}
+}

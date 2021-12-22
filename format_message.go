@@ -10,21 +10,25 @@ const (
 	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
-// isBigList returns true if table count > uint8 or field offset > uint16.
+// isBigList returns true if any field tag > uint8 or offset > uint16.
 func isBigMessage(table []messageField) bool {
 	ln := len(table)
 	if ln == 0 {
 		return false
 	}
 
-	// count > uint8
-	if ln > math.MaxUint8 {
-		return true
+	for i := ln - 1; i >= 0; i-- {
+		field := table[i]
+
+		switch {
+		case field.tag > math.MaxUint8:
+			return true
+		case field.offset > math.MaxUint16:
+			return true
+		}
 	}
 
-	// or offset > uint16
-	last := table[ln-1]
-	return last.offset > math.MaxUint16
+	return false
 }
 
 // messageField specifies a field tag and a field value offset in message data array.
@@ -56,59 +60,6 @@ func (t messageTable) count(big bool) int {
 		size = messageFieldSmallSize
 	}
 	return len(t) / size
-}
-
-// field returns a field by its index or false,
-func (t messageTable) field(big bool, i int) (f messageField, ok bool) {
-	// inline size
-	var size int
-	if big {
-		size = messageFieldBigSize
-	} else {
-		size = messageFieldSmallSize
-	}
-
-	// count
-	n := len(t) / size
-	switch {
-	case i < 0:
-		return
-	case i >= n:
-		return
-	}
-
-	off := i * size
-	b := t[off : off+size]
-
-	if big {
-		f = messageField{
-			tag:    binary.BigEndian.Uint16(b),
-			offset: binary.BigEndian.Uint32(b[2:]),
-		}
-	} else {
-		f = messageField{
-			tag:    uint16(b[0]),
-			offset: uint32(binary.BigEndian.Uint16(b[1:])),
-		}
-	}
-
-	ok = true
-	return
-}
-
-// fields parses the table and returns a slice of fields.
-func (t messageTable) fields(big bool) []messageField {
-	n := t.count(big)
-
-	result := make([]messageField, 0, n)
-	for i := 0; i < n; i++ {
-		field, ok := t.field(big, i)
-		if !ok {
-			continue
-		}
-		result = append(result, field)
-	}
-	return result
 }
 
 // offset
@@ -265,4 +216,78 @@ func (t messageTable) _offsetByIndex_small(i int) (int, int) {
 	// end
 	end := int(binary.BigEndian.Uint16(t[off+1:]))
 	return start, end
+}
+
+// field
+
+// field returns a field by its index or false,
+func (t messageTable) field(big bool, i int) (messageField, bool) {
+	if big {
+		return t._field_big(i)
+	} else {
+		return t._field_small(i)
+	}
+}
+
+func (t messageTable) _field_big(i int) (f messageField, ok bool) {
+	size := messageFieldBigSize
+	n := len(t) / size
+
+	// check count
+	switch {
+	case i < 0:
+		return
+	case i >= n:
+		return
+	}
+
+	off := i * size
+	b := t[off : off+size]
+
+	f = messageField{
+		tag:    binary.BigEndian.Uint16(b),
+		offset: binary.BigEndian.Uint32(b[2:]),
+	}
+
+	ok = true
+	return
+}
+
+func (t messageTable) _field_small(i int) (f messageField, ok bool) {
+	size := messageFieldSmallSize
+	n := len(t) / size
+
+	// check count
+	switch {
+	case i < 0:
+		return
+	case i >= n:
+		return
+	}
+
+	off := i * size
+	b := t[off : off+size]
+
+	f = messageField{
+		tag:    uint16(b[0]),
+		offset: uint32(binary.BigEndian.Uint16(b[1:])),
+	}
+
+	ok = true
+	return
+}
+
+// fields parses the table and returns a slice of fields.
+func (t messageTable) fields(big bool) []messageField {
+	n := t.count(big)
+
+	result := make([]messageField, 0, n)
+	for i := 0; i < n; i++ {
+		field, ok := t.field(big, i)
+		if !ok {
+			continue
+		}
+		result = append(result, field)
+	}
+	return result
 }
