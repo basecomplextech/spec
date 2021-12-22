@@ -263,7 +263,63 @@ func TestReadList__should_read_list(t *testing.T) {
 	}
 }
 
-// List table
+func TestReadList__should_return_error_when_invalid_type(t *testing.T) {
+	b := testWriteList(t)
+	b[len(b)-1] = byte(TypeMessage)
+
+	_, err := readList(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected type")
+}
+
+func TestReadList__should_return_error_when_invalid_table_size(t *testing.T) {
+	b := []byte{}
+	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
+	b = append(b, byte(TypeList))
+
+	_, err := readList(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid table size")
+}
+
+func TestReadList__should_return_error_when_invalid_body_size(t *testing.T) {
+	b := []byte{}
+	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
+	b = _writeListTableSize(b, 1000)
+	b = append(b, byte(TypeList))
+
+	_, err := readList(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid body size")
+}
+
+func TestReadList__should_return_error_when_invalid_table(t *testing.T) {
+	b, _, err := _writeListTable(nil, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b = _writeListBodySize(b, 0)
+	b = _writeListTableSize(b, 1000)
+	b = append(b, byte(TypeList))
+
+	_, err = readList(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid table")
+}
+
+func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
+	b, _, err := _writeListTable(nil, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b = _writeListBodySize(b, 1000)
+	b = _writeListTableSize(b, 0)
+	b = append(b, byte(TypeList))
+
+	_, err = readList(b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid body")
+}
 
 func TestReadListTable__should_read_list_table(t *testing.T) {
 	elements := testListElements()
