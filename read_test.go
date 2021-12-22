@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ReadType
@@ -259,6 +260,29 @@ func TestReadList__should_read_list(t *testing.T) {
 	_, err := ReadList(b)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// List table
+
+func TestReadListTable__should_read_list_table(t *testing.T) {
+	elements := testListElements()
+
+	for i := 0; i <= len(elements); i++ {
+		ee0 := elements[i:]
+
+		table0, size, err := _writeListTable(nil, ee0, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		table1, err := _readListTable(table0, size, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ee1 := table1.elements(false)
+		require.Equal(t, ee0, ee1)
 	}
 }
 
