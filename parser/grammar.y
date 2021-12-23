@@ -5,25 +5,37 @@ package parser
 
 // union defines yySymType body.
 %union {
+	// file
+	file *File
+
 	// module
-	module      *Module
-	module_name string
+	module string
+
+	// import
+	import_        *Import
+	import_module  *ImportModule
+	import_modules []*ImportModule
 
 	// definition
 	definition  Definition
 	definitions []Definition
 
-	// message
-	message_field  *MessageField
-	message_fields []*MessageField
-
 	// enum
 	enum_value  *EnumValue
 	enum_values []*EnumValue
 
+	// message
+	message_field  *MessageField
+	message_fields []*MessageField
+
+	// struct
+	struct_field  *StructField
+	struct_fields []*StructField
+
 	// general
 	ident  string
 	number int
+	string string
 }
 
 // tokens
@@ -31,67 +43,154 @@ package parser
 
 // keywords
 %token ENUM
-%token MODULE
+%token IMPORT
 %token MESSAGE
-
+%token MODULE
+%token STRUCT
 
 // general
 %token <ident>  IDENT
 %token <number> NUMBER
+%token <string> STRING
 
 // module
-%type <module>      module
-%type <module_name> module_name
+%type <module> module
+
+// import
+%type <import_>         import
+%type <import_module>  import_module
+%type <import_modules> import_modules
 
 // definitions
 %type <definition>  definition
 %type <definitions> definitions
-
-// message
-%type <definition>     message
-%type <message_field>  message_field
-%type <message_fields> message_fields
 
 // enum
 %type <definition>  enum
 %type <enum_value>  enum_value
 %type <enum_values> enum_values
 
+// message
+%type <definition>     message
+%type <message_field>  message_field
+%type <message_fields> message_fields
+
+// struct
+%type <definition>    struct
+%type <struct_field>  struct_field
+%type <struct_fields> struct_fields
+
+%type <file> file
+
 // start
 %start file
 
 %%
 
-file: module definitions
+file: module import definitions
+	{ 
+		$$ = &File{
+			Module: $1,
+			Import: $2,
+			Definitions: $3,
+		}
+	}
 
 // module
 
-module: MODULE module_name ';'
+module: MODULE IDENT ';'
 	{ 
-		$$ = &Module{Name: $2}
+		$$ = $2
 	}
-module_name: IDENT
-	{ $$ = $1 }
+
+// import
+
+import: 
+	// empty
+		{
+			$$ = &Import{}
+		}
+	| IMPORT '(' import_modules ')'
+		{
+			$$ = &Import{Modules: $3}
+		}
+import_module:
+	STRING
+		{ 
+			$$ = &ImportModule{Name: $1}
+		}
+	| IDENT STRING
+		{
+			$$ = &ImportModule{
+				Alias: $1,
+				Name: $2,
+			}
+		}
+import_modules:
+	// empty
+		{ 
+			$$ = nil
+		}
+	| import_module
+		{
+			$$ = []*ImportModule{$1}
+		}
+	| import_modules NEWLINE import_module
+		{
+			$$ = append($$, $1...)
+			$$ = append($$, $3)
+		}
+
 
 // definition
 
 definition: 
-	message | enum
-
+	enum 
+	| message
+	| struct
 definitions:
 	// empty
 		{ 
 			$$ = nil
 		}
-	| definition
+	| definitions definition
 		{
-			$$ = []Definition{$1}
+			$$ = append($$, $1...)
+			$$ = append($$, $2)
 		}
-	| definitions NEWLINE definition
+
+
+// enum
+
+enum: ENUM IDENT '{' enum_values '}'
+	{
+		$$ = &Enum{
+			Name: $2,
+			Values: $4,
+		}
+	}
+enum_value: IDENT '=' NUMBER
+	{
+		$$ = &EnumValue{
+			Name: $1,
+			Value: $3,
+		}
+	}
+enum_values:
+	// empty
+		{
+			$$ = nil
+		}
+	| enum_value
+		{
+			$$ = []*EnumValue{$1}
+		}
+	| enum_values ';' enum_value
 		{
 			$$ = append($$, $1...)
 			$$ = append($$, $3)
 		}
+
 
 // message
 
@@ -125,33 +224,32 @@ message_fields:
 			$$ = append($$, $3)
 		}
 
+// struct
 
-// enum
-
-enum: ENUM IDENT '{' enum_values '}'
-	{
-		$$ = &Enum{
+struct: STRUCT IDENT '{' struct_fields '}' 
+	{ 
+		$$ = &Struct{
 			Name: $2,
-			Values: $4,
+			Fields: $4,
 		}
 	}
-enum_value: IDENT '=' NUMBER
-	{
-		$$ = &EnumValue{
+struct_field: IDENT IDENT
+	{ 
+		$$ = &StructField{
 			Name: $1,
-			Value: $3,
+			Type: $2,
 		}
 	}
-enum_values:
+struct_fields:
 	// empty
-		{
+		{ 
 			$$ = nil
 		}
-	| enum_value
-		{
-			$$ = []*EnumValue{$1}
+	| struct_field
+		{ 
+			$$ = []*StructField{$1}
 		}
-	| enum_values ';' enum_value
+	| struct_fields ';' struct_field
 		{
 			$$ = append($$, $1...)
 			$$ = append($$, $3)

@@ -1,20 +1,39 @@
 package parser
 
 type File struct {
-	Module *Module
-
-	Definition  Definition
+	Module      string
+	Import      *Import
 	Definitions []Definition
 }
 
-type Module struct {
-	Name string
+// Import
 
-	MessageField  *MessageField
-	MessageFields []*MessageField
+type Import struct {
+	Modules []*ImportModule
 }
 
+type ImportModule struct {
+	Name  string
+	Alias string
+}
+
+// Definitions
+
 type Definition interface{}
+
+// Enum
+
+type Enum struct {
+	Name   string
+	Values []*EnumValue
+}
+
+type EnumValue struct {
+	Name  string
+	Value int
+}
+
+// Message
 
 type Message struct {
 	Name   string
@@ -27,12 +46,14 @@ type MessageField struct {
 	Tag  int
 }
 
-type Enum struct {
+// Struct
+
+type Struct struct {
 	Name   string
-	Values []*EnumValue
+	Fields []*StructField
 }
 
-type EnumValue struct {
-	Name  string
-	Value int
+type StructField struct {
+	Name string
+	Type string
 }
