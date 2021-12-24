@@ -1,118 +1,127 @@
 package parser
 
 import (
-	"errors"
-	"unicode"
+	"fmt"
+	"io"
+	"strconv"
+	"text/scanner"
 )
 
-const (
-	yyEOF = 0
-)
+const EOF = 0
 
-var (
-	yyEOFstr = []byte("eof")
-)
+var _ yyLexer = &lexer{}
 
-var _ yyLexer = &yyLexerImpl{}
+type lexer struct {
+	s *scanner.Scanner
 
-type yyLexerImpl struct {
-	b   []byte
-	pos int
-
-	err   error
-	stmts []interface{}
+	file *File // used by yyParser to return result
+	err  error // parse error
 }
 
-func yyNewLexer(b []byte) *yyLexerImpl {
-	return &yyLexerImpl{
-		b:   b,
-		pos: 0,
-	}
+func newLexer(filename string, src io.Reader) *lexer {
+	s := &scanner.Scanner{}
+	s.Init(src)
+	s.Filename = filename
+	return &lexer{s: s}
 }
 
-func yyLexAppendStmts(l yyLexer, stmt ...interface{}) {
-	ll := l.(*yyLexerImpl)
-	ll.stmts = append(ll.stmts, stmt...)
+func setLexerResult(l yyLexer, file *File) {
+	l1 := l.(*lexer)
+	l1.file = file
 }
 
-func (l *yyLexerImpl) Lex(lval *yySymType) int {
-	l.skipWhitespace()
-
+func (l *lexer) Lex(lval *yySymType) int {
 	for {
-		ch := l.peek()
+		// scan next token
+		token := l.s.Scan()
+		text := l.s.TokenText()
 
-		switch {
-		case ch == yyEOF:
-			return l.scanEOF(lval)
+		// return on eof
+		if token == scanner.EOF {
+			lval.yys = EOF
+			return EOF
+		}
 
-		case isIdentStart(ch):
-			return l.scanIdent(lval)
+		switch token {
+		case scanner.Ident:
+			keyword, ok := keywords[text]
+			if ok {
+				lval.yys = keyword
+				lval.string = text
+
+				if debugLexer {
+					fmt.Printf("KEYWORD %v %v %v\n", l.s.Position, token, text)
+				}
+
+			} else {
+				lval.yys = IDENT
+				lval.ident = text
+
+				if debugLexer {
+					fmt.Printf("IDENT %v %v %v %v\n", l.s.Position, token, lval.yys, text)
+				}
+			}
+
+			return lval.yys
+
+		case scanner.Int:
+			v, _ := strconv.ParseInt(text, 10, 64)
+			lval.yys = INTEGER
+			lval.integer = int(v)
+
+			if debugLexer {
+				fmt.Printf("INTEGER %v %v %v\n", l.s.Position, token, text)
+			}
+			return lval.yys
+
+		case scanner.Float:
+			lval.yys = int(token)
+			lval.string = text
+
+			if debugLexer {
+				fmt.Printf("FLOAT %v %v %v\n", l.s.Position, token, text)
+			}
+			return lval.yys
+
+		case scanner.String:
+			lval.yys = STRING
+			lval.string = text
+
+			if debugLexer {
+				fmt.Printf("STRING %v %v %v\n", l.s.Position, token, text)
+			}
+			return lval.yys
+
+		case scanner.Comment:
+			if debugLexer {
+				fmt.Printf("COMMENT %v %v %v\n", l.s.Position, token, text)
+			}
+			continue
 
 		default:
-			l.pos++
-			lval.yys = ch
-			return ch
+			lval.yys = int(token)
+			lval.string = text
+
+			if debugLexer {
+				fmt.Printf("TOKEN %v %v %v\n", l.s.Position, token, text)
+			}
+			return lval.yys
 		}
 	}
 }
 
-func (l *yyLexerImpl) Error(s string) {
-	l.err = errors.New(s)
+func (l *lexer) Error(s string) {
+	l.err = fmt.Errorf("%v %v", l.s.Position, s)
 }
 
-func (l *yyLexerImpl) scanEOF(lval *yySymType) int {
-	lval.yys = yyEOF
-	// lval.str = yyEOFstr
-	return lval.yys
-}
+var keywords map[string]int
 
-func (l *yyLexerImpl) scanIdent(lval *yySymType) int {
-	// start := l.pos
-
-	for {
-		ch := l.peek()
-		if isIdentMiddle(ch) {
-			l.pos++
-			continue
-		}
-		break
+func init() {
+	keywords = map[string]int{
+		"enum":    ENUM,
+		"import":  IMPORT,
+		"message": MESSAGE,
+		"module":  MODULE,
+		"struct":  STRUCT,
 	}
-
-	// lval.ident = l.b[start:l.pos]
-	// lval.yys = yyGetKeywordID(lval.ident)
-	return lval.yys
-}
-
-func (l *yyLexerImpl) skipWhitespace() {
-	for {
-		ch := l.peek()
-
-		if unicode.IsSpace(rune(ch)) {
-			l.pos++
-			continue
-		}
-
-		break
-	}
-}
-
-func (l *yyLexerImpl) peek() int {
-	if l.pos >= len(l.b) {
-		return yyEOF
-	}
-
-	return int(l.b[l.pos])
-}
-
-// isIdentStart returns true if the character is valid at the start of an identifier.
-func isIdentStart(ch int) bool {
-	return (ch >= 'A' && ch <= 'Z') ||
-		(ch >= 'a' && ch <= 'z') ||
-		(ch >= 128 && ch <= 255) ||
-		(ch == '_')
-}
-
-// isIdentMiddle returns true if the character is valid inside an identifier.
-func isIdentMiddle(ch int) bool {
-	return isIdentStart(ch) || unicode.IsDigit(rune(ch))
 }

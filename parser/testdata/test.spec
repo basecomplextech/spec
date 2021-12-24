@@ -1,4 +1,4 @@
-module "test";
+module test;
 
 import (
     "module1"
@@ -16,43 +16,43 @@ enum TestEnum {
 }
 
 message TestMessage {
-    bool    bool        1;
-    enum    TestEnum    2;
+    field_bool    bool        1;
+    field_enum    TestEnum    2;
 
-    int8    int8    10;
-    int16   int16   11;
-    int32   int32   12;
-    int64   int64   13;
+    field_int8    int8    10;
+    field_int16   int16   11;
+    field_int32   int32   12;
+    field_int64   int64   13;
 
-    uint8   uint8   20;
-    uint16  uint16  21;
-    uint32  uint32  22;
-    uint64  uint64  23;
+    field_uint8   uint8   20;
+    field_uint16  uint16  21;
+    field_uint32  uint32  22;
+    field_uint64  uint64  23;
 
-    float32 float32 30;
-    float64 float64 31;
+    field_float32 float32 30;
+    field_float64 float64 31;
 
-    u128    u128    40;
-    u256    u256    41;
+    field_u128    u128    40;
+    field_u256    u256    41;
 
-    string  string  50;
-    bytes   bytes   51;
+    field_string  string  50;
+    field_bytes   bytes   51;
 
-    list        []int64             60;
-    messages    []TestSubMessage    61;
-    strings     []string            62;
+    list        int64             60;
+    messages    TestSubMessage    61;
+    strings     string            62;
 }
 
 message TestSubMessage {
-    int8    int8    1;
-    int16   int16   2;
-    int32   int32   3;
-    int64   int64   4;
+    field_int8    int8    1;
+    field_int16   int16   2;
+    field_int32   int32   3;
+    field_int64   int64   4;
 }
 
 message TestNode {
     Value   string      1;
-    Next    *TestNode   2;
+    Next    TestNode   2;
 }
 
 struct TestStruct {

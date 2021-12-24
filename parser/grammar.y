@@ -1,12 +1,16 @@
 // --- Declarations ---
 %{
 package parser
+
+import "fmt"
 %}
 
 // union defines yySymType body.
 %union {
-	// file
-	file *File
+	// tokens
+	ident   string
+	integer int
+	string  string
 
 	// module
 	module string
@@ -31,15 +35,7 @@ package parser
 	// struct
 	struct_field  *StructField
 	struct_fields []*StructField
-
-	// general
-	ident  string
-	number int
-	string string
 }
-
-// tokens
-%token NEWLINE
 
 // keywords
 %token ENUM
@@ -49,9 +45,9 @@ package parser
 %token STRUCT
 
 // general
-%token <ident>  IDENT
-%token <number> NUMBER
-%token <string> STRING
+%token <ident>   IDENT
+%token <integer> INTEGER
+%token <string>  STRING
 
 // module
 %type <module> module
@@ -80,8 +76,6 @@ package parser
 %type <struct_field>  struct_field
 %type <struct_fields> struct_fields
 
-%type <file> file
-
 // start
 %start file
 
@@ -89,11 +83,12 @@ package parser
 
 file: module import definitions
 	{ 
-		$$ = &File{
+		file := &File{
 			Module: $1,
 			Import: $2,
 			Definitions: $3,
 		}
+		setLexerResult(yylex, file)
 	}
 
 // module
@@ -112,15 +107,24 @@ import:
 		}
 	| IMPORT '(' import_modules ')'
 		{
+			if debugParser {
+				fmt.Println("import", $3)
+			}
 			$$ = &Import{Modules: $3}
 		}
 import_module:
 	STRING
 		{ 
+			if debugParser {
+				fmt.Println("import module", $1)
+			}
 			$$ = &ImportModule{Name: $1}
 		}
 	| IDENT STRING
 		{
+			if debugParser {
+				fmt.Println("import module", $1, $2)
+			}
 			$$ = &ImportModule{
 				Alias: $1,
 				Name: $2,
@@ -131,14 +135,12 @@ import_modules:
 		{ 
 			$$ = nil
 		}
-	| import_module
+	| import_modules import_module
 		{
-			$$ = []*ImportModule{$1}
-		}
-	| import_modules NEWLINE import_module
-		{
-			$$ = append($$, $1...)
-			$$ = append($$, $3)
+			if debugParser {
+				fmt.Println("import modules", $1, $2)
+			}
+			$$ = append($$, $2)
 		}
 
 
@@ -155,7 +157,9 @@ definitions:
 		}
 	| definitions definition
 		{
-			$$ = append($$, $1...)
+			if debugParser {
+				fmt.Println("definitions", $1, $2)
+			}
 			$$ = append($$, $2)
 		}
 
@@ -164,13 +168,19 @@ definitions:
 
 enum: ENUM IDENT '{' enum_values '}'
 	{
+		if debugParser {
+			fmt.Println("enum", $2, $4)
+		}
 		$$ = &Enum{
 			Name: $2,
 			Values: $4,
 		}
 	}
-enum_value: IDENT '=' NUMBER
+enum_value: IDENT '=' INTEGER ';'
 	{
+		if debugParser {
+			fmt.Println("enum value", $1, $3)
+		}
 		$$ = &EnumValue{
 			Name: $1,
 			Value: $3,
@@ -181,14 +191,12 @@ enum_values:
 		{
 			$$ = nil
 		}
-	| enum_value
+	| enum_values enum_value
 		{
-			$$ = []*EnumValue{$1}
-		}
-	| enum_values ';' enum_value
-		{
-			$$ = append($$, $1...)
-			$$ = append($$, $3)
+			if debugParser {
+				fmt.Println("enum values", $1, $2)
+			}
+			$$ = append($$, $2)
 		}
 
 
@@ -196,13 +204,19 @@ enum_values:
 
 message: MESSAGE IDENT '{' message_fields '}' 
 	{ 
+		if debugParser {
+			fmt.Println("message", $2, $4)
+		}
 		$$ = &Message{
 			Name: $2,
 			Fields: $4,
 		}
 	}
-message_field: IDENT IDENT NUMBER 
-	{ 
+message_field: IDENT IDENT INTEGER ';'
+	{
+		if debugParser {
+			fmt.Println("message field", $1, $2, $3)
+		}
 		$$ = &MessageField{
 			Name: $1,
 			Type: $2,
@@ -214,27 +228,31 @@ message_fields:
 		{ 
 			$$ = nil
 		}
-	| message_field
-		{ 
-			$$ = []*MessageField{$1}
-		}
-	| message_fields ';' message_field
+	| message_fields message_field
 		{
-			$$ = append($$, $1...)
-			$$ = append($$, $3)
+			if debugParser {
+				fmt.Println("message fields", $1, $2)
+			}
+			$$ = append($$, $2)
 		}
 
 // struct
 
 struct: STRUCT IDENT '{' struct_fields '}' 
 	{ 
+		if debugParser {
+			fmt.Println("struct", $2, $4)
+		}
 		$$ = &Struct{
 			Name: $2,
 			Fields: $4,
 		}
 	}
-struct_field: IDENT IDENT
-	{ 
+struct_field: IDENT IDENT ';'
+	{
+		if debugParser {
+			fmt.Println("struct field", $1, $2)
+		}
 		$$ = &StructField{
 			Name: $1,
 			Type: $2,
@@ -245,12 +263,10 @@ struct_fields:
 		{ 
 			$$ = nil
 		}
-	| struct_field
-		{ 
-			$$ = []*StructField{$1}
-		}
-	| struct_fields ';' struct_field
+	| struct_fields struct_field
 		{
-			$$ = append($$, $1...)
-			$$ = append($$, $3)
+			if debugParser {
+				fmt.Println("struct fields", $1, $2)
+			}
+			$$ = append($$, $2)
 		}
