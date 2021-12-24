@@ -1,6 +1,6 @@
 package parser
 
 const (
-	debugParser = true
 	debugLexer  = false
+	debugParser = false
 )

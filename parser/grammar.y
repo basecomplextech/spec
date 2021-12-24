@@ -124,7 +124,9 @@ import_module:
 			if debugParser {
 				fmt.Println("import module", $1)
 			}
-			$$ = &ImportModule{Name: $1}
+			$$ = &ImportModule{
+				Name: trimString($1),
+			}
 		}
 	| IDENT STRING
 		{
@@ -133,7 +135,7 @@ import_module:
 			}
 			$$ = &ImportModule{
 				Alias: $1,
-				Name: $2,
+				Name: trimString($2),
 			}
 		}
 import_modules:

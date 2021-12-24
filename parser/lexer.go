@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"text/scanner"
 )
 
@@ -124,4 +125,8 @@ func init() {
 		"module":  MODULE,
 		"struct":  STRUCT,
 	}
+}
+
+func trimString(s string) string {
+	return strings.Trim(s, "\"")
 }
