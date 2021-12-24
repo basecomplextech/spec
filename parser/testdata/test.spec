@@ -12,7 +12,7 @@ enum TestEnum {
     ONE         = 1;
     TWO         = 2;
     THREE       = 3;
-    TestEnum    = 10;
+    TEN         = 10;
 }
 
 message TestMessage {
@@ -38,9 +38,9 @@ message TestMessage {
     field_string  string  50;
     field_bytes   bytes   51;
 
-    list        int64             60;
-    messages    TestSubMessage    61;
-    strings     string            62;
+    list        []int64             60;
+    messages    []TestSubMessage    61;
+    strings     []string            62;
 }
 
 message TestSubMessage {
@@ -52,7 +52,7 @@ message TestSubMessage {
 
 message TestNode {
     Value   string      1;
-    Next    TestNode   2;
+    Next    *TestNode   2;
 }
 
 struct TestStruct {

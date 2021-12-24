@@ -42,7 +42,7 @@ type Message struct {
 
 type MessageField struct {
 	Name string
-	Type string
+	Type *Type
 	Tag  int
 }
 
@@ -55,5 +55,21 @@ type Struct struct {
 
 type StructField struct {
 	Name string
-	Type string
+	Type *Type
+}
+
+// Type
+
+type Kind int
+
+const (
+	KindUndefined Kind = iota
+	KindBase
+	KindList
+	KindNullable
+)
+
+type Type struct {
+	Kind  Kind
+	Ident string
 }

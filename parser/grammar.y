@@ -35,6 +35,9 @@ import "fmt"
 	// struct
 	struct_field  *StructField
 	struct_fields []*StructField
+
+	// type
+	type_ *Type
 }
 
 // keywords
@@ -75,6 +78,9 @@ import "fmt"
 %type <definition>    struct
 %type <struct_field>  struct_field
 %type <struct_fields> struct_fields
+
+// type
+%type <type_> type
 
 // start
 %start file
@@ -212,7 +218,7 @@ message: MESSAGE IDENT '{' message_fields '}'
 			Fields: $4,
 		}
 	}
-message_field: IDENT IDENT INTEGER ';'
+message_field: IDENT type INTEGER ';'
 	{
 		if debugParser {
 			fmt.Println("message field", $1, $2, $3)
@@ -248,7 +254,7 @@ struct: STRUCT IDENT '{' struct_fields '}'
 			Fields: $4,
 		}
 	}
-struct_field: IDENT IDENT ';'
+struct_field: IDENT type ';'
 	{
 		if debugParser {
 			fmt.Println("struct field", $1, $2)
@@ -269,4 +275,38 @@ struct_fields:
 				fmt.Println("struct fields", $1, $2)
 			}
 			$$ = append($$, $2)
+		}
+
+// type
+
+type:
+	IDENT
+		{
+			if debugParser {
+				fmt.Println("type", $1)
+			}
+			$$ = &Type{
+				Kind: KindBase,
+				Ident: $1,
+			}
+		}
+	| '*' IDENT
+		{
+			if debugParser {
+				fmt.Printf("type *%v\n", $2)
+			}
+			$$ = &Type{
+				Kind: KindNullable,
+				Ident: $2,
+			}
+		}
+	| '[' ']' IDENT
+		{
+			if debugParser {
+				fmt.Printf("type []%v\n", $3)
+			}
+			$$ = &Type{
+				Kind: KindList,
+				Ident: $3,
+			}
 		}
