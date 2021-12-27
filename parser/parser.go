@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bufio"
 	"io"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 type Parser interface {
 	Parse(s string) (*File, error)
 	ParseFile(f *os.File) (*File, error)
+	ParsePath(path string) (*File, error)
 }
 
 // New returns a new reusable parser.
@@ -30,6 +32,17 @@ func (p *parser) Parse(s string) (*File, error) {
 func (p *parser) ParseFile(f *os.File) (*File, error) {
 	name := f.Name()
 	return p.parse(name, f)
+}
+
+func (p *parser) ParsePath(path string) (*File, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	src := bufio.NewReader(f)
+	return p.parse(path, src)
 }
 
 // private
