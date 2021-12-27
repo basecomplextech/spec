@@ -34,3 +34,8 @@ message Node {
     value   string  1;
     next    *Node   2;
 }
+
+struct Struct {
+    key     int32;
+    value   int32;
+}

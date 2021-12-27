@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testCompiler(t *testing.T) *compiler {
@@ -17,9 +18,9 @@ func testCompiler(t *testing.T) *compiler {
 	return c
 }
 
-// Compile
+// Package
 
-func TestCompiler_Compile__should_create_package(t *testing.T) {
+func TestCompiler_Compile__should_compile_package(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -31,7 +32,9 @@ func TestCompiler_Compile__should_create_package(t *testing.T) {
 	assert.Equal(t, "testdata/pkg1", pkg.ID)
 }
 
-func TestCompiler_Compile__should_create_files(t *testing.T) {
+// File
+
+func TestCompiler_Compile__should_compile_files(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -45,10 +48,12 @@ func TestCompiler_Compile__should_create_files(t *testing.T) {
 	file1 := pkg.Files[1]
 
 	assert.Equal(t, "enum.spec", file0.Name)
-	assert.Equal(t, "message.spec", file1.Name)
+	assert.Equal(t, "package.spec", file1.Name)
 }
 
-func TestCompiler_Compile__should_create_imports(t *testing.T) {
+// Imports
+
+func TestCompiler_Compile__should_compile_imports(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -63,7 +68,9 @@ func TestCompiler_Compile__should_create_imports(t *testing.T) {
 	assert.Len(t, file1.Imports, 1)
 }
 
-func TestCompiler_Compile__should_create_file_definitions(t *testing.T) {
+// Definitions
+
+func TestCompiler_Compile__should_compile_file_definitions(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -75,10 +82,10 @@ func TestCompiler_Compile__should_create_file_definitions(t *testing.T) {
 	file1 := pkg.Files[1]
 
 	assert.Len(t, file0.Definitions, 1)
-	assert.Len(t, file1.Definitions, 2)
+	assert.Len(t, file1.Definitions, 3)
 }
 
-func TestCompiler_Compile__should_create_package_definitions(t *testing.T) {
+func TestCompiler_Compile__should_compile_package_definitions(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -86,5 +93,151 @@ func TestCompiler_Compile__should_create_package_definitions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Len(t, pkg.Definitions, 3)
+	assert.Len(t, pkg.Definitions, 4)
+
+	assert.Contains(t, pkg.DefinitionNames, "Enum")
+	assert.Contains(t, pkg.DefinitionNames, "Message")
+	assert.Contains(t, pkg.DefinitionNames, "Node")
+	assert.Contains(t, pkg.DefinitionNames, "Struct")
+}
+
+// Enums
+
+func TestCompiler_Compile__should_compile_enum(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[0].Definitions[0]
+	assert.Equal(t, DefinitionEnum, def.Type)
+	assert.NotNil(t, def.Enum)
+	assert.Len(t, def.Enum.Values, 5)
+}
+
+func TestCompiler_Compile__should_compile_enum_values(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[0].Definitions[0]
+	require.Equal(t, DefinitionEnum, def.Type)
+
+	enum := def.Enum
+	assert.Contains(t, enum.ValueNumbers, 0)
+	assert.Contains(t, enum.ValueNumbers, 1)
+	assert.Contains(t, enum.ValueNumbers, 2)
+	assert.Contains(t, enum.ValueNumbers, 3)
+	assert.Contains(t, enum.ValueNumbers, 10)
+}
+
+func TestCompiler_Compile__should_compile_enum_value_names(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[0].Definitions[0]
+	require.Equal(t, DefinitionEnum, def.Type)
+
+	enum := def.Enum
+	assert.Contains(t, enum.ValueNames, "UNDEFINED")
+	assert.Contains(t, enum.ValueNames, "ONE")
+	assert.Contains(t, enum.ValueNames, "TWO")
+	assert.Contains(t, enum.ValueNames, "THREE")
+	assert.Contains(t, enum.ValueNames, "TEN")
+}
+
+// Messages
+
+func TestCompiler_Compile__should_compile_message(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].Definitions[0]
+	assert.Equal(t, DefinitionMessage, def.Type)
+	assert.NotNil(t, def.Message)
+	assert.Len(t, def.Message.Fields, 19)
+}
+
+func TestCompiler_Compile__should_compile_message_field_names(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].Definitions[0]
+	require.Equal(t, DefinitionMessage, def.Type)
+
+	msg := def.Message
+	require.Len(t, def.Message.FieldNames, 19)
+	assert.Contains(t, msg.FieldNames, "field_bool")
+	assert.Contains(t, msg.FieldNames, "field_enum")
+	assert.Contains(t, msg.FieldNames, "field_int8")
+}
+
+func TestCompiler_Compile__should_compile_message_field_tags(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].Definitions[0]
+	require.Equal(t, DefinitionMessage, def.Type)
+
+	msg := def.Message
+	require.Len(t, def.Message.FieldTags, 19)
+	assert.Contains(t, msg.FieldTags, 1)
+	assert.Contains(t, msg.FieldTags, 2)
+	assert.Contains(t, msg.FieldTags, 10)
+}
+
+// Structs
+
+func TestCompiler_Compile__should_compile_struct(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Struct"]
+	assert.Equal(t, DefinitionStruct, def.Type)
+	assert.NotNil(t, def.Struct)
+	assert.Len(t, def.Struct.Fields, 2)
+}
+
+func TestCompiler_Compile__should_compile_struct_field_names(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Struct"]
+	assert.Equal(t, DefinitionStruct, def.Type)
+
+	str := def.Struct
+	require.NotNil(t, str)
+	require.Len(t, str.Fields, 2)
+
+	assert.Contains(t, str.FieldNames, "key")
+	assert.Contains(t, str.FieldNames, "value")
 }
