@@ -1,5 +1,3 @@
-module pkg2;
-
 import (
     "pkg3"
 )

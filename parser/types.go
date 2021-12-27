@@ -1,8 +1,9 @@
 package parser
 
 type File struct {
+	Path        string
 	Imports     []*Import
-	Definitions []Definition
+	Definitions []*Definition
 }
 
 // Import
@@ -14,12 +15,27 @@ type Import struct {
 
 // Definitions
 
-type Definition interface{}
+type DefinitionType int
+
+const (
+	DefinitionUnknown DefinitionType = iota
+	DefinitionEnum
+	DefinitionMessage
+	DefinitionStruct
+)
+
+type Definition struct {
+	Type DefinitionType
+	Name string
+
+	Enum    *Enum
+	Message *Message
+	Struct  *Struct
+}
 
 // Enum
 
 type Enum struct {
-	Name   string
 	Values []*EnumValue
 }
 
@@ -31,7 +47,6 @@ type EnumValue struct {
 // Message
 
 type Message struct {
-	Name   string
 	Fields []*MessageField
 }
 
@@ -44,7 +59,6 @@ type MessageField struct {
 // Struct
 
 type Struct struct {
-	Name   string
 	Fields []*StructField
 }
 

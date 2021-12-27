@@ -17,8 +17,8 @@ import "fmt"
 	imports []*Import
 
 	// definition
-	definition  Definition
-	definitions []Definition
+	definition  *Definition
+	definitions []*Definition
 
 	// enum
 	enum_value  *EnumValue
@@ -163,9 +163,13 @@ enum: ENUM IDENT '{' enum_values '}'
 		if debugParser {
 			fmt.Println("enum", $2, $4)
 		}
-		$$ = &Enum{
+		$$ = &Definition{
+			Type: DefinitionEnum,
 			Name: $2,
-			Values: $4,
+
+			Enum: &Enum{
+				Values: $4,
+			},
 		}
 	}
 enum_value: IDENT '=' INTEGER ';'
@@ -199,9 +203,13 @@ message: MESSAGE IDENT '{' message_fields '}'
 		if debugParser {
 			fmt.Println("message", $2, $4)
 		}
-		$$ = &Message{
+		$$ = &Definition{
+			Type: DefinitionMessage,
 			Name: $2,
-			Fields: $4,
+
+			Message: &Message{
+				Fields: $4,
+			},
 		}
 	}
 message_field: IDENT type INTEGER ';'
@@ -235,9 +243,13 @@ struct: STRUCT IDENT '{' struct_fields '}'
 		if debugParser {
 			fmt.Println("struct", $2, $4)
 		}
-		$$ = &Struct{
+		$$ = &Definition{
+			Type: DefinitionStruct,
 			Name: $2,
-			Fields: $4,
+
+			Struct: &Struct{
+				Fields: $4,
+			},
 		}
 	}
 struct_field: IDENT type ';'

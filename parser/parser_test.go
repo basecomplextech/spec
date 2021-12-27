@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testFile(t *testing.T) string {
+func testSpec(t *testing.T) string {
 	b, err := os.ReadFile("test.spec")
 	if err != nil {
 		t.Fatal(err)
@@ -20,7 +20,7 @@ func testFile(t *testing.T) string {
 
 func TestParser_Parse__should_parse_file(t *testing.T) {
 	p := newParser()
-	s := testFile(t)
+	s := testSpec(t)
 
 	file, err := p.Parse(s)
 	if err != nil {
@@ -128,13 +128,14 @@ enum TestEnum {
 	}
 
 	require.Len(t, file.Definitions, 1)
-	enum := file.Definitions[0].(*Enum)
+	def := file.Definitions[0]
 
-	assert.Equal(t, "TestEnum", enum.Name)
-	require.Len(t, enum.Values, 2)
+	assert.Equal(t, "TestEnum", def.Name)
+	require.Equal(t, DefinitionEnum, def.Type)
+	require.Len(t, def.Enum.Values, 2)
 
-	value0 := enum.Values[0]
-	value1 := enum.Values[1]
+	value0 := def.Enum.Values[0]
+	value1 := def.Enum.Values[1]
 
 	assert.Equal(t, "UNDEFINED", value0.Name)
 	assert.Equal(t, 0, value0.Value)
@@ -151,10 +152,10 @@ func TestParser_Parse__should_parse_empty_enum(t *testing.T) {
 	}
 
 	require.Len(t, file.Definitions, 1)
-	enum := file.Definitions[0].(*Enum)
+	def := file.Definitions[0]
 
-	assert.Equal(t, "TestEnum", enum.Name)
-	assert.Len(t, enum.Values, 0)
+	assert.Equal(t, "TestEnum", def.Name)
+	assert.Len(t, def.Enum.Values, 0)
 }
 
 // message
@@ -172,13 +173,14 @@ message TestMessage {
 	}
 
 	require.Len(t, file.Definitions, 1)
-	msg := file.Definitions[0].(*Message)
+	def := file.Definitions[0]
 
-	assert.Equal(t, "TestMessage", msg.Name)
-	assert.Len(t, msg.Fields, 2)
+	assert.Equal(t, "TestMessage", def.Name)
+	require.Equal(t, DefinitionMessage, def.Type)
+	require.Len(t, def.Message.Fields, 2)
 
-	field0 := msg.Fields[0]
-	field1 := msg.Fields[1]
+	field0 := def.Message.Fields[0]
+	field1 := def.Message.Fields[1]
 
 	assert.Equal(t, "field1", field0.Name)
 	assert.Equal(t, "int32", field0.Type.Ident)
@@ -198,10 +200,10 @@ func TestParser_Parse__should_parse_empty_message(t *testing.T) {
 	}
 
 	require.Len(t, file.Definitions, 1)
-	msg := file.Definitions[0].(*Message)
+	def := file.Definitions[0]
 
-	assert.Equal(t, "TestMessage", msg.Name)
-	assert.Len(t, msg.Fields, 0)
+	assert.Equal(t, "TestMessage", def.Name)
+	assert.Len(t, def.Message.Fields, 0)
 }
 
 // struct
@@ -219,13 +221,14 @@ struct TestStruct {
 	}
 
 	require.Len(t, file.Definitions, 1)
-	str := file.Definitions[0].(*Struct)
+	def := file.Definitions[0]
 
-	assert.Equal(t, "TestStruct", str.Name)
-	assert.Len(t, str.Fields, 2)
+	assert.Equal(t, "TestStruct", def.Name)
+	require.Equal(t, DefinitionStruct, def.Type)
+	require.Len(t, def.Struct.Fields, 2)
 
-	field0 := str.Fields[0]
-	field1 := str.Fields[1]
+	field0 := def.Struct.Fields[0]
+	field1 := def.Struct.Fields[1]
 
 	assert.Equal(t, "field1", field0.Name)
 	assert.Equal(t, "int32", field0.Type.Ident)
@@ -242,10 +245,10 @@ func TestParser_Parse__should_parse_empty_struct(t *testing.T) {
 	}
 
 	require.Len(t, file.Definitions, 1)
-	msg := file.Definitions[0].(*Struct)
+	str := file.Definitions[0]
 
-	assert.Equal(t, "TestStruct", msg.Name)
-	assert.Len(t, msg.Fields, 0)
+	assert.Equal(t, "TestStruct", str.Name)
+	assert.Len(t, str.Struct.Fields, 0)
 }
 
 // type
@@ -261,8 +264,8 @@ message TestMessage {
 		t.Fatal(err)
 	}
 
-	msg := file.Definitions[0].(*Message)
-	type_ := msg.Fields[0].Type
+	def := file.Definitions[0]
+	type_ := def.Message.Fields[0].Type
 
 	assert.Equal(t, KindBase, type_.Kind)
 	assert.Equal(t, "int32", type_.Ident)
@@ -279,8 +282,8 @@ message TestMessage {
 		t.Fatal(err)
 	}
 
-	msg := file.Definitions[0].(*Message)
-	type_ := msg.Fields[0].Type
+	def := file.Definitions[0]
+	type_ := def.Message.Fields[0].Type
 
 	assert.Equal(t, KindNullable, type_.Kind)
 	assert.Equal(t, "int32", type_.Ident)
@@ -297,8 +300,8 @@ message TestMessage {
 		t.Fatal(err)
 	}
 
-	msg := file.Definitions[0].(*Message)
-	type_ := msg.Fields[0].Type
+	def := file.Definitions[0]
+	type_ := def.Message.Fields[0].Type
 
 	assert.Equal(t, KindList, type_.Kind)
 	assert.Equal(t, "int32", type_.Ident)

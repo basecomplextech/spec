@@ -1,5 +1,3 @@
-module pkg1;
-
 enum Enum {
     UNDEFINED = 0;
 

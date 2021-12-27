@@ -2,14 +2,13 @@ package compiler
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/baseone-run/spec/parser"
 )
 
 type Compiler interface {
-	// Compile parses, compiles and returns a package.
+	// Compile parses, compiles and returns a package from a directory.
 	Compile(path string) (*Package, error)
 }
 
@@ -41,71 +40,72 @@ func newCompiler(opts Options) (*compiler, error) {
 	return c, nil
 }
 
-// Compile parses, compiles and returns a package.
-func (c *compiler) Compile(path string) (*Package, error) {
-	// clean path
-	path = filepath.Clean(path)
+// Compile parses, compiles and returns a package from a directory.
+func (c *compiler) Compile(dir string) (*Package, error) {
+	// clean directory path
+	dir = filepath.Clean(dir)
 
 	// get absolute path relative to cwd
-	absPath, err := filepath.Abs(path)
+	path, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	// compute package path from directory name
-	// when path is empty
-	pkgPath := path
-	if pkgPath == "" || pkgPath == "." {
-		pkgPath = filepath.Base(absPath)
+	// compute id from directory
+	// when current dir
+	id := dir
+	if id == "" || id == "." {
+		id = filepath.Base(dir)
 	}
 
-	return c.compile(path, absPath)
+	return c.compilePackage(id, path)
 }
 
 // private
 
-func (c *compiler) compile(pkgPath string, absPath string) (*Package, error) {
-	// return a package if exists already
-	pkg, ok := c.packages[pkgPath]
+func (c *compiler) compileImport(imp *Import) (*Package, error) {
+	return nil, nil
+}
+
+func (c *compiler) compilePackage(id string, path string) (*Package, error) {
+	// return if already exists
+	pkg, ok := c.packages[id]
 	if ok {
 		return pkg, nil
 	}
 
-	// check package is dir
-	info, err := os.Stat(absPath)
+	// parse directory files
+	files, err := c.parser.ParseDirectory(path)
 	switch {
 	case err != nil:
 		return nil, err
-	case !info.IsDir():
-		return nil, fmt.Errorf("compile: not directory, abs path=%v", absPath)
+	case len(files) == 0:
+		return nil, fmt.Errorf("package is empty, path=%v", path)
 	}
 
-	// scan files
-	pattern := filepath.Join(absPath, "*.spec")
-	filepaths, err := filepath.Glob(pattern)
-	switch {
-	case err != nil:
-		return nil, err
-	case len(filepaths) == 0:
-		return nil, fmt.Errorf("compile: empty package, abs path=%v", absPath)
-	}
-
-	// create package
-	pkg, err = newPackage(pkgPath, absPath)
+	// create package in compiling state
+	pkg, err = newPackage(id, path, files)
 	if err != nil {
 		return nil, err
 	}
-	c.packages[pkgPath] = pkg
+	c.packages[id] = pkg
 
-	// parse files
-	for _, filepath := range filepaths {
-		file, err := c.parser.ParsePath(filepath)
-		if err != nil {
-			return nil, err
-		}
-
-		pkg.Files = append(pkg.Files, file)
+	if err := c._resolveImports(pkg); err != nil {
+		return nil, err
+	}
+	if err := c._resolveTypes(pkg); err != nil {
+		return nil, err
 	}
 
+	// done
+	pkg.State = PackageCompiled
 	return pkg, nil
+}
+
+func (c *compiler) _resolveImports(pkg *Package) error {
+	return nil
+}
+
+func (c *compiler) _resolveTypes(pkg *Package) error {
+	return nil
 }
