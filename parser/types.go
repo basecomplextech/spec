@@ -1,19 +1,14 @@
 package parser
 
 type File struct {
-	Module      string
-	Import      *Import
+	Imports     []*Import
 	Definitions []Definition
 }
 
 // Import
 
 type Import struct {
-	Modules []*ImportModule
-}
-
-type ImportModule struct {
-	Name  string
+	ID    string
 	Alias string
 }
 

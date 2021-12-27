@@ -122,7 +122,6 @@ func init() {
 		"enum":    ENUM,
 		"import":  IMPORT,
 		"message": MESSAGE,
-		"module":  MODULE,
 		"struct":  STRUCT,
 	}
 }

@@ -12,13 +12,9 @@ import "fmt"
 	integer int
 	string  string
 
-	// module
-	module string
-
 	// import
-	import_        *Import
-	import_module  *ImportModule
-	import_modules []*ImportModule
+	import_ *Import
+	imports []*Import
 
 	// definition
 	definition  Definition
@@ -44,7 +40,6 @@ import "fmt"
 %token ENUM
 %token IMPORT
 %token MESSAGE
-%token MODULE
 %token STRUCT
 
 // general
@@ -52,13 +47,10 @@ import "fmt"
 %token <integer> INTEGER
 %token <string>  STRING
 
-// module
-%type <module> module
-
 // import
-%type <import_>         import
-%type <import_module>  import_module
-%type <import_modules> import_modules
+%type <import_> import
+%type <imports> import_list
+%type <imports> imports
 
 // definitions
 %type <definition>  definition
@@ -87,68 +79,60 @@ import "fmt"
 
 %%
 
-file: module import definitions
+file: imports definitions
 	{ 
 		file := &File{
-			Module: $1,
-			Import: $2,
-			Definitions: $3,
+			Imports:     $1,
+			Definitions: $2,
 		}
 		setLexerResult(yylex, file)
 	}
 
-// module
-
-module: MODULE IDENT ';'
-	{ 
-		$$ = $2
-	}
-
 // import
 
-import: 
-	// empty
-		{
-			$$ = &Import{}
-		}
-	| IMPORT '(' import_modules ')'
-		{
-			if debugParser {
-				fmt.Println("import", $3)
-			}
-			$$ = &Import{Modules: $3}
-		}
-import_module:
+import:
 	STRING
 		{ 
 			if debugParser {
-				fmt.Println("import module", $1)
+				fmt.Println("import ", $1)
 			}
-			$$ = &ImportModule{
-				Name: trimString($1),
+			$$ = &Import{
+				ID: trimString($1),
 			}
 		}
 	| IDENT STRING
 		{
 			if debugParser {
-				fmt.Println("import module", $1, $2)
+				fmt.Println("import ", $1, $2)
 			}
-			$$ = &ImportModule{
+			$$ = &Import{
 				Alias: $1,
-				Name: trimString($2),
+				ID:    trimString($2),
 			}
 		}
-import_modules:
+import_list:
 	// empty
 		{ 
 			$$ = nil
 		}
-	| import_modules import_module
+	| import_list import
 		{
 			if debugParser {
-				fmt.Println("import modules", $1, $2)
+				fmt.Println("import_list", $1, $2)
 			}
 			$$ = append($$, $2)
+		}
+imports:
+	// empty
+		{ 
+			$$ = nil
+		}
+	| IMPORT '(' import_list ')'
+		{
+			if debugParser {
+				fmt.Println("imports", $3)
+			}
+			$$ = append($$, $3...)
 		}
 
 

@@ -16,6 +16,8 @@ func testFile(t *testing.T) string {
 	return string(b)
 }
 
+// file
+
 func TestParser_Parse__should_parse_file(t *testing.T) {
 	p := newParser()
 	s := testFile(t)
@@ -26,27 +28,17 @@ func TestParser_Parse__should_parse_file(t *testing.T) {
 	}
 
 	require.NotNil(t, file)
-	assert.Equal(t, "test", file.Module)
 }
 
-// module
-
-func TestParser_Parse__should_parse_file_module(t *testing.T) {
+func TestParser_Parse__should_parse_empty_file(t *testing.T) {
 	p := newParser()
 
-	file, err := p.Parse(`module test;`)
+	file, err := p.Parse("")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "test", file.Module)
-}
-
-func TestParser_Parse__should_return_error_when_no_module(t *testing.T) {
-	p := newParser()
-
-	_, err := p.Parse("")
-	assert.Error(t, err)
+	require.NotNil(t, file)
 }
 
 // imports
@@ -55,8 +47,6 @@ func TestParser_Parse__should_parse_single_import(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 import (
 	"import1"
 )`)
@@ -64,11 +54,9 @@ import (
 		t.Fatal(err)
 	}
 
-	require.NotNil(t, file.Import)
-	require.Len(t, file.Import.Modules, 1)
-
-	module := file.Import.Modules[0]
-	assert.Equal(t, "import1", module.Name)
+	require.Len(t, file.Imports, 1)
+	module := file.Imports[0]
+	assert.Equal(t, "import1", module.ID)
 	assert.Equal(t, "", module.Alias)
 }
 
@@ -76,8 +64,6 @@ func TestParser_Parse__should_parse_import_alias(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 import (
 	alias "import1"
 )`)
@@ -85,11 +71,10 @@ import (
 		t.Fatal(err)
 	}
 
-	require.NotNil(t, file.Import)
-	require.Len(t, file.Import.Modules, 1)
+	require.Len(t, file.Imports, 1)
+	module := file.Imports[0]
 
-	module := file.Import.Modules[0]
-	assert.Equal(t, "import1", module.Name)
+	assert.Equal(t, "import1", module.ID)
 	assert.Equal(t, "alias", module.Alias)
 }
 
@@ -97,8 +82,6 @@ func TestParser_Parse__should_parse_multiple_imports(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 import (
 	"import1"
 	"import2"
@@ -108,31 +91,26 @@ import (
 		t.Fatal(err)
 	}
 
-	require.NotNil(t, file.Import)
-	require.Len(t, file.Import.Modules, 3)
+	require.Len(t, file.Imports, 3)
 
-	module0 := file.Import.Modules[0]
-	module1 := file.Import.Modules[1]
-	module2 := file.Import.Modules[2]
-	assert.Equal(t, "import1", module0.Name)
-	assert.Equal(t, "import2", module1.Name)
-	assert.Equal(t, "import3", module2.Name)
+	module0 := file.Imports[0]
+	module1 := file.Imports[1]
+	module2 := file.Imports[2]
+	assert.Equal(t, "import1", module0.ID)
+	assert.Equal(t, "import2", module1.ID)
+	assert.Equal(t, "import3", module2.ID)
 	assert.Equal(t, "alias3", module2.Alias)
 }
 
 func TestParser_Parse__should_parse_empty_imports(t *testing.T) {
 	p := newParser()
 
-	file, err := p.Parse(`
-module test;
-
-import ()`)
+	file, err := p.Parse(`import ()`)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	require.NotNil(t, file.Import)
-	require.Len(t, file.Import.Modules, 0)
+	assert.Len(t, file.Imports, 0)
 }
 
 // enum
@@ -141,8 +119,6 @@ func TestParser_Parse__should_parse_enum(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 enum TestEnum {
 	UNDEFINED = 0;
 	ONE = 1;
@@ -169,10 +145,7 @@ enum TestEnum {
 func TestParser_Parse__should_parse_empty_enum(t *testing.T) {
 	p := newParser()
 
-	file, err := p.Parse(`
-module test;
-
-enum TestEnum {}`)
+	file, err := p.Parse(`enum TestEnum {}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,8 +163,6 @@ func TestParser_Parse__should_parse_message(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 message TestMessage {
 	field1	int32	1;
 	field2	string	2;
@@ -221,10 +192,7 @@ message TestMessage {
 func TestParser_Parse__should_parse_empty_message(t *testing.T) {
 	p := newParser()
 
-	file, err := p.Parse(`
-module test;
-
-message TestMessage {}`)
+	file, err := p.Parse(`message TestMessage {}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,8 +210,6 @@ func TestParser_Parse__should_parse_struct(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 struct TestStruct {
 	field1	int32;
 	field2	string;
@@ -270,10 +236,7 @@ struct TestStruct {
 func TestParser_Parse__should_parse_empty_struct(t *testing.T) {
 	p := newParser()
 
-	file, err := p.Parse(`
-module test;
-
-struct TestStruct {}`)
+	file, err := p.Parse(`struct TestStruct {}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,8 +254,6 @@ func TestParser_Parse__should_parse_base_type(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 message TestMessage {
 	field1	int32	1;
 }`)
@@ -311,8 +272,6 @@ func TestParser_Parse__should_parse_list_type(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 message TestMessage {
 	field1	*int32	1;
 }`)
@@ -331,8 +290,6 @@ func TestParser_Parse__should_parse_nullable_type(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
-module test;
-
 message TestMessage {
 	field1	[]int32	1;
 }`)
