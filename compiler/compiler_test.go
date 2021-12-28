@@ -213,7 +213,7 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 25)
+	assert.Len(t, def.Message.Fields, 23)
 }
 
 func TestCompiler__should_compile_message_field_names(t *testing.T) {
@@ -228,7 +228,7 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 25)
+	require.Len(t, def.Message.FieldNames, 23)
 	assert.Contains(t, msg.FieldNames, "field_bool")
 	assert.Contains(t, msg.FieldNames, "field_enum")
 	assert.Contains(t, msg.FieldNames, "field_int8")
@@ -246,7 +246,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 25)
+	require.Len(t, def.Message.FieldTags, 23)
 	assert.Contains(t, msg.FieldTags, 1)
 	assert.Contains(t, msg.FieldTags, 2)
 	assert.Contains(t, msg.FieldTags, 10)
@@ -323,10 +323,16 @@ func TestCompiler__should_compile_reference_type(t *testing.T) {
 	field := def.Message.FieldNames["reference"]
 	require.NotNil(t, field)
 
+	// reference
 	type_ := field.Type
 	assert.Equal(t, "Node", type_.Name)
 	assert.Equal(t, KindReference, type_.Kind)
 	assert.True(t, type_.Referenced)
+
+	// resolved
+	assert.True(t, type_.Resolved)
+	require.NotNil(t, type_.Ref)
+	assert.Equal(t, "Node", type_.Ref.Name)
 }
 
 func TestCompiler__should_compile_imported_type(t *testing.T) {
@@ -343,11 +349,18 @@ func TestCompiler__should_compile_imported_type(t *testing.T) {
 	field := def.Message.FieldNames["imported"]
 	require.NotNil(t, field)
 
+	// import
 	type_ := field.Type
 	assert.Equal(t, "SubMessage", type_.Name)
-	assert.Equal(t, "pkg", type_.ImportName)
+	assert.Equal(t, "pkg2", type_.ImportName)
 	assert.Equal(t, KindImport, type_.Kind)
 	assert.True(t, type_.Imported)
+
+	// resolved
+	assert.True(t, type_.Resolved)
+	require.NotNil(t, type_.Ref)
+	assert.NotNil(t, type_.Import)
+	assert.Equal(t, "SubMessage", type_.Ref.Name)
 }
 
 func TestCompiler__should_compile_nullable_type(t *testing.T) {
@@ -364,11 +377,13 @@ func TestCompiler__should_compile_nullable_type(t *testing.T) {
 	field := def.Message.FieldNames["nullable"]
 	require.NotNil(t, field)
 
+	// nullable
 	type_ := field.Type
 	assert.Equal(t, KindNullable, type_.Kind)
 	assert.True(t, type_.Nullable)
 	require.NotNil(t, type_.Element)
 
+	// element
 	elem := type_.Element
 	assert.Equal(t, KindInt32, elem.Kind)
 	assert.True(t, elem.Builtin)
@@ -388,14 +403,21 @@ func TestCompiler__should_compile_nullable_reference_type(t *testing.T) {
 	field := def.Message.FieldNames["nullable_reference"]
 	require.NotNil(t, field)
 
+	// nullable
 	type_ := field.Type
 	assert.Equal(t, KindNullable, type_.Kind)
 	assert.True(t, type_.Nullable)
 	require.NotNil(t, type_.Element)
 
+	// reference
 	elem := type_.Element
 	assert.Equal(t, KindReference, elem.Kind)
 	assert.Equal(t, "Node", elem.Name)
+
+	// resolved
+	assert.True(t, elem.Resolved)
+	require.NotNil(t, elem.Ref)
+	assert.Equal(t, "Node", elem.Ref.Name)
 }
 
 func TestCompiler__should_compile_nullable_imported_type(t *testing.T) {
@@ -412,15 +434,24 @@ func TestCompiler__should_compile_nullable_imported_type(t *testing.T) {
 	field := def.Message.FieldNames["nullable_imported"]
 	require.NotNil(t, field)
 
+	// nullable
 	type_ := field.Type
 	assert.Equal(t, KindNullable, type_.Kind)
 	assert.True(t, type_.Nullable)
 	require.NotNil(t, type_.Element)
 
+	// imported
 	elem := type_.Element
 	assert.Equal(t, KindImport, elem.Kind)
 	assert.Equal(t, "SubMessage", elem.Name)
-	assert.Equal(t, "pkg", elem.ImportName)
+	assert.Equal(t, "pkg2", elem.ImportName)
+
+	// resolved
+	assert.True(t, elem.Resolved)
+	require.NotNil(t, elem.Ref)
+	assert.NotNil(t, elem.Import)
+	assert.Equal(t, "pkg2", elem.ImportName)
+	assert.Equal(t, "SubMessage", elem.Ref.Name)
 }
 
 func TestCompiler__should_compile_list_type(t *testing.T) {
@@ -437,12 +468,14 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 	field := def.Message.FieldNames["list"]
 	require.NotNil(t, field)
 
+	// list
 	type_ := field.Type
 	assert.Equal(t, KindList, type_.Kind)
 	assert.True(t, type_.List)
-	require.NotNil(t, type_.Element)
 
+	// element
 	elem := type_.Element
+	require.NotNil(t, elem)
 	assert.Equal(t, KindInt64, elem.Kind)
 	assert.True(t, elem.Builtin)
 }
@@ -461,14 +494,21 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 	field := def.Message.FieldNames["list_references"]
 	require.NotNil(t, field)
 
+	// list
 	type_ := field.Type
 	assert.Equal(t, KindList, type_.Kind)
 	assert.True(t, type_.List)
-	require.NotNil(t, type_.Element)
 
+	// element
 	elem := type_.Element
+	require.NotNil(t, elem)
 	assert.Equal(t, KindReference, elem.Kind)
 	assert.Equal(t, "Node", elem.Name)
+
+	// resolved
+	assert.True(t, elem.Resolved)
+	require.NotNil(t, elem.Ref)
+	assert.Equal(t, "Node", elem.Ref.Name)
 }
 
 func TestCompiler__should_compile_list_imported_type(t *testing.T) {
@@ -485,13 +525,21 @@ func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 	field := def.Message.FieldNames["list_imported"]
 	require.NotNil(t, field)
 
+	// list
 	type_ := field.Type
 	assert.Equal(t, KindList, type_.Kind)
 	assert.True(t, type_.List)
 	require.NotNil(t, type_.Element)
 
+	// element
 	elem := type_.Element
 	assert.Equal(t, KindImport, elem.Kind)
 	assert.Equal(t, "SubMessage", elem.Name)
 	assert.Equal(t, "pkg2", elem.ImportName)
+
+	// resolved
+	assert.True(t, elem.Resolved)
+	require.NotNil(t, elem.Ref)
+	assert.NotNil(t, elem.Import)
+	assert.Equal(t, "SubMessage", elem.Ref.Name)
 }

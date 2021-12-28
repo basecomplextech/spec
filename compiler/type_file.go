@@ -14,7 +14,7 @@ type File struct {
 	Path    string
 
 	Imports   []*Import
-	ImportMap map[string]*Import
+	ImportMap map[string]*Import // imports by names and aliases (not ids)
 
 	Definitions     []*Definition
 	DefinitionNames map[string]*Definition
@@ -68,13 +68,23 @@ func newFile(pkg *Package, pfile *parser.File) (*File, error) {
 	return f, nil
 }
 
+func (f *File) lookupType(name string) (*Definition, bool) {
+	def, ok := f.DefinitionNames[name]
+	return def, ok
+}
+
+func (f *File) lookupImport(name string) (*Import, bool) {
+	imp, ok := f.ImportMap[name]
+	return imp, ok
+}
+
 // Import
 
 type Import struct {
 	File *File
 
-	ID      string
-	Name    string
+	ID      string   // full id
+	Name    string   // name or alias
 	Package *Package // resolved imported package
 
 	Resolved bool
@@ -107,4 +117,12 @@ func (imp *Import) resolve(pkg *Package) error {
 	imp.Package = pkg
 	imp.Resolved = true
 	return nil
+}
+
+func (imp *Import) lookupType(name string) (*Definition, bool) {
+	if !imp.Resolved {
+		panic("import not resolved")
+	}
+
+	return imp.Package.lookupType(name)
 }

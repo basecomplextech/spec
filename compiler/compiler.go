@@ -123,15 +123,15 @@ func (c *compiler) compilePackage(id string, path string) (*Package, error) {
 	// create package in compiling state
 	pkg, err = newPackage(id, path, files)
 	if err != nil {
-		return nil, fmt.Errorf("invalid package %q: %w", id, err)
+		return nil, err
 	}
 	c.packages[id] = pkg
 
 	if err := c._resolveImports(pkg); err != nil {
-		return nil, fmt.Errorf("invalid package %q: %w", id, err)
+		return nil, err
 	}
 	if err := c._resolveTypes(pkg); err != nil {
-		return nil, fmt.Errorf("invalid package %q: %w", id, err)
+		return nil, err
 	}
 
 	// done
@@ -143,7 +143,7 @@ func (c *compiler) _resolveImports(pkg *Package) error {
 	for _, file := range pkg.Files {
 		for _, imp := range file.Imports {
 			if err := c._resolveImport(imp); err != nil {
-				return err
+				return fmt.Errorf("%v/%v: %w", pkg.Name, file.Name, err)
 			}
 		}
 	}
@@ -162,5 +162,72 @@ func (c *compiler) _resolveImport(imp *Import) error {
 }
 
 func (c *compiler) _resolveTypes(pkg *Package) error {
+	for _, file := range pkg.Files {
+		for _, def := range file.Definitions {
+			if err := c._resolveDefinition(file, def); err != nil {
+				return fmt.Errorf("%v/%v: %w", pkg.Name, file.Name, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (c *compiler) _resolveDefinition(file *File, def *Definition) error {
+	switch def.Type {
+	case DefinitionMessage:
+		return c._resolveMessage(file, def)
+	case DefinitionStruct:
+		return c._resolveStruct(file, def)
+	}
+	return nil
+}
+
+func (c *compiler) _resolveMessage(file *File, def *Definition) error {
+	for _, field := range def.Message.Fields {
+		if err := c._resolveType(file, field.Type); err != nil {
+			return fmt.Errorf("%v.%v: %w", def.Name, field.Name, err)
+		}
+	}
+	return nil
+}
+
+func (c *compiler) _resolveStruct(file *File, def *Definition) error {
+	for _, field := range def.Struct.Fields {
+		if err := c._resolveType(file, field.Type); err != nil {
+			return fmt.Errorf("%v.%v: %w", def.Name, field.Name, err)
+		}
+	}
+	return nil
+}
+
+func (c *compiler) _resolveType(file *File, type_ *Type) error {
+	switch type_.Kind {
+	case KindReference:
+		pkg := file.Package
+
+		def, ok := pkg.lookupType(type_.Name)
+		if !ok {
+			return fmt.Errorf("type not found: %v", type_.Name)
+		}
+		type_.resolveRef(def)
+
+	case KindImport:
+		imp, ok := file.lookupImport(type_.ImportName)
+		if !ok {
+			return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
+		}
+
+		def, ok := imp.lookupType(type_.Name)
+		if !ok {
+			return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
+		}
+		type_.resolveImport(imp, def)
+
+	case KindList:
+		return c._resolveType(file, type_.Element)
+
+	case KindNullable:
+		return c._resolveType(file, type_.Element)
+	}
 	return nil
 }

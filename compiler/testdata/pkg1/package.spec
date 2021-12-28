@@ -19,18 +19,18 @@ message Message {
     field_float32 float32   30;
     field_float64 float64   31;
 
-    field_u128    u128  40;
-    field_u256    u256  41;
+//    field_u128    u128  40;
+//    field_u256    u256  41;
 
     field_string  string    50;
     field_bytes   bytes     51;
 
-    reference           Node            60;
-    imported            pkg.SubMessage  61;
+    reference           Node                60;
+    imported            pkg2.SubMessage     61;
 
-    nullable            *int32          70;
-    nullable_reference  *Node           71;
-    nullable_imported   *pkg.SubMessage 72;
+    nullable            *int32              70;
+    nullable_reference  *Node               71;
+    nullable_imported   *pkg2.SubMessage    72;
 
     list            []int64             80;
     list_strings    []string            81;

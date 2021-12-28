@@ -30,8 +30,8 @@ func getDefinitionType(ptype parser.DefinitionType) (DefinitionType, error) {
 // Definition
 
 type Definition struct {
-	Pkg  *Package
-	File *File
+	Package *Package
+	File    *File
 
 	Name string
 	Type DefinitionType
@@ -48,8 +48,8 @@ func newDefinition(pkg *Package, file *File, pdef *parser.Definition) (*Definiti
 	}
 
 	def := &Definition{
-		Pkg:  pkg,
-		File: file,
+		Package: pkg,
+		File:    file,
 
 		Name: pdef.Name,
 		Type: type_,

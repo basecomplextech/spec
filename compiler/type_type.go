@@ -74,6 +74,7 @@ type Type struct {
 	List       bool
 	Nullable   bool
 	Referenced bool
+	Resolved   bool
 }
 
 func newType(ptype *parser.Type) (*Type, error) {
@@ -142,4 +143,29 @@ func newBuiltinType(kind Kind) *Type {
 		Name:    string(kind),
 		Builtin: true,
 	}
+}
+
+func (t *Type) resolveRef(def *Definition) {
+	switch {
+	case t.Kind != KindReference:
+		panic("type not reference")
+	case t.Resolved:
+		panic("type already resolved")
+	}
+
+	t.Ref = def
+	t.Resolved = true
+}
+
+func (t *Type) resolveImport(imp *Import, def *Definition) {
+	switch {
+	case t.Kind != KindImport:
+		panic("type not import")
+	case t.Resolved:
+		panic("type already resolved")
+	}
+
+	t.Ref = def
+	t.Import = imp
+	t.Resolved = true
 }

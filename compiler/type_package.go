@@ -69,3 +69,16 @@ func newPackage(id string, path string, pfiles []*parser.File) (*Package, error)
 	}
 	return pkg, nil
 }
+
+func (p *Package) getType(name string) (*Definition, error) {
+	def, ok := p.DefinitionNames[name]
+	if !ok {
+		return nil, fmt.Errorf("type not found: %v", name)
+	}
+	return def, nil
+}
+
+func (p *Package) lookupType(name string) (*Definition, bool) {
+	def, ok := p.DefinitionNames[name]
+	return def, ok
+}
