@@ -61,11 +61,7 @@ func (c *compiler) Compile(dir string) (*Package, error) {
 	return c.compilePackage(id, path)
 }
 
-// private
-
-func (c *compiler) compileImport(imp *Import) (*Package, error) {
-	return nil, nil
-}
+// package
 
 func (c *compiler) compilePackage(id string, path string) (*Package, error) {
 	// return if already exists
@@ -108,4 +104,10 @@ func (c *compiler) _resolveImports(pkg *Package) error {
 
 func (c *compiler) _resolveTypes(pkg *Package) error {
 	return nil
+}
+
+// import
+
+func (c *compiler) resolveImport(imp *Import) (*Package, error) {
+	return nil, nil
 }

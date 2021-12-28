@@ -22,18 +22,18 @@ func newMessage(pmsg *parser.Message) (*Message, error) {
 	for _, pfield := range pmsg.Fields {
 		field, err := newMessageField(pfield)
 		if err != nil {
-			return nil, fmt.Errorf("invalid message field %q: %w", pfield.Name, err)
+			return nil, fmt.Errorf("invalid field %q: %w", pfield.Name, err)
 		}
 
 		_, ok := msg.FieldTags[field.Tag]
 		if ok {
-			return nil, fmt.Errorf("duplicate message field tag, name=%v, tag=%d",
+			return nil, fmt.Errorf("duplicate field tag, name=%v, tag=%d",
 				field.Name, field.Tag)
 		}
 
 		_, ok = msg.FieldNames[field.Name]
 		if ok {
-			return nil, fmt.Errorf("duplicate message field name, name=%v", field.Name)
+			return nil, fmt.Errorf("duplicate field name, name=%v", field.Name)
 		}
 
 		msg.Fields = append(msg.Fields, field)

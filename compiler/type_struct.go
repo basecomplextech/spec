@@ -20,12 +20,12 @@ func newStruct(pstr *parser.Struct) (*Struct, error) {
 	for _, pfield := range pstr.Fields {
 		field, err := newStructField(pfield)
 		if err != nil {
-			return nil, fmt.Errorf("invalid struct field %q: %w", pfield.Name, err)
+			return nil, fmt.Errorf("invalid field %q: %w", pfield.Name, err)
 		}
 
 		_, ok := str.FieldNames[field.Name]
 		if ok {
-			return nil, fmt.Errorf("duplicate struct field, name=%v", field.Name)
+			return nil, fmt.Errorf("duplicate field, name=%v", field.Name)
 		}
 
 		str.Fields = append(str.Fields, field)

@@ -20,7 +20,7 @@ func testCompiler(t *testing.T) *compiler {
 
 // Package
 
-func TestCompiler_Compile__should_compile_package(t *testing.T) {
+func TestCompiler__should_compile_package(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -34,7 +34,7 @@ func TestCompiler_Compile__should_compile_package(t *testing.T) {
 
 // File
 
-func TestCompiler_Compile__should_compile_files(t *testing.T) {
+func TestCompiler__should_compile_files(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -53,7 +53,7 @@ func TestCompiler_Compile__should_compile_files(t *testing.T) {
 
 // Imports
 
-func TestCompiler_Compile__should_compile_imports(t *testing.T) {
+func TestCompiler__should_compile_imports(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -70,7 +70,7 @@ func TestCompiler_Compile__should_compile_imports(t *testing.T) {
 
 // Definitions
 
-func TestCompiler_Compile__should_compile_file_definitions(t *testing.T) {
+func TestCompiler__should_compile_file_definitions(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -85,7 +85,7 @@ func TestCompiler_Compile__should_compile_file_definitions(t *testing.T) {
 	assert.Len(t, file1.Definitions, 3)
 }
 
-func TestCompiler_Compile__should_compile_package_definitions(t *testing.T) {
+func TestCompiler__should_compile_package_definitions(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -103,7 +103,7 @@ func TestCompiler_Compile__should_compile_package_definitions(t *testing.T) {
 
 // Enums
 
-func TestCompiler_Compile__should_compile_enum(t *testing.T) {
+func TestCompiler__should_compile_enum(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -117,7 +117,7 @@ func TestCompiler_Compile__should_compile_enum(t *testing.T) {
 	assert.Len(t, def.Enum.Values, 5)
 }
 
-func TestCompiler_Compile__should_compile_enum_values(t *testing.T) {
+func TestCompiler__should_compile_enum_values(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -136,7 +136,7 @@ func TestCompiler_Compile__should_compile_enum_values(t *testing.T) {
 	assert.Contains(t, enum.ValueNumbers, 10)
 }
 
-func TestCompiler_Compile__should_compile_enum_value_names(t *testing.T) {
+func TestCompiler__should_compile_enum_value_names(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -157,7 +157,7 @@ func TestCompiler_Compile__should_compile_enum_value_names(t *testing.T) {
 
 // Messages
 
-func TestCompiler_Compile__should_compile_message(t *testing.T) {
+func TestCompiler__should_compile_message(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -168,10 +168,10 @@ func TestCompiler_Compile__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 19)
+	assert.Len(t, def.Message.Fields, 25)
 }
 
-func TestCompiler_Compile__should_compile_message_field_names(t *testing.T) {
+func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -183,13 +183,13 @@ func TestCompiler_Compile__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 19)
+	require.Len(t, def.Message.FieldNames, 25)
 	assert.Contains(t, msg.FieldNames, "field_bool")
 	assert.Contains(t, msg.FieldNames, "field_enum")
 	assert.Contains(t, msg.FieldNames, "field_int8")
 }
 
-func TestCompiler_Compile__should_compile_message_field_tags(t *testing.T) {
+func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -201,7 +201,7 @@ func TestCompiler_Compile__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 19)
+	require.Len(t, def.Message.FieldTags, 25)
 	assert.Contains(t, msg.FieldTags, 1)
 	assert.Contains(t, msg.FieldTags, 2)
 	assert.Contains(t, msg.FieldTags, 10)
@@ -209,7 +209,7 @@ func TestCompiler_Compile__should_compile_message_field_tags(t *testing.T) {
 
 // Structs
 
-func TestCompiler_Compile__should_compile_struct(t *testing.T) {
+func TestCompiler__should_compile_struct(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -223,7 +223,7 @@ func TestCompiler_Compile__should_compile_struct(t *testing.T) {
 	assert.Len(t, def.Struct.Fields, 2)
 }
 
-func TestCompiler_Compile__should_compile_struct_field_names(t *testing.T) {
+func TestCompiler__should_compile_struct_field_names(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("testdata/pkg1")
@@ -240,4 +240,213 @@ func TestCompiler_Compile__should_compile_struct_field_names(t *testing.T) {
 
 	assert.Contains(t, str.FieldNames, "key")
 	assert.Contains(t, str.FieldNames, "value")
+}
+
+// Types
+
+func TestCompiler__should_compile_builtin_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["field_bool"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, "bool", type_.Name)
+	assert.Equal(t, KindBool, type_.Kind)
+	assert.True(t, type_.Builtin)
+}
+
+func TestCompiler__should_compile_reference_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["reference"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, "Node", type_.Name)
+	assert.Equal(t, KindReference, type_.Kind)
+	assert.True(t, type_.Referenced)
+}
+
+func TestCompiler__should_compile_imported_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["imported"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, "SubMessage", type_.Name)
+	assert.Equal(t, "pkg", type_.ImportName)
+	assert.Equal(t, KindImport, type_.Kind)
+	assert.True(t, type_.Imported)
+}
+
+func TestCompiler__should_compile_nullable_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["nullable"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, KindNullable, type_.Kind)
+	assert.True(t, type_.Nullable)
+	require.NotNil(t, type_.Element)
+
+	elem := type_.Element
+	assert.Equal(t, KindInt32, elem.Kind)
+	assert.True(t, elem.Builtin)
+}
+
+func TestCompiler__should_compile_nullable_reference_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["nullable_reference"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, KindNullable, type_.Kind)
+	assert.True(t, type_.Nullable)
+	require.NotNil(t, type_.Element)
+
+	elem := type_.Element
+	assert.Equal(t, KindReference, elem.Kind)
+	assert.Equal(t, "Node", elem.Name)
+}
+
+func TestCompiler__should_compile_nullable_imported_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["nullable_imported"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, KindNullable, type_.Kind)
+	assert.True(t, type_.Nullable)
+	require.NotNil(t, type_.Element)
+
+	elem := type_.Element
+	assert.Equal(t, KindImport, elem.Kind)
+	assert.Equal(t, "SubMessage", elem.Name)
+	assert.Equal(t, "pkg", elem.ImportName)
+}
+
+func TestCompiler__should_compile_list_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["list"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, KindList, type_.Kind)
+	assert.True(t, type_.List)
+	require.NotNil(t, type_.Element)
+
+	elem := type_.Element
+	assert.Equal(t, KindInt64, elem.Kind)
+	assert.True(t, elem.Builtin)
+}
+
+func TestCompiler__should_compile_list_reference_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["list_references"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, KindList, type_.Kind)
+	assert.True(t, type_.List)
+	require.NotNil(t, type_.Element)
+
+	elem := type_.Element
+	assert.Equal(t, KindReference, elem.Kind)
+	assert.Equal(t, "Node", elem.Name)
+}
+
+func TestCompiler__should_compile_list_imported_type(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[1].DefinitionNames["Message"]
+	require.NotNil(t, def.Message)
+
+	field := def.Message.FieldNames["list_imported"]
+	require.NotNil(t, field)
+
+	type_ := field.Type
+	assert.Equal(t, KindList, type_.Kind)
+	assert.True(t, type_.List)
+	require.NotNil(t, type_.Element)
+
+	elem := type_.Element
+	assert.Equal(t, KindImport, elem.Kind)
+	assert.Equal(t, "SubMessage", elem.Name)
+	assert.Equal(t, "pkg2", elem.ImportName)
 }
