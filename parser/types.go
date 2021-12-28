@@ -75,10 +75,13 @@ const (
 	KindUndefined Kind = iota
 	KindBase
 	KindList
+	KindImport
 	KindNullable
 )
 
 type Type struct {
-	Kind  Kind
-	Ident string
+	Kind    Kind
+	Name    string
+	Import  string // package name in imported type, "pkg" in "pkg.Name"
+	Element *Type  // element type in list and nullable types
 }

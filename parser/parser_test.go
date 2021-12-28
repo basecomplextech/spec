@@ -183,11 +183,11 @@ message TestMessage {
 	field1 := def.Message.Fields[1]
 
 	assert.Equal(t, "field1", field0.Name)
-	assert.Equal(t, "int32", field0.Type.Ident)
+	assert.Equal(t, "int32", field0.Type.Name)
 	assert.Equal(t, 1, field0.Tag)
 
 	assert.Equal(t, "field2", field1.Name)
-	assert.Equal(t, "string", field1.Type.Ident)
+	assert.Equal(t, "string", field1.Type.Name)
 	assert.Equal(t, 2, field1.Tag)
 }
 
@@ -231,9 +231,9 @@ struct TestStruct {
 	field1 := def.Struct.Fields[1]
 
 	assert.Equal(t, "field1", field0.Name)
-	assert.Equal(t, "int32", field0.Type.Ident)
+	assert.Equal(t, "int32", field0.Type.Name)
 	assert.Equal(t, "field2", field1.Name)
-	assert.Equal(t, "string", field1.Type.Ident)
+	assert.Equal(t, "string", field1.Type.Name)
 }
 
 func TestParser_Parse__should_parse_empty_struct(t *testing.T) {
@@ -268,10 +268,10 @@ message TestMessage {
 	type_ := def.Message.Fields[0].Type
 
 	assert.Equal(t, KindBase, type_.Kind)
-	assert.Equal(t, "int32", type_.Ident)
+	assert.Equal(t, "int32", type_.Name)
 }
 
-func TestParser_Parse__should_parse_list_type(t *testing.T) {
+func TestParser_Parse__should_parse_nullable_type(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
@@ -286,10 +286,35 @@ message TestMessage {
 	type_ := def.Message.Fields[0].Type
 
 	assert.Equal(t, KindNullable, type_.Kind)
-	assert.Equal(t, "int32", type_.Ident)
+	require.NotNil(t, type_.Element)
+
+	assert.Equal(t, KindBase, type_.Element.Kind)
+	assert.Equal(t, "int32", type_.Element.Name)
 }
 
-func TestParser_Parse__should_parse_nullable_type(t *testing.T) {
+func TestParser_Parse__should_parse_nullable_imported_type(t *testing.T) {
+	p := newParser()
+
+	file, err := p.Parse(`
+message TestMessage {
+	field1	*pkg.Message	1;
+}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := file.Definitions[0]
+	type_ := def.Message.Fields[0].Type
+
+	assert.Equal(t, KindNullable, type_.Kind)
+	require.NotNil(t, type_.Element)
+
+	assert.Equal(t, KindImport, type_.Element.Kind)
+	assert.Equal(t, "Message", type_.Element.Name)
+	assert.Equal(t, "pkg", type_.Element.Import)
+}
+
+func TestParser_Parse__should_parse_list_type(t *testing.T) {
 	p := newParser()
 
 	file, err := p.Parse(`
@@ -304,5 +329,49 @@ message TestMessage {
 	type_ := def.Message.Fields[0].Type
 
 	assert.Equal(t, KindList, type_.Kind)
-	assert.Equal(t, "int32", type_.Ident)
+	require.NotNil(t, type_.Element)
+
+	assert.Equal(t, KindBase, type_.Element.Kind)
+	assert.Equal(t, "int32", type_.Element.Name)
+}
+
+func TestParser_Parse__should_parse_imported_list_type(t *testing.T) {
+	p := newParser()
+
+	file, err := p.Parse(`
+message TestMessage {
+	field1	[]pkg.Message	1;
+}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := file.Definitions[0]
+	type_ := def.Message.Fields[0].Type
+
+	assert.Equal(t, KindList, type_.Kind)
+	require.NotNil(t, type_.Element)
+
+	assert.Equal(t, KindImport, type_.Element.Kind)
+	assert.Equal(t, "Message", type_.Element.Name)
+	assert.Equal(t, "pkg", type_.Element.Import)
+}
+
+func TestParser_Parse__should_parse_imported_type(t *testing.T) {
+	p := newParser()
+
+	file, err := p.Parse(`
+message TestMessage {
+	field1	pkg.Message	1;
+}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := file.Definitions[0]
+	type_ := def.Message.Fields[0].Type
+
+	assert.Equal(t, KindImport, type_.Kind)
+	assert.Equal(t, "Message", type_.Name)
+	assert.Equal(t, "pkg", type_.Import)
 }

@@ -39,6 +39,8 @@ message TestMessage {
     list        []int64             60;
     messages    []TestSubMessage    61;
     strings     []string            62;
+
+    imported    pkg.ImportedMessage 70;
 }
 
 message TestSubMessage {
