@@ -1,5 +1,5 @@
 import (
-    "pkg3"
+    "sub/pkg3"
 )
 
 message SubMessage {

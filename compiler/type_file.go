@@ -76,6 +76,8 @@ type Import struct {
 	ID      string
 	Name    string
 	Package *Package // resolved imported package
+
+	Resolved bool
 }
 
 func newImport(file *File, pimp *parser.Import) (*Import, error) {
@@ -95,4 +97,14 @@ func newImport(file *File, pimp *parser.Import) (*Import, error) {
 		Name: name,
 	}
 	return imp, nil
+}
+
+func (imp *Import) resolve(pkg *Package) error {
+	if imp.Resolved {
+		return fmt.Errorf("import already resolved: %v", imp.ID)
+	}
+
+	imp.Package = pkg
+	imp.Resolved = true
+	return nil
 }

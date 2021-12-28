@@ -68,6 +68,51 @@ func TestCompiler__should_compile_imports(t *testing.T) {
 	assert.Len(t, file1.Imports, 1)
 }
 
+func TestCompiler__should_resolve_imports(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	file := pkg.FileNames["package.spec"]
+	require.NotNil(t, file)
+
+	imp := file.Imports[0]
+	assert.True(t, imp.Resolved)
+
+	pkg2 := imp.Package
+	require.NotNil(t, pkg2)
+
+	assert.Equal(t, "pkg2", pkg2.ID)
+}
+
+func TestCompiler__should_recursively_resolve_imports(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	file := pkg.FileNames["package.spec"]
+	require.NotNil(t, file)
+
+	imp := file.Imports[0]
+	assert.True(t, imp.Resolved)
+
+	pkg2 := imp.Package
+	require.NotNil(t, pkg2)
+
+	imp2 := pkg2.Files[0].Imports[0]
+	require.NotNil(t, imp2)
+
+	assert.Equal(t, "sub/pkg3", imp2.ID)
+	assert.NotNil(t, imp2.Package)
+	assert.True(t, imp2.Resolved)
+}
+
 // Definitions
 
 func TestCompiler__should_compile_file_definitions(t *testing.T) {
