@@ -21,7 +21,7 @@ func toLowerCase(s string) string {
 	return strings.ToLower(s)
 }
 
-func toCamelCase(s string) string {
+func toUpperCamelCase(s string) string {
 	parts := strings.Split(s, "_")
 	for i, part := range parts {
 		part = strings.ToLower(part)
