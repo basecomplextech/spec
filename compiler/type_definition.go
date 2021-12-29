@@ -57,19 +57,19 @@ func newDefinition(pkg *Package, file *File, pdef *parser.Definition) (*Definiti
 
 	switch type_ {
 	case DefinitionEnum:
-		def.Enum, err = newEnum(pdef.Enum)
+		def.Enum, err = newEnum(def, pdef.Enum)
 		if err != nil {
 			return nil, fmt.Errorf("invalid enum %q: %w", def.Name, err)
 		}
 
 	case DefinitionMessage:
-		def.Message, err = newMessage(pdef.Message)
+		def.Message, err = newMessage(def, pdef.Message)
 		if err != nil {
 			return nil, fmt.Errorf("invalid message %q: %w", def.Name, err)
 		}
 
 	case DefinitionStruct:
-		def.Struct, err = newStruct(pdef.Struct)
+		def.Struct, err = newStruct(def, pdef.Struct)
 		if err != nil {
 			return nil, fmt.Errorf("invalid struct %q: %w", def.Name, err)
 		}

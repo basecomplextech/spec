@@ -19,7 +19,7 @@ type Options struct {
 
 // New returns a new compiler.
 func New(opts Options) (Compiler, error) {
-	return nil, nil
+	return newCompiler(opts)
 }
 
 type compiler struct {

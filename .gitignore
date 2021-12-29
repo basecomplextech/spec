@@ -4,6 +4,7 @@
 /var
 /vendor
 gen_*.go
+generated
 *_generated.go
 *.out
 *.pb.go

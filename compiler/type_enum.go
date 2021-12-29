@@ -7,20 +7,23 @@ import (
 )
 
 type Enum struct {
+	Def *Definition
+
 	Values       []*EnumValue
 	ValueNames   map[string]*EnumValue
 	ValueNumbers map[int]*EnumValue
 }
 
-func newEnum(penum *parser.Enum) (*Enum, error) {
+func newEnum(def *Definition, penum *parser.Enum) (*Enum, error) {
 	e := &Enum{
+		Def:          def,
 		ValueNames:   make(map[string]*EnumValue),
 		ValueNumbers: make(map[int]*EnumValue),
 	}
 
 	// create values
 	for _, pval := range penum.Values {
-		val, err := newEnumValue(pval)
+		val, err := newEnumValue(e, pval)
 		if err != nil {
 			return nil, fmt.Errorf("invalid enum value %q: %w", pval.Name, err)
 		}
@@ -53,12 +56,15 @@ func newEnum(penum *parser.Enum) (*Enum, error) {
 // Value
 
 type EnumValue struct {
+	Enum *Enum
+
 	Name   string
 	Number int
 }
 
-func newEnumValue(pval *parser.EnumValue) (*EnumValue, error) {
+func newEnumValue(enum *Enum, pval *parser.EnumValue) (*EnumValue, error) {
 	v := &EnumValue{
+		Enum:   enum,
 		Name:   pval.Name,
 		Number: pval.Value,
 	}

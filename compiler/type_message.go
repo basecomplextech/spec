@@ -7,13 +7,17 @@ import (
 )
 
 type Message struct {
+	Def *Definition
+
 	Fields     []*MessageField
 	FieldTags  map[int]*MessageField
 	FieldNames map[string]*MessageField
 }
 
-func newMessage(pmsg *parser.Message) (*Message, error) {
+func newMessage(def *Definition, pmsg *parser.Message) (*Message, error) {
 	msg := &Message{
+		Def: def,
+
 		FieldNames: make(map[string]*MessageField),
 		FieldTags:  make(map[int]*MessageField),
 	}

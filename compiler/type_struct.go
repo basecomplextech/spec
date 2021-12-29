@@ -7,12 +7,15 @@ import (
 )
 
 type Struct struct {
+	Def *Definition
+
 	Fields     []*StructField
 	FieldNames map[string]*StructField
 }
 
-func newStruct(pstr *parser.Struct) (*Struct, error) {
+func newStruct(def *Definition, pstr *parser.Struct) (*Struct, error) {
 	str := &Struct{
+		Def:        def,
 		FieldNames: make(map[string]*StructField),
 	}
 
