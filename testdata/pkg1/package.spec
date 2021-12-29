@@ -2,6 +2,10 @@ import (
     "pkg2"
 )
 
+options (
+    go_package="github.com/baseone-run/spec/generated/golang/pkg2"
+)
+
 message Message {
     field_bool    bool      1;
     field_enum    Enum      2;

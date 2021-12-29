@@ -113,6 +113,26 @@ func TestCompiler__should_recursively_resolve_imports(t *testing.T) {
 	assert.True(t, imp2.Resolved)
 }
 
+// Options
+
+func TestCompiler__should_compile_options(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("../testdata/pkg1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	file0 := pkg.Files[0]
+	file1 := pkg.Files[1]
+	assert.Len(t, file0.Options, 0)
+	assert.Len(t, file1.Options, 1)
+
+	gopkg := file1.OptionMap["go_package"]
+	require.NotNil(t, gopkg)
+	assert.Equal(t, "github.com/baseone-run/spec/generated/golang/pkg2", gopkg.Value)
+}
+
 // Definitions
 
 func TestCompiler__should_compile_file_definitions(t *testing.T) {

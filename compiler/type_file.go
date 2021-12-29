@@ -16,6 +16,9 @@ type File struct {
 	Imports   []*Import
 	ImportMap map[string]*Import // imports by names and aliases (not ids)
 
+	Options   []*Option
+	OptionMap map[string]*Option
+
 	Definitions     []*Definition
 	DefinitionNames map[string]*Definition
 }
@@ -30,6 +33,7 @@ func newFile(pkg *Package, pfile *parser.File) (*File, error) {
 		Path:    path,
 
 		ImportMap:       make(map[string]*Import),
+		OptionMap:       make(map[string]*Option),
 		DefinitionNames: make(map[string]*Definition),
 	}
 
@@ -37,16 +41,32 @@ func newFile(pkg *Package, pfile *parser.File) (*File, error) {
 	for _, pimp := range pfile.Imports {
 		imp, err := newImport(f, pimp)
 		if err != nil {
-			return nil, fmt.Errorf("invalid file import, file=%v: %w", path, err)
+			return nil, fmt.Errorf("%v: %w", path, err)
 		}
 
 		_, ok := f.ImportMap[imp.Name]
 		if ok {
-			return nil, fmt.Errorf("duplicate file import, file=%v", path)
+			return nil, fmt.Errorf("%v: duplicate import %v", path, imp.Name)
 		}
 
 		f.Imports = append(f.Imports, imp)
 		f.ImportMap[imp.Name] = imp
+	}
+
+	// create options
+	for _, popt := range pfile.Options {
+		opt, err := newOption(f, popt)
+		if err != nil {
+			return nil, fmt.Errorf("%v: %w", path, err)
+		}
+
+		_, ok := f.ImportMap[opt.Name]
+		if ok {
+			return nil, fmt.Errorf("%v: duplicate option %v", path, opt.Name)
+		}
+
+		f.Options = append(f.Options, opt)
+		f.OptionMap[opt.Name] = opt
 	}
 
 	// create definitions
@@ -125,4 +145,21 @@ func (imp *Import) lookupType(name string) (*Definition, bool) {
 	}
 
 	return imp.Package.lookupType(name)
+}
+
+// Option
+
+type Option struct {
+	File *File
+
+	Name  string
+	Value string
+}
+
+func newOption(file *File, popt *parser.Option) (*Option, error) {
+	opt := &Option{
+		Name:  popt.Name,
+		Value: popt.Value,
+	}
+	return opt, nil
 }
