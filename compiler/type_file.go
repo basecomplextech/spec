@@ -55,7 +55,7 @@ func newFile(pkg *Package, pfile *parser.File) (*File, error) {
 
 	// create options
 	for _, popt := range pfile.Options {
-		opt, err := newOption(f, popt)
+		opt, err := newOption(popt)
 		if err != nil {
 			return nil, fmt.Errorf("%v: %w", path, err)
 		}
@@ -145,21 +145,4 @@ func (imp *Import) lookupType(name string) (*Definition, bool) {
 	}
 
 	return imp.Package.lookupType(name)
-}
-
-// Option
-
-type Option struct {
-	File *File
-
-	Name  string
-	Value string
-}
-
-func newOption(file *File, popt *parser.Option) (*Option, error) {
-	opt := &Option{
-		Name:  popt.Name,
-		Value: popt.Value,
-	}
-	return opt, nil
 }

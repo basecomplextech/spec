@@ -3,7 +3,7 @@ import (
 )
 
 options (
-    go_package="github.com/baseone-run/spec/generated/golang/pkg2"
+    go_package="github.com/baseone-run/spec/generated/golang/pkg1"
 )
 
 message Message {

@@ -72,17 +72,16 @@ func typeName(t *compiler.Type) string {
 func typeReadFunc(t *compiler.Type) string {
 	switch t.Kind {
 	case compiler.KindMessage:
-		if t.ImportName == "" {
+		if t.Import == nil {
 			return fmt.Sprintf("Read%v", t.Name)
-		} else {
-			return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
 		}
+		return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
+
 	case compiler.KindStruct:
-		if t.ImportName == "" {
+		if t.Import == nil {
 			return fmt.Sprintf("Read%v", t.Name)
-		} else {
-			return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
 		}
+		return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
 	}
 
 	panic(fmt.Sprintf("unsupported type kind %v", t.Kind))

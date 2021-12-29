@@ -23,6 +23,9 @@ type Package struct {
 	Files     []*File
 	FileNames map[string]*File
 
+	Options     []*Option
+	OptionNames map[string]*Option
+
 	Definitions     []*Definition
 	DefinitionNames map[string]*Definition
 }
@@ -40,6 +43,7 @@ func newPackage(id string, path string, pfiles []*parser.File) (*Package, error)
 		State: PackageCompiling,
 
 		FileNames:       make(map[string]*File),
+		OptionNames:     make(map[string]*Option),
 		DefinitionNames: make(map[string]*Definition),
 	}
 
@@ -54,10 +58,22 @@ func newPackage(id string, path string, pfiles []*parser.File) (*Package, error)
 		pkg.FileNames[f.Name] = f
 	}
 
+	// compile options
+	for _, file := range pkg.Files {
+		for _, opt := range file.Options {
+			_, ok := pkg.OptionNames[opt.Name]
+			if ok {
+				return nil, fmt.Errorf("duplicate option, name=%v, path=%v", opt.Name, path)
+			}
+
+			pkg.Options = append(pkg.Options, opt)
+			pkg.OptionNames[opt.Name] = opt
+		}
+	}
+
 	// compile definitions
 	for _, file := range pkg.Files {
 		for _, def := range file.Definitions {
-
 			_, ok := pkg.DefinitionNames[def.Name]
 			if ok {
 				return nil, fmt.Errorf("duplicate definition, name=%v, path=%v", def.Name, path)

@@ -8,6 +8,10 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
+const (
+	OptionPackage = "go_package"
+)
+
 // WriteFile writes a golang file.
 func WriteFile(file *compiler.File) ([]byte, error) {
 	w := newWriter()
@@ -49,9 +53,13 @@ func (w *writer) file(file *compiler.File) error {
 	w.line("import (")
 	w.line(`"github.com/baseone-run/spec"`)
 	for _, imp := range file.Imports {
-		w.linef(`"%v"`, imp.ID)
+		pkg := importPackage(imp)
+		w.linef(`"%v"`, pkg)
 	}
 	w.line(")")
+	w.line()
+
+	w.line(`var _ spec.Type // unused import`)
 	w.line()
 
 	// definitions
@@ -79,6 +87,15 @@ func (w *writer) definitions(file *compiler.File) error {
 }
 
 // internal
+
+func importPackage(imp *compiler.Import) string {
+	pkg, ok := imp.Package.OptionNames[OptionPackage]
+	if ok {
+		return pkg.Value
+	}
+
+	return imp.ID
+}
 
 func toUpperCamelCase(s string) string {
 	parts := strings.Split(s, "_")
