@@ -28,8 +28,8 @@ func (w *writer) messageDef(def *compiler.Definition) error {
 	w.linef("type %v struct {", def.Name)
 
 	for _, field := range def.Message.Fields {
-		name := goMessageFieldName(field)
-		type_ := goTypeName(field.Type)
+		name := messageFieldName(field)
+		type_ := typeName(field.Type)
 		tag := fmt.Sprintf("`tag:\"%d\" json:\"%v\"`", field.Tag, field.Name)
 		w.linef("%v %v %v", name, type_, tag)
 	}
@@ -78,7 +78,7 @@ func (w *writer) messageRead(def *compiler.Definition) error {
 }
 
 func (w *writer) messageReadField(field *compiler.MessageField) error {
-	name := goMessageFieldName(field)
+	name := messageFieldName(field)
 	kind := field.Type.Kind
 	typ := field.Type
 	tag := field.Tag
@@ -124,7 +124,7 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 		w.line(`{`)
 		w.linef(`list := msg.List(%d)`, tag)
 		w.linef(`ln := list.Len()`)
-		w.linef(`m.%v = make([]%v, 0, ln)`, name, goTypeName(elem))
+		w.linef(`m.%v = make([]%v, 0, ln)`, name, typeName(elem))
 		w.line()
 
 		// elements
@@ -140,16 +140,16 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 	// resolved
 
 	case compiler.KindEnum:
-		typeName := goTypeName(typ)
+		typeName := typeName(typ)
 		w.linef(`m.%v = %v(msg.Int32(%d))`, name, typeName, tag)
 
 	case compiler.KindMessage:
-		readFunc := goReadFunc(typ)
+		readFunc := typeReadFunc(typ)
 		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
 
 	case compiler.KindStruct:
-		readFunc := goReadFunc(typ)
-		w.linef(`m.%v = %v(msg.Field(%d))`, name, readFunc, tag)
+		readFunc := typeReadFunc(typ)
+		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
 	}
 	return nil
 }
@@ -157,15 +157,11 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 // write
 
 func (w *writer) messageWrite(def *compiler.Definition) error {
+	// begin
 	w.linef(`func (m *%v) Write(w spec.Writer) error {`, def.Name)
-
-	// nil
 	w.linef(`if m == nil {
 		return w.Nil()
 	}`)
-	w.line()
-
-	// begin
 	w.line(`if err := w.BeginMessage(); err != nil {
 		return err
 	}`)
@@ -185,7 +181,7 @@ func (w *writer) messageWrite(def *compiler.Definition) error {
 }
 
 func (w *writer) messageWriteField(field *compiler.MessageField) error {
-	name := goMessageFieldName(field)
+	name := messageFieldName(field)
 	kind := field.Type.Kind
 
 	typ := field.Type
@@ -196,8 +192,10 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 		panic(fmt.Sprintf("unsupported type kind %v", kind))
 
 	case compiler.KindBool:
+		w.line(`{`)
 		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
+		w.line(`}`)
 
 	case compiler.KindInt8,
 		compiler.KindInt16,
@@ -271,14 +269,14 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 		w.line(`}`)
 
 	case compiler.KindStruct:
+		w.line(`{`)
 		w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
 		w.linef(`w.Field(%d)`, field.Tag)
+		w.line(`}`)
 	}
-
-	w.line()
 	return nil
 }
 
-func goMessageFieldName(field *compiler.MessageField) string {
+func messageFieldName(field *compiler.MessageField) string {
 	return toUpperCamelCase(field.Name)
 }

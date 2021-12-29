@@ -52,11 +52,11 @@ func (w *writer) listReadElement(typ *compiler.Type) {
 	// resolved
 
 	case compiler.KindEnum:
-		typeName := goTypeName(typ)
+		typeName := typeName(typ)
 		w.linef(`%v(list.Int32(i))`, typeName)
 
 	case compiler.KindMessage:
-		readFunc := goReadFunc(typ)
+		readFunc := typeReadFunc(typ)
 		w.linef(`data := list.Element(i)`)
 		w.linef(`elem, err := %v(data)
 		if err != nil {
@@ -64,7 +64,7 @@ func (w *writer) listReadElement(typ *compiler.Type) {
 		}`, readFunc)
 
 	case compiler.KindStruct:
-		readFunc := goReadFunc(typ)
+		readFunc := typeReadFunc(typ)
 		w.linef(`data := list.Element(i)`)
 		w.linef(`elem, err := %v(data)
 		if err != nil {

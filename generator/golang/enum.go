@@ -30,7 +30,7 @@ func (w *writer) enumValues(def *compiler.Definition) error {
 
 	for _, val := range def.Enum.Values {
 		// EnumValue Enum = 1
-		name := goEnumValueName(val)
+		name := enumValueName(val)
 		w.linef("%v %v = %d", name, def.Name, val.Number)
 	}
 
@@ -44,7 +44,7 @@ func (w *writer) enumString(def *compiler.Definition) error {
 	w.line("switch e {")
 
 	for _, val := range def.Enum.Values {
-		name := goEnumValueName(val)
+		name := enumValueName(val)
 		w.linef("case %v:", name)
 		w.linef(`return "%v"`, strings.ToLower(val.Name))
 	}
@@ -56,7 +56,7 @@ func (w *writer) enumString(def *compiler.Definition) error {
 	return nil
 }
 
-func goEnumValueName(val *compiler.EnumValue) string {
+func enumValueName(val *compiler.EnumValue) string {
 	name := toUpperCamelCase(val.Name)
 	return val.Enum.Def.Name + name
 }
