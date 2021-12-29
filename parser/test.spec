@@ -25,7 +25,7 @@ message TestMessage {
     field_uint8   uint8   20;
     field_uint16  uint16  21;
     field_uint32  uint32  22;
-    field_uint64  uint64  23;
+    field_uint64  uint64  22;
 
     field_float32 float32 30;
     field_float64 float64 31;

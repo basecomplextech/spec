@@ -25,17 +25,15 @@ message Message {
     field_string  string    50;
     field_bytes   bytes     51;
 
-    reference           Node                60;
-    imported            pkg2.SubMessage     61;
+    msg         Node            60;
+    value       Struct          61;
+    imported    pkg2.SubMessage 62;
 
-    nullable            int32               70;
-    nullable_reference  Node                71;
-    nullable_imported   pkg2.SubMessage     72;
-
-    list            []int64             80;
-    list_strings    []string            81;
-    list_references []Node              82;
-    list_imported   []pkg2.SubMessage   83;
+    list_ints       []int64             70;
+    list_strings    []string            71;
+    list_values     []Struct            73;
+    list_messages   []Node              74;
+    list_imported   []pkg2.SubMessage   75;
 }
 
 message Node {

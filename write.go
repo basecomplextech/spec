@@ -6,6 +6,10 @@ import (
 	"math"
 )
 
+func writeNil(b []byte) []byte {
+	return append(b, byte(TypeNil))
+}
+
 func writeBool(b []byte, v bool) []byte {
 	if v {
 		return append(b, byte(TypeTrue))

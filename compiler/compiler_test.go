@@ -213,7 +213,7 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 23)
+	assert.Len(t, def.Message.Fields, 22)
 }
 
 func TestCompiler__should_compile_message_field_names(t *testing.T) {
@@ -228,7 +228,7 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 23)
+	require.Len(t, def.Message.FieldNames, 22)
 	assert.Contains(t, msg.FieldNames, "field_bool")
 	assert.Contains(t, msg.FieldNames, "field_enum")
 	assert.Contains(t, msg.FieldNames, "field_int8")
@@ -246,7 +246,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 23)
+	require.Len(t, def.Message.FieldTags, 22)
 	assert.Contains(t, msg.FieldTags, 1)
 	assert.Contains(t, msg.FieldTags, 2)
 	assert.Contains(t, msg.FieldTags, 10)
@@ -319,7 +319,7 @@ func TestCompiler__should_compile_reference_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["reference"]
+	field := def.Message.FieldNames["msg"]
 	require.NotNil(t, field)
 
 	// resolved
@@ -364,7 +364,7 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["list"]
+	field := def.Message.FieldNames["list_values"]
 	require.NotNil(t, field)
 
 	// list
@@ -374,7 +374,7 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 	// element
 	elem := type_.Element
 	require.NotNil(t, elem)
-	assert.Equal(t, KindInt64, elem.Kind)
+	assert.Equal(t, KindStruct, elem.Kind)
 }
 
 func TestCompiler__should_compile_list_reference_type(t *testing.T) {
@@ -388,7 +388,7 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["list_references"]
+	field := def.Message.FieldNames["list_messages"]
 	require.NotNil(t, field)
 
 	// list

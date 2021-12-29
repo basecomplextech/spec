@@ -69,6 +69,21 @@ func (w *Writer) Reset() {
 
 // Primitive
 
+func (w *Writer) Nil() error {
+	if w.err != nil {
+		return w.err
+	}
+
+	start := len(w.buf)
+	w.buf = writeNil(w.buf)
+	end := len(w.buf)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
+	return nil
+}
+
 func (w *Writer) Bool(v bool) error {
 	if w.err != nil {
 		return w.err
