@@ -25,7 +25,7 @@ const (
 	TypeUint8  Type = 0x20
 	TypeUint16 Type = 0x21
 	TypeUint32 Type = 0x22
-	TypeUint64 Type = 0x22
+	TypeUint64 Type = 0x23
 
 	TypeFloat32 Type = 0x30
 	TypeFloat64 Type = 0x31

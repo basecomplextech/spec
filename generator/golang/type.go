@@ -1,4 +1,4 @@
-package generator
+package golang
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func (w *goWriter) writeValue(typ *compiler.Type, val string) error {
+func (w *writer) writeValue(typ *compiler.Type, val string) error {
 	kind := typ.Kind
 
 	switch kind {

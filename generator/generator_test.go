@@ -18,8 +18,9 @@ func TestGenerator_Go__should_generate_go_package(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	g := newGenerator(Options{OutPath: "generated"})
-	if err := g.GenerateGo(pkg1); err != nil {
+	out := "generated"
+	g := newGenerator()
+	if err := g.Golang(pkg1, out); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -1,4 +1,4 @@
-package generator
+package golang
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func (w *goWriter) message(def *compiler.Definition) error {
+func (w *writer) message(def *compiler.Definition) error {
 	if err := w.messageDef(def); err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func (w *goWriter) message(def *compiler.Definition) error {
 
 // def
 
-func (w *goWriter) messageDef(def *compiler.Definition) error {
+func (w *writer) messageDef(def *compiler.Definition) error {
 	w.linef("type %v struct {", def.Name)
 
 	for _, field := range def.Message.Fields {
@@ -41,7 +41,7 @@ func (w *goWriter) messageDef(def *compiler.Definition) error {
 
 // read
 
-func (w *goWriter) messageReadFunc(def *compiler.Definition) error {
+func (w *writer) messageReadFunc(def *compiler.Definition) error {
 	w.linef(`func Read%v(b []byte) (*%v, error) {`, def.Name, def.Name)
 	w.linef(`if len(b) == 0 {
 		return nil, nil
@@ -57,7 +57,7 @@ func (w *goWriter) messageReadFunc(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *goWriter) messageRead(def *compiler.Definition) error {
+func (w *writer) messageRead(def *compiler.Definition) error {
 	w.linef(`func (m *%v) Read(b []byte) error {`, def.Name)
 	w.line(`msg, err := spec.ReadMessage(b)
 	if err != nil {
@@ -77,7 +77,7 @@ func (w *goWriter) messageRead(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *goWriter) messageReadField(field *compiler.MessageField) error {
+func (w *writer) messageReadField(field *compiler.MessageField) error {
 	name := goMessageFieldName(field)
 	kind := field.Type.Kind
 	typ := field.Type
@@ -156,7 +156,7 @@ func (w *goWriter) messageReadField(field *compiler.MessageField) error {
 
 // write
 
-func (w *goWriter) messageWrite(def *compiler.Definition) error {
+func (w *writer) messageWrite(def *compiler.Definition) error {
 	w.linef(`func (m *%v) Write(w spec.Writer) error {`, def.Name)
 
 	// nil
@@ -184,7 +184,7 @@ func (w *goWriter) messageWrite(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *goWriter) messageWriteField(field *compiler.MessageField) error {
+func (w *writer) messageWriteField(field *compiler.MessageField) error {
 	name := goMessageFieldName(field)
 	kind := field.Type.Kind
 

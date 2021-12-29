@@ -1,0 +1,91 @@
+package golang
+
+import (
+	"bytes"
+	"fmt"
+	"strings"
+
+	"github.com/baseone-run/spec/compiler"
+)
+
+// WriteFile writes a golang file.
+func WriteFile(file *compiler.File) ([]byte, error) {
+	w := newWriter()
+	if err := w.file(file); err != nil {
+		return nil, err
+	}
+	return w.b.Bytes(), nil
+}
+
+type writer struct {
+	b bytes.Buffer
+}
+
+func newWriter() *writer {
+	return &writer{b: bytes.Buffer{}}
+}
+
+func (w *writer) line(args ...string) {
+	for _, s := range args {
+		w.b.WriteString(s)
+	}
+	w.b.WriteString("\n")
+}
+
+func (w *writer) linef(format string, args ...interface{}) {
+	s := fmt.Sprintf(format, args...)
+	w.b.WriteString(s)
+	w.b.WriteString("\n")
+}
+
+// file
+
+func (w *writer) file(file *compiler.File) error {
+	// package
+	w.line("package ", file.Package.Name)
+	w.line()
+
+	// imports
+	w.line("import (")
+	w.line(`"github.com/baseone-run/spec"`)
+	for _, imp := range file.Imports {
+		w.linef(`"%v"`, imp.ID)
+	}
+	w.line(")")
+	w.line()
+
+	// definitions
+	return w.definitions(file)
+}
+
+func (w *writer) definitions(file *compiler.File) error {
+	for _, def := range file.Definitions {
+		switch def.Type {
+		case compiler.DefinitionEnum:
+			if err := w.enum(def); err != nil {
+				return err
+			}
+		case compiler.DefinitionMessage:
+			if err := w.message(def); err != nil {
+				return err
+			}
+		case compiler.DefinitionStruct:
+			if err := w.struct_(def); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// internal
+
+func toUpperCamelCase(s string) string {
+	parts := strings.Split(s, "_")
+	for i, part := range parts {
+		part = strings.ToLower(part)
+		part = strings.Title(part)
+		parts[i] = part
+	}
+	return strings.Join(parts, "")
+}

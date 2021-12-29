@@ -1,8 +1,12 @@
-package generator
+package golang
 
-import "github.com/baseone-run/spec/compiler"
+import (
+	"strings"
 
-func (w *goWriter) enum(def *compiler.Definition) error {
+	"github.com/baseone-run/spec/compiler"
+)
+
+func (w *writer) enum(def *compiler.Definition) error {
 	if err := w.enumDef(def); err != nil {
 		return err
 	}
@@ -15,13 +19,13 @@ func (w *goWriter) enum(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *goWriter) enumDef(def *compiler.Definition) error {
+func (w *writer) enumDef(def *compiler.Definition) error {
 	w.linef("type %v int32", def.Name)
 	w.line()
 	return nil
 }
 
-func (w *goWriter) enumValues(def *compiler.Definition) error {
+func (w *writer) enumValues(def *compiler.Definition) error {
 	w.line("const (")
 
 	for _, val := range def.Enum.Values {
@@ -35,14 +39,14 @@ func (w *goWriter) enumValues(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *goWriter) enumString(def *compiler.Definition) error {
+func (w *writer) enumString(def *compiler.Definition) error {
 	w.linef("func (e %v) String() string {", def.Name)
 	w.line("switch e {")
 
 	for _, val := range def.Enum.Values {
 		name := goEnumValueName(val)
 		w.linef("case %v:", name)
-		w.linef(`return "%v"`, toLowerCase(val.Name))
+		w.linef(`return "%v"`, strings.ToLower(val.Name))
 	}
 
 	w.line("}")

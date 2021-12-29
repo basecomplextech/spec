@@ -1,4 +1,4 @@
-package generator
+package golang
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func (w *goWriter) listReadElement(typ *compiler.Type) {
+func (w *writer) listReadElement(typ *compiler.Type) {
 	kind := typ.Kind
 
 	switch kind {
