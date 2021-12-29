@@ -8,7 +8,7 @@ import (
 )
 
 // GenerateGo generates a go package.
-func (g *generator) GenerateGo(pkg *compiler.Package) error {
+func (g *generator) GenerateGo1(pkg *compiler.Package) error {
 	t := template.New("file").Funcs(goFuncs)
 
 	t, err := t.Parse(goFile)
