@@ -114,10 +114,10 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		_, vn := readInt(b)
 		d.values += vn - n
 
-	case TypeUInt8,
-		TypeUInt16,
-		TypeUInt32,
-		TypeUInt64:
+	case TypeUint8,
+		TypeUint16,
+		TypeUint32,
+		TypeUint64:
 		_, vn := readInt(b)
 		d.values += vn - n
 

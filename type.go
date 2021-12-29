@@ -22,10 +22,10 @@ const (
 	TypeInt32 Type = 0x12
 	TypeInt64 Type = 0x13
 
-	TypeUInt8  Type = 0x20
-	TypeUInt16 Type = 0x21
-	TypeUInt32 Type = 0x22
-	TypeUInt64 Type = 0x23
+	TypeUint8  Type = 0x20
+	TypeUint16 Type = 0x21
+	TypeUint32 Type = 0x22
+	TypeUint64 Type = 0x23
 
 	TypeFloat32 Type = 0x30
 	TypeFloat64 Type = 0x31
@@ -52,10 +52,10 @@ func CheckType(t Type) error {
 		TypeInt32,
 		TypeInt64,
 
-		TypeUInt8,
-		TypeUInt16,
-		TypeUInt32,
-		TypeUInt64,
+		TypeUint8,
+		TypeUint16,
+		TypeUint32,
+		TypeUint64,
 
 		TypeFloat32,
 		TypeFloat64,

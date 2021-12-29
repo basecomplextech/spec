@@ -38,25 +38,42 @@ const (
 	KindNullable  Kind = "nullable"
 )
 
-var builtin = map[string]*Type{
-	string(KindBool): newBuiltinType(KindBool),
+var (
+	builtin = map[string]*Type{
+		string(KindBool): newBuiltinType(KindBool),
 
-	string(KindInt8):  newBuiltinType(KindInt8),
-	string(KindInt16): newBuiltinType(KindInt16),
-	string(KindInt32): newBuiltinType(KindInt32),
-	string(KindInt64): newBuiltinType(KindInt64),
+		string(KindInt8):  newBuiltinType(KindInt8),
+		string(KindInt16): newBuiltinType(KindInt16),
+		string(KindInt32): newBuiltinType(KindInt32),
+		string(KindInt64): newBuiltinType(KindInt64),
 
-	string(KindUint8):  newBuiltinType(KindUint8),
-	string(KindUint16): newBuiltinType(KindUint16),
-	string(KindUint32): newBuiltinType(KindUint32),
-	string(KindUint64): newBuiltinType(KindUint64),
+		string(KindUint8):  newBuiltinType(KindUint8),
+		string(KindUint16): newBuiltinType(KindUint16),
+		string(KindUint32): newBuiltinType(KindUint32),
+		string(KindUint64): newBuiltinType(KindUint64),
 
-	string(KindFloat32): newBuiltinType(KindFloat32),
-	string(KindFloat64): newBuiltinType(KindFloat64),
+		string(KindFloat32): newBuiltinType(KindFloat32),
+		string(KindFloat64): newBuiltinType(KindFloat64),
 
-	string(KindBytes):  newBuiltinType(KindBytes),
-	string(KindString): newBuiltinType(KindString),
-}
+		string(KindBytes):  newBuiltinType(KindBytes),
+		string(KindString): newBuiltinType(KindString),
+	}
+
+	numbers = map[Kind]bool{
+		KindInt8:  true,
+		KindInt16: true,
+		KindInt32: true,
+		KindInt64: true,
+
+		KindUint8:  true,
+		KindUint16: true,
+		KindUint32: true,
+		KindUint64: true,
+
+		KindFloat32: true,
+		KindFloat64: true,
+	}
+)
 
 type Type struct {
 	Kind       Kind
@@ -68,11 +85,9 @@ type Type struct {
 	Ref    *Definition
 	Import *Import
 
-	// Utility flags
+	// Flags
 	Builtin    bool
 	Imported   bool
-	List       bool
-	Nullable   bool
 	Referenced bool
 	Resolved   bool
 }
@@ -113,8 +128,6 @@ func newType(ptype *parser.Type) (*Type, error) {
 			Kind:    KindNullable,
 			Name:    "*",
 			Element: elem,
-
-			Nullable: true,
 		}
 		return type_, nil
 
@@ -128,8 +141,6 @@ func newType(ptype *parser.Type) (*Type, error) {
 			Kind:    KindList,
 			Name:    "[]",
 			Element: elem,
-
-			List: true,
 		}
 		return type_, nil
 	}
@@ -169,3 +180,43 @@ func (t *Type) resolveImport(imp *Import, def *Definition) {
 	t.Import = imp
 	t.Resolved = true
 }
+
+// Bool     bool
+// 	Number   bool
+// 	Bytes    bool
+// 	String   bool
+// 	List     bool
+// 	Nullable bool
+
+// 	Int8 bool
+// 	Int16 bool
+// 	Int32 bool
+
+// 	Enum    bool
+// 	Message bool
+// 	Struct  bool
+
+func (t *Type) Bool() bool   { return t.Kind == KindBool }
+func (t *Type) Number() bool { return numbers[t.Kind] }
+
+func (t *Type) Int8() bool  { return t.Kind == KindInt8 }
+func (t *Type) Int16() bool { return t.Kind == KindInt16 }
+func (t *Type) Int32() bool { return t.Kind == KindInt32 }
+func (t *Type) Int64() bool { return t.Kind == KindInt64 }
+
+func (t *Type) Uint8() bool  { return t.Kind == KindUint8 }
+func (t *Type) Uint16() bool { return t.Kind == KindUint16 }
+func (t *Type) Uint32() bool { return t.Kind == KindUint32 }
+func (t *Type) Uint64() bool { return t.Kind == KindUint64 }
+
+func (t *Type) Float32() bool { return t.Kind == KindFloat32 }
+func (t *Type) Float64() bool { return t.Kind == KindFloat64 }
+
+func (t *Type) Bytes() bool    { return t.Kind == KindBytes }
+func (t *Type) String() bool   { return t.Kind == KindString }
+func (t *Type) List() bool     { return t.Kind == KindList }
+func (t *Type) Nullable() bool { return t.Kind == KindNullable }
+
+func (t *Type) Enum() bool    { return t.Ref != nil && t.Ref.Type == DefinitionEnum }
+func (t *Type) Message() bool { return t.Ref != nil && t.Ref.Type == DefinitionMessage }
+func (t *Type) Struct() bool  { return t.Ref != nil && t.Ref.Type == DefinitionStruct }

@@ -15,10 +15,10 @@ type TestMessage struct {
 	Int32 int32 `tag:"12"`
 	Int64 int64 `tag:"13"`
 
-	UInt8  uint8  `tag:"20"`
-	UInt16 uint16 `tag:"21"`
-	UInt32 uint32 `tag:"22"`
-	UInt64 uint64 `tag:"23"`
+	Uint8  uint8  `tag:"20"`
+	Uint16 uint16 `tag:"21"`
+	Uint32 uint32 `tag:"22"`
+	Uint64 uint64 `tag:"23"`
 
 	Float32 float32 `tag:"30"`
 	Float64 float64 `tag:"31"`
@@ -57,10 +57,10 @@ func newTestMessage() *TestMessage {
 		Int32: math.MaxInt32,
 		Int64: math.MaxInt64,
 
-		UInt8:  math.MaxUint8,
-		UInt16: math.MaxUint16,
-		UInt32: math.MaxUint32,
-		UInt64: math.MaxUint64,
+		Uint8:  math.MaxUint8,
+		Uint16: math.MaxUint16,
+		Uint32: math.MaxUint32,
+		Uint64: math.MaxUint64,
 
 		Float32: math.MaxFloat32,
 		Float64: math.MaxFloat64,
@@ -110,10 +110,10 @@ func (msg *TestMessage) Read(b []byte) error {
 	msg.Int64 = m.Int64(13)
 
 	// uint:20-23
-	msg.UInt8 = m.UInt8(20)
-	msg.UInt16 = m.UInt16(21)
-	msg.UInt32 = m.UInt32(22)
-	msg.UInt64 = m.UInt64(23)
+	msg.Uint8 = m.Uint8(20)
+	msg.Uint16 = m.Uint16(21)
+	msg.Uint32 = m.Uint32(22)
+	msg.Uint64 = m.Uint64(23)
 
 	// float:30-31
 	msg.Float32 = m.Float32(30)
@@ -202,13 +202,13 @@ func (msg TestMessage) Write(w *Writer) error {
 	w.Field(13)
 
 	// uint:20-23
-	w.UInt8(msg.UInt8)
+	w.Uint8(msg.Uint8)
 	w.Field(20)
-	w.UInt16(msg.UInt16)
+	w.Uint16(msg.Uint16)
 	w.Field(21)
-	w.UInt32(msg.UInt32)
+	w.Uint32(msg.Uint32)
 	w.Field(22)
-	w.UInt64(msg.UInt64)
+	w.Uint64(msg.Uint64)
 	w.Field(23)
 
 	// float:30-31
@@ -286,10 +286,10 @@ func (d TestMessageData) Int8() int8       { return d.m.Int8(10) }
 func (d TestMessageData) Int16() int16     { return d.m.Int16(11) }
 func (d TestMessageData) Int32() int32     { return d.m.Int32(12) }
 func (d TestMessageData) Int64() int64     { return d.m.Int64(13) }
-func (d TestMessageData) UInt8() uint8     { return d.m.UInt8(20) }
-func (d TestMessageData) UInt16() uint16   { return d.m.UInt16(21) }
-func (d TestMessageData) UInt32() uint32   { return d.m.UInt32(22) }
-func (d TestMessageData) UInt64() uint64   { return d.m.UInt64(23) }
+func (d TestMessageData) Uint8() uint8     { return d.m.Uint8(20) }
+func (d TestMessageData) Uint16() uint16   { return d.m.Uint16(21) }
+func (d TestMessageData) Uint32() uint32   { return d.m.Uint32(22) }
+func (d TestMessageData) Uint64() uint64   { return d.m.Uint64(23) }
 func (d TestMessageData) Float32() float32 { return d.m.Float32(30) }
 func (d TestMessageData) Float64() float64 { return d.m.Float64(31) }
 func (d TestMessageData) String() string   { return d.m.String(40) }

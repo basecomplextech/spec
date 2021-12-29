@@ -19,13 +19,13 @@ func testWriteMessage(t *testing.T) []byte {
 	w.Int64(1)
 	w.Field(4)
 
-	w.UInt8(1)
+	w.Uint8(1)
 	w.Field(10)
-	w.UInt16(1)
+	w.Uint16(1)
 	w.Field(11)
-	w.UInt32(1)
+	w.Uint32(1)
 	w.Field(12)
-	w.UInt64(1)
+	w.Uint64(1)
 	w.Field(13)
 
 	w.Float32(1)
@@ -70,10 +70,10 @@ func TestMessage_Getters__should_access_fields(t *testing.T) {
 	assert.Equal(t, int32(1), m.Int32(3))
 	assert.Equal(t, int64(1), m.Int64(4))
 
-	assert.Equal(t, uint8(1), m.UInt8(10))
-	assert.Equal(t, uint16(1), m.UInt16(11))
-	assert.Equal(t, uint32(1), m.UInt32(12))
-	assert.Equal(t, uint64(1), m.UInt64(13))
+	assert.Equal(t, uint8(1), m.Uint8(10))
+	assert.Equal(t, uint16(1), m.Uint16(11))
+	assert.Equal(t, uint32(1), m.Uint32(12))
+	assert.Equal(t, uint64(1), m.Uint64(13))
 
 	assert.Equal(t, float32(1), m.Float32(20))
 	assert.Equal(t, float64(1), m.Float64(21))

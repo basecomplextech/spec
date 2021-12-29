@@ -50,39 +50,39 @@ func writeInt64(b []byte, v int64) []byte {
 	return b
 }
 
-func writeUInt8(b []byte, v uint8) []byte {
+func writeUint8(b []byte, v uint8) []byte {
 	b = append(b, v)
-	b = append(b, byte(TypeUInt8))
+	b = append(b, byte(TypeUint8))
 	return b
 }
 
-func writeUInt16(b []byte, v uint16) []byte {
+func writeUint16(b []byte, v uint16) []byte {
 	p := [maxVarintLen16]byte{}
 	n := writeReverseUvarint(p[:], uint64(v))
 	off := maxVarintLen16 - n
 
 	b = append(b, p[off:]...)
-	b = append(b, byte(TypeUInt16))
+	b = append(b, byte(TypeUint16))
 	return b
 }
 
-func writeUInt32(b []byte, v uint32) []byte {
+func writeUint32(b []byte, v uint32) []byte {
 	p := [maxVarintLen32]byte{}
 	n := writeReverseUvarint(p[:], uint64(v))
 	off := maxVarintLen32 - n
 
 	b = append(b, p[off:]...)
-	b = append(b, byte(TypeUInt32))
+	b = append(b, byte(TypeUint32))
 	return b
 }
 
-func writeUInt64(b []byte, v uint64) []byte {
+func writeUint64(b []byte, v uint64) []byte {
 	p := [maxVarintLen64]byte{}
 	n := writeReverseUvarint(p[:], v)
 	off := maxVarintLen64 - n
 
 	b = append(b, p[off:]...)
-	b = append(b, byte(TypeUInt64))
+	b = append(b, byte(TypeUint64))
 	return b
 }
 

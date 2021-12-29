@@ -85,7 +85,7 @@ func (w *Writer) Bool(v bool) error {
 }
 
 func (w *Writer) Byte(v byte) error {
-	return w.UInt8(v)
+	return w.Uint8(v)
 }
 
 func (w *Writer) Int8(v int8) error {
@@ -148,13 +148,13 @@ func (w *Writer) Int64(v int64) error {
 	return nil
 }
 
-func (w *Writer) UInt8(v uint8) error {
+func (w *Writer) Uint8(v uint8) error {
 	if w.err != nil {
 		return w.err
 	}
 
 	start := len(w.buf)
-	w.buf = writeUInt8(w.buf, v)
+	w.buf = writeUint8(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -163,13 +163,13 @@ func (w *Writer) UInt8(v uint8) error {
 	return nil
 }
 
-func (w *Writer) UInt16(v uint16) error {
+func (w *Writer) Uint16(v uint16) error {
 	if w.err != nil {
 		return w.err
 	}
 
 	start := len(w.buf)
-	w.buf = writeUInt16(w.buf, v)
+	w.buf = writeUint16(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -178,13 +178,13 @@ func (w *Writer) UInt16(v uint16) error {
 	return nil
 }
 
-func (w *Writer) UInt32(v uint32) error {
+func (w *Writer) Uint32(v uint32) error {
 	if w.err != nil {
 		return w.err
 	}
 
 	start := len(w.buf)
-	w.buf = writeUInt32(w.buf, v)
+	w.buf = writeUint32(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -193,13 +193,13 @@ func (w *Writer) UInt32(v uint32) error {
 	return nil
 }
 
-func (w *Writer) UInt64(v uint64) error {
+func (w *Writer) Uint64(v uint64) error {
 	if w.err != nil {
 		return w.err
 	}
 
 	start := len(w.buf)
-	w.buf = writeUInt64(w.buf, v)
+	w.buf = writeUint64(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {

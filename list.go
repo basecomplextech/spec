@@ -134,7 +134,7 @@ func (l List) Int64(i int) int64 {
 	return v
 }
 
-func (l List) UInt8(i int) uint8 {
+func (l List) Uint8(i int) uint8 {
 	start, end := l.table.offset(l.big, i)
 	switch {
 	case start < 0:
@@ -144,11 +144,11 @@ func (l List) UInt8(i int) uint8 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUInt8(b)
+	v, _ := ReadUint8(b)
 	return v
 }
 
-func (l List) UInt16(i int) uint16 {
+func (l List) Uint16(i int) uint16 {
 	start, end := l.table.offset(l.big, i)
 	switch {
 	case start < 0:
@@ -158,11 +158,11 @@ func (l List) UInt16(i int) uint16 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUInt16(b)
+	v, _ := ReadUint16(b)
 	return v
 }
 
-func (l List) UInt32(i int) uint32 {
+func (l List) Uint32(i int) uint32 {
 	start, end := l.table.offset(l.big, i)
 	switch {
 	case start < 0:
@@ -172,11 +172,11 @@ func (l List) UInt32(i int) uint32 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUInt32(b)
+	v, _ := ReadUint32(b)
 	return v
 }
 
-func (l List) UInt64(i int) uint64 {
+func (l List) Uint64(i int) uint64 {
 	start, end := l.table.offset(l.big, i)
 	switch {
 	case start < 0:
@@ -186,7 +186,7 @@ func (l List) UInt64(i int) uint64 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUInt64(b)
+	v, _ := ReadUint64(b)
 	return v
 }
 

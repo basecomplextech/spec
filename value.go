@@ -42,14 +42,14 @@ func (v Value) Validate() error {
 	case TypeInt64:
 		_, err = ReadInt64(v)
 
-	case TypeUInt8:
-		_, err = ReadUInt8(v)
-	case TypeUInt16:
-		_, err = ReadUInt16(v)
-	case TypeUInt32:
-		_, err = ReadUInt32(v)
-	case TypeUInt64:
-		_, err = ReadUInt64(v)
+	case TypeUint8:
+		_, err = ReadUint8(v)
+	case TypeUint16:
+		_, err = ReadUint16(v)
+	case TypeUint32:
+		_, err = ReadUint32(v)
+	case TypeUint64:
+		_, err = ReadUint64(v)
 
 	case TypeFloat32:
 		_, err = ReadFloat32(v)
@@ -109,23 +109,23 @@ func (v Value) Int64() int64 {
 	return p
 }
 
-func (v Value) UInt8() uint8 {
-	p, _ := ReadUInt8(v)
+func (v Value) Uint8() uint8 {
+	p, _ := ReadUint8(v)
 	return p
 }
 
-func (v Value) UInt16() uint16 {
-	p, _ := ReadUInt16(v)
+func (v Value) Uint16() uint16 {
+	p, _ := ReadUint16(v)
 	return p
 }
 
-func (v Value) UInt32() uint32 {
-	p, _ := ReadUInt32(v)
+func (v Value) Uint32() uint32 {
+	p, _ := ReadUint32(v)
 	return p
 }
 
-func (v Value) UInt64() uint64 {
-	p, _ := ReadUInt64(v)
+func (v Value) Uint64() uint64 {
+	p, _ := ReadUint64(v)
 	return p
 }
 

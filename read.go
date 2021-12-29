@@ -24,7 +24,7 @@ func ReadBool(b []byte) (bool, error) {
 }
 
 func ReadByte(b []byte) (byte, error) {
-	return ReadUInt8(b)
+	return ReadUint8(b)
 }
 
 func ReadInt8(b []byte) (int8, error) {
@@ -74,7 +74,7 @@ func ReadInt64(b []byte) (int64, error) {
 	return v, nil
 }
 
-func ReadUInt8(b []byte) (uint8, error) {
+func ReadUint8(b []byte) (uint8, error) {
 	v, n := readUint(b)
 	switch {
 	case n < 0:
@@ -85,7 +85,7 @@ func ReadUInt8(b []byte) (uint8, error) {
 	return uint8(v), nil
 }
 
-func ReadUInt16(b []byte) (uint16, error) {
+func ReadUint16(b []byte) (uint16, error) {
 	v, n := readUint(b)
 	switch {
 	case n < 0:
@@ -96,7 +96,7 @@ func ReadUInt16(b []byte) (uint16, error) {
 	return uint16(v), nil
 }
 
-func ReadUInt32(b []byte) (uint32, error) {
+func ReadUint32(b []byte) (uint32, error) {
 	v, n := readUint(b)
 	switch {
 	case n < 0:
@@ -107,7 +107,7 @@ func ReadUInt32(b []byte) (uint32, error) {
 	return uint32(v), nil
 }
 
-func ReadUInt64(b []byte) (uint64, error) {
+func ReadUint64(b []byte) (uint64, error) {
 	v, n := readUint(b)
 	if n < 0 {
 		return 0, fmt.Errorf("read uint64: invalid data")
@@ -178,7 +178,7 @@ func readInt(b []byte) (int64, int) {
 		return 0, n
 
 	case TypeInt8,
-		TypeUInt8:
+		TypeUint8:
 		if len(b) < 1 {
 			return 0, -1
 		}
@@ -194,9 +194,9 @@ func readInt(b []byte) (int64, int) {
 		}
 		return v, n + vn
 
-	case TypeUInt16,
-		TypeUInt32,
-		TypeUInt64:
+	case TypeUint16,
+		TypeUint32,
+		TypeUint64:
 		v, vn := readReverseUvarint(b)
 		if vn < 0 {
 			return 0, vn
@@ -228,7 +228,7 @@ func readUint(b []byte) (uint64, int) {
 		return 0, n
 
 	case TypeInt8,
-		TypeUInt8:
+		TypeUint8:
 		if len(b) < 1 {
 			return 0, -1
 		}
@@ -244,9 +244,9 @@ func readUint(b []byte) (uint64, int) {
 		}
 		return uint64(v), n + vn
 
-	case TypeUInt16,
-		TypeUInt32,
-		TypeUInt64:
+	case TypeUint16,
+		TypeUint32,
+		TypeUint64:
 		v, vn := readReverseUvarint(b)
 		if vn < 0 {
 			return 0, vn

@@ -141,10 +141,10 @@ const {
     typeInt32 = 0x12
     typeInt64 = 0x13
     
-    typeUInt8  = 0x20  // byte
-    typeUInt16 = 0x21
-    typeUInt32 = 0x22
-    typeUInt64 = 0x23
+    typeUint8  = 0x20  // byte
+    typeUint16 = 0x21
+    typeUint32 = 0x22
+    typeUint64 = 0x23
     
     typeFloat32 = 0x30
     typeFloat64 = 0x31

@@ -133,10 +133,10 @@ func walkMessage(m *TestMessage) int {
 	v += int(m.Int32)
 	v += int(m.Int64)
 
-	v += int(m.UInt8)
-	v += int(m.UInt16)
-	v += int(m.UInt32)
-	v += int(m.UInt64)
+	v += int(m.Uint8)
+	v += int(m.Uint16)
+	v += int(m.Uint32)
+	v += int(m.Uint64)
 
 	v += int(m.Float32)
 	v += int(m.Float64)
@@ -152,10 +152,10 @@ func walkMessageData(m TestMessageData) (int, error) {
 	v += int(m.Int32())
 	v += int(m.Int64())
 
-	v += int(m.UInt8())
-	v += int(m.UInt16())
-	v += int(m.UInt32())
-	v += int(m.UInt64())
+	v += int(m.Uint8())
+	v += int(m.Uint16())
+	v += int(m.Uint32())
+	v += int(m.Uint64())
 
 	v += int(m.Float32())
 	v += int(m.Float64())

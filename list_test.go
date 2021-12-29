@@ -19,13 +19,13 @@ func testWriteList(t *testing.T) []byte {
 	w.Int64(1)
 	w.Element()
 
-	w.UInt8(1)
+	w.Uint8(1)
 	w.Element()
-	w.UInt16(1)
+	w.Uint16(1)
 	w.Element()
-	w.UInt32(1)
+	w.Uint32(1)
 	w.Element()
-	w.UInt64(1)
+	w.Uint64(1)
 	w.Element()
 
 	w.Float32(1)
@@ -72,10 +72,10 @@ func TestList_Getters__should_access_elements(t *testing.T) {
 	assert.Equal(t, int32(1), l.Int32(2))
 	assert.Equal(t, int64(1), l.Int64(3))
 
-	assert.Equal(t, uint8(1), l.UInt8(4))
-	assert.Equal(t, uint16(1), l.UInt16(5))
-	assert.Equal(t, uint32(1), l.UInt32(6))
-	assert.Equal(t, uint64(1), l.UInt64(7))
+	assert.Equal(t, uint8(1), l.Uint8(4))
+	assert.Equal(t, uint16(1), l.Uint16(5))
+	assert.Equal(t, uint32(1), l.Uint32(6))
+	assert.Equal(t, uint64(1), l.Uint64(7))
 
 	assert.Equal(t, float32(1), l.Float32(8))
 	assert.Equal(t, float64(1), l.Float64(9))
