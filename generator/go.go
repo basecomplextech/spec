@@ -272,27 +272,24 @@ func (w *goWriter) readMessageField(field *compiler.MessageField) error {
 		// w.linef(`m.%v = %v`, name, val)
 
 	case compiler.KindList:
-		// elem := typ.Element
-		// elemName := goTypeName(elem)
+		elem := typ.Element
 
-		// // begin
-		// w.line()
-		// w.line(`{`)
-		// w.linef(`list := msg.List(%d)`, tag)
-		// w.linef(`ln := list.Len()`)
-		// w.linef(`m.%v = make([]%v, 0, ln)`, name, elemName)
-		// w.line()
+		// begin
+		w.line(`{`)
+		w.linef(`list := msg.List(%d)`, tag)
+		w.linef(`ln := list.Len()`)
+		w.linef(`m.%v = make([]%v, 0, ln)`, name, goTypeName(elem))
+		w.line()
 
-		// // elements
-		// w.linef(`for i := 0; i < ln; i++ {`)
-		// val := w.readElement(elem)
-		// w.linef(`elem := %v`, val)
-		// w.linef(`m.%v = append(m.%v, elem)`, name, name)
-		// w.line(`}`)
+		// elements
+		w.linef(`for i := 0; i < ln; i++ {`)
+		w.readListElement(elem)
+		w.linef(`m.%v = append(m.%v, elem)`, name, name)
+		w.line(`}`)
 
-		// // end
-		// w.line(`}`)
-		// w.line()
+		// end
+		w.line(`}`)
+		w.line()
 
 		// references
 
@@ -301,18 +298,12 @@ func (w *goWriter) readMessageField(field *compiler.MessageField) error {
 		w.linef(`m.%v = %v(msg.Int32(%d))`, name, typeName, tag)
 
 	case compiler.KindMessage:
-		readFunc := ""
-		if typ.ImportName == "" {
-			readFunc = fmt.Sprintf("Read%vValue", typ.Name)
-		} else {
-			readFunc = fmt.Sprintf("%v.Read%vValue", typ.ImportName, typ.Name)
-		}
-
+		readFunc := goReadFunc(typ)
 		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
 
 	case compiler.KindStruct:
-		typeName := goTypeName(typ)
-		w.linef(`m.%v = Read%v(msg.Field(%d))`, name, typeName, tag)
+		readFunc := goReadFunc(typ)
+		w.linef(`m.%v = %v(msg.Field(%d))`, name, readFunc, tag)
 	}
 	return nil
 }
@@ -323,42 +314,45 @@ func (w *goWriter) readStruct(def *compiler.Definition) error {
 	return nil
 }
 
-// read element
+// read list
 
-func (w *goWriter) readElement(typ *compiler.Type) string {
+func (w *goWriter) readListElement(typ *compiler.Type) {
 	kind := typ.Kind
 
 	switch kind {
+	default:
+		panic(fmt.Sprintf("unsupported type kind %v", kind))
+
 	case compiler.KindBool:
-		return fmt.Sprintf(`list.Bool(i)`)
+		w.line(`elem := list.Bool(i)`)
 
 	case compiler.KindInt8:
-		return fmt.Sprintf(`list.Int8(i)`)
+		w.line(`elem := list.Int8(i)`)
 	case compiler.KindInt16:
-		return fmt.Sprintf(`list.Int16(i)`)
+		w.line(`elem := list.Int16(i)`)
 	case compiler.KindInt32:
-		return fmt.Sprintf(`list.Int32(i)`)
+		w.line(`elem := list.Int32(i)`)
 	case compiler.KindInt64:
-		return fmt.Sprintf(`list.Int64(i)`)
+		w.line(`elem := list.Int64(i)`)
 
 	case compiler.KindUint8:
-		return fmt.Sprintf(`list.Uint8(i)`)
+		w.line(`elem := list.Uint8(i)`)
 	case compiler.KindUint16:
-		return fmt.Sprintf(`list.Uint16(i)`)
+		w.line(`elem := list.Uint16(i)`)
 	case compiler.KindUint32:
-		return fmt.Sprintf(`list.Uint32(i)`)
+		w.line(`elem := list.Uint32(i)`)
 	case compiler.KindUint64:
-		return fmt.Sprintf(`list.Uint64(i)`)
+		w.line(`elem := list.Uint64(i)`)
 
 	case compiler.KindFloat32:
-		return fmt.Sprintf(`list.Float32(i)`)
+		w.line(`elem := list.Float32(i)`)
 	case compiler.KindFloat64:
-		return fmt.Sprintf(`list.Float64(i)`)
+		w.line(`elem := list.Float64(i)`)
 
 	case compiler.KindBytes:
-		return fmt.Sprintf(`list.Bytes(i)`)
+		w.line(`elem := list.Bytes(i)`)
 	case compiler.KindString:
-		return fmt.Sprintf(`list.String(i)`)
+		w.line(`elem := list.String(i)`)
 
 	// element-based
 
@@ -371,28 +365,24 @@ func (w *goWriter) readElement(typ *compiler.Type) string {
 
 	case compiler.KindEnum:
 		typeName := goTypeName(typ)
-		return fmt.Sprintf(`%v(list.Int32(i))`, typeName)
+		w.linef(`%v(list.Int32(i))`, typeName)
 
 	case compiler.KindMessage:
-		typeName := goTypeName(typ)
+		readFunc := goReadFunc(typ)
 		w.linef(`data := list.Element(i)`)
-		w.linef(`tmp, err := Read%v(data)
+		w.linef(`elem, err := %v(data)
 		if err != nil {
 			return err
-		}`, typeName)
-		return `tmp`
+		}`, readFunc)
 
 	case compiler.KindStruct:
-		typeName := goTypeName(typ)
+		readFunc := goReadFunc(typ)
 		w.linef(`data := list.Element(i)`)
-		w.linef(`tmp, err := Read%v(data)
+		w.linef(`elem, err := %v(data)
 		if err != nil {
 			return err
-		}`, typeName)
-		return `tmp`
+		}`, readFunc)
 	}
-
-	panic(fmt.Sprintf("unsupported type kind %v", kind))
 }
 
 // writes
@@ -688,4 +678,33 @@ func goTypeName(t *compiler.Type) string {
 	}
 
 	return ""
+}
+
+func goReadFunc(t *compiler.Type) string {
+	switch t.Kind {
+	case compiler.KindNullable:
+		elem := t.Element
+		if elem.Kind == compiler.KindMessage {
+			if t.ImportName == "" {
+				return fmt.Sprintf("Read%v", t.Name)
+			} else {
+				return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
+			}
+		}
+
+	case compiler.KindMessage:
+		if t.ImportName == "" {
+			return fmt.Sprintf("Read%vValue", t.Name)
+		} else {
+			return fmt.Sprintf("%v.Read%vValue", t.ImportName, t.Name)
+		}
+	case compiler.KindStruct:
+		if t.ImportName == "" {
+			return fmt.Sprintf("Read%v", t.Name)
+		} else {
+			return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
+		}
+	}
+
+	panic(fmt.Sprintf("unsupported type kind %v", t.Kind))
 }
