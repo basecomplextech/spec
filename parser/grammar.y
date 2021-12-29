@@ -73,7 +73,7 @@ import "fmt"
 
 // type
 %type <type_> type
-%type <type_> ident_type
+%type <type_> base_type
 
 // start
 %start file
@@ -279,14 +279,14 @@ struct_fields:
 // type
 
 type:
-	ident_type
+	base_type
 		{
 			if debugParser {
 				fmt.Printf("type *%v\n", $1)
 			}
 			$$ = $1
 		}	
-	| '*' ident_type
+	| '*' base_type
 		{
 			if debugParser {
 				fmt.Printf("type *%v\n", $2)
@@ -296,7 +296,7 @@ type:
 				Element: $2,
 			}
 		}
-	| '[' ']' ident_type
+	| '[' ']' base_type
 		{
 			if debugParser {
 				fmt.Printf("type []%v\n", $3)
@@ -306,24 +306,24 @@ type:
 				Element: $3,
 			}
 		}
-ident_type:
+base_type:
 	IDENT
 		{
 			if debugParser {
-				fmt.Println("ident type", $1)
+				fmt.Println("base type", $1)
 			}
 			$$ = &Type{
-				Kind: KindBase,
+				Kind: getKind($1),
 				Name: $1,
 			}
 		}
 	| IDENT '.' IDENT
 		{
 			if debugParser {
-				fmt.Printf("ident type %v.%v\n", $1, $3)
+				fmt.Printf("base type %v.%v\n", $1, $3)
 			}
 			$$ = &Type{
-				Kind:   KindImport,
+				Kind:   KindReference,
 				Name:   $3,
 				Import: $1,
 			}

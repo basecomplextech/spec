@@ -203,25 +203,29 @@ func (c *compiler) _resolveStruct(file *File, def *Definition) error {
 func (c *compiler) _resolveType(file *File, type_ *Type) error {
 	switch type_.Kind {
 	case KindReference:
-		pkg := file.Package
+		if type_.ImportName == "" {
+			// local type
 
-		def, ok := pkg.lookupType(type_.Name)
-		if !ok {
-			return fmt.Errorf("type not found: %v", type_.Name)
-		}
-		type_.resolveRef(def)
+			pkg := file.Package
+			def, ok := pkg.lookupType(type_.Name)
+			if !ok {
+				return fmt.Errorf("type not found: %v", type_.Name)
+			}
+			type_.resolve(def, nil)
 
-	case KindImport:
-		imp, ok := file.lookupImport(type_.ImportName)
-		if !ok {
-			return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
-		}
+		} else {
+			// imported type
 
-		def, ok := imp.lookupType(type_.Name)
-		if !ok {
-			return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
+			imp, ok := file.lookupImport(type_.ImportName)
+			if !ok {
+				return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
+			}
+			def, ok := imp.lookupType(type_.Name)
+			if !ok {
+				return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
+			}
+			type_.resolve(def, imp)
 		}
-		type_.resolveImport(imp, def)
 
 	case KindList:
 		return c._resolveType(file, type_.Element)

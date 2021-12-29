@@ -118,7 +118,7 @@ func (w *goWriter) message(def *compiler.Definition) error {
 	for _, field := range def.Message.Fields {
 		name := goMessageFieldName(field)
 		type_ := goTypeName(field.Type)
-		tag := goMessageFieldTag(field)
+		tag := fmt.Sprintf("`tag:\"%d\" json:\"%v\"`", field.Tag, field.Name)
 		w.linef("%v %v %v", name, type_, tag)
 	}
 	w.line("}")
@@ -151,34 +151,52 @@ func (w *goWriter) messageWrite(def *compiler.Definition) error {
 
 func (w *goWriter) messageWriteField(field *compiler.MessageField) error {
 	name := goMessageFieldName(field)
-	t := field.Type
+	kind := field.Type.Kind
+
+	typ := field.Type
 	val := fmt.Sprintf("m.%v", name)
 
-	switch {
-	case t.Bool():
-		w.writeValue(t, val)
+	switch kind {
+	default:
+		panic(fmt.Sprintf("unsupported type kind %v", kind))
+
+	case compiler.KindBool:
+		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 
-	case t.Number():
+	case compiler.KindInt8,
+		compiler.KindInt16,
+		compiler.KindInt32,
+		compiler.KindInt64,
+
+		compiler.KindUint8,
+		compiler.KindUint16,
+		compiler.KindUint32,
+		compiler.KindUint64,
+
+		compiler.KindFloat32,
+		compiler.KindFloat64:
 		w.linef(`if %v != 0 {`, val)
-		w.writeValue(t, val)
+		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	case t.Bytes():
+	case compiler.KindBytes:
 		w.linef(`if len(%v) > 0 {`, val)
-		w.writeValue(t, val)
+		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	case t.String():
+	case compiler.KindString:
 		w.linef(`if len(%v) > 0 {`, val)
-		w.writeValue(t, val)
+		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	case t.Nullable():
-		elem := t.Element
+	// element-base
+
+	case compiler.KindNullable:
+		elem := typ.Element
 		elemVal := "(*" + val + ")"
 
 		w.linef(`if %v != nil {`, val)
@@ -186,8 +204,8 @@ func (w *goWriter) messageWriteField(field *compiler.MessageField) error {
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	case t.List():
-		elem := t.Element
+	case compiler.KindList:
+		elem := typ.Element
 
 		// begin
 		w.linef(`if len(%v) > 0 {`, val)
@@ -210,19 +228,22 @@ func (w *goWriter) messageWriteField(field *compiler.MessageField) error {
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	case t.Enum():
+	// references
+
+	case compiler.KindEnum:
 		w.linef(`if %v != 0 {`, val)
-		w.writeValue(t, val)
+		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	case t.Message():
-		w.writeValue(t, val)
+	case compiler.KindMessage:
+		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 
-	case t.Struct():
-		w.writeValue(t, val)
+	case compiler.KindStruct:
+		w.writeValue(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
+
 	}
 
 	w.line()
@@ -231,6 +252,11 @@ func (w *goWriter) messageWriteField(field *compiler.MessageField) error {
 
 func (w *goWriter) writeValue(t *compiler.Type, val string) error {
 	switch t.Kind {
+	default:
+		panic(fmt.Sprintf("unsupported type %v", t.Kind))
+
+	// builtin
+
 	case compiler.KindBool:
 		w.linef(`w.Bool(%v)`, val)
 	case compiler.KindInt8:
@@ -261,24 +287,21 @@ func (w *goWriter) writeValue(t *compiler.Type, val string) error {
 	case compiler.KindString:
 		w.linef(`w.String(%v)`, val)
 
-	case compiler.KindReference, compiler.KindImport:
-		switch {
-		case t.Enum():
-			w.linef(`w.Int32(int32(%v))`, val)
-		case t.Message():
-			w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
-		case t.Struct():
-			w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
-		}
+	// element-based
 
 	case compiler.KindList:
 		panic("cannot write list as value, write elements instead")
-
 	case compiler.KindNullable:
-		panic("cannot write nullable as value, dereference first")
+		panic("cannot write nullable as value, write element instead")
 
-	default:
-		panic(fmt.Sprintf("unsupported type %v", t.Kind))
+	// references
+
+	case compiler.KindEnum:
+		w.linef(`w.Int32(int32(%v))`, val)
+	case compiler.KindMessage:
+		w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
+	case compiler.KindStruct:
+		w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
 	}
 	return nil
 }
@@ -305,24 +328,12 @@ func goEnumValueName(val *compiler.EnumValue) string {
 	return val.Enum.Def.Name + name
 }
 
-func goEnumValueString(val *compiler.EnumValue) string {
-	return toLowerCase(val.Name)
-}
-
 func goMessageFieldName(field *compiler.MessageField) string {
 	return toUpperCamelCase(field.Name)
 }
 
-func goMessageFieldTag(field *compiler.MessageField) string {
-	return fmt.Sprintf("`tag:\"%d\" json:\"%v\"`", field.Tag, field.Name)
-}
-
 func goStructFieldName(field *compiler.StructField) string {
 	return toUpperCamelCase(field.Name)
-}
-
-func goStructFieldTag(field *compiler.StructField) string {
-	return fmt.Sprintf("`json:\"%v\"`", field.Name)
 }
 
 func goTypeName(t *compiler.Type) string {
@@ -358,18 +369,24 @@ func goTypeName(t *compiler.Type) string {
 	case compiler.KindString:
 		return "string"
 
-	// references
+	// element-based
 
-	case compiler.KindReference:
-		return t.Name
-	case compiler.KindImport:
-		return t.ImportName + "." + t.Name
 	case compiler.KindList:
 		elem := goTypeName(t.Element)
 		return "[]" + elem
 	case compiler.KindNullable:
 		elem := goTypeName(t.Element)
 		return "*" + elem
+
+	// references
+
+	case compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
+		if t.Import != nil {
+			return t.ImportName + "." + t.Name
+		}
+		return t.Name
 	}
 
 	return ""

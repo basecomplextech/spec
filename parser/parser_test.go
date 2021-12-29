@@ -267,7 +267,7 @@ message TestMessage {
 	def := file.Definitions[0]
 	type_ := def.Message.Fields[0].Type
 
-	assert.Equal(t, KindBase, type_.Kind)
+	assert.Equal(t, KindInt32, type_.Kind)
 	assert.Equal(t, "int32", type_.Name)
 }
 
@@ -288,7 +288,7 @@ message TestMessage {
 	assert.Equal(t, KindNullable, type_.Kind)
 	require.NotNil(t, type_.Element)
 
-	assert.Equal(t, KindBase, type_.Element.Kind)
+	assert.Equal(t, KindInt32, type_.Element.Kind)
 	assert.Equal(t, "int32", type_.Element.Name)
 }
 
@@ -309,7 +309,7 @@ message TestMessage {
 	assert.Equal(t, KindNullable, type_.Kind)
 	require.NotNil(t, type_.Element)
 
-	assert.Equal(t, KindImport, type_.Element.Kind)
+	assert.Equal(t, KindReference, type_.Element.Kind)
 	assert.Equal(t, "Message", type_.Element.Name)
 	assert.Equal(t, "pkg", type_.Element.Import)
 }
@@ -331,7 +331,7 @@ message TestMessage {
 	assert.Equal(t, KindList, type_.Kind)
 	require.NotNil(t, type_.Element)
 
-	assert.Equal(t, KindBase, type_.Element.Kind)
+	assert.Equal(t, KindInt32, type_.Element.Kind)
 	assert.Equal(t, "int32", type_.Element.Name)
 }
 
@@ -352,7 +352,7 @@ message TestMessage {
 	assert.Equal(t, KindList, type_.Kind)
 	require.NotNil(t, type_.Element)
 
-	assert.Equal(t, KindImport, type_.Element.Kind)
+	assert.Equal(t, KindReference, type_.Element.Kind)
 	assert.Equal(t, "Message", type_.Element.Name)
 	assert.Equal(t, "pkg", type_.Element.Import)
 }
@@ -371,7 +371,7 @@ message TestMessage {
 	def := file.Definitions[0]
 	type_ := def.Message.Fields[0].Type
 
-	assert.Equal(t, KindImport, type_.Kind)
+	assert.Equal(t, KindReference, type_.Kind)
 	assert.Equal(t, "Message", type_.Name)
 	assert.Equal(t, "pkg", type_.Import)
 }
