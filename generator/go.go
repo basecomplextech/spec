@@ -265,11 +265,7 @@ func (w *goWriter) readMessageField(field *compiler.MessageField) error {
 	case compiler.KindString:
 		w.linef(`m.%v = msg.String(%d)`, name, tag)
 
-	// element-base
-
-	case compiler.KindNullable:
-		// val := w.readFieldTag(typ.Element, field.Tag)
-		// w.linef(`m.%v = %v`, name, val)
+	// list
 
 	case compiler.KindList:
 		elem := typ.Element
@@ -291,7 +287,7 @@ func (w *goWriter) readMessageField(field *compiler.MessageField) error {
 		w.line(`}`)
 		w.line()
 
-		// references
+	// resolved
 
 	case compiler.KindEnum:
 		typeName := goTypeName(typ)
@@ -354,14 +350,12 @@ func (w *goWriter) readListElement(typ *compiler.Type) {
 	case compiler.KindString:
 		w.line(`elem := list.String(i)`)
 
-	// element-based
+	// list
 
 	case compiler.KindList:
 		panic("cannot read list as list element")
-	case compiler.KindNullable:
-		panic("cannot read nullable as list element")
 
-	// references
+	// resolved
 
 	case compiler.KindEnum:
 		typeName := goTypeName(typ)
@@ -473,16 +467,7 @@ func (w *goWriter) writeMessageField(field *compiler.MessageField) error {
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	// element-base
-
-	case compiler.KindNullable:
-		elem := typ.Element
-		elemVal := "(*" + val + ")"
-
-		w.linef(`if %v != nil {`, val)
-		w.writeValue(elem, elemVal)
-		w.linef(`w.Field(%d)`, field.Tag)
-		w.line(`}`)
+	// list
 
 	case compiler.KindList:
 		elem := typ.Element
@@ -508,7 +493,7 @@ func (w *goWriter) writeMessageField(field *compiler.MessageField) error {
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	// references
+	// resolved
 
 	case compiler.KindEnum:
 		w.linef(`if %v != 0 {`, val)
@@ -575,14 +560,12 @@ func (w *goWriter) writeValue(t *compiler.Type, val string) error {
 	case compiler.KindString:
 		w.linef(`w.String(%v)`, val)
 
-	// element-based
+	// list
 
 	case compiler.KindList:
 		panic("cannot write list as value, write elements instead")
-	case compiler.KindNullable:
-		panic("cannot write nullable as value, write element instead")
 
-	// references
+	// resolved
 
 	case compiler.KindEnum:
 		w.linef(`w.Int32(int32(%v))`, val)
@@ -657,22 +640,29 @@ func goTypeName(t *compiler.Type) string {
 	case compiler.KindString:
 		return "string"
 
-	// element-based
+	// list
 
 	case compiler.KindList:
 		elem := goTypeName(t.Element)
 		return "[]" + elem
-	case compiler.KindNullable:
-		elem := goTypeName(t.Element)
-		return "*" + elem
 
-	// references
+	// resolved
 
-	case compiler.KindEnum,
-		compiler.KindMessage,
-		compiler.KindStruct:
+	case compiler.KindEnum:
 		if t.Import != nil {
-			return t.ImportName + "." + t.Name
+			return fmt.Sprintf("%v.%v", t.ImportName, t.Name)
+		}
+		return t.Name
+
+	case compiler.KindMessage:
+		if t.Import != nil {
+			return fmt.Sprintf("*%v.%v", t.ImportName, t.Name)
+		}
+		return "*" + t.Name
+
+	case compiler.KindStruct:
+		if t.Import != nil {
+			return fmt.Sprintf("%v.%v", t.ImportName, t.Name)
 		}
 		return t.Name
 	}
@@ -682,21 +672,11 @@ func goTypeName(t *compiler.Type) string {
 
 func goReadFunc(t *compiler.Type) string {
 	switch t.Kind {
-	case compiler.KindNullable:
-		elem := t.Element
-		if elem.Kind == compiler.KindMessage {
-			if t.ImportName == "" {
-				return fmt.Sprintf("Read%v", t.Name)
-			} else {
-				return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
-			}
-		}
-
 	case compiler.KindMessage:
 		if t.ImportName == "" {
-			return fmt.Sprintf("Read%vValue", t.Name)
+			return fmt.Sprintf("Read%v", t.Name)
 		} else {
-			return fmt.Sprintf("%v.Read%vValue", t.ImportName, t.Name)
+			return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
 		}
 	case compiler.KindStruct:
 		if t.ImportName == "" {

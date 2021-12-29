@@ -106,7 +106,6 @@ const (
 	// Element-based
 
 	KindList
-	KindNullable
 	KindReference
 )
 

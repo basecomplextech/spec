@@ -286,16 +286,6 @@ type:
 			}
 			$$ = $1
 		}	
-	| '*' base_type
-		{
-			if debugParser {
-				fmt.Printf("type *%v\n", $2)
-			}
-			$$ = &Type{
-				Kind:    KindNullable,
-				Element: $2,
-			}
-		}
 	| '[' ']' base_type
 		{
 			if debugParser {

@@ -28,9 +28,9 @@ message Message {
     reference           Node                60;
     imported            pkg2.SubMessage     61;
 
-    nullable            *int32              70;
-    nullable_reference  *Node               71;
-    nullable_imported   *pkg2.SubMessage    72;
+    nullable            int32               70;
+    nullable_reference  Node                71;
+    nullable_imported   pkg2.SubMessage     72;
 
     list            []int64             80;
     list_strings    []string            81;
@@ -40,7 +40,7 @@ message Message {
 
 message Node {
     value   string  1;
-    next    *Node   2;
+    next    Node    2;
 }
 
 struct Struct {

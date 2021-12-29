@@ -271,49 +271,6 @@ message TestMessage {
 	assert.Equal(t, "int32", type_.Name)
 }
 
-func TestParser_Parse__should_parse_nullable_type(t *testing.T) {
-	p := newParser()
-
-	file, err := p.Parse(`
-message TestMessage {
-	field1	*int32	1;
-}`)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	def := file.Definitions[0]
-	type_ := def.Message.Fields[0].Type
-
-	assert.Equal(t, KindNullable, type_.Kind)
-	require.NotNil(t, type_.Element)
-
-	assert.Equal(t, KindInt32, type_.Element.Kind)
-	assert.Equal(t, "int32", type_.Element.Name)
-}
-
-func TestParser_Parse__should_parse_nullable_imported_type(t *testing.T) {
-	p := newParser()
-
-	file, err := p.Parse(`
-message TestMessage {
-	field1	*pkg.Message	1;
-}`)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	def := file.Definitions[0]
-	type_ := def.Message.Fields[0].Type
-
-	assert.Equal(t, KindNullable, type_.Kind)
-	require.NotNil(t, type_.Element)
-
-	assert.Equal(t, KindReference, type_.Element.Kind)
-	assert.Equal(t, "Message", type_.Element.Name)
-	assert.Equal(t, "pkg", type_.Element.Import)
-}
-
 func TestParser_Parse__should_parse_list_type(t *testing.T) {
 	p := newParser()
 

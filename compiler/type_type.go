@@ -62,18 +62,6 @@ func newType(ptype *parser.Type) (*Type, error) {
 		}
 		return type_, nil
 
-	case KindNullable:
-		elem, err := newType(ptype.Element)
-		if err != nil {
-			return nil, err
-		}
-		type_ := &Type{
-			Kind:    KindNullable,
-			Name:    "*",
-			Element: elem,
-		}
-		return type_, nil
-
 	case KindReference:
 		type_ := &Type{
 			Kind:       KindReference,

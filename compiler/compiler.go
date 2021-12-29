@@ -202,6 +202,9 @@ func (c *compiler) _resolveStruct(file *File, def *Definition) error {
 
 func (c *compiler) _resolveType(file *File, type_ *Type) error {
 	switch type_.Kind {
+	case KindList:
+		return c._resolveType(file, type_.Element)
+
 	case KindReference:
 		if type_.ImportName == "" {
 			// local type
@@ -226,12 +229,6 @@ func (c *compiler) _resolveType(file *File, type_ *Type) error {
 			}
 			type_.resolve(def, imp)
 		}
-
-	case KindList:
-		return c._resolveType(file, type_.Element)
-
-	case KindNullable:
-		return c._resolveType(file, type_.Element)
 	}
 	return nil
 }

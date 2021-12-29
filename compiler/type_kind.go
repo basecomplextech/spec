@@ -31,18 +31,15 @@ const (
 	KindBytes
 	KindString
 
-	// Element-based
-
 	KindList
-	KindNullable
 
-	// Resolved from reference
+	// resolved
 
 	KindEnum
 	KindMessage
 	KindStruct
 
-	// Pending reference
+	// pending
 
 	KindReference
 )
@@ -82,8 +79,6 @@ func parseKind(pkind parser.Kind) (Kind, error) {
 
 	case parser.KindList:
 		return KindList, nil
-	case parser.KindNullable:
-		return KindNullable, nil
 
 	case parser.KindReference:
 		return KindReference, nil
@@ -120,17 +115,13 @@ func (k Kind) String() string {
 	case KindFloat64:
 		return "float64"
 
-	case KindList:
-		return "list"
 	case KindBytes:
 		return "bytes"
 	case KindString:
 		return "string"
 
-	case KindReference:
-		return "reference"
-	case KindNullable:
-		return "nullable"
+	case KindList:
+		return "list"
 
 	case KindEnum:
 		return "enum"
@@ -138,6 +129,9 @@ func (k Kind) String() string {
 		return "message"
 	case KindStruct:
 		return "struct"
+
+	case KindReference:
+		return "reference"
 	}
 
 	return ""

@@ -52,7 +52,7 @@ message TestSubMessage {
 
 message TestNode {
     Value   string      1;
-    Next    *TestNode   2;
+    Next    TestNode    2;
 }
 
 struct TestStruct {
