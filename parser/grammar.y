@@ -16,6 +16,10 @@ import "fmt"
 	import_ *Import
 	imports []*Import
 
+	// option
+	option  *Option
+	options []*Option
+
 	// definition
 	definition  *Definition
 	definitions []*Definition
@@ -40,6 +44,7 @@ import "fmt"
 %token ENUM
 %token IMPORT
 %token MESSAGE
+%token OPTIONS
 %token STRUCT
 
 // general
@@ -51,6 +56,11 @@ import "fmt"
 %type <import_> import
 %type <imports> import_list
 %type <imports> imports
+
+// option
+%type <option>  option
+%type <options> option_list
+%type <options> options
 
 // definitions
 %type <definition>  definition
@@ -80,11 +90,12 @@ import "fmt"
 
 %%
 
-file: imports definitions
+file: imports options definitions
 	{ 
 		file := &File{
 			Imports:     $1,
-			Definitions: $2,
+			Options:     $2,
+			Definitions: $3,
 		}
 		setLexerResult(yylex, file)
 	}
@@ -134,6 +145,44 @@ imports:
 				fmt.Println("imports", $3)
 			}
 			$$ = append($$, $3...)
+		}
+
+// options
+
+options:
+	// empty
+		{ 
+			$$ = nil
+		}
+	| OPTIONS '(' option_list ')'
+		{
+			if debugParser {
+				fmt.Println("options", $3)
+			}
+			$$ = append($$, $3...)
+		}
+option_list:
+	// empty
+		{ 
+			$$ = nil
+		}
+	| option_list option
+		{
+			if debugParser {
+				fmt.Println("option_list", $1, $2)
+			}
+			$$ = append($$, $2)
+		}
+option:
+	IDENT '=' STRING
+		{
+			if debugParser {
+				fmt.Println("option ", $1, $3)
+			}
+			$$ = &Option{
+				Name:  $1,
+				Value: trimString($3),
+			}
 		}
 
 

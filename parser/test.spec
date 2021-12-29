@@ -5,6 +5,11 @@ import (
     pkg "github.com/test/package"
 )
 
+options (
+    go_package = "test/go/package"
+    java_package = "test/java/package"
+)
+
 enum TestEnum {
     UNDEFINED   = 0;
     ONE         = 1;
