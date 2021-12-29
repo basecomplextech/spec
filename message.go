@@ -46,6 +46,18 @@ func (m Message) Validate() error {
 	return nil
 }
 
+// Element returns a field data by a tag or nil.
+func (m Message) Element(tag uint16) []byte {
+	start, end := m.table.offset(m.big, tag)
+	switch {
+	case start < 0:
+		return nil
+	case end > int(m.body):
+		return nil
+	}
+	return m.data[start:end]
+}
+
 // Field returns a field data by a tag or nil.
 func (m Message) Field(tag uint16) []byte {
 	start, end := m.table.offset(m.big, tag)

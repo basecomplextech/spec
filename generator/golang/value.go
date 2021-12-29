@@ -6,6 +6,65 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
+func (w *writer) readValue(typ *compiler.Type, src string, tag string) string {
+	kind := typ.Kind
+
+	switch kind {
+	default:
+		panic(fmt.Sprintf("unsupported type kind %v", kind))
+
+	case compiler.KindBool:
+		return fmt.Sprintf(`%v.Bool(%v)`, src, tag)
+
+	case compiler.KindInt8:
+		return fmt.Sprintf(`%v.Int8(%v)`, src, tag)
+	case compiler.KindInt16:
+		return fmt.Sprintf(`%v.Int16(%v)`, src, tag)
+	case compiler.KindInt32:
+		return fmt.Sprintf(`%v.Int32(%v)`, src, tag)
+	case compiler.KindInt64:
+		return fmt.Sprintf(`%v.Int64(%v)`, src, tag)
+
+	case compiler.KindUint8:
+		return fmt.Sprintf(`%v.Uint8(%v)`, src, tag)
+	case compiler.KindUint16:
+		return fmt.Sprintf(`%v.Uint16(%v)`, src, tag)
+	case compiler.KindUint32:
+		return fmt.Sprintf(`%v.Uint32(%v)`, src, tag)
+	case compiler.KindUint64:
+		return fmt.Sprintf(`%v.Uint64(%v)`, src, tag)
+
+	case compiler.KindFloat32:
+		return fmt.Sprintf(`%v.Float32(%v)`, src, tag)
+	case compiler.KindFloat64:
+		return fmt.Sprintf(`%v.Float64(%v)`, src, tag)
+
+	case compiler.KindBytes:
+		return fmt.Sprintf(`%v.Bytes(%v)`, src, tag)
+	case compiler.KindString:
+		return fmt.Sprintf(`%v.String(%v)`, src, tag)
+
+	// list
+
+	case compiler.KindList:
+		panic("cannot read list as value")
+
+	// resolved
+
+	case compiler.KindEnum:
+		typeName := typeName(typ)
+		return fmt.Sprintf(`%v(%v.Int32(%v))`, typeName, src, tag)
+
+	case compiler.KindMessage:
+		read := typeReadFunc(typ)
+		return fmt.Sprintf(`%v(%v.Element(%v))`, read, src, tag)
+
+	case compiler.KindStruct:
+		read := typeReadFunc(typ)
+		return fmt.Sprintf(`%v(%v.Element(%v))`, read, src, tag)
+	}
+}
+
 func (w *writer) writeValue(typ *compiler.Type, val string) error {
 	kind := typ.Kind
 
