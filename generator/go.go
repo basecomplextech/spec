@@ -59,6 +59,26 @@ func (w *goWriter) file(file *compiler.File) error {
 	w.line()
 
 	// definitions
+	if err := w.definitions(file); err != nil {
+		return err
+	}
+
+	// reads
+	if err := w.reads(file); err != nil {
+		return err
+	}
+
+	// writes
+	if err := w.writes(file); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// definitions
+
+func (w *goWriter) definitions(file *compiler.File) error {
 	for _, def := range file.Definitions {
 		switch def.Type {
 		case compiler.DefinitionEnum:
@@ -74,7 +94,6 @@ func (w *goWriter) file(file *compiler.File) error {
 				return err
 			}
 		}
-		w.line()
 	}
 	return nil
 }
@@ -106,6 +125,7 @@ func (w *goWriter) enum(def *compiler.Definition) error {
 	w.line("}")
 	w.line(`return ""`)
 	w.line("}")
+	w.line()
 	return nil
 }
 
@@ -114,24 +134,294 @@ func (w *goWriter) enum(def *compiler.Definition) error {
 func (w *goWriter) message(def *compiler.Definition) error {
 	w.linef("type %v struct {", def.Name)
 
-	// fields
 	for _, field := range def.Message.Fields {
 		name := goMessageFieldName(field)
 		type_ := goTypeName(field.Type)
 		tag := fmt.Sprintf("`tag:\"%d\" json:\"%v\"`", field.Tag, field.Name)
 		w.linef("%v %v %v", name, type_, tag)
 	}
+
 	w.line("}")
 	w.line()
+	return nil
+}
 
-	// write
-	if err := w.messageWrite(def); err != nil {
-		return err
+// reads
+
+func (w *goWriter) reads(file *compiler.File) error {
+	w.line("// Read")
+	w.line()
+
+	for _, def := range file.Definitions {
+		switch def.Type {
+		case compiler.DefinitionEnum:
+			// enum has no read method
+
+		case compiler.DefinitionMessage:
+			if err := w.readMessage(def); err != nil {
+				return err
+			}
+			if err := w.readMessageValue(def); err != nil {
+				return err
+			}
+			if err := w.readMessageMethod(def); err != nil {
+				return err
+			}
+		case compiler.DefinitionStruct:
+			if err := w.readStruct(def); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
 
-func (w *goWriter) messageWrite(def *compiler.Definition) error {
+// read message
+
+func (w *goWriter) readMessage(def *compiler.Definition) error {
+	w.linef(`func Read%v(b []byte) (*%v, error) {`, def.Name, def.Name)
+	w.linef(`if len(b) == 0 {
+		return nil, nil
+	}`)
+	w.line()
+	w.linef(`m := &%v{}`, def.Name)
+	w.line(`if err := m.Read(b); err != nil {
+		return nil, err
+	}`)
+	w.line(`return m, nil`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *goWriter) readMessageValue(def *compiler.Definition) error {
+	w.linef(`func Read%vValue(b []byte) (m %v, err error) {`, def.Name, def.Name)
+	w.linef(`if len(b) == 0 {
+		return
+	}`)
+	w.line()
+	w.line(`err = m.Read(b)`)
+	w.line(`return`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *goWriter) readMessageMethod(def *compiler.Definition) error {
+	w.linef(`func (m *%v) Read(b []byte) error {`, def.Name)
+	w.line(`msg, err := spec.ReadMessage(b)
+	if err != nil {
+		return err
+	}`)
+	w.line()
+
+	for _, field := range def.Message.Fields {
+		if err := w.readMessageField(field); err != nil {
+			return err
+		}
+	}
+
+	w.line(`return nil`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *goWriter) readMessageField(field *compiler.MessageField) error {
+	name := goMessageFieldName(field)
+	kind := field.Type.Kind
+	typ := field.Type
+	tag := field.Tag
+
+	switch kind {
+	case compiler.KindBool:
+		w.linef(`m.%v = msg.Bool(%d)`, name, tag)
+
+	case compiler.KindInt8:
+		w.linef(`m.%v = msg.Int8(%d)`, name, tag)
+	case compiler.KindInt16:
+		w.linef(`m.%v = msg.Int16(%d)`, name, tag)
+	case compiler.KindInt32:
+		w.linef(`m.%v = msg.Int32(%d)`, name, tag)
+	case compiler.KindInt64:
+		w.linef(`m.%v = msg.Int64(%d)`, name, tag)
+
+	case compiler.KindUint8:
+		w.linef(`m.%v = msg.Uint8(%d)`, name, tag)
+	case compiler.KindUint16:
+		w.linef(`m.%v = msg.Uint16(%d)`, name, tag)
+	case compiler.KindUint32:
+		w.linef(`m.%v = msg.Uint32(%d)`, name, tag)
+	case compiler.KindUint64:
+		w.linef(`m.%v = msg.Uint64(%d)`, name, tag)
+
+	case compiler.KindFloat32:
+		w.linef(`m.%v = msg.Float32(%d)`, name, tag)
+	case compiler.KindFloat64:
+		w.linef(`m.%v = msg.Float64(%d)`, name, tag)
+
+	case compiler.KindBytes:
+		w.linef(`m.%v = msg.Bytes(%d)`, name, tag)
+	case compiler.KindString:
+		w.linef(`m.%v = msg.String(%d)`, name, tag)
+
+	// element-base
+
+	case compiler.KindNullable:
+		// val := w.readFieldTag(typ.Element, field.Tag)
+		// w.linef(`m.%v = %v`, name, val)
+
+	case compiler.KindList:
+		// elem := typ.Element
+		// elemName := goTypeName(elem)
+
+		// // begin
+		// w.line()
+		// w.line(`{`)
+		// w.linef(`list := msg.List(%d)`, tag)
+		// w.linef(`ln := list.Len()`)
+		// w.linef(`m.%v = make([]%v, 0, ln)`, name, elemName)
+		// w.line()
+
+		// // elements
+		// w.linef(`for i := 0; i < ln; i++ {`)
+		// val := w.readElement(elem)
+		// w.linef(`elem := %v`, val)
+		// w.linef(`m.%v = append(m.%v, elem)`, name, name)
+		// w.line(`}`)
+
+		// // end
+		// w.line(`}`)
+		// w.line()
+
+		// references
+
+	case compiler.KindEnum:
+		typeName := goTypeName(typ)
+		w.linef(`m.%v = %v(msg.Int32(%d))`, name, typeName, tag)
+
+	case compiler.KindMessage:
+		readFunc := ""
+		if typ.ImportName == "" {
+			readFunc = fmt.Sprintf("Read%vValue", typ.Name)
+		} else {
+			readFunc = fmt.Sprintf("%v.Read%vValue", typ.ImportName, typ.Name)
+		}
+
+		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
+
+	case compiler.KindStruct:
+		typeName := goTypeName(typ)
+		w.linef(`m.%v = Read%v(msg.Field(%d))`, name, typeName, tag)
+	}
+	return nil
+}
+
+// read struct
+
+func (w *goWriter) readStruct(def *compiler.Definition) error {
+	return nil
+}
+
+// read element
+
+func (w *goWriter) readElement(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindBool:
+		return fmt.Sprintf(`list.Bool(i)`)
+
+	case compiler.KindInt8:
+		return fmt.Sprintf(`list.Int8(i)`)
+	case compiler.KindInt16:
+		return fmt.Sprintf(`list.Int16(i)`)
+	case compiler.KindInt32:
+		return fmt.Sprintf(`list.Int32(i)`)
+	case compiler.KindInt64:
+		return fmt.Sprintf(`list.Int64(i)`)
+
+	case compiler.KindUint8:
+		return fmt.Sprintf(`list.Uint8(i)`)
+	case compiler.KindUint16:
+		return fmt.Sprintf(`list.Uint16(i)`)
+	case compiler.KindUint32:
+		return fmt.Sprintf(`list.Uint32(i)`)
+	case compiler.KindUint64:
+		return fmt.Sprintf(`list.Uint64(i)`)
+
+	case compiler.KindFloat32:
+		return fmt.Sprintf(`list.Float32(i)`)
+	case compiler.KindFloat64:
+		return fmt.Sprintf(`list.Float64(i)`)
+
+	case compiler.KindBytes:
+		return fmt.Sprintf(`list.Bytes(i)`)
+	case compiler.KindString:
+		return fmt.Sprintf(`list.String(i)`)
+
+	// element-based
+
+	case compiler.KindList:
+		panic("cannot read list as list element")
+	case compiler.KindNullable:
+		panic("cannot read nullable as list element")
+
+	// references
+
+	case compiler.KindEnum:
+		typeName := goTypeName(typ)
+		return fmt.Sprintf(`%v(list.Int32(i))`, typeName)
+
+	case compiler.KindMessage:
+		typeName := goTypeName(typ)
+		w.linef(`data := list.Element(i)`)
+		w.linef(`tmp, err := Read%v(data)
+		if err != nil {
+			return err
+		}`, typeName)
+		return `tmp`
+
+	case compiler.KindStruct:
+		typeName := goTypeName(typ)
+		w.linef(`data := list.Element(i)`)
+		w.linef(`tmp, err := Read%v(data)
+		if err != nil {
+			return err
+		}`, typeName)
+		return `tmp`
+	}
+
+	panic(fmt.Sprintf("unsupported type kind %v", kind))
+}
+
+// writes
+
+func (w *goWriter) writes(file *compiler.File) error {
+	w.line("// Write")
+	w.line()
+
+	for _, def := range file.Definitions {
+		switch def.Type {
+		case compiler.DefinitionEnum:
+			// enum has no write method
+
+		case compiler.DefinitionMessage:
+			if err := w.writeMessage(def); err != nil {
+				return err
+			}
+		case compiler.DefinitionStruct:
+			if err := w.writeStruct(def); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// write message
+
+func (w *goWriter) writeMessage(def *compiler.Definition) error {
 	w.linef(`func (m *%v) Write(w spec.Writer) error {`, def.Name)
 	w.line(`if err := w.BeginMessage(); err != nil {
 		return err
@@ -139,7 +429,7 @@ func (w *goWriter) messageWrite(def *compiler.Definition) error {
 	w.line()
 
 	for _, field := range def.Message.Fields {
-		if err := w.messageWriteField(field); err != nil {
+		if err := w.writeMessageField(field); err != nil {
 			return err
 		}
 	}
@@ -149,7 +439,7 @@ func (w *goWriter) messageWrite(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *goWriter) messageWriteField(field *compiler.MessageField) error {
+func (w *goWriter) writeMessageField(field *compiler.MessageField) error {
 	name := goMessageFieldName(field)
 	kind := field.Type.Kind
 
@@ -249,6 +539,14 @@ func (w *goWriter) messageWriteField(field *compiler.MessageField) error {
 	w.line()
 	return nil
 }
+
+// write struct
+
+func (w *goWriter) writeStruct(def *compiler.Definition) error {
+	return nil
+}
+
+// write value
 
 func (w *goWriter) writeValue(t *compiler.Type, val string) error {
 	switch t.Kind {
