@@ -94,51 +94,96 @@ func newTestSubMessage(i int) *TestSubMessage {
 
 // Read
 
-func (msg *TestMessage) Read(b []byte) error {
-	m, err := NewMessageData(b)
+func (m *TestMessage) Read(b []byte) error {
+	r, err := NewMessageReader(b)
 	if err != nil {
 		return err
 	}
 
 	// bool:1
-	msg.Bool = m.Bool(1)
+	m.Bool, err = r.ReadBool(1)
+	if err != nil {
+		return err
+	}
 
 	// int:10-13
-	msg.Int8 = m.Int8(10)
-	msg.Int16 = m.Int16(11)
-	msg.Int32 = m.Int32(12)
-	msg.Int64 = m.Int64(13)
+	m.Int8, err = r.ReadInt8(10)
+	if err != nil {
+		return err
+	}
+	m.Int16, err = r.ReadInt16(11)
+	if err != nil {
+		return err
+	}
+	m.Int32, err = r.ReadInt32(12)
+	if err != nil {
+		return err
+	}
+	m.Int64, err = r.ReadInt64(13)
+	if err != nil {
+		return err
+	}
 
 	// uint:20-22
-	msg.Uint8 = m.Uint8(20)
-	msg.Uint16 = m.Uint16(21)
-	msg.Uint32 = m.Uint32(22)
-	msg.Uint64 = m.Uint64(23)
+	m.Uint8, err = r.ReadUint8(20)
+	if err != nil {
+		return err
+	}
+	m.Uint16, err = r.ReadUint16(21)
+	if err != nil {
+		return err
+	}
+	m.Uint32, err = r.ReadUint32(22)
+	if err != nil {
+		return err
+	}
+	m.Uint64, err = r.ReadUint64(23)
+	if err != nil {
+		return err
+	}
 
 	// float:30-31
-	msg.Float32 = m.Float32(30)
-	msg.Float64 = m.Float64(31)
+	m.Float32, err = r.ReadFloat32(30)
+	if err != nil {
+		return err
+	}
+	m.Float64, err = r.ReadFloat64(31)
+	if err != nil {
+		return err
+	}
 
 	// string/bytes:40-41
-	msg.String = m.String(40)
-	msg.Bytes = m.Bytes(41)
+	m.String, err = r.ReadString(40)
+	if err != nil {
+		return err
+	}
+	m.Bytes, err = r.ReadBytes(41)
+	if err != nil {
+		return err
+	}
 
 	// list:50
 	{
-		list := m.List(50)
-		msg.List = make([]int64, 0, list.Len())
+		list, err := r.ReadList(50)
+		if err != nil {
+			return err
+		}
 
+		m.List = make([]int64, 0, list.Len())
 		for i := 0; i < list.Len(); i++ {
 			val := list.Int64(i)
-			msg.List = append(msg.List, val)
+			m.List = append(m.List, val)
 		}
 	}
 
 	// messages:51
 	{
-		list := m.List(51)
-		msg.Messages = make([]*TestSubMessage, 0, list.Len())
+		list, err := r.ReadList(51)
+		if err != nil {
+			return err
+		}
 
+		m.Messages = make([]*TestSubMessage, 0, list.Len())
 		for i := 0; i < list.Len(); i++ {
 			data := list.Element(i)
 			if len(data) == 0 {
@@ -149,34 +194,49 @@ func (msg *TestMessage) Read(b []byte) error {
 			if err := val.Read(data); err != nil {
 				return err
 			}
-			msg.Messages = append(msg.Messages, val)
+			m.Messages = append(m.Messages, val)
 		}
 	}
 
 	// strings:52
 	{
-		list := m.List(52)
-		msg.Strings = make([]string, 0, list.Len())
+		list, err := r.ReadList(52)
+		if err != nil {
+			return err
+		}
 
+		m.Strings = make([]string, 0, list.Len())
 		for i := 0; i < list.Len(); i++ {
 			s := list.String(i)
-			msg.Strings = append(msg.Strings, s)
+			m.Strings = append(m.Strings, s)
 		}
 	}
 	return nil
 }
 
 func (msg *TestSubMessage) Read(b []byte) error {
-	m, err := NewMessageData(b)
+	r, err := NewMessageReader(b)
 	if err != nil {
 		return err
 	}
 
 	// int:1-4
-	msg.Int8 = m.Int8(1)
-	msg.Int16 = m.Int16(2)
-	msg.Int32 = m.Int32(3)
-	msg.Int64 = m.Int64(4)
+	msg.Int8, err = r.ReadInt8(1)
+	if err != nil {
+		return err
+	}
+	msg.Int16, err = r.ReadInt16(2)
+	if err != nil {
+		return err
+	}
+	msg.Int32, err = r.ReadInt32(3)
+	if err != nil {
+		return err
+	}
+	msg.Int64, err = r.ReadInt64(4)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
