@@ -7,10 +7,8 @@ import (
 )
 
 func (w *writer) message(def *compiler.Definition) error {
+	// message
 	if err := w.messageDef(def); err != nil {
-		return err
-	}
-	if err := w.messageData(def); err != nil {
 		return err
 	}
 	if err := w.readMessage(def); err != nil {
@@ -22,10 +20,17 @@ func (w *writer) message(def *compiler.Definition) error {
 	if err := w.messageWrite(def); err != nil {
 		return err
 	}
+
+	// data
+	if err := w.messageData(def); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (w *writer) messageDef(def *compiler.Definition) error {
+	w.linef(`// %v`, def.Name)
+	w.line()
 	w.linef("type %v struct {", def.Name)
 
 	for _, field := range def.Message.Fields {
@@ -45,7 +50,6 @@ func (w *writer) readMessage(def *compiler.Definition) error {
 	w.linef(`if len(b) == 0 {
 		return nil, nil
 	}`)
-	w.line()
 	w.linef(`m := &%v{}`, def.Name)
 	w.line(`if err := m.Read(b); err != nil {
 		return nil, err
@@ -55,81 +59,6 @@ func (w *writer) readMessage(def *compiler.Definition) error {
 	w.line()
 	return nil
 }
-
-// data
-
-func (w *writer) messageData(def *compiler.Definition) error {
-	w.linef(`type %vData struct {`, def.Name)
-	w.line(`m spec.Message`)
-	w.line(`}`)
-
-	for _, field := range def.Message.Fields {
-		if err := w.messageDataMethod(def, field); err != nil {
-			return err
-		}
-	}
-
-	w.line()
-	return nil
-}
-
-func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.MessageField) error {
-	name := messageFieldName(field)
-	typ := field.Type
-	tag := field.Tag
-	kind := field.Type.Kind
-
-	switch kind {
-	default:
-		typeName := typeName(field.Type)
-		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
-		w.linef(`return %v`, read)
-		w.linef(`}`)
-		w.line()
-
-	case compiler.KindList:
-		elem := typ.Element
-		elemName := typeName(elem)
-
-		// len
-		w.linef(`func (d %vData) %vLen() int {`, def.Name, name)
-		w.linef(`return d.m.List(%d).Len()`, tag)
-		w.linef(`}`)
-		w.line()
-
-		// element
-		w.linef(`func (d %vData) %vElement(i int) %v {`, def.Name, name, elemName)
-		w.linef(`list := d.m.List(%d)`, tag)
-		w.listReadElement(elem)
-		w.linef(`return elem`)
-		w.linef(`}`)
-		w.line()
-
-	case compiler.KindMessage:
-		typeName := typeName(field.Type)
-		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
-
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
-		w.linef(`v, _ := %v`, read)
-		w.linef(`return v`)
-		w.linef(`}`)
-		w.line()
-
-	case compiler.KindStruct:
-		typeName := typeName(field.Type)
-		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
-
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
-		w.linef(`v, _ := %v`, read)
-		w.linef(`return v`)
-		w.linef(`}`)
-		w.line()
-	}
-	return nil
-}
-
-// read
 
 func (w *writer) messageRead(def *compiler.Definition) error {
 	w.linef(`func (m *%v) Read(b []byte) error {`, def.Name)
@@ -227,8 +156,6 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 	}
 	return nil
 }
-
-// write
 
 func (w *writer) messageWrite(def *compiler.Definition) error {
 	// begin
@@ -350,6 +277,129 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 	}
 	return nil
 }
+
+// data
+
+func (w *writer) messageData(def *compiler.Definition) error {
+	if err := w.messageDataDef(def); err != nil {
+		return err
+	}
+	if err := w.getMessageData(def); err != nil {
+		return err
+	}
+	if err := w.readMessageData(def); err != nil {
+		return err
+	}
+	if err := w.messageDataMethods(def); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *writer) messageDataDef(def *compiler.Definition) error {
+	w.linef(`// %v`, def.Name)
+	w.line()
+	w.linef(`type %vData struct {`, def.Name)
+	w.line(`m spec.Message`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) getMessageData(def *compiler.Definition) error {
+	name := fmt.Sprintf("%vData", def.Name)
+	w.linef(`func Get%vData(b []byte) (%v, error) {`, name, name)
+	w.linef(`msg, err := spec.GetMessage(b)`)
+	w.linef(`if err != nil {
+		return %v{}, err
+	}`, name)
+	w.linef(`return %v{msg}, nil`, name)
+	w.linef(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) readMessageData(def *compiler.Definition) error {
+	name := fmt.Sprintf("%vData", def.Name)
+	w.linef(`func Read%vData(b []byte) (%v, error) {`, name, name)
+	w.linef(`msg, err := spec.ReadMessage(b)`)
+	w.linef(`if err != nil {
+		return %v{}, err
+	}`, name)
+	w.linef(`return %v{msg}, nil`, name)
+	w.linef(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) messageDataMethods(def *compiler.Definition) error {
+	for _, field := range def.Message.Fields {
+		if err := w.messageDataMethod(def, field); err != nil {
+			return err
+		}
+	}
+
+	w.line()
+	return nil
+}
+
+func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.MessageField) error {
+	name := messageFieldName(field)
+	typ := field.Type
+	tag := field.Tag
+	kind := field.Type.Kind
+
+	switch kind {
+	default:
+		typeName := typeName(field.Type)
+		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
+		w.linef(`return %v`, read)
+		w.linef(`}`)
+		w.line()
+
+	case compiler.KindList:
+		elem := typ.Element
+		elemName := typeName(elem)
+
+		// len
+		w.linef(`func (d %vData) %vLen() int {`, def.Name, name)
+		w.linef(`return d.m.List(%d).Len()`, tag)
+		w.linef(`}`)
+		w.line()
+
+		// element
+		w.linef(`func (d %vData) %vElement(i int) %v {`, def.Name, name, elemName)
+		w.linef(`list := d.m.List(%d)`, tag)
+		w.listReadElement(elem)
+		w.linef(`return elem`)
+		w.linef(`}`)
+		w.line()
+
+	case compiler.KindMessage:
+		typeName := typeName(field.Type)
+		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
+
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
+		w.linef(`v, _ := %v`, read)
+		w.linef(`return v`)
+		w.linef(`}`)
+		w.line()
+
+	case compiler.KindStruct:
+		typeName := typeName(field.Type)
+		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
+
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
+		w.linef(`v, _ := %v`, read)
+		w.linef(`return v`)
+		w.linef(`}`)
+		w.line()
+	}
+	return nil
+}
+
+// util
 
 func messageFieldName(field *compiler.MessageField) string {
 	return toUpperCamelCase(field.Name)
