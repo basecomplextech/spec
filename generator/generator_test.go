@@ -21,7 +21,7 @@ func TestGenerator_Golang__should_generate_go_package(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		out := "../generated/golang/" + name
+		out := "../testgen/golang/" + name
 		if err := g.Golang(pkg1, out); err != nil {
 			t.Fatal(err)
 		}

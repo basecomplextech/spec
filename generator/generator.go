@@ -3,6 +3,7 @@ package generator
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/baseone-run/spec/compiler"
@@ -41,7 +42,7 @@ func (g *generator) golangFile(file *compiler.File, out string) error {
 		return err
 	}
 
-	filename := filenameWithExt(file.Name, "go")
+	filename := filenameWithoutExt(file.Name) + "_generated.go"
 	path := filepath.Join(out, filename)
 
 	f, err := g.createFile(path)
@@ -76,14 +77,9 @@ func (g *generator) createFile(path string) (*os.File, error) {
 	return os.Create(path)
 }
 
-// filenameWithExt returns a filename with another extension.
-func filenameWithExt(fileName string, ext string) string {
-	name := filenameWithoutExt(fileName)
-	return name + "." + ext
-}
-
 // filenameWithoutExt returns a filename without an extension.
 func filenameWithoutExt(name string) string {
 	ext := filepath.Ext(name)
-	return name[:len(name)-len(ext)]
+	name = name[:len(name)-len(ext)]
+	return strings.TrimRight(name, ".")
 }
