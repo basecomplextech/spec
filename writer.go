@@ -1,6 +1,11 @@
 package spec
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
+)
 
 const WriteBufferSize = 4096
 
@@ -234,6 +239,40 @@ func (w *Writer) Uint64(v uint64) error {
 	}
 	return nil
 }
+
+// U128/U256
+
+func (w *Writer) U128(v u128.U128) error {
+	if w.err != nil {
+		return w.err
+	}
+
+	start := len(w.buf)
+	w.buf = writeU128(w.buf, v)
+	end := len(w.buf)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
+	return nil
+}
+
+func (w *Writer) u256(v u256.U256) error {
+	if w.err != nil {
+		return w.err
+	}
+
+	start := len(w.buf)
+	w.buf = writeU256(w.buf, v)
+	end := len(w.buf)
+
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
+	return nil
+}
+
+// Float
 
 func (w *Writer) Float32(v float32) error {
 	if w.err != nil {

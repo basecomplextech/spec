@@ -1,6 +1,11 @@
 package spec
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
+)
 
 // MessageReader reads a message from a byte slice.
 type MessageReader struct {
@@ -170,6 +175,32 @@ func (r MessageReader) ReadUint64(tag uint16) (uint64, error) {
 
 	b := r.m.data[:end]
 	return readUint64(b)
+}
+
+func (r MessageReader) ReadU128(tag uint16) (u128.U128, error) {
+	end := r.m.table.offset(r.m.big, tag)
+	switch {
+	case end < 0:
+		return u128.U128{}, nil
+	case end > int(r.m.body):
+		return u128.U128{}, r.rangeError(tag, end)
+	}
+
+	b := r.m.data[:end]
+	return readU128(b)
+}
+
+func (r MessageReader) ReadU256(tag uint16) (u256.U256, error) {
+	end := r.m.table.offset(r.m.big, tag)
+	switch {
+	case end < 0:
+		return u256.U256{}, nil
+	case end > int(r.m.body):
+		return u256.U256{}, r.rangeError(tag, end)
+	}
+
+	b := r.m.data[:end]
+	return readU256(b)
 }
 
 func (r MessageReader) ReadFloat32(tag uint16) (float32, error) {

@@ -1,5 +1,10 @@
 package spec
 
+import (
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
+)
+
 // Reader reads a value from a byte slice.
 type Reader struct {
 	b []byte
@@ -60,6 +65,14 @@ func (r Reader) ReadUint32() (uint32, error) {
 
 func (r Reader) ReadUint64() (uint64, error) {
 	return readUint64(r.b)
+}
+
+func (r Reader) ReadU128() (u128.U128, error) {
+	return readU128(r.b)
+}
+
+func (r Reader) ReadU256() (u256.U256, error) {
+	return readU256(r.b)
 }
 
 func (r Reader) ReadFloat32() (float32, error) {

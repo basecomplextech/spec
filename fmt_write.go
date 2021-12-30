@@ -4,6 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
 )
 
 func writeNil(b []byte) []byte {
@@ -89,6 +92,22 @@ func writeUint64(b []byte, v uint64) []byte {
 	b = append(b, byte(TypeUint64))
 	return b
 }
+
+// u128/u256
+
+func writeU128(b []byte, v u128.U128) []byte {
+	b = append(b, v[:]...)
+	b = append(b, byte(TypeU128))
+	return b
+}
+
+func writeU256(b []byte, v u256.U256) []byte {
+	b = append(b, v[:]...)
+	b = append(b, byte(TypeU256))
+	return b
+}
+
+// float
 
 func writeFloat32(b []byte, v float32) []byte {
 	p := [4]byte{}

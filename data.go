@@ -1,5 +1,12 @@
 package spec
 
+import (
+	"fmt"
+
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
+)
+
 // Data is a raw value data.
 type Data []byte
 
@@ -84,6 +91,16 @@ func (d Data) Uint64() uint64 {
 	return v
 }
 
+func (d Data) U128() u128.U128 {
+	v, _ := readU128(d)
+	return v
+}
+
+func (d Data) U256() u256.U256 {
+	v, _ := readU256(d)
+	return v
+}
+
 func (d Data) Float32() float32 {
 	v, _ := readFloat32(d)
 	return v
@@ -123,6 +140,9 @@ func (d Data) validate() error {
 	}
 
 	switch t {
+	default:
+		return fmt.Errorf("unsupported type %v", t)
+
 	case TypeNil, TypeTrue, TypeFalse:
 		return nil
 
@@ -143,6 +163,11 @@ func (d Data) validate() error {
 		_, err = readUint32(d)
 	case TypeUint64:
 		_, err = readUint64(d)
+
+	case TypeU128:
+		_, err = readU128(d)
+	case TypeU256:
+		_, err = readU256(d)
 
 	case TypeFloat32:
 		_, err = readFloat32(d)

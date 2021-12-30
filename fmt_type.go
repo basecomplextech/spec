@@ -3,6 +3,7 @@ package spec
 import (
 	"fmt"
 	"math"
+	"strconv"
 )
 
 const (
@@ -26,6 +27,9 @@ const (
 	TypeUint16 Type = 0x21
 	TypeUint32 Type = 0x22
 	TypeUint64 Type = 0x23
+
+	TypeU128 Type = 0x24
+	TypeU256 Type = 0x25
 
 	TypeFloat32 Type = 0x30
 	TypeFloat64 Type = 0x31
@@ -57,6 +61,9 @@ func checkType(t Type) error {
 		TypeUint32,
 		TypeUint64,
 
+		TypeU128,
+		TypeU256,
+
 		TypeFloat32,
 		TypeFloat64,
 
@@ -72,4 +79,60 @@ func checkType(t Type) error {
 	}
 
 	return fmt.Errorf("unsupported type %d", t)
+}
+
+func (t Type) String() string {
+	switch t {
+	case TypeNil:
+		return "nil"
+	case TypeTrue:
+		return "true"
+	case TypeFalse:
+		return "false"
+
+	case TypeInt8:
+		return "int8"
+	case TypeInt16:
+		return "int16"
+	case TypeInt32:
+		return "int32"
+	case TypeInt64:
+		return "int64"
+
+	case TypeUint8:
+		return "uint8"
+	case TypeUint16:
+		return "uint16"
+	case TypeUint32:
+		return "uint32"
+	case TypeUint64:
+		return "uint64"
+
+	case TypeU128:
+		return "u128"
+	case TypeU256:
+		return "u256"
+
+	case TypeFloat32:
+		return "float32"
+	case TypeFloat64:
+		return "float64"
+
+	case TypeBytes:
+		return "bytes"
+	case TypeString:
+		return "string"
+
+	case TypeList:
+		return "list"
+	case TypeListBig:
+		return "list_big"
+
+	case TypeMessage:
+		return "message"
+	case TypeMessageBig:
+		return "message_big"
+	}
+
+	return strconv.Itoa(int(t))
 }

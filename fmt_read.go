@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"math"
 	"unsafe"
+
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
 )
 
 func readType(b []byte) (Type, error) {
@@ -228,6 +231,52 @@ func _readUint(b []byte) (uint64, int) {
 	}
 
 	return 0, -1
+}
+
+// u128/u256
+
+func readU128(b []byte) (u128.U128, error) {
+	// type
+	t, n := _readType(b)
+	switch {
+	case n < 0:
+		return u128.U128{}, fmt.Errorf("read u128: invalid data")
+	case t == TypeNil:
+		return u128.U128{}, nil
+	case t != TypeU128:
+		return u128.U128{}, fmt.Errorf("read u128: unexpected type, expected=%d, actual=%d", TypeU128, t)
+	}
+
+	end := len(b) - n
+	start := end - 16
+	if start < 0 {
+		return u128.U128{}, fmt.Errorf("read u128: invalid data")
+	}
+
+	p := b[start:end]
+	return u128.Parse(p)
+}
+
+func readU256(b []byte) (u256.U256, error) {
+	// type
+	t, n := _readType(b)
+	switch {
+	case n < 0:
+		return u256.U256{}, fmt.Errorf("read u256: invalid data")
+	case t == TypeNil:
+		return u256.U256{}, nil
+	case t != TypeU256:
+		return u256.U256{}, fmt.Errorf("read u256: unexpected type, expected=%d, actual=%d", TypeU256, t)
+	}
+
+	end := len(b) - n
+	start := end - 32
+	if start < 0 {
+		return u256.U256{}, fmt.Errorf("read u256: invalid data")
+	}
+
+	p := b[start:end]
+	return u256.Parse(p)
 }
 
 // float

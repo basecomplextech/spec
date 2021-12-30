@@ -1,6 +1,11 @@
 package spec
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
+)
 
 // ListReader reads a list from a byte slice.
 type ListReader struct {
@@ -154,6 +159,32 @@ func (r ListReader) ReadUint64(i int) (uint64, error) {
 
 	b := r.l.data[start:end]
 	return readUint64(b)
+}
+
+func (r ListReader) ReadU128(i int) (u128.U128, error) {
+	start, end := r.l.table.offset(r.l.big, i)
+	switch {
+	case start < 0:
+		return u128.U128{}, nil
+	case end > int(r.l.body):
+		return u128.U128{}, r.rangeError(i, end)
+	}
+
+	b := r.l.data[start:end]
+	return readU128(b)
+}
+
+func (r ListReader) ReadU256(i int) (u256.U256, error) {
+	start, end := r.l.table.offset(r.l.big, i)
+	switch {
+	case start < 0:
+		return u256.U256{}, nil
+	case end > int(r.l.body):
+		return u256.U256{}, r.rangeError(i, end)
+	}
+
+	b := r.l.data[start:end]
+	return readU256(b)
 }
 
 func (r ListReader) ReadFloat32(i int) (float32, error) {

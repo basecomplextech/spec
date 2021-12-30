@@ -1,5 +1,10 @@
 package spec
 
+import (
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
+)
+
 type MessageData struct {
 	m message
 }
@@ -180,6 +185,34 @@ func (d MessageData) Uint64(tag uint16) uint64 {
 
 	b := d.m.data[:end]
 	v, _ := readUint64(b)
+	return v
+}
+
+func (d MessageData) U128(tag uint16) u128.U128 {
+	end := d.m.table.offset(d.m.big, tag)
+	switch {
+	case end < 0:
+		return u128.U128{}
+	case end > int(d.m.body):
+		return u128.U128{}
+	}
+
+	b := d.m.data[:end]
+	v, _ := readU128(b)
+	return v
+}
+
+func (d MessageData) U256(tag uint16) u256.U256 {
+	end := d.m.table.offset(d.m.big, tag)
+	switch {
+	case end < 0:
+		return u256.U256{}
+	case end > int(d.m.body):
+		return u256.U256{}
+	}
+
+	b := d.m.data[:end]
+	v, _ := readU256(b)
 	return v
 }
 

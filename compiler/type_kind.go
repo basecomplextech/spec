@@ -25,6 +25,9 @@ const (
 	KindUint32
 	KindUint64
 
+	KindU128
+	KindU256
+
 	KindFloat32
 	KindFloat64
 
@@ -66,6 +69,11 @@ func parseKind(pkind parser.Kind) (Kind, error) {
 		return KindUint32, nil
 	case parser.KindUint64:
 		return KindUint64, nil
+
+	case parser.KindU128:
+		return KindU128, nil
+	case parser.KindU256:
+		return KindU256, nil
 
 	case parser.KindFloat32:
 		return KindFloat32, nil
@@ -109,6 +117,11 @@ func (k Kind) String() string {
 		return "uint32"
 	case KindUint64:
 		return "uint64"
+
+	case KindU128:
+		return "u128"
+	case KindU256:
+		return "u256"
 
 	case KindFloat32:
 		return "float32"

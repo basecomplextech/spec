@@ -3,6 +3,9 @@ package spec
 import (
 	"fmt"
 	"math"
+
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
 )
 
 // Fixture messages
@@ -19,6 +22,9 @@ type TestMessage struct {
 	Uint16 uint16 `tag:"21"`
 	Uint32 uint32 `tag:"22"`
 	Uint64 uint64 `tag:"23"`
+
+	U128 u128.U128 `tag:"24"`
+	U256 u256.U256 `tag:"25"`
 
 	Float32 float32 `tag:"30"`
 	Float64 float64 `tag:"31"`
@@ -152,6 +158,16 @@ func (m *TestMessage) Unmarshal(b []byte) error {
 		return err
 	}
 
+	// u128/u256:24-25
+	m.U128, err = r.ReadU128(24)
+	if err != nil {
+		return err
+	}
+	m.U256, err = r.ReadU256(25)
+	if err != nil {
+		return err
+	}
+
 	// float:30-31
 	m.Float32, err = r.ReadFloat32(30)
 	if err != nil {
@@ -280,7 +296,7 @@ func (m TestMessage) Write(w *Writer) error {
 	w.Int64(m.Int64)
 	w.Field(13)
 
-	// uint:20-22
+	// uint:20-23
 	w.Uint8(m.Uint8)
 	w.Field(20)
 	w.Uint16(m.Uint16)
@@ -289,6 +305,12 @@ func (m TestMessage) Write(w *Writer) error {
 	w.Field(22)
 	w.Uint64(m.Uint64)
 	w.Field(23)
+
+	// u128/u256:24-25
+	w.U128(m.U128)
+	w.Field(24)
+	w.u256(m.U256)
+	w.Field(25)
 
 	// float:30-31
 	w.Float32(m.Float32)
@@ -369,6 +391,8 @@ func (d TestMessageData) Uint8() uint8       { return d.d.Uint8(20) }
 func (d TestMessageData) Uint16() uint16     { return d.d.Uint16(21) }
 func (d TestMessageData) Uint32() uint32     { return d.d.Uint32(22) }
 func (d TestMessageData) Uint64() uint64     { return d.d.Uint64(23) }
+func (d TestMessageData) U128() u128.U128    { return d.d.U128(24) }
+func (d TestMessageData) U256() u256.U256    { return d.d.U256(25) }
 func (d TestMessageData) Float32() float32   { return d.d.Float32(30) }
 func (d TestMessageData) Float64() float64   { return d.d.Float64(31) }
 func (d TestMessageData) String() string     { return d.d.String(40) }

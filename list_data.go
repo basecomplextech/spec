@@ -1,5 +1,10 @@
 package spec
 
+import (
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
+)
+
 type ListData struct {
 	l list
 }
@@ -169,6 +174,34 @@ func (d ListData) Uint64(i int) uint64 {
 
 	b := d.l.data[start:end]
 	v, _ := readUint64(b)
+	return v
+}
+
+func (d ListData) U128(i int) u128.U128 {
+	start, end := d.l.table.offset(d.l.big, i)
+	switch {
+	case start < 0:
+		return u128.U128{}
+	case end > int(d.l.body):
+		return u128.U128{}
+	}
+
+	b := d.l.data[start:end]
+	v, _ := readU128(b)
+	return v
+}
+
+func (d ListData) U256(i int) u256.U256 {
+	start, end := d.l.table.offset(d.l.big, i)
+	switch {
+	case start < 0:
+		return u256.U256{}
+	case end > int(d.l.body):
+		return u256.U256{}
+	}
+
+	b := d.l.data[start:end]
+	v, _ := readU256(b)
 	return v
 }
 

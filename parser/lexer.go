@@ -115,18 +115,6 @@ func (l *lexer) Error(s string) {
 	l.err = fmt.Errorf("%v %v", l.s.Position, s)
 }
 
-var keywords map[string]int
-
-func init() {
-	keywords = map[string]int{
-		"enum":    ENUM,
-		"import":  IMPORT,
-		"message": MESSAGE,
-		"options": OPTIONS,
-		"struct":  STRUCT,
-	}
-}
-
 func trimString(s string) string {
 	return strings.Trim(s, "\"")
 }
