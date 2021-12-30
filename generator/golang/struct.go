@@ -50,7 +50,7 @@ func (w *writer) structRead(def *compiler.Definition) error {
 }
 
 func (w *writer) structWrite(def *compiler.Definition) error {
-	w.linef(`func (m %v) Write(w spec.Writer) error {`, def.Name)
+	w.linef(`func (m %v) Write(w *spec.Writer) error {`, def.Name)
 	w.line(`return nil`)
 	w.line("}")
 	return nil

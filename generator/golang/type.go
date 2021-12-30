@@ -6,12 +6,19 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func typeName(typ *compiler.Type) string {
+// dataType returns a data type name.
+func dataType(typ *compiler.Type) string {
+	return _typeName(typ, true)
+}
+
+// objectType returns an object type name.
+func objectType(typ *compiler.Type) string {
 	return _typeName(typ, false)
 }
 
-func typeDataName(typ *compiler.Type) string {
-	return _typeName(typ, true)
+// readerType returns a reader type name.
+func readerType(typ *compiler.Type) string {
+	return _typeName(typ, false)
 }
 
 func _typeName(typ *compiler.Type, data bool) string {
@@ -50,7 +57,7 @@ func _typeName(typ *compiler.Type, data bool) string {
 	// list
 
 	case compiler.KindList:
-		elem := typeName(typ.Element)
+		elem := objectType(typ.Element)
 		return "[]" + elem
 
 	// resolved

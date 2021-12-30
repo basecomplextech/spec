@@ -3,7 +3,6 @@ package golang
 import (
 	"bytes"
 	"fmt"
-	"go/format"
 	"strings"
 
 	"github.com/baseone-run/spec/compiler"
@@ -21,7 +20,8 @@ func WriteFile(file *compiler.File) ([]byte, error) {
 	}
 
 	bytes := w.b.Bytes()
-	return format.Source(bytes)
+	// return format.Source(bytes)
+	return bytes, nil
 }
 
 type writer struct {
@@ -65,9 +65,6 @@ func (w *writer) file(file *compiler.File) error {
 		w.linef(`"%v"`, pkg)
 	}
 	w.line(")")
-	w.line()
-
-	w.line(`var _ spec.Type // unused import`)
 	w.line()
 
 	// definitions

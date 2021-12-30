@@ -6,10 +6,6 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func (w *writer) listElement(typ *compiler.Type) {
-	w._listElement(typ, false)
-}
-
 func (w *writer) listElementData(typ *compiler.Type) {
 	w._listElement(typ, true)
 }
@@ -60,13 +56,13 @@ func (w *writer) _listElement(typ *compiler.Type, data bool) {
 	// resolved
 
 	case compiler.KindEnum:
-		typeName := typeName(typ)
-		w.linef(`%v(list.Int32(i))`, typeName)
+		objectType := objectType(typ)
+		w.linef(`%v(list.Int32(i))`, objectType)
 
 	case compiler.KindMessage:
 		access := ""
 		if data {
-			access = messageGetDataFunc(typ)
+			access = messageNewDataFunc(typ)
 		} else {
 			access = messageReadFunc(typ)
 		}

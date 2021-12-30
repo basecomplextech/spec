@@ -22,9 +22,9 @@ func (w *writer) message(def *compiler.Definition) error {
 	}
 
 	// data
-	if err := w.messageData(def); err != nil {
-		return err
-	}
+	// if err := w.messageData(def); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -35,7 +35,7 @@ func (w *writer) messageDef(def *compiler.Definition) error {
 
 	for _, field := range def.Message.Fields {
 		name := messageFieldName(field)
-		typ := typeName(field.Type)
+		typ := objectType(field.Type)
 		tag := fmt.Sprintf("`tag:\"%d\" json:\"%v\"`", field.Tag, field.Name)
 		w.linef("%v %v %v", name, typ, tag)
 	}
@@ -62,7 +62,7 @@ func (w *writer) readMessage(def *compiler.Definition) error {
 
 func (w *writer) messageRead(def *compiler.Definition) error {
 	w.linef(`func (m *%v) Read(b []byte) error {`, def.Name)
-	w.line(`msg, err := spec.ReadMessage(b)
+	w.line(`r, err := spec.NewMessageReader(b)
 	if err != nil {
 		return err
 	}`)
@@ -84,82 +84,36 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 	name := messageFieldName(field)
 	kind := field.Type.Kind
 	typ := field.Type
-	tag := field.Tag
+	tag := fmt.Sprintf("%d", field.Tag)
 
 	switch kind {
-	case compiler.KindBool:
-		w.linef(`m.%v = msg.Bool(%d)`, name, tag)
+	default:
+		stmt := w.readerRead(typ, "r", tag)
+		w.linef(`m.%v, err = %v`, name, stmt)
+		w.linef(`if err != nil {
+			return err
+		}`)
 
-	case compiler.KindInt8:
-		w.linef(`m.%v = msg.Int8(%d)`, name, tag)
-	case compiler.KindInt16:
-		w.linef(`m.%v = msg.Int16(%d)`, name, tag)
-	case compiler.KindInt32:
-		w.linef(`m.%v = msg.Int32(%d)`, name, tag)
-	case compiler.KindInt64:
-		w.linef(`m.%v = msg.Int64(%d)`, name, tag)
+	case compiler.KindList,
+		compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
 
-	case compiler.KindUint8:
-		w.linef(`m.%v = msg.Uint8(%d)`, name, tag)
-	case compiler.KindUint16:
-		w.linef(`m.%v = msg.Uint16(%d)`, name, tag)
-	case compiler.KindUint32:
-		w.linef(`m.%v = msg.Uint32(%d)`, name, tag)
-	case compiler.KindUint64:
-		w.linef(`m.%v = msg.Uint64(%d)`, name, tag)
+		w.linef(`{`)
+		stmt := w.readerRead(typ, "r", tag)
+		w.linef(`m.%v, err = %v`, name, stmt)
+		w.linef(`if err != nil {
+			return err
+		}`)
 
-	case compiler.KindFloat32:
-		w.linef(`m.%v = msg.Float32(%d)`, name, tag)
-	case compiler.KindFloat64:
-		w.linef(`m.%v = msg.Float64(%d)`, name, tag)
-
-	case compiler.KindBytes:
-		w.linef(`m.%v = msg.Bytes(%d)`, name, tag)
-	case compiler.KindString:
-		w.linef(`m.%v = msg.String(%d)`, name, tag)
-
-	// list
-
-	case compiler.KindList:
-		elem := typ.Element
-
-		// begin
-		w.line(`{`)
-		w.linef(`list := msg.List(%d)`, tag)
-		w.linef(`ln := list.Len()`)
-		w.linef(`m.%v = make([]%v, 0, ln)`, name, typeName(elem))
-		w.line()
-
-		// elements
-		w.linef(`for i := 0; i < ln; i++ {`)
-		w.listElement(elem)
-		w.linef(`m.%v = append(m.%v, elem)`, name, name)
-		w.line(`}`)
-
-		// end
-		w.line(`}`)
-		w.line()
-
-	// resolved
-
-	case compiler.KindEnum:
-		typeName := typeName(typ)
-		w.linef(`m.%v = %v(msg.Int32(%d))`, name, typeName, tag)
-
-	case compiler.KindMessage:
-		readFunc := messageReadFunc(typ)
-		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
-
-	case compiler.KindStruct:
-		readFunc := structReadFunc(typ)
-		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
+		w.linef(`}`)
 	}
 	return nil
 }
 
 func (w *writer) messageWrite(def *compiler.Definition) error {
 	// begin
-	w.linef(`func (m *%v) Write(w spec.Writer) error {`, def.Name)
+	w.linef(`func (m *%v) Write(w *spec.Writer) error {`, def.Name)
 	w.linef(`if m == nil {
 		return w.Nil()
 	}`)
@@ -284,7 +238,7 @@ func (w *writer) messageData(def *compiler.Definition) error {
 	if err := w.messageDataDef(def); err != nil {
 		return err
 	}
-	if err := w.getMessageData(def); err != nil {
+	if err := w.newMessageData(def); err != nil {
 		return err
 	}
 	if err := w.readMessageData(def); err != nil {
@@ -308,11 +262,11 @@ func (w *writer) messageDataDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) getMessageData(def *compiler.Definition) error {
+func (w *writer) newMessageData(def *compiler.Definition) error {
 	name := fmt.Sprintf("%vData", def.Name)
 
-	w.linef(`func Get%v(b []byte) (%v, error) {`, name, name)
-	w.linef(`msg, err := spec.GetMessage(b)`)
+	w.linef(`func New%v(b []byte) (%v, error) {`, name, name)
+	w.linef(`msg, err := spec.NewMessageData(b)`)
 	w.linef(`if err != nil {
 		return %v{}, err
 	}`, name)
@@ -326,7 +280,7 @@ func (w *writer) readMessageData(def *compiler.Definition) error {
 	name := fmt.Sprintf("%vData", def.Name)
 
 	w.linef(`func Read%v(b []byte) (%v, error) {`, name, name)
-	w.linef(`msg, err := spec.ReadMessage(b)`)
+	w.linef(`msg, err := spec.ReadMessageData(b)`)
 	w.linef(`if err != nil {
 		return %v{}, err
 	}`, name)
@@ -355,17 +309,17 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 
 	switch kind {
 	default:
-		typeName := typeDataName(field.Type)
-		read := w.readData(field.Type, "d.m", fmt.Sprintf("%d", tag))
+		objectType := dataType(field.Type)
+		read := w.readerRead(field.Type, "d.m", fmt.Sprintf("%d", tag))
 
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, objectType)
 		w.linef(`return %v`, read)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindList:
 		elem := typ.Element
-		elemName := typeDataName(elem)
+		elemName := dataType(elem)
 
 		// len
 		w.linef(`func (d %vData) %vLen() int {`, def.Name, name)
@@ -382,20 +336,20 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 		w.line()
 
 	case compiler.KindMessage:
-		typeName := typeDataName(field.Type)
-		read := w.readData(field.Type, "d.m", fmt.Sprintf("%d", tag))
+		objectType := dataType(field.Type)
+		read := w.readerRead(field.Type, "d.m", fmt.Sprintf("%d", tag))
 
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, objectType)
 		w.linef(`v, _ := %v`, read)
 		w.linef(`return v`)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindStruct:
-		typeName := typeDataName(field.Type)
-		read := w.readData(field.Type, "d.m", fmt.Sprintf("%d", tag))
+		objectType := dataType(field.Type)
+		read := w.readerRead(field.Type, "d.m", fmt.Sprintf("%d", tag))
 
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, objectType)
 		w.linef(`v, _ := %v`, read)
 		w.linef(`return v`)
 		w.linef(`}`)
@@ -417,9 +371,16 @@ func messageReadFunc(typ *compiler.Type) string {
 	return fmt.Sprintf("%v.Read%v", typ.ImportName, typ.Name)
 }
 
-func messageGetDataFunc(typ *compiler.Type) string {
+func messageNewDataFunc(typ *compiler.Type) string {
 	if typ.Import == nil {
-		return fmt.Sprintf("Get%vData", typ.Name)
+		return fmt.Sprintf("New%vData", typ.Name)
 	}
-	return fmt.Sprintf("%v.Get%vData", typ.ImportName, typ.Name)
+	return fmt.Sprintf("%v.New%vData", typ.ImportName, typ.Name)
+}
+
+func messageReadDataFunc(typ *compiler.Type) string {
+	if typ.Import == nil {
+		return fmt.Sprintf("Read%vData", typ.Name)
+	}
+	return fmt.Sprintf("%v.Read%vData", typ.ImportName, typ.Name)
 }

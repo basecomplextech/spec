@@ -6,15 +6,71 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func (w *writer) readValue(typ *compiler.Type, src string, tag string) string {
-	return w._readValue(typ, src, tag, false)
-}
+// func (w *writer) getData(typ *compiler.Type, i string) string {
+// 	kind := typ.Kind
 
-func (w *writer) readData(typ *compiler.Type, src string, tag string) string {
-	return w._readValue(typ, src, tag, true)
-}
+// 	switch kind {
+// 	default:
+// 		panic(fmt.Sprintf("unsupported type kind %v", kind))
 
-func (w *writer) _readValue(typ *compiler.Type, src string, tag string, data bool) string {
+// 	case compiler.KindBool:
+// 		return fmt.Sprintf(`.Bool(%v)`, src, tag)
+
+// 	case compiler.KindInt8:
+// 		return fmt.Sprintf(`.Int8(%v)`, src, tag)
+// 	case compiler.KindInt16:
+// 		return fmt.Sprintf(`.Int16(%v)`, src, tag)
+// 	case compiler.KindInt32:
+// 		return fmt.Sprintf(`.Int32(%v)`, src, tag)
+// 	case compiler.KindInt64:
+// 		return fmt.Sprintf(`.Int64(%v)`, src, tag)
+
+// 	case compiler.KindUint8:
+// 		return fmt.Sprintf(`.Uint8(%v)`, src, tag)
+// 	case compiler.KindUint16:
+// 		return fmt.Sprintf(`.Uint16(%v)`, src, tag)
+// 	case compiler.KindUint32:
+// 		return fmt.Sprintf(`.Uint32(%v)`, src, tag)
+// 	case compiler.KindUint64:
+// 		return fmt.Sprintf(`.Uint64(%v)`, src, tag)
+
+// 	case compiler.KindFloat32:
+// 		return fmt.Sprintf(`.Float32(%v)`, src, tag)
+// 	case compiler.KindFloat64:
+// 		return fmt.Sprintf(`.Float64(%v)`, src, tag)
+
+// 	case compiler.KindBytes:
+// 		return fmt.Sprintf(`.Bytes(%v)`, src, tag)
+// 	case compiler.KindString:
+// 		return fmt.Sprintf(`.String(%v)`, src, tag)
+
+// 	// list
+
+// 	case compiler.KindList:
+// 		panic("cannot read list as value")
+
+// 	// resolved
+
+// 	case compiler.KindEnum:
+// 		objectType := objectType(typ)
+// 		return fmt.Sprintf(`%v(%v.Int32(%v))`, objectType, src, tag)
+
+// 	case compiler.KindMessage:
+// 		access := ""
+// 		if data {
+// 			access = messageNewDataFunc(typ)
+// 		} else {
+// 			access = messageReadFunc(typ)
+// 		}
+// 		return fmt.Sprintf(`%v(%v.Element(%v))`, access, src, tag)
+
+// 	case compiler.KindStruct:
+// 		read := structReadFunc(typ)
+// 		return fmt.Sprintf(`%v(%v.Element(%v))`, read, src, tag)
+// 	}
+// }
+
+func (w *writer) readerRead(typ *compiler.Type, reader string, i string) string {
 	kind := typ.Kind
 
 	switch kind {
@@ -22,59 +78,95 @@ func (w *writer) _readValue(typ *compiler.Type, src string, tag string, data boo
 		panic(fmt.Sprintf("unsupported type kind %v", kind))
 
 	case compiler.KindBool:
-		return fmt.Sprintf(`%v.Bool(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadBool(%v)`, reader, i)
 
 	case compiler.KindInt8:
-		return fmt.Sprintf(`%v.Int8(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadInt8(%v)`, reader, i)
 	case compiler.KindInt16:
-		return fmt.Sprintf(`%v.Int16(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadInt16(%v)`, reader, i)
 	case compiler.KindInt32:
-		return fmt.Sprintf(`%v.Int32(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadInt32(%v)`, reader, i)
 	case compiler.KindInt64:
-		return fmt.Sprintf(`%v.Int64(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadInt64(%v)`, reader, i)
 
 	case compiler.KindUint8:
-		return fmt.Sprintf(`%v.Uint8(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadUint8(%v)`, reader, i)
 	case compiler.KindUint16:
-		return fmt.Sprintf(`%v.Uint16(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadUint16(%v)`, reader, i)
 	case compiler.KindUint32:
-		return fmt.Sprintf(`%v.Uint32(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadUint32(%v)`, reader, i)
 	case compiler.KindUint64:
-		return fmt.Sprintf(`%v.Uint64(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadUint64(%v)`, reader, i)
 
 	case compiler.KindFloat32:
-		return fmt.Sprintf(`%v.Float32(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadFloat32(%v)`, reader, i)
 	case compiler.KindFloat64:
-		return fmt.Sprintf(`%v.Float64(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadFloat64(%v)`, reader, i)
 
 	case compiler.KindBytes:
-		return fmt.Sprintf(`%v.Bytes(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadBytes(%v)`, reader, i)
 	case compiler.KindString:
-		return fmt.Sprintf(`%v.String(%v)`, src, tag)
+		return fmt.Sprintf(`%v.ReadString(%v)`, reader, i)
 
 	// list
 
 	case compiler.KindList:
-		panic("cannot read list as value")
+		elem := typ.Element
+		elemType := objectType(elem)
+
+		// begin
+		w.linef(`list, err := %v.ReadList(%v)`, reader, i)
+		w.linef(`if err != nil {
+			return err
+		}`)
+		w.linef(`count := list.Len()`)
+		w.linef(`elems := make([]%v, 0, count)`, elemType)
+		w.line()
+
+		// elements
+		w.linef(`for i := 0; i < count; i++ {`)
+		stmt := w.readerRead(elem, "list", "i")
+		w.linef(`elem, err := %v`, stmt)
+		w.linef(`if err != nil {
+			return err
+		}`)
+		w.linef(`elems = append(elems, elem)`)
+		w.line(`}`)
+		w.line()
+
+		return fmt.Sprintf("elems, nil")
 
 	// resolved
 
 	case compiler.KindEnum:
-		typeName := typeName(typ)
-		return fmt.Sprintf(`%v(%v.Int32(%v))`, typeName, src, tag)
+		readFunc := enumReadFunc(typ)
+
+		w.linef(`data, err := %v.Read(%v)`, reader, i)
+		w.linef(`if err != nil {
+			return err
+		}`)
+
+		return fmt.Sprintf(`%v(data)`, readFunc)
 
 	case compiler.KindMessage:
-		access := ""
-		if data {
-			access = messageGetDataFunc(typ)
-		} else {
-			access = messageReadFunc(typ)
-		}
-		return fmt.Sprintf(`%v(%v.Element(%v))`, access, src, tag)
+		readFunc := messageReadFunc(typ)
+
+		w.linef(`data, err := %v.Read(%v)`, reader, i)
+		w.linef(`if err != nil {
+			return err
+		}`)
+
+		return fmt.Sprintf(`%v(data)`, readFunc)
 
 	case compiler.KindStruct:
-		read := structReadFunc(typ)
-		return fmt.Sprintf(`%v(%v.Element(%v))`, read, src, tag)
+		readFunc := structReadFunc(typ)
+
+		w.linef(`data, err := %v.Read(%v)`, reader, i)
+		w.linef(`if err != nil {
+			return err
+		}`)
+
+		return fmt.Sprintf(`%v(data)`, readFunc)
 	}
 }
 
@@ -124,11 +216,19 @@ func (w *writer) writeValue(typ *compiler.Type, val string) error {
 	// resolved
 
 	case compiler.KindEnum:
-		w.linef(`w.Int32(int32(%v))`, val)
+		w.linef(`if err := %v.Write(w); err != nil {`, val)
+		w.linef(`return err`)
+		w.line(`}`)
+
 	case compiler.KindMessage:
-		w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
+		w.linef(`if err := %v.Write(w); err != nil {`, val)
+		w.linef(`return err`)
+		w.line(`}`)
+
 	case compiler.KindStruct:
-		w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
+		w.linef(`if err := %v.Write(w); err != nil {`, val)
+		w.linef(`return err`)
+		w.linef(`}`)
 	}
 	return nil
 }
