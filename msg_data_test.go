@@ -60,7 +60,7 @@ func testWriteMessage(t *testing.T) []byte {
 
 func TestMessage_Getters__should_access_fields(t *testing.T) {
 	b := testWriteMessage(t)
-	m, err := GetMessage(b)
+	m, err := NewMessageData(b)
 	if err != nil {
 		t.Fatal(err)
 	}

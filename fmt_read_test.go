@@ -346,7 +346,7 @@ func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
 
 func TestReadMessage__should_read_message(t *testing.T) {
 	b := testWriteMessage(t)
-	_, err := ReadMessage(b)
+	_, err := readMessage(b)
 	if err != nil {
 		t.Fatal(err)
 	}

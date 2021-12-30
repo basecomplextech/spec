@@ -95,7 +95,7 @@ func newTestSubMessage(i int) *TestSubMessage {
 // Read
 
 func (msg *TestMessage) Read(b []byte) error {
-	m, err := ReadMessage(b)
+	m, err := NewMessageData(b)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (msg *TestMessage) Read(b []byte) error {
 }
 
 func (msg *TestSubMessage) Read(b []byte) error {
-	m, err := ReadMessage(b)
+	m, err := NewMessageData(b)
 	if err != nil {
 		return err
 	}
@@ -279,27 +279,27 @@ func (msg TestSubMessage) Write(w *Writer) error {
 
 // Value
 
-type TestMessageData struct{ m Message }
+type TestMessageData struct{ d MessageData }
 
-func (d TestMessageData) Bool() bool       { return d.m.Bool(1) }
-func (d TestMessageData) Int8() int8       { return d.m.Int8(10) }
-func (d TestMessageData) Int16() int16     { return d.m.Int16(11) }
-func (d TestMessageData) Int32() int32     { return d.m.Int32(12) }
-func (d TestMessageData) Int64() int64     { return d.m.Int64(13) }
-func (d TestMessageData) Uint8() uint8     { return d.m.Uint8(20) }
-func (d TestMessageData) Uint16() uint16   { return d.m.Uint16(21) }
-func (d TestMessageData) Uint32() uint32   { return d.m.Uint32(22) }
-func (d TestMessageData) Uint64() uint64   { return d.m.Uint64(23) }
-func (d TestMessageData) Float32() float32 { return d.m.Float32(30) }
-func (d TestMessageData) Float64() float64 { return d.m.Float64(31) }
-func (d TestMessageData) String() string   { return d.m.String(40) }
-func (d TestMessageData) Bytes() []byte    { return d.m.Bytes(41) }
-func (d TestMessageData) List() List       { return d.m.List(50) }
-func (d TestMessageData) Messages() List   { return d.m.List(51) }
-func (d TestMessageData) Strings() List    { return d.m.List(52) }
+func (d TestMessageData) Bool() bool       { return d.d.Bool(1) }
+func (d TestMessageData) Int8() int8       { return d.d.Int8(10) }
+func (d TestMessageData) Int16() int16     { return d.d.Int16(11) }
+func (d TestMessageData) Int32() int32     { return d.d.Int32(12) }
+func (d TestMessageData) Int64() int64     { return d.d.Int64(13) }
+func (d TestMessageData) Uint8() uint8     { return d.d.Uint8(20) }
+func (d TestMessageData) Uint16() uint16   { return d.d.Uint16(21) }
+func (d TestMessageData) Uint32() uint32   { return d.d.Uint32(22) }
+func (d TestMessageData) Uint64() uint64   { return d.d.Uint64(23) }
+func (d TestMessageData) Float32() float32 { return d.d.Float32(30) }
+func (d TestMessageData) Float64() float64 { return d.d.Float64(31) }
+func (d TestMessageData) String() string   { return d.d.String(40) }
+func (d TestMessageData) Bytes() []byte    { return d.d.Bytes(41) }
+func (d TestMessageData) List() List       { return d.d.List(50) }
+func (d TestMessageData) Messages() List   { return d.d.List(51) }
+func (d TestMessageData) Strings() List    { return d.d.List(52) }
 
 func getTestMessageData(b []byte) (TestMessageData, error) {
-	msg, err := GetMessage(b)
+	msg, err := NewMessageData(b)
 	if err != nil {
 		return TestMessageData{}, err
 	}
@@ -307,22 +307,22 @@ func getTestMessageData(b []byte) (TestMessageData, error) {
 }
 
 func readTestMessageData(b []byte) (TestMessageData, error) {
-	msg, err := ReadMessage(b)
+	msg, err := ReadMessageData(b)
 	if err != nil {
 		return TestMessageData{}, err
 	}
 	return TestMessageData{msg}, nil
 }
 
-type TestSubMessageData struct{ m Message }
+type TestSubMessageData struct{ d MessageData }
 
-func (d TestSubMessageData) Int8() int8   { return d.m.Int8(1) }
-func (d TestSubMessageData) Int16() int16 { return d.m.Int16(2) }
-func (d TestSubMessageData) Int32() int32 { return d.m.Int32(3) }
-func (d TestSubMessageData) Int64() int64 { return d.m.Int64(4) }
+func (d TestSubMessageData) Int8() int8   { return d.d.Int8(1) }
+func (d TestSubMessageData) Int16() int16 { return d.d.Int16(2) }
+func (d TestSubMessageData) Int32() int32 { return d.d.Int32(3) }
+func (d TestSubMessageData) Int64() int64 { return d.d.Int64(4) }
 
 func getTestSubMessageData(b []byte) (TestSubMessageData, error) {
-	msg, err := GetMessage(b)
+	msg, err := NewMessageData(b)
 	if err != nil {
 		return TestSubMessageData{}, err
 	}
@@ -330,7 +330,7 @@ func getTestSubMessageData(b []byte) (TestSubMessageData, error) {
 }
 
 func readTestSubMessageData(b []byte) (TestSubMessageData, error) {
-	msg, err := ReadMessage(b)
+	msg, err := ReadMessageData(b)
 	if err != nil {
 		return TestSubMessageData{}, err
 	}

@@ -256,16 +256,16 @@ func (l List) List(i int) List {
 	return v
 }
 
-func (l List) Message(i int) Message {
+func (l List) Message(i int) MessageData {
 	start, end := l.table.offset(l.big, i)
 	switch {
 	case start < 0:
-		return Message{}
+		return MessageData{}
 	case end > int(l.body):
-		return Message{}
+		return MessageData{}
 	}
 
 	b := l.data[start:end]
-	v, _ := GetMessage(b)
+	v, _ := NewMessageData(b)
 	return v
 }
