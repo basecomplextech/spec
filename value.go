@@ -8,7 +8,7 @@ func GetValue(b []byte) (Value, error) {
 	if err != nil {
 		return Value{}, err
 	}
-	if err := CheckType(t); err != nil {
+	if err := checkType(t); err != nil {
 		return Value{}, err
 	}
 	return Value(b), nil

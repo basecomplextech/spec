@@ -40,7 +40,7 @@ const (
 	TypeMessageBig Type = 0x61
 )
 
-func CheckType(t Type) error {
+func checkType(t Type) error {
 	switch t {
 	case
 		TypeNil,

@@ -375,24 +375,24 @@ func _readStringBody(b []byte, size uint32) (string, error) {
 
 // list
 
-func readList(b []byte) (List, error) {
-	list := List{}
+func readList(b []byte) (list, error) {
+	l := list{}
 	if len(b) == 0 {
-		return list, nil
+		return l, nil
 	}
 
 	// read type
 	t, n := _readType(b)
 	if n < 0 {
-		return list, fmt.Errorf("read list: invalid data")
+		return l, fmt.Errorf("read list: invalid data")
 	}
 
 	// check type
 	switch t {
 	default:
-		return list, fmt.Errorf("read list: unexpected type, expected=%d, actual=%d", TypeList, t)
+		return l, fmt.Errorf("read list: unexpected type, expected=%d, actual=%d", TypeList, t)
 	case TypeNil:
-		return list, nil
+		return l, nil
 	case TypeList, TypeListBig:
 	}
 	big := t == TypeListBig
@@ -401,38 +401,38 @@ func readList(b []byte) (List, error) {
 	off := len(b) - 1
 	tsize, tn := _readListTableSize(b[:off])
 	if tn < 0 {
-		return list, fmt.Errorf("read list: invalid table size")
+		return l, fmt.Errorf("read list: invalid table size")
 	}
 
 	// body size
 	off -= int(tn)
 	bsize, dn := _readListBodySize(b[:off])
 	if dn < 0 {
-		return list, fmt.Errorf("read list: invalid body size")
+		return l, fmt.Errorf("read list: invalid body size")
 	}
 
 	// table
 	off -= int(dn)
 	table, err := _readListTable(b[:off], tsize, big)
 	if err != nil {
-		return list, err
+		return l, err
 	}
 
 	// body
 	off -= int(tsize)
 	off -= int(bsize)
 	if off < 0 {
-		return list, fmt.Errorf("read list: invalid body")
+		return l, fmt.Errorf("read list: invalid body")
 	}
 
 	// done
-	list = List{
+	l = list{
 		data:  b[off:],
 		table: table,
 		body:  bsize,
 		big:   big,
 	}
-	return list, nil
+	return l, nil
 }
 
 func _readListTableSize(b []byte) (uint32, int) {
@@ -471,8 +471,8 @@ func _readListTable(b []byte, size uint32, big bool) (listTable, error) {
 
 // message
 
-func readMessage(b []byte) (Message, error) {
-	msg := Message{}
+func readMessage(b []byte) (message, error) {
+	msg := message{}
 	if len(b) == 0 {
 		return msg, nil
 	}
@@ -522,7 +522,7 @@ func readMessage(b []byte) (Message, error) {
 	}
 
 	// done
-	msg = Message{
+	msg = message{
 		data:  b[off:],
 		table: table,
 		body:  bsize,

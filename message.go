@@ -1,16 +1,16 @@
 package spec
 
 type Message struct {
-	data  []byte
-	table messageTable
-
-	body uint32 // body size
-	big  bool   // big/small table format
+	message
 }
 
 // GetMessage parses and returns a message, but does not validate it.
 func GetMessage(b []byte) (Message, error) {
-	return readMessage(b)
+	m, err := readMessage(b)
+	if err != nil {
+		return Message{}, err
+	}
+	return Message{m}, nil
 }
 
 // ReadMessage reads, recursively validates and returns a message.
@@ -19,10 +19,11 @@ func ReadMessage(b []byte) (Message, error) {
 	if err != nil {
 		return Message{}, err
 	}
-	if err := m.Validate(); err != nil {
+	msg := Message{m}
+	if err := msg.Validate(); err != nil {
 		return Message{}, err
 	}
-	return m, nil
+	return msg, nil
 }
 
 // Data returns the exact message bytes.
@@ -48,43 +49,22 @@ func (m Message) Validate() error {
 
 // Element returns a field data by a tag or nil.
 func (m Message) Element(tag uint16) []byte {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return nil
-	case end > int(m.body):
-		return nil
-	}
-	return m.data[:end]
+	return m.element(tag)
 }
 
 // Field returns a field data by a tag or nil.
 func (m Message) Field(tag uint16) []byte {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return nil
-	case end > int(m.body):
-		return nil
-	}
-	return m.data[:end]
+	return m.field(tag)
 }
 
 // FieldByIndex returns a field data by an index or nil.
 func (m Message) FieldByIndex(i int) []byte {
-	end := m.table.offsetByIndex(m.big, i)
-	switch {
-	case end < 0:
-		return nil
-	case end > int(m.body):
-		return nil
-	}
-	return m.data[:end]
+	return m.fieldByIndex(i)
 }
 
 // Len returns the number of fields in the message.
 func (m Message) Len() int {
-	return m.table.count(m.big)
+	return m.len()
 }
 
 // Get
@@ -298,5 +278,3 @@ func (m Message) Message(tag uint16) Message {
 	v, _ := GetMessage(b)
 	return v
 }
-
-// Read

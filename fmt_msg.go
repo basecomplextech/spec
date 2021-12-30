@@ -10,6 +10,55 @@ const (
 	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
+type message struct {
+	data  []byte
+	table messageTable
+
+	body uint32 // body size
+	big  bool   // big/small table format
+}
+
+// element returns a field data by a tag or nil.
+func (m message) element(tag uint16) []byte {
+	end := m.table.offset(m.big, tag)
+	switch {
+	case end < 0:
+		return nil
+	case end > int(m.body):
+		return nil
+	}
+	return m.data[:end]
+}
+
+// field returns a field data by a tag or nil.
+func (m message) field(tag uint16) []byte {
+	end := m.table.offset(m.big, tag)
+	switch {
+	case end < 0:
+		return nil
+	case end > int(m.body):
+		return nil
+	}
+	return m.data[:end]
+}
+
+// fieldByIndex returns a field data by an index or nil.
+func (m message) fieldByIndex(i int) []byte {
+	end := m.table.offsetByIndex(m.big, i)
+	switch {
+	case end < 0:
+		return nil
+	case end > int(m.body):
+		return nil
+	}
+	return m.data[:end]
+}
+
+// len returns the number of fields in the message.
+func (m message) len() int {
+	return m.table.count(m.big)
+}
+
 // isBigList returns true if any field tag > uint8 or offset > uint16.
 func isBigMessage(table []messageField) bool {
 	ln := len(table)

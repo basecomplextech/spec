@@ -1,15 +1,16 @@
 package spec
 
 type List struct {
-	data  []byte
-	table listTable
-	body  uint32 // body size
-	big   bool   // small/big table format
+	list
 }
 
 // GetList parses and returns a list, but does not validate it.
 func GetList(b []byte) (List, error) {
-	return readList(b)
+	l, err := readList(b)
+	if err != nil {
+		return List{}, err
+	}
+	return List{l}, nil
 }
 
 // ReadList reads, recursively validates and returns a list.
@@ -18,15 +19,12 @@ func ReadList(b []byte) (List, error) {
 	if err != nil {
 		return List{}, err
 	}
-	if err := l.Validate(); err != nil {
+
+	list := List{l}
+	if err := list.Validate(); err != nil {
 		return List{}, err
 	}
-	return l, nil
-}
-
-// Data returns the exact list bytes.
-func (l List) Data() []byte {
-	return l.data
+	return list, nil
 }
 
 // Validate recursively validates the list.
@@ -45,21 +43,19 @@ func (l List) Validate() error {
 	return nil
 }
 
+// Data returns the exact list bytes.
+func (l List) Data() []byte {
+	return l.data
+}
+
 // Element returns a list element data or nil.
 func (l List) Element(i int) []byte {
-	start, end := l.table.offset(l.big, i)
-	switch {
-	case start < 0:
-		return nil
-	case end > int(l.body):
-		return nil
-	}
-	return l.data[start:end]
+	return l.element(i)
 }
 
 // Len returns the number of elements in the list.
 func (l List) Len() int {
-	return l.table.count(l.big)
+	return l.len()
 }
 
 // Getters

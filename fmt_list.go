@@ -10,6 +10,30 @@ const (
 	listElementBigSize   = 4
 )
 
+type list struct {
+	data  []byte
+	table listTable
+	body  uint32 // body size
+	big   bool   // small/big table format
+}
+
+// element returns a list element data or nil.
+func (l list) element(i int) []byte {
+	start, end := l.table.offset(l.big, i)
+	switch {
+	case start < 0:
+		return nil
+	case end > int(l.body):
+		return nil
+	}
+	return l.data[start:end]
+}
+
+// len returns the number of elements in the list.
+func (l list) len() int {
+	return l.table.count(l.big)
+}
+
 // isBigList returns true if table count > uint8 or element offset > uint16.
 func isBigList(table []listElement) bool {
 	ln := len(table)
