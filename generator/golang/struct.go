@@ -23,6 +23,8 @@ func (w *writer) struct_(def *compiler.Definition) error {
 }
 
 func (w *writer) structDef(def *compiler.Definition) error {
+	w.linef(`// %v`, def.Name)
+	w.line()
 	w.linef("type %v struct {", def.Name)
 	w.line("}")
 	w.line()

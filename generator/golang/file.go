@@ -3,6 +3,7 @@ package golang
 import (
 	"bytes"
 	"fmt"
+	"go/format"
 	"strings"
 
 	"github.com/baseone-run/spec/compiler"
@@ -20,8 +21,7 @@ func WriteFile(file *compiler.File) ([]byte, error) {
 	}
 
 	bytes := w.b.Bytes()
-	// return format.Source(bytes)
-	return bytes, nil
+	return format.Source(bytes)
 }
 
 type writer struct {

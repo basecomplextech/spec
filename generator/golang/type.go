@@ -16,11 +16,6 @@ func objectType(typ *compiler.Type) string {
 	return _typeName(typ, false)
 }
 
-// readerType returns a reader type name.
-func readerType(typ *compiler.Type) string {
-	return _typeName(typ, false)
-}
-
 func _typeName(typ *compiler.Type, data bool) string {
 	switch typ.Kind {
 	case compiler.KindBool:

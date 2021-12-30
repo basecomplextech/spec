@@ -22,9 +22,9 @@ func (w *writer) message(def *compiler.Definition) error {
 	}
 
 	// data
-	// if err := w.messageData(def); err != nil {
-	// 	return err
-	// }
+	if err := w.messageData(def); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -98,6 +98,7 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 		compiler.KindEnum,
 		compiler.KindMessage,
 		compiler.KindStruct:
+		// wrap in {}
 
 		w.linef(`{`)
 		stmt := w.readerRead(typ, "r", tag)
@@ -148,7 +149,7 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 
 	case compiler.KindBool:
 		w.line(`{`)
-		w.writeValue(typ, val)
+		w.writerWrite(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
@@ -164,8 +165,10 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 
 		compiler.KindFloat32,
 		compiler.KindFloat64:
+		// numbers
+
 		w.linef(`if %v != 0 {`, val)
-		w.writeValue(typ, val)
+		w.writerWrite(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
@@ -194,7 +197,7 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 
 		// elements
 		w.linef(`for _, elem := range %v {`, val)
-		if err := w.writeValue(elem, "elem"); err != nil {
+		if err := w.writerWrite(elem, "elem"); err != nil {
 			return err
 		}
 		w.line(`w.Element()`)
@@ -209,23 +212,23 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
-	// resolved
+	// resolvable
 
 	case compiler.KindEnum:
 		w.linef(`if %v != 0 {`, val)
-		w.writeValue(typ, val)
+		w.writerWrite(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
 	case compiler.KindMessage:
 		w.linef(`if %v != nil {`, val)
-		w.writeValue(typ, val)
+		w.writerWrite(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
 	case compiler.KindStruct:
-		w.line(`{`)
-		w.linef(`if err := %v.Write(w); err != nil { return err }`, val)
+		w.linef(`{`)
+		w.writerWrite(typ, val)
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 	}
@@ -256,7 +259,7 @@ func (w *writer) messageDataDef(def *compiler.Definition) error {
 	w.linef(`// %v`, name)
 	w.line()
 	w.linef(`type %v struct {`, name)
-	w.line(`m spec.Message`)
+	w.line(`d spec.MessageData`)
 	w.line(`}`)
 	w.line()
 	return nil
@@ -266,11 +269,11 @@ func (w *writer) newMessageData(def *compiler.Definition) error {
 	name := fmt.Sprintf("%vData", def.Name)
 
 	w.linef(`func New%v(b []byte) (%v, error) {`, name, name)
-	w.linef(`msg, err := spec.NewMessageData(b)`)
+	w.linef(`d, err := spec.NewMessageData(b)`)
 	w.linef(`if err != nil {
 		return %v{}, err
 	}`, name)
-	w.linef(`return %v{msg}, nil`, name)
+	w.linef(`return %v{d}, nil`, name)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -280,11 +283,11 @@ func (w *writer) readMessageData(def *compiler.Definition) error {
 	name := fmt.Sprintf("%vData", def.Name)
 
 	w.linef(`func Read%v(b []byte) (%v, error) {`, name, name)
-	w.linef(`msg, err := spec.ReadMessageData(b)`)
+	w.linef(`d, err := spec.ReadMessageData(b)`)
 	w.linef(`if err != nil {
 		return %v{}, err
 	}`, name)
-	w.linef(`return %v{msg}, nil`, name)
+	w.linef(`return %v{d}, nil`, name)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -304,16 +307,15 @@ func (w *writer) messageDataMethods(def *compiler.Definition) error {
 func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.MessageField) error {
 	name := messageFieldName(field)
 	typ := field.Type
-	tag := field.Tag
+	tag := fmt.Sprintf("%d", field.Tag)
 	kind := field.Type.Kind
 
 	switch kind {
 	default:
-		objectType := dataType(field.Type)
-		read := w.readerRead(field.Type, "d.m", fmt.Sprintf("%d", tag))
-
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, objectType)
-		w.linef(`return %v`, read)
+		dataType := dataType(field.Type)
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, dataType)
+		dataGet := w.dataGet(field.Type, "d.d", tag)
+		w.linef(`return %v`, dataGet)
 		w.linef(`}`)
 		w.line()
 
@@ -323,35 +325,27 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 
 		// len
 		w.linef(`func (d %vData) %vLen() int {`, def.Name, name)
-		w.linef(`return d.m.List(%d).Len()`, tag)
+		w.linef(`return d.d.List(%v).Len()`, tag)
 		w.linef(`}`)
 		w.line()
 
 		// element
 		w.linef(`func (d %vData) %vElement(i int) %v {`, def.Name, name, elemName)
-		w.linef(`list := d.m.List(%d)`, tag)
-		w.listElementData(elem)
-		w.linef(`return elem`)
+		w.linef(`data := d.d.List(%v).Element(i)`, tag)
+		dataGet := w.dataGet(elem, "data", "")
+		w.linef(`return %v`, dataGet)
 		w.linef(`}`)
 		w.line()
 
-	case compiler.KindMessage:
-		objectType := dataType(field.Type)
-		read := w.readerRead(field.Type, "d.m", fmt.Sprintf("%d", tag))
+	case compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
 
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, objectType)
-		w.linef(`v, _ := %v`, read)
-		w.linef(`return v`)
-		w.linef(`}`)
-		w.line()
-
-	case compiler.KindStruct:
-		objectType := dataType(field.Type)
-		read := w.readerRead(field.Type, "d.m", fmt.Sprintf("%d", tag))
-
-		w.linef(`func (d %vData) %v() %v {`, def.Name, name, objectType)
-		w.linef(`v, _ := %v`, read)
-		w.linef(`return v`)
+		dataType := dataType(field.Type)
+		w.linef(`func (d %vData) %v() %v {`, def.Name, name, dataType)
+		w.linef(`data := d.d.Element(%v)`, tag)
+		dataGet := w.dataGet(field.Type, "data", "")
+		w.linef(`return %v`, dataGet)
 		w.linef(`}`)
 		w.line()
 	}

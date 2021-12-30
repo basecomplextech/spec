@@ -6,70 +6,70 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-// func (w *writer) getData(typ *compiler.Type, i string) string {
-// 	kind := typ.Kind
+// dataGet returns a statement which accesses a data field, i.e. msgData.Int32(17).
+func (w *writer) dataGet(typ *compiler.Type, data string, i string) string {
+	kind := typ.Kind
 
-// 	switch kind {
-// 	default:
-// 		panic(fmt.Sprintf("unsupported type kind %v", kind))
+	switch kind {
+	default:
+		panic(fmt.Sprintf("unsupported type kind %v", kind))
 
-// 	case compiler.KindBool:
-// 		return fmt.Sprintf(`.Bool(%v)`, src, tag)
+	case compiler.KindBool:
+		return fmt.Sprintf(`%v.Bool(%v)`, data, i)
 
-// 	case compiler.KindInt8:
-// 		return fmt.Sprintf(`.Int8(%v)`, src, tag)
-// 	case compiler.KindInt16:
-// 		return fmt.Sprintf(`.Int16(%v)`, src, tag)
-// 	case compiler.KindInt32:
-// 		return fmt.Sprintf(`.Int32(%v)`, src, tag)
-// 	case compiler.KindInt64:
-// 		return fmt.Sprintf(`.Int64(%v)`, src, tag)
+	case compiler.KindInt8:
+		return fmt.Sprintf(`%v.Int8(%v)`, data, i)
+	case compiler.KindInt16:
+		return fmt.Sprintf(`%v.Int16(%v)`, data, i)
+	case compiler.KindInt32:
+		return fmt.Sprintf(`%v.Int32(%v)`, data, i)
+	case compiler.KindInt64:
+		return fmt.Sprintf(`%v.Int64(%v)`, data, i)
 
-// 	case compiler.KindUint8:
-// 		return fmt.Sprintf(`.Uint8(%v)`, src, tag)
-// 	case compiler.KindUint16:
-// 		return fmt.Sprintf(`.Uint16(%v)`, src, tag)
-// 	case compiler.KindUint32:
-// 		return fmt.Sprintf(`.Uint32(%v)`, src, tag)
-// 	case compiler.KindUint64:
-// 		return fmt.Sprintf(`.Uint64(%v)`, src, tag)
+	case compiler.KindUint8:
+		return fmt.Sprintf(`%v.Uint8(%v)`, data, i)
+	case compiler.KindUint16:
+		return fmt.Sprintf(`%v.Uint16(%v)`, data, i)
+	case compiler.KindUint32:
+		return fmt.Sprintf(`%v.Uint32(%v)`, data, i)
+	case compiler.KindUint64:
+		return fmt.Sprintf(`%v.Uint64(%v)`, data, i)
 
-// 	case compiler.KindFloat32:
-// 		return fmt.Sprintf(`.Float32(%v)`, src, tag)
-// 	case compiler.KindFloat64:
-// 		return fmt.Sprintf(`.Float64(%v)`, src, tag)
+	case compiler.KindFloat32:
+		return fmt.Sprintf(`%v.Float32(%v)`, data, i)
+	case compiler.KindFloat64:
+		return fmt.Sprintf(`%v.Float64(%v)`, data, i)
 
-// 	case compiler.KindBytes:
-// 		return fmt.Sprintf(`.Bytes(%v)`, src, tag)
-// 	case compiler.KindString:
-// 		return fmt.Sprintf(`.String(%v)`, src, tag)
+	case compiler.KindBytes:
+		return fmt.Sprintf(`%v.Bytes(%v)`, data, i)
+	case compiler.KindString:
+		return fmt.Sprintf(`%v.String(%v)`, data, i)
 
-// 	// list
+	// list
 
-// 	case compiler.KindList:
-// 		panic("cannot read list as value")
+	case compiler.KindList:
+		panic("cannot access list as data")
 
-// 	// resolved
+	// resolved
 
-// 	case compiler.KindEnum:
-// 		objectType := objectType(typ)
-// 		return fmt.Sprintf(`%v(%v.Int32(%v))`, objectType, src, tag)
+	case compiler.KindEnum:
+		readFunc := enumReadFunc(typ)
+		w.linef(`v, _ := %v(%v)`, readFunc, data)
+		return "v"
 
-// 	case compiler.KindMessage:
-// 		access := ""
-// 		if data {
-// 			access = messageNewDataFunc(typ)
-// 		} else {
-// 			access = messageReadFunc(typ)
-// 		}
-// 		return fmt.Sprintf(`%v(%v.Element(%v))`, access, src, tag)
+	case compiler.KindMessage:
+		dataFunc := messageNewDataFunc(typ)
+		w.linef(`v, _ := %v(%v)`, dataFunc, data)
+		return "v"
 
-// 	case compiler.KindStruct:
-// 		read := structReadFunc(typ)
-// 		return fmt.Sprintf(`%v(%v.Element(%v))`, read, src, tag)
-// 	}
-// }
+	case compiler.KindStruct:
+		readFunc := structReadFunc(typ)
+		w.linef(`v, _ := %v(%v)`, readFunc, data)
+		return "v"
+	}
+}
 
+// readerRead returns a statement which calls a reader method, i.e. w.ReadInt32(17).
 func (w *writer) readerRead(typ *compiler.Type, reader string, i string) string {
 	kind := typ.Kind
 
@@ -170,7 +170,8 @@ func (w *writer) readerRead(typ *compiler.Type, reader string, i string) string 
 	}
 }
 
-func (w *writer) writeValue(typ *compiler.Type, val string) error {
+// writerWrite writes a value to a write, i.e. w.Int32(m.Index).
+func (w *writer) writerWrite(typ *compiler.Type, val string) error {
 	kind := typ.Kind
 
 	switch kind {

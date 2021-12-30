@@ -27,6 +27,8 @@ func (w *writer) enum(def *compiler.Definition) error {
 }
 
 func (w *writer) enumDef(def *compiler.Definition) error {
+	w.linef(`// %v`, def.Name)
+	w.line()
 	w.linef("type %v int32", def.Name)
 	w.line()
 	return nil
