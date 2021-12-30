@@ -6,8 +6,16 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func typeName(t *compiler.Type) string {
-	switch t.Kind {
+func typeName(typ *compiler.Type) string {
+	return _typeName(typ, false)
+}
+
+func typeDataName(typ *compiler.Type) string {
+	return _typeName(typ, true)
+}
+
+func _typeName(typ *compiler.Type, data bool) string {
+	switch typ.Kind {
 	case compiler.KindBool:
 		return "bool"
 
@@ -42,47 +50,38 @@ func typeName(t *compiler.Type) string {
 	// list
 
 	case compiler.KindList:
-		elem := typeName(t.Element)
+		elem := typeName(typ.Element)
 		return "[]" + elem
 
 	// resolved
 
 	case compiler.KindEnum:
-		if t.Import != nil {
-			return fmt.Sprintf("%v.%v", t.ImportName, t.Name)
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
 		}
-		return t.Name
+		return typ.Name
 
 	case compiler.KindMessage:
-		if t.Import != nil {
-			return fmt.Sprintf("*%v.%v", t.ImportName, t.Name)
+		if data {
+			if typ.Import != nil {
+				return fmt.Sprintf("%v.%vData", typ.ImportName, typ.Name)
+			} else {
+				return fmt.Sprintf("%vData", typ.Name)
+			}
+		} else {
+			if typ.Import != nil {
+				return fmt.Sprintf("*%v.%v", typ.ImportName, typ.Name)
+			} else {
+				return fmt.Sprintf("*%v", typ.Name)
+			}
 		}
-		return "*" + t.Name
 
 	case compiler.KindStruct:
-		if t.Import != nil {
-			return fmt.Sprintf("%v.%v", t.ImportName, t.Name)
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
 		}
-		return t.Name
+		return typ.Name
 	}
 
-	panic(fmt.Sprintf("unsupported type kind %v", t.Kind))
-}
-
-func typeReadFunc(t *compiler.Type) string {
-	switch t.Kind {
-	case compiler.KindMessage:
-		if t.Import == nil {
-			return fmt.Sprintf("Read%v", t.Name)
-		}
-		return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
-
-	case compiler.KindStruct:
-		if t.Import == nil {
-			return fmt.Sprintf("Read%v", t.Name)
-		}
-		return fmt.Sprintf("%v.Read%v", t.ImportName, t.Name)
-	}
-
-	panic(fmt.Sprintf("unsupported type kind %v", t.Kind))
+	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
 }

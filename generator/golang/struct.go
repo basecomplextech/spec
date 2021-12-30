@@ -1,6 +1,10 @@
 package golang
 
-import "github.com/baseone-run/spec/compiler"
+import (
+	"fmt"
+
+	"github.com/baseone-run/spec/compiler"
+)
 
 func (w *writer) struct_(def *compiler.Definition) error {
 	if err := w.structDef(def); err != nil {
@@ -54,4 +58,15 @@ func (w *writer) structWrite(def *compiler.Definition) error {
 
 func structFieldName(field *compiler.StructField) string {
 	return toUpperCamelCase(field.Name)
+}
+
+func structReadFunc(typ *compiler.Type) string {
+	if typ.Kind != compiler.KindStruct {
+		panic(fmt.Sprintf("must be struct, got=%v", typ.Kind))
+	}
+
+	if typ.Import == nil {
+		return fmt.Sprintf("Read%v", typ.Name)
+	}
+	return fmt.Sprintf("%v.Read%v", typ.ImportName, typ.Name)
 }

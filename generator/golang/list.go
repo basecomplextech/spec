@@ -6,7 +6,15 @@ import (
 	"github.com/baseone-run/spec/compiler"
 )
 
-func (w *writer) listReadElement(typ *compiler.Type) {
+func (w *writer) listElement(typ *compiler.Type) {
+	w._listElement(typ, false)
+}
+
+func (w *writer) listElementData(typ *compiler.Type) {
+	w._listElement(typ, true)
+}
+
+func (w *writer) _listElement(typ *compiler.Type, data bool) {
 	kind := typ.Kind
 
 	switch kind {
@@ -56,15 +64,21 @@ func (w *writer) listReadElement(typ *compiler.Type) {
 		w.linef(`%v(list.Int32(i))`, typeName)
 
 	case compiler.KindMessage:
-		readFunc := typeReadFunc(typ)
+		access := ""
+		if data {
+			access = messageGetDataFunc(typ)
+		} else {
+			access = messageReadFunc(typ)
+		}
+
 		w.linef(`data := list.Element(i)`)
 		w.linef(`elem, err := %v(data)
 		if err != nil {
 			return err
-		}`, readFunc)
+		}`, access)
 
 	case compiler.KindStruct:
-		readFunc := typeReadFunc(typ)
+		readFunc := structReadFunc(typ)
 		w.linef(`data := list.Element(i)`)
 		w.linef(`elem, err := %v(data)
 		if err != nil {

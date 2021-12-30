@@ -132,7 +132,7 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 
 		// elements
 		w.linef(`for i := 0; i < ln; i++ {`)
-		w.listReadElement(elem)
+		w.listElement(elem)
 		w.linef(`m.%v = append(m.%v, elem)`, name, name)
 		w.line(`}`)
 
@@ -147,11 +147,11 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 		w.linef(`m.%v = %v(msg.Int32(%d))`, name, typeName, tag)
 
 	case compiler.KindMessage:
-		readFunc := typeReadFunc(typ)
+		readFunc := messageReadFunc(typ)
 		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
 
 	case compiler.KindStruct:
-		readFunc := typeReadFunc(typ)
+		readFunc := structReadFunc(typ)
 		w.linef(`m.%v, _ = %v(msg.Field(%d))`, name, readFunc, tag)
 	}
 	return nil
@@ -297,9 +297,11 @@ func (w *writer) messageData(def *compiler.Definition) error {
 }
 
 func (w *writer) messageDataDef(def *compiler.Definition) error {
-	w.linef(`// %v`, def.Name)
+	name := fmt.Sprintf("%vData", def.Name)
+
+	w.linef(`// %v`, name)
 	w.line()
-	w.linef(`type %vData struct {`, def.Name)
+	w.linef(`type %v struct {`, name)
 	w.line(`m spec.Message`)
 	w.line(`}`)
 	w.line()
@@ -308,7 +310,8 @@ func (w *writer) messageDataDef(def *compiler.Definition) error {
 
 func (w *writer) getMessageData(def *compiler.Definition) error {
 	name := fmt.Sprintf("%vData", def.Name)
-	w.linef(`func Get%vData(b []byte) (%v, error) {`, name, name)
+
+	w.linef(`func Get%v(b []byte) (%v, error) {`, name, name)
 	w.linef(`msg, err := spec.GetMessage(b)`)
 	w.linef(`if err != nil {
 		return %v{}, err
@@ -321,7 +324,8 @@ func (w *writer) getMessageData(def *compiler.Definition) error {
 
 func (w *writer) readMessageData(def *compiler.Definition) error {
 	name := fmt.Sprintf("%vData", def.Name)
-	w.linef(`func Read%vData(b []byte) (%v, error) {`, name, name)
+
+	w.linef(`func Read%v(b []byte) (%v, error) {`, name, name)
 	w.linef(`msg, err := spec.ReadMessage(b)`)
 	w.linef(`if err != nil {
 		return %v{}, err
@@ -351,8 +355,9 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 
 	switch kind {
 	default:
-		typeName := typeName(field.Type)
-		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
+		typeName := typeDataName(field.Type)
+		read := w.readData(field.Type, "d.m", fmt.Sprintf("%d", tag))
+
 		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
 		w.linef(`return %v`, read)
 		w.linef(`}`)
@@ -360,7 +365,7 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 
 	case compiler.KindList:
 		elem := typ.Element
-		elemName := typeName(elem)
+		elemName := typeDataName(elem)
 
 		// len
 		w.linef(`func (d %vData) %vLen() int {`, def.Name, name)
@@ -371,14 +376,14 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 		// element
 		w.linef(`func (d %vData) %vElement(i int) %v {`, def.Name, name, elemName)
 		w.linef(`list := d.m.List(%d)`, tag)
-		w.listReadElement(elem)
+		w.listElementData(elem)
 		w.linef(`return elem`)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindMessage:
-		typeName := typeName(field.Type)
-		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
+		typeName := typeDataName(field.Type)
+		read := w.readData(field.Type, "d.m", fmt.Sprintf("%d", tag))
 
 		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
 		w.linef(`v, _ := %v`, read)
@@ -387,8 +392,8 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 		w.line()
 
 	case compiler.KindStruct:
-		typeName := typeName(field.Type)
-		read := w.readValue(field.Type, "d.m", fmt.Sprintf("%d", tag))
+		typeName := typeDataName(field.Type)
+		read := w.readData(field.Type, "d.m", fmt.Sprintf("%d", tag))
 
 		w.linef(`func (d %vData) %v() %v {`, def.Name, name, typeName)
 		w.linef(`v, _ := %v`, read)
@@ -403,4 +408,18 @@ func (w *writer) messageDataMethod(def *compiler.Definition, field *compiler.Mes
 
 func messageFieldName(field *compiler.MessageField) string {
 	return toUpperCamelCase(field.Name)
+}
+
+func messageReadFunc(typ *compiler.Type) string {
+	if typ.Import == nil {
+		return fmt.Sprintf("Read%v", typ.Name)
+	}
+	return fmt.Sprintf("%v.Read%v", typ.ImportName, typ.Name)
+}
+
+func messageGetDataFunc(typ *compiler.Type) string {
+	if typ.Import == nil {
+		return fmt.Sprintf("Get%vData", typ.Name)
+	}
+	return fmt.Sprintf("%v.Get%vData", typ.ImportName, typ.Name)
 }

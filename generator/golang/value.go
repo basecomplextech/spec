@@ -7,6 +7,14 @@ import (
 )
 
 func (w *writer) readValue(typ *compiler.Type, src string, tag string) string {
+	return w._readValue(typ, src, tag, false)
+}
+
+func (w *writer) readData(typ *compiler.Type, src string, tag string) string {
+	return w._readValue(typ, src, tag, true)
+}
+
+func (w *writer) _readValue(typ *compiler.Type, src string, tag string, data bool) string {
 	kind := typ.Kind
 
 	switch kind {
@@ -56,11 +64,16 @@ func (w *writer) readValue(typ *compiler.Type, src string, tag string) string {
 		return fmt.Sprintf(`%v(%v.Int32(%v))`, typeName, src, tag)
 
 	case compiler.KindMessage:
-		read := typeReadFunc(typ)
-		return fmt.Sprintf(`%v(%v.Element(%v))`, read, src, tag)
+		access := ""
+		if data {
+			access = messageGetDataFunc(typ)
+		} else {
+			access = messageReadFunc(typ)
+		}
+		return fmt.Sprintf(`%v(%v.Element(%v))`, access, src, tag)
 
 	case compiler.KindStruct:
-		read := typeReadFunc(typ)
+		read := structReadFunc(typ)
 		return fmt.Sprintf(`%v(%v.Element(%v))`, read, src, tag)
 	}
 }
