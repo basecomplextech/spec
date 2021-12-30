@@ -20,7 +20,7 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 	}
 
 	msg1 := &TestMessage{}
-	if err := msg1.Read(b); err != nil {
+	if err := msg1.Unmarshal(b); err != nil {
 		t.Fatal(err)
 	}
 

@@ -3,7 +3,6 @@ package pkg1
 import (
 	"testing"
 
-	"github.com/baseone-run/spec"
 	"github.com/baseone-run/spec/testgen/golang/pkg2"
 	"github.com/baseone-run/spec/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
@@ -52,33 +51,24 @@ func testMessage() *Message {
 
 func testMessageData(t *testing.T) []byte {
 	m := testMessage()
-	w := spec.NewWriter()
-	if err := m.Write(w); err != nil {
-		t.Fatal(err)
-	}
 
-	data, err := w.End()
+	data, err := m.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 	return data
 }
 
-func TestMessage_Read_Write(t *testing.T) {
+func TestMessage_Marshal_Unmarshal(t *testing.T) {
 	m := testMessage()
 
-	w := spec.NewWriter()
-	if err := m.Write(w); err != nil {
-		t.Fatal(err)
-	}
-
-	data, err := w.End()
+	data, err := m.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	m1 := &Message{}
-	if err := m1.Read(data); err != nil {
+	if err := m1.Unmarshal(data); err != nil {
 		t.Fatal(err)
 	}
 

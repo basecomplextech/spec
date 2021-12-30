@@ -14,7 +14,10 @@ func (w *writer) message(def *compiler.Definition) error {
 	if err := w.readMessage(def); err != nil {
 		return err
 	}
-	if err := w.messageRead(def); err != nil {
+	if err := w.messageMarshal(def); err != nil {
+		return err
+	}
+	if err := w.messageUnmarshal(def); err != nil {
 		return err
 	}
 	if err := w.messageWrite(def); err != nil {
@@ -51,7 +54,7 @@ func (w *writer) readMessage(def *compiler.Definition) error {
 		return nil, nil
 	}`)
 	w.linef(`m := &%v{}`, def.Name)
-	w.line(`if err := m.Read(b); err != nil {
+	w.line(`if err := m.Unmarshal(b); err != nil {
 		return nil, err
 	}`)
 	w.line(`return m, nil`)
@@ -60,8 +63,21 @@ func (w *writer) readMessage(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageRead(def *compiler.Definition) error {
-	w.linef(`func (m *%v) Read(b []byte) error {`, def.Name)
+func (w *writer) messageMarshal(def *compiler.Definition) error {
+	w.linef(`func (m *%v) Marshal() ([]byte, error) {`, def.Name)
+	w.line(`return spec.Write(m)
+	}`)
+	w.line()
+
+	w.linef(`func (m *%v) MarshalTo(b []byte) ([]byte, error) {`, def.Name)
+	w.line(`return spec.WriteTo(m, b)
+	}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) messageUnmarshal(def *compiler.Definition) error {
+	w.linef(`func (m *%v) Unmarshal(b []byte) error {`, def.Name)
 	w.line(`r, err := spec.NewMessageReader(b)
 	if err != nil {
 		return err

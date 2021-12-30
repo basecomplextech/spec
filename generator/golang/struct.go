@@ -10,10 +10,13 @@ func (w *writer) struct_(def *compiler.Definition) error {
 	if err := w.structDef(def); err != nil {
 		return err
 	}
-	if err := w.structReadFunc(def); err != nil {
+	if err := w.readStruct(def); err != nil {
 		return err
 	}
-	if err := w.structRead(def); err != nil {
+	if err := w.structMarshal(def); err != nil {
+		return err
+	}
+	if err := w.structUnmarshal(def); err != nil {
 		return err
 	}
 	if err := w.structWrite(def); err != nil {
@@ -31,7 +34,7 @@ func (w *writer) structDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) structReadFunc(def *compiler.Definition) error {
+func (w *writer) readStruct(def *compiler.Definition) error {
 	w.linef(`func Read%v(b []byte) (str %v, err error) {`, def.Name, def.Name)
 	w.line(`if len(b) == 0 {
 		return
@@ -43,7 +46,20 @@ func (w *writer) structReadFunc(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) structRead(def *compiler.Definition) error {
+func (w *writer) structMarshal(def *compiler.Definition) error {
+	w.linef(`func (s %v) Marshal() ([]byte, error) {`, def.Name)
+	w.line(`return spec.Write(s)
+	}`)
+	w.line()
+
+	w.linef(`func (s %v) MarshalTo(b []byte) ([]byte, error) {`, def.Name)
+	w.line(`return spec.WriteTo(s, b)
+	}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) structUnmarshal(def *compiler.Definition) error {
 	w.linef(`func (m *%v) Read(b []byte) error {`, def.Name)
 	w.line(`return nil`)
 	w.line(`}`)

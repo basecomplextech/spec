@@ -39,6 +39,11 @@ func NewWriterBuffer(buf []byte) *Writer {
 	return w
 }
 
+// EmptyWriter return a new writer with an empty buffer.
+func EmptyWriter() *Writer {
+	return NewWriterBuffer(nil)
+}
+
 // End ends writing, returns the result bytes, and resets the writer.
 func (w *Writer) End() ([]byte, error) {
 	switch {
@@ -57,7 +62,13 @@ func (w *Writer) End() ([]byte, error) {
 	return b, nil
 }
 
-// Reset clears the writer.
+// Init resets the writer and sets its buffer.
+func (w *Writer) Init(b []byte) {
+	w.Reset()
+	w.buf = b[:0]
+}
+
+// Reset clears the writer and nils buffer.
 func (w *Writer) Reset() {
 	w.buf = nil
 	w.err = nil

@@ -8,20 +8,16 @@ import (
 	"time"
 )
 
-func Benchmark_Read(b *testing.B) {
+func Benchmark_Marshal(b *testing.B) {
 	msg := newTestMessage()
-
-	buf := make([]byte, 0, 4096)
-	w := NewWriterBuffer(buf)
-	if err := msg.Write(w); err != nil {
-		b.Fatal(err)
-	}
-	bytes, err := w.End()
+	data, err := msg.Marshal()
 	if err != nil {
 		b.Fatal(err)
 	}
-	size := len(bytes)
-	compressed := compressedSize(bytes)
+
+	size := len(data)
+	compressed := compressedSize(data)
+	buf := make([]byte, 0, 4096)
 
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
@@ -29,7 +25,38 @@ func Benchmark_Read(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		if err := msg.Read(bytes); err != nil {
+		buf, err = msg.MarshalTo(buf)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressed), "size-zlib")
+}
+
+func Benchmark_Unmarshal(b *testing.B) {
+	msg := newTestMessage()
+	data, err := msg.Marshal()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	size := len(data)
+	compressed := compressedSize(data)
+
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		if err := msg.Unmarshal(data); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -45,18 +72,13 @@ func Benchmark_Read(b *testing.B) {
 
 func Benchmark_ReadData(b *testing.B) {
 	msg := newTestMessage()
-
-	buf := make([]byte, 0, 4096)
-	w := NewWriterBuffer(buf)
-	if err := msg.Write(w); err != nil {
-		b.Fatal(err)
-	}
-	bytes, err := w.End()
+	data, err := msg.Marshal()
 	if err != nil {
 		b.Fatal(err)
 	}
-	size := len(bytes)
-	compressed := compressedSize(bytes)
+
+	size := len(data)
+	compressed := compressedSize(data)
 
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
@@ -64,7 +86,7 @@ func Benchmark_ReadData(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		_, err := readTestMessageData(bytes)
+		_, err := readTestMessageData(data)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -81,22 +103,18 @@ func Benchmark_ReadData(b *testing.B) {
 
 func Benchmark_Walk(b *testing.B) {
 	msg := newTestMessage()
+	data, err := msg.Marshal()
+	if err != nil {
+		b.Fatal(err)
+	}
 
-	buf := make([]byte, 0, 4096)
-	w := NewWriterBuffer(buf)
-	if err := msg.Write(w); err != nil {
-		b.Fatal(err)
-	}
-	bytes, err := w.End()
+	size := len(data)
+	compressed := compressedSize(data)
+
+	d, err := readTestMessageData(data)
 	if err != nil {
 		b.Fatal(err)
 	}
-	data, err := readTestMessageData(bytes)
-	if err != nil {
-		b.Fatal(err)
-	}
-	size := len(bytes)
-	compressed := compressedSize(bytes)
 
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
@@ -104,7 +122,7 @@ func Benchmark_Walk(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		v, err := walkMessageData(data)
+		v, err := walkMessageData(d)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -124,7 +142,34 @@ func Benchmark_Walk(b *testing.B) {
 
 // Standard JSON
 
-func BenchmarkJSON_Read(b *testing.B) {
+func Benchmark_JSONMarshal(b *testing.B) {
+	msg := newTestMessage()
+	data, err := json.Marshal(msg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		_, err := json.Marshal(msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(len(data)), "size")
+	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
+}
+
+func Benchmark_JSONUnmarshal(b *testing.B) {
 	msg := newTestMessage()
 
 	data, err := json.Marshal(msg)
@@ -142,11 +187,6 @@ func BenchmarkJSON_Read(b *testing.B) {
 		if err := json.Unmarshal(data, msg1); err != nil {
 			b.Fatal(err)
 		}
-
-		v := walkMessage(msg1)
-		if v == 0 {
-			b.Fatal(v)
-		}
 	}
 
 	t1 := time.Now()
@@ -159,25 +199,6 @@ func BenchmarkJSON_Read(b *testing.B) {
 }
 
 // private
-
-func walkMessage(m *TestMessage) int {
-	var v int
-
-	v += int(m.Int8)
-	v += int(m.Int16)
-	v += int(m.Int32)
-	v += int(m.Int64)
-
-	v += int(m.Uint8)
-	v += int(m.Uint16)
-	v += int(m.Uint32)
-	v += int(m.Uint64)
-
-	v += int(m.Float32)
-	v += int(m.Float64)
-
-	return v
-}
 
 func walkMessageData(m TestMessageData) (int, error) {
 	var v int
