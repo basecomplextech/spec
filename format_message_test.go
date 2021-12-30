@@ -128,14 +128,8 @@ func TestMessageTable_offset_big__should_return_start_end_offset_by_tag(t *testi
 		t.Fatal(err)
 	}
 
-	for i, field := range fields {
-		prev := 0
-		if i > 0 {
-			_, prev = table.offset(big, field.tag-1)
-		}
-
-		start, end := table.offset(big, field.tag)
-		require.Equal(t, prev, start)
+	for _, field := range fields {
+		end := table.offset(big, field.tag)
 		require.Equal(t, int(field.offset), end)
 	}
 }
@@ -153,12 +147,10 @@ func TestMessageTable_offset_big__should_return_minus_one_when_field_not_found(t
 		t.Fatal(err)
 	}
 
-	start, end := table.offset(big, 0)
-	assert.Equal(t, -1, start)
+	end := table.offset(big, 0)
 	assert.Equal(t, -1, end)
 
-	start, end = table.offset(big, math.MaxUint16)
-	assert.Equal(t, -1, start)
+	end = table.offset(big, math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
@@ -177,14 +169,8 @@ func TestMessageTable_offset_small__should_return_start_end_offset_by_tag(t *tes
 		t.Fatal(err)
 	}
 
-	for i, field := range fields {
-		prev := 0
-		if i > 0 {
-			_, prev = table.offset(small, field.tag-1)
-		}
-
-		start, end := table.offset(small, field.tag)
-		require.Equal(t, prev, start)
+	for _, field := range fields {
+		end := table.offset(small, field.tag)
 		require.Equal(t, int(field.offset), end)
 	}
 }
@@ -203,12 +189,10 @@ func TestMessageTable_offset_small__should_return_minus_one_when_field_not_found
 		t.Fatal(err)
 	}
 
-	start, end := table.offset(small, 0)
-	assert.Equal(t, -1, start)
+	end := table.offset(small, 0)
 	assert.Equal(t, -1, end)
 
-	start, end = table.offset(small, math.MaxUint16)
-	assert.Equal(t, -1, start)
+	end = table.offset(small, math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
@@ -228,13 +212,7 @@ func TestMessageTable_offsetByIndex_big__should_return_start_end_offset_by_index
 	}
 
 	for i, field := range fields {
-		prev := 0
-		if i > 0 {
-			_, prev = table.offsetByIndex(big, i-1)
-		}
-
-		start, end := table.offsetByIndex(big, i)
-		require.Equal(t, prev, start)
+		end := table.offsetByIndex(big, i)
 		require.Equal(t, int(field.offset), end)
 	}
 }
@@ -252,12 +230,10 @@ func TestMessageTable_offsetByIndex_big__should_return_minus_one_when_field_not_
 		t.Fatal(err)
 	}
 
-	start, end := table.offsetByIndex(big, -1)
-	assert.Equal(t, -1, start)
+	end := table.offsetByIndex(big, -1)
 	assert.Equal(t, -1, end)
 
-	start, end = table.offsetByIndex(big, math.MaxUint16)
-	assert.Equal(t, -1, start)
+	end = table.offsetByIndex(big, math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
@@ -277,13 +253,7 @@ func TestMessageTable_offsetByIndex_small__should_return_start_end_offset_by_ind
 	}
 
 	for i, field := range fields {
-		prev := 0
-		if i > 0 {
-			_, prev = table.offsetByIndex(small, i-1)
-		}
-
-		start, end := table.offsetByIndex(small, i)
-		require.Equal(t, prev, start)
+		end := table.offsetByIndex(small, i)
 		require.Equal(t, int(field.offset), end)
 	}
 }
@@ -301,12 +271,10 @@ func TestMessageTable_offsetByIndex_small__should_return_minus_one_when_field_no
 		t.Fatal(err)
 	}
 
-	start, end := table.offsetByIndex(small, -1)
-	assert.Equal(t, -1, start)
+	end := table.offsetByIndex(small, -1)
 	assert.Equal(t, -1, end)
 
-	start, end = table.offsetByIndex(small, math.MaxUint16)
-	assert.Equal(t, -1, start)
+	end = table.offsetByIndex(small, math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
