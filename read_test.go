@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ReadType
+// readType
 
 func TestReadType__should_return_type(t *testing.T) {
 	b := []byte{}
 	b = append(b, byte(TypeString))
 
-	v, err := ReadType(b)
+	v, err := readType(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +25,7 @@ func TestReadType__should_return_type(t *testing.T) {
 func TestReadType__should_return_nil_when_empty(t *testing.T) {
 	b := []byte{}
 
-	v, err := ReadType(b)
+	v, err := readType(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,29 +33,29 @@ func TestReadType__should_return_nil_when_empty(t *testing.T) {
 	assert.Equal(t, v, TypeNil)
 }
 
-// ReadBool
+// readBool
 
 func TestReadBool__should_read_bool_value(t *testing.T) {
-	v, err := ReadBool([]byte{byte(TypeTrue)})
+	v, err := readBool([]byte{byte(TypeTrue)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, true, v)
 
-	v, err = ReadBool([]byte{byte(TypeFalse)})
+	v, err = readBool([]byte{byte(TypeFalse)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, false, v)
 }
 
-// ReadInt8
+// readInt8
 
 func TestReadInt8__should_read_int8(t *testing.T) {
 	b := []byte{}
 	b = writeInt8(b, 1)
 
-	v, err := ReadInt8(b)
+	v, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestReadInt8__should_read_int8_from_int16(t *testing.T) {
 	b := []byte{}
 	b = writeInt16(b, 1)
 
-	v, err := ReadInt8(b)
+	v, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestReadInt8__should_read_int8_from_int32(t *testing.T) {
 	b := []byte{}
 	b = writeInt32(b, 1)
 
-	v, err := ReadInt8(b)
+	v, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestReadInt8__should_read_int8_from_int64(t *testing.T) {
 	b := []byte{}
 	b = writeInt64(b, 1)
 
-	v, err := ReadInt8(b)
+	v, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func TestReadInt16__should_read_int16(t *testing.T) {
 	b := []byte{}
 	b = writeInt16(b, 1)
 
-	v, err := ReadInt16(b)
+	v, err := readInt16(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestReadInt32__should_read_int32(t *testing.T) {
 	b := []byte{}
 	b = writeInt32(b, 1)
 
-	v, err := ReadInt32(b)
+	v, err := readInt32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestReadInt64__should_read_int64(t *testing.T) {
 	b := []byte{}
 	b = writeInt64(b, 1)
 
-	v, err := ReadInt64(b)
+	v, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestReadInt64__should_read_int64_from_int8(t *testing.T) {
 	b := []byte{}
 	b = writeInt8(b, 1)
 
-	v, err := ReadInt64(b)
+	v, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestReadInt64__should_read_int64_from_int16(t *testing.T) {
 	b := []byte{}
 	b = writeInt16(b, 1)
 
-	v, err := ReadInt64(b)
+	v, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ func TestReadInt64__should_read_int64_from_int32(t *testing.T) {
 	b := []byte{}
 	b = writeInt32(b, 1)
 
-	v, err := ReadInt64(b)
+	v, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestReadFloat32__should_read_float32(t *testing.T) {
 	b := []byte{}
 	b = writeFloat32(b, math.MaxFloat32)
 
-	v, err := ReadFloat32(b)
+	v, err := readFloat32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ func TestReadFloat32__should_read_float32_from_float64(t *testing.T) {
 	b := []byte{}
 	b = writeFloat64(b, math.MaxFloat32)
 
-	v, err := ReadFloat32(b)
+	v, err := readFloat32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func TestReadFloat64__should_read_float64(t *testing.T) {
 	b := []byte{}
 	b = writeFloat64(b, math.MaxFloat64)
 
-	v, err := ReadFloat64(b)
+	v, err := readFloat64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestReadFloat64__should_read_float64_from_float32(t *testing.T) {
 	b := []byte{}
 	b = writeFloat32(b, math.MaxFloat32)
 
-	v, err := ReadFloat64(b)
+	v, err := readFloat64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestReadBytes__should_read_bytes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v1, err := ReadBytes(b)
+	v1, err := readBytes(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +245,7 @@ func TestReadString__should_read_string(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v1, err := ReadString(b)
+	v1, err := readString(b)
 	if err != nil {
 		t.Fatal(err)
 	}

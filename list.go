@@ -74,7 +74,7 @@ func (l List) Bool(i int) bool {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadBool(b)
+	v, _ := readBool(b)
 	return v
 }
 
@@ -88,7 +88,7 @@ func (l List) Int8(i int) int8 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadInt8(b)
+	v, _ := readInt8(b)
 	return v
 }
 
@@ -102,7 +102,7 @@ func (l List) Int16(i int) int16 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadInt16(b)
+	v, _ := readInt16(b)
 	return v
 }
 
@@ -116,7 +116,7 @@ func (l List) Int32(i int) int32 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadInt32(b)
+	v, _ := readInt32(b)
 	return v
 }
 
@@ -130,7 +130,7 @@ func (l List) Int64(i int) int64 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadInt64(b)
+	v, _ := readInt64(b)
 	return v
 }
 
@@ -144,7 +144,7 @@ func (l List) Uint8(i int) uint8 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUint8(b)
+	v, _ := readUint8(b)
 	return v
 }
 
@@ -158,7 +158,7 @@ func (l List) Uint16(i int) uint16 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUint16(b)
+	v, _ := readUint16(b)
 	return v
 }
 
@@ -172,7 +172,7 @@ func (l List) Uint32(i int) uint32 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUint32(b)
+	v, _ := readUint32(b)
 	return v
 }
 
@@ -186,7 +186,7 @@ func (l List) Uint64(i int) uint64 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadUint64(b)
+	v, _ := readUint64(b)
 	return v
 }
 
@@ -200,7 +200,7 @@ func (l List) Float32(i int) float32 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadFloat32(b)
+	v, _ := readFloat32(b)
 	return v
 }
 
@@ -214,7 +214,7 @@ func (l List) Float64(i int) float64 {
 	}
 
 	b := l.data[start:end]
-	v, _ := ReadFloat64(b)
+	v, _ := readFloat64(b)
 	return v
 }
 

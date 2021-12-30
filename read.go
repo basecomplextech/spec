@@ -7,28 +7,37 @@ import (
 	"unsafe"
 )
 
-func ReadType(b []byte) (Type, error) {
-	t, n := readType(b)
+func readType(b []byte) (Type, error) {
+	t, n := _readType(b)
 	if n < 0 {
 		return 0, fmt.Errorf("read type: invalid data")
 	}
 	return t, nil
 }
 
-func ReadBool(b []byte) (bool, error) {
-	t, n := readType(b)
+func _readType(b []byte) (Type, int) {
+	if len(b) == 0 {
+		return TypeNil, 0
+	}
+
+	v := b[len(b)-1]
+	return Type(v), 1
+}
+
+// bool
+
+func readBool(b []byte) (bool, error) {
+	t, n := _readType(b)
 	if n < 0 {
 		return false, fmt.Errorf("read bool: invalid data")
 	}
 	return t == TypeTrue, nil
 }
 
-func ReadByte(b []byte) (byte, error) {
-	return ReadUint8(b)
-}
+// int
 
-func ReadInt8(b []byte) (int8, error) {
-	v, n := readInt(b)
+func readInt8(b []byte) (int8, error) {
+	v, n := _readInt(b)
 	switch {
 	case n < 0:
 		return 0, fmt.Errorf("read int8: invalid data")
@@ -40,8 +49,8 @@ func ReadInt8(b []byte) (int8, error) {
 	return int8(v), nil
 }
 
-func ReadInt16(b []byte) (int16, error) {
-	v, n := readInt(b)
+func readInt16(b []byte) (int16, error) {
+	v, n := _readInt(b)
 	switch {
 	case n < 0:
 		return 0, fmt.Errorf("read int16: invalid data")
@@ -53,8 +62,8 @@ func ReadInt16(b []byte) (int16, error) {
 	return int16(v), nil
 }
 
-func ReadInt32(b []byte) (int32, error) {
-	v, n := readInt(b)
+func readInt32(b []byte) (int32, error) {
+	v, n := _readInt(b)
 	switch {
 	case n < 0:
 		return 0, fmt.Errorf("read int32: invalid data")
@@ -66,101 +75,18 @@ func ReadInt32(b []byte) (int32, error) {
 	return int32(v), nil
 }
 
-func ReadInt64(b []byte) (int64, error) {
-	v, n := readInt(b)
+func readInt64(b []byte) (int64, error) {
+	v, n := _readInt(b)
 	if n < 0 {
 		return 0, fmt.Errorf("read int32: invalid data")
 	}
 	return v, nil
 }
 
-func ReadUint8(b []byte) (uint8, error) {
-	v, n := readUint(b)
-	switch {
-	case n < 0:
-		return 0, fmt.Errorf("read uint8: invalid data")
-	case v > math.MaxUint8:
-		return 0, fmt.Errorf("read uint8: overflow, value too large")
-	}
-	return uint8(v), nil
-}
-
-func ReadUint16(b []byte) (uint16, error) {
-	v, n := readUint(b)
-	switch {
-	case n < 0:
-		return 0, fmt.Errorf("read uint16: invalid data")
-	case v > math.MaxUint16:
-		return 0, fmt.Errorf("read uint16: overflow, value too large")
-	}
-	return uint16(v), nil
-}
-
-func ReadUint32(b []byte) (uint32, error) {
-	v, n := readUint(b)
-	switch {
-	case n < 0:
-		return 0, fmt.Errorf("read uint32: invalid data")
-	case v > math.MaxUint32:
-		return 0, fmt.Errorf("read uint32: overflow, value too large")
-	}
-	return uint32(v), nil
-}
-
-func ReadUint64(b []byte) (uint64, error) {
-	v, n := readUint(b)
-	if n < 0 {
-		return 0, fmt.Errorf("read uint64: invalid data")
-	}
-	return v, nil
-}
-
-func ReadFloat32(b []byte) (float32, error) {
-	v, n := readFloat(b)
-	switch {
-	case n < 0:
-		return 0, fmt.Errorf("read float32: invalid data")
-	case v < math.SmallestNonzeroFloat32:
-		return 0, fmt.Errorf("read float32: overflow, value too small")
-	case v > math.MaxFloat64:
-		return 0, fmt.Errorf("read float32: overflow, value too large")
-	}
-	return float32(v), nil
-}
-
-func ReadFloat64(b []byte) (float64, error) {
-	v, n := readFloat(b)
-	if n < 0 {
-		return 0, fmt.Errorf("read float64: invalid data")
-	}
-	return v, nil
-}
-
-// Bytes/String
-
-func ReadBytes(b []byte) ([]byte, error) {
-	return readBytes(b)
-}
-
-func ReadString(b []byte) (string, error) {
-	return readString(b)
-}
-
-// internal
-
-func readType(b []byte) (Type, int) {
-	if len(b) == 0 {
-		return TypeNil, 0
-	}
-
-	v := b[len(b)-1]
-	return Type(v), 1
-}
-
-// readInt reads and returns any int as int64 and the number of read bytes n, or -n on error.
-func readInt(b []byte) (int64, int) {
+// _readInt reads and returns any int as int64 and the number of read bytes n, or -n on error.
+func _readInt(b []byte) (int64, int) {
 	// type
-	t, n := readType(b)
+	t, n := _readType(b)
 	switch {
 	case n < 0:
 		return 0, n
@@ -207,10 +133,57 @@ func readInt(b []byte) (int64, int) {
 	return 0, -1
 }
 
-// readUint reads and returns any int as uint64 and the number of read bytes n, or -n on error.
-func readUint(b []byte) (uint64, int) {
+// uint
+
+func readByte(b []byte) (byte, error) {
+	return readUint8(b)
+}
+
+func readUint8(b []byte) (uint8, error) {
+	v, n := _readUint(b)
+	switch {
+	case n < 0:
+		return 0, fmt.Errorf("read uint8: invalid data")
+	case v > math.MaxUint8:
+		return 0, fmt.Errorf("read uint8: overflow, value too large")
+	}
+	return uint8(v), nil
+}
+
+func readUint16(b []byte) (uint16, error) {
+	v, n := _readUint(b)
+	switch {
+	case n < 0:
+		return 0, fmt.Errorf("read uint16: invalid data")
+	case v > math.MaxUint16:
+		return 0, fmt.Errorf("read uint16: overflow, value too large")
+	}
+	return uint16(v), nil
+}
+
+func readUint32(b []byte) (uint32, error) {
+	v, n := _readUint(b)
+	switch {
+	case n < 0:
+		return 0, fmt.Errorf("read uint32: invalid data")
+	case v > math.MaxUint32:
+		return 0, fmt.Errorf("read uint32: overflow, value too large")
+	}
+	return uint32(v), nil
+}
+
+func readUint64(b []byte) (uint64, error) {
+	v, n := _readUint(b)
+	if n < 0 {
+		return 0, fmt.Errorf("read uint64: invalid data")
+	}
+	return v, nil
+}
+
+// _readUint reads and returns any int as uint64 and the number of read bytes n, or -n on error.
+func _readUint(b []byte) (uint64, int) {
 	// type
-	t, n := readType(b)
+	t, n := _readType(b)
 	switch {
 	case n < 0:
 		return 0, n
@@ -257,10 +230,33 @@ func readUint(b []byte) (uint64, int) {
 	return 0, -1
 }
 
-// readFloat reads and returns any float as float64 and the number of read bytes n, or -n on error.
-func readFloat(b []byte) (float64, int) {
+// float
+
+func readFloat32(b []byte) (float32, error) {
+	v, n := _readFloat(b)
+	switch {
+	case n < 0:
+		return 0, fmt.Errorf("read float32: invalid data")
+	case v < math.SmallestNonzeroFloat32:
+		return 0, fmt.Errorf("read float32: overflow, value too small")
+	case v > math.MaxFloat64:
+		return 0, fmt.Errorf("read float32: overflow, value too large")
+	}
+	return float32(v), nil
+}
+
+func readFloat64(b []byte) (float64, error) {
+	v, n := _readFloat(b)
+	if n < 0 {
+		return 0, fmt.Errorf("read float64: invalid data")
+	}
+	return v, nil
+}
+
+// _readFloat reads and returns any float as float64 and the number of read bytes n, or -n on error.
+func _readFloat(b []byte) (float64, int) {
 	// type
-	t, n := readType(b)
+	t, n := _readType(b)
 	switch {
 	case n < 0:
 		return 0, n
@@ -298,7 +294,7 @@ func readFloat(b []byte) (float64, int) {
 
 func readBytes(b []byte) ([]byte, error) {
 	// type
-	t, n := readType(b)
+	t, n := _readType(b)
 	switch {
 	case n < 0:
 		return nil, fmt.Errorf("read bytes: invalid data")
@@ -335,11 +331,11 @@ func _readBytesBody(b []byte, size uint32) ([]byte, error) {
 	return v, nil
 }
 
-// strings
+// string
 
 func readString(b []byte) (string, error) {
 	// type
-	t, n := readType(b)
+	t, n := _readType(b)
 	switch {
 	case n < 0:
 		return "", fmt.Errorf("read string: invalid data")
@@ -386,7 +382,7 @@ func readList(b []byte) (List, error) {
 	}
 
 	// read type
-	t, n := readType(b)
+	t, n := _readType(b)
 	if n < 0 {
 		return list, fmt.Errorf("read list: invalid data")
 	}
@@ -482,7 +478,7 @@ func readMessage(b []byte) (Message, error) {
 	}
 
 	// read type
-	t, n := readType(b)
+	t, n := _readType(b)
 	if n < 0 {
 		return msg, fmt.Errorf("read message: invalid data")
 	}

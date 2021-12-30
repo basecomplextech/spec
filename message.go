@@ -87,7 +87,7 @@ func (m Message) Len() int {
 	return m.table.count(m.big)
 }
 
-// Getters
+// Get
 
 func (m Message) Bool(tag uint16) bool {
 	start, end := m.table.offset(m.big, tag)
@@ -99,7 +99,7 @@ func (m Message) Bool(tag uint16) bool {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadBool(b)
+	v, _ := readBool(b)
 	return v
 }
 
@@ -113,7 +113,7 @@ func (m Message) Int8(tag uint16) int8 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadInt8(b)
+	v, _ := readInt8(b)
 	return v
 }
 
@@ -127,7 +127,7 @@ func (m Message) Int16(tag uint16) int16 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadInt16(b)
+	v, _ := readInt16(b)
 	return v
 }
 
@@ -141,7 +141,7 @@ func (m Message) Int32(tag uint16) int32 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadInt32(b)
+	v, _ := readInt32(b)
 	return v
 }
 
@@ -155,7 +155,7 @@ func (m Message) Int64(tag uint16) int64 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadInt64(b)
+	v, _ := readInt64(b)
 	return v
 }
 
@@ -169,7 +169,7 @@ func (m Message) Uint8(tag uint16) uint8 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadUint8(b)
+	v, _ := readUint8(b)
 	return v
 }
 
@@ -183,7 +183,7 @@ func (m Message) Uint16(tag uint16) uint16 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadUint16(b)
+	v, _ := readUint16(b)
 	return v
 }
 
@@ -197,7 +197,7 @@ func (m Message) Uint32(tag uint16) uint32 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadUint32(b)
+	v, _ := readUint32(b)
 	return v
 }
 
@@ -211,7 +211,7 @@ func (m Message) Uint64(tag uint16) uint64 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadUint64(b)
+	v, _ := readUint64(b)
 	return v
 }
 
@@ -225,7 +225,7 @@ func (m Message) Float32(tag uint16) float32 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadFloat32(b)
+	v, _ := readFloat32(b)
 	return v
 }
 
@@ -239,7 +239,7 @@ func (m Message) Float64(tag uint16) float64 {
 	}
 
 	b := m.data[start:end]
-	v, _ := ReadFloat64(b)
+	v, _ := readFloat64(b)
 	return v
 }
 
@@ -298,3 +298,5 @@ func (m Message) Message(tag uint16) Message {
 	v, _ := GetMessage(b)
 	return v
 }
+
+// Read

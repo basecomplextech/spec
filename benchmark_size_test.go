@@ -95,7 +95,7 @@ func computeSizeDistribution(b []byte) (*sizeDistrib, *sizeDistribPercent, error
 }
 
 func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
-	t, n := readType(b)
+	t, n := _readType(b)
 	if n < 0 {
 		return fmt.Errorf("invalid type")
 	}
@@ -111,19 +111,19 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		TypeInt16,
 		TypeInt32,
 		TypeInt64:
-		_, vn := readInt(b)
+		_, vn := _readInt(b)
 		d.values += vn - n
 
 	case TypeUint8,
 		TypeUint16,
 		TypeUint32,
 		TypeUint64:
-		_, vn := readInt(b)
+		_, vn := _readInt(b)
 		d.values += vn - n
 
 	case TypeFloat32,
 		TypeFloat64:
-		_, vn := readFloat(b)
+		_, vn := _readFloat(b)
 		d.values += vn - n
 
 	case TypeBytes:

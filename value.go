@@ -4,7 +4,7 @@ type Value []byte
 
 // GetValue parses and returns a value, but does not validate it.
 func GetValue(b []byte) (Value, error) {
-	t, err := ReadType(b)
+	t, err := readType(b)
 	if err != nil {
 		return Value{}, err
 	}
@@ -24,7 +24,7 @@ func ReadValue(b []byte) (Value, error) {
 }
 
 func (v Value) Validate() error {
-	t, err := ReadType(v)
+	t, err := readType(v)
 	if err != nil {
 		return err
 	}
@@ -34,32 +34,32 @@ func (v Value) Validate() error {
 		return nil
 
 	case TypeInt8:
-		_, err = ReadInt8(v)
+		_, err = readInt8(v)
 	case TypeInt16:
-		_, err = ReadInt16(v)
+		_, err = readInt16(v)
 	case TypeInt32:
-		_, err = ReadInt32(v)
+		_, err = readInt32(v)
 	case TypeInt64:
-		_, err = ReadInt64(v)
+		_, err = readInt64(v)
 
 	case TypeUint8:
-		_, err = ReadUint8(v)
+		_, err = readUint8(v)
 	case TypeUint16:
-		_, err = ReadUint16(v)
+		_, err = readUint16(v)
 	case TypeUint32:
-		_, err = ReadUint32(v)
+		_, err = readUint32(v)
 	case TypeUint64:
-		_, err = ReadUint64(v)
+		_, err = readUint64(v)
 
 	case TypeFloat32:
-		_, err = ReadFloat32(v)
+		_, err = readFloat32(v)
 	case TypeFloat64:
-		_, err = ReadFloat64(v)
+		_, err = readFloat64(v)
 
 	case TypeBytes:
-		_, err = ReadBytes(v)
+		_, err = readBytes(v)
 	case TypeString:
-		_, err = ReadString(v)
+		_, err = readString(v)
 
 	case TypeList:
 		_, err = ReadList(v)
@@ -70,82 +70,82 @@ func (v Value) Validate() error {
 }
 
 func (v Value) Type() Type {
-	p, _ := ReadType(v)
+	p, _ := readType(v)
 	return p
 }
 
 func (v Value) Nil() bool {
-	p, _ := ReadBool(v)
+	p, _ := readBool(v)
 	return p
 }
 
 func (v Value) Bool() bool {
-	p, _ := ReadBool(v)
+	p, _ := readBool(v)
 	return p
 }
 
 func (v Value) Byte() byte {
-	p, _ := ReadByte(v)
+	p, _ := readByte(v)
 	return p
 }
 
 func (v Value) Int8() int8 {
-	p, _ := ReadInt8(v)
+	p, _ := readInt8(v)
 	return p
 }
 
 func (v Value) Int16() int16 {
-	p, _ := ReadInt16(v)
+	p, _ := readInt16(v)
 	return p
 }
 
 func (v Value) Int32() int32 {
-	p, _ := ReadInt32(v)
+	p, _ := readInt32(v)
 	return p
 }
 
 func (v Value) Int64() int64 {
-	p, _ := ReadInt64(v)
+	p, _ := readInt64(v)
 	return p
 }
 
 func (v Value) Uint8() uint8 {
-	p, _ := ReadUint8(v)
+	p, _ := readUint8(v)
 	return p
 }
 
 func (v Value) Uint16() uint16 {
-	p, _ := ReadUint16(v)
+	p, _ := readUint16(v)
 	return p
 }
 
 func (v Value) Uint32() uint32 {
-	p, _ := ReadUint32(v)
+	p, _ := readUint32(v)
 	return p
 }
 
 func (v Value) Uint64() uint64 {
-	p, _ := ReadUint64(v)
+	p, _ := readUint64(v)
 	return p
 }
 
 func (v Value) Float32() float32 {
-	p, _ := ReadFloat32(v)
+	p, _ := readFloat32(v)
 	return p
 }
 
 func (v Value) Float64() float64 {
-	p, _ := ReadFloat64(v)
+	p, _ := readFloat64(v)
 	return p
 }
 
 func (v Value) Bytes() []byte {
-	p, _ := ReadBytes(v)
+	p, _ := readBytes(v)
 	return p
 }
 
 func (v Value) String() string {
-	p, _ := ReadString(v)
+	p, _ := readString(v)
 	return p
 }
 
