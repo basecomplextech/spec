@@ -21,22 +21,22 @@ func ReadListData(b []byte) (ListData, error) {
 	}
 
 	d := ListData{l}
-	if err := d.Validate(); err != nil {
+	if err := d.validate(); err != nil {
 		return ListData{}, err
 	}
 	return d, nil
 }
 
-// Validate recursively validates the list.
-func (d ListData) Validate() error {
-	n := d.Len()
+// validate recursively validates the list.
+func (d ListData) validate() error {
+	n := d.len()
 
 	for i := 0; i < n; i++ {
-		data := d.Element(i)
+		data := d.element(i)
 		if len(data) == 0 {
 			continue
 		}
-		if _, err := ReadValue(data); err != nil {
+		if _, err := ReadData(data); err != nil {
 			return err
 		}
 	}
@@ -48,8 +48,8 @@ func (d ListData) Data() []byte {
 	return d.data
 }
 
-// Element returns a list element data or nil.
-func (d ListData) Element(i int) []byte {
+// Element returns a list element data.
+func (d ListData) Element(i int) Data {
 	return d.element(i)
 }
 

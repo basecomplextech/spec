@@ -15,15 +15,32 @@ func NewMessageData(b []byte) (MessageData, error) {
 
 // ReadMessageData reads, recursively validates and returns message data.
 func ReadMessageData(b []byte) (MessageData, error) {
-	d, err := readMessage(b)
+	m, err := readMessage(b)
 	if err != nil {
 		return MessageData{}, err
 	}
-	msg := MessageData{d}
-	if err := msg.Validate(); err != nil {
+
+	d := MessageData{m}
+	if err := d.validate(); err != nil {
 		return MessageData{}, err
 	}
-	return msg, nil
+	return d, nil
+}
+
+// validate recursively validates the message.
+func (d MessageData) validate() error {
+	n := d.len()
+
+	for i := 0; i < n; i++ {
+		data := d.fieldByIndex(i)
+		if len(data) == 0 {
+			continue
+		}
+		if _, err := ReadData(data); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Data returns the exact message bytes.
@@ -31,34 +48,18 @@ func (d MessageData) Data() []byte {
 	return d.data
 }
 
-// Validate recursively validates the message.
-func (d MessageData) Validate() error {
-	n := d.Len()
-
-	for i := 0; i < n; i++ {
-		data := d.FieldByIndex(i)
-		if len(data) == 0 {
-			continue
-		}
-		if _, err := ReadValue(data); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Element returns a field data by a tag or nil.
-func (d MessageData) Element(tag uint16) []byte {
+func (d MessageData) Element(tag uint16) Data {
 	return d.element(tag)
 }
 
 // Field returns a field data by a tag or nil.
-func (d MessageData) Field(tag uint16) []byte {
+func (d MessageData) Field(tag uint16) Data {
 	return d.field(tag)
 }
 
 // FieldByIndex returns a field data by an index or nil.
-func (d MessageData) FieldByIndex(i int) []byte {
+func (d MessageData) FieldByIndex(i int) Data {
 	return d.fieldByIndex(i)
 }
 
@@ -67,7 +68,7 @@ func (d MessageData) Len() int {
 	return d.len()
 }
 
-// Get
+// Getters
 
 func (d MessageData) Bool(tag uint16) bool {
 	end := d.table.offset(d.big, tag)
