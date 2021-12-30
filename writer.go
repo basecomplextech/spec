@@ -4,6 +4,7 @@ import "fmt"
 
 const WriteBufferSize = 4096
 
+// Write writes a value.
 type Writer struct {
 	buf  []byte
 	err  error     // writer failed
