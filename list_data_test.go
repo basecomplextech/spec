@@ -62,7 +62,7 @@ func testWriteList(t *testing.T) []byte {
 
 func TestList_Getters__should_access_elements(t *testing.T) {
 	b := testWriteList(t)
-	l, err := GetList(b)
+	l, err := NewListData(b)
 	if err != nil {
 		t.Fatal(err)
 	}

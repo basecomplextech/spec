@@ -257,7 +257,7 @@ func TestReadString__should_read_string(t *testing.T) {
 
 func TestReadList__should_read_list(t *testing.T) {
 	b := testWriteList(t)
-	_, err := ReadList(b)
+	_, err := readList(b)
 	if err != nil {
 		t.Fatal(err)
 	}

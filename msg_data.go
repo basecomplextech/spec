@@ -251,17 +251,17 @@ func (d MessageData) String(tag uint16) string {
 	return v
 }
 
-func (d MessageData) List(tag uint16) List {
+func (d MessageData) List(tag uint16) ListData {
 	end := d.table.offset(d.big, tag)
 	switch {
 	case end < 0:
-		return List{}
+		return ListData{}
 	case end > int(d.body):
-		return List{}
+		return ListData{}
 	}
 
 	b := d.data[:end]
-	v, _ := GetList(b)
+	v, _ := NewListData(b)
 	return v
 }
 

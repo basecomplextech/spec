@@ -62,7 +62,7 @@ func (v Value) Validate() error {
 		_, err = readString(v)
 
 	case TypeList:
-		_, err = ReadList(v)
+		_, err = ReadListData(v)
 	case TypeMessage:
 		_, err = ReadMessageData(v)
 	}
@@ -149,8 +149,8 @@ func (v Value) String() string {
 	return p
 }
 
-func (v Value) List() List {
-	p, _ := GetList(v)
+func (v Value) List() ListData {
+	p, _ := NewListData(v)
 	return p
 }
 

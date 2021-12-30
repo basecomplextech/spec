@@ -281,22 +281,22 @@ func (msg TestSubMessage) Write(w *Writer) error {
 
 type TestMessageData struct{ d MessageData }
 
-func (d TestMessageData) Bool() bool       { return d.d.Bool(1) }
-func (d TestMessageData) Int8() int8       { return d.d.Int8(10) }
-func (d TestMessageData) Int16() int16     { return d.d.Int16(11) }
-func (d TestMessageData) Int32() int32     { return d.d.Int32(12) }
-func (d TestMessageData) Int64() int64     { return d.d.Int64(13) }
-func (d TestMessageData) Uint8() uint8     { return d.d.Uint8(20) }
-func (d TestMessageData) Uint16() uint16   { return d.d.Uint16(21) }
-func (d TestMessageData) Uint32() uint32   { return d.d.Uint32(22) }
-func (d TestMessageData) Uint64() uint64   { return d.d.Uint64(23) }
-func (d TestMessageData) Float32() float32 { return d.d.Float32(30) }
-func (d TestMessageData) Float64() float64 { return d.d.Float64(31) }
-func (d TestMessageData) String() string   { return d.d.String(40) }
-func (d TestMessageData) Bytes() []byte    { return d.d.Bytes(41) }
-func (d TestMessageData) List() List       { return d.d.List(50) }
-func (d TestMessageData) Messages() List   { return d.d.List(51) }
-func (d TestMessageData) Strings() List    { return d.d.List(52) }
+func (d TestMessageData) Bool() bool         { return d.d.Bool(1) }
+func (d TestMessageData) Int8() int8         { return d.d.Int8(10) }
+func (d TestMessageData) Int16() int16       { return d.d.Int16(11) }
+func (d TestMessageData) Int32() int32       { return d.d.Int32(12) }
+func (d TestMessageData) Int64() int64       { return d.d.Int64(13) }
+func (d TestMessageData) Uint8() uint8       { return d.d.Uint8(20) }
+func (d TestMessageData) Uint16() uint16     { return d.d.Uint16(21) }
+func (d TestMessageData) Uint32() uint32     { return d.d.Uint32(22) }
+func (d TestMessageData) Uint64() uint64     { return d.d.Uint64(23) }
+func (d TestMessageData) Float32() float32   { return d.d.Float32(30) }
+func (d TestMessageData) Float64() float64   { return d.d.Float64(31) }
+func (d TestMessageData) String() string     { return d.d.String(40) }
+func (d TestMessageData) Bytes() []byte      { return d.d.Bytes(41) }
+func (d TestMessageData) List() ListData     { return d.d.List(50) }
+func (d TestMessageData) Messages() ListData { return d.d.List(51) }
+func (d TestMessageData) Strings() ListData  { return d.d.List(52) }
 
 func getTestMessageData(b []byte) (TestMessageData, error) {
 	msg, err := NewMessageData(b)
