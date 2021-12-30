@@ -257,7 +257,7 @@ func (w *Writer) U128(v u128.U128) error {
 	return nil
 }
 
-func (w *Writer) u256(v u256.U256) error {
+func (w *Writer) U256(v u256.U256) error {
 	if w.err != nil {
 		return w.err
 	}

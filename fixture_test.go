@@ -309,7 +309,7 @@ func (m TestMessage) Write(w *Writer) error {
 	// u128/u256:24-25
 	w.U128(m.U128)
 	w.Field(24)
-	w.u256(m.U256)
+	w.U256(m.U256)
 	w.Field(25)
 
 	// float:30-31

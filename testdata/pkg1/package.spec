@@ -23,8 +23,8 @@ message Message {
     field_float32 float32   30;
     field_float64 float64   31;
 
-//    field_u128    u128  40;
-//    field_u256    u256  41;
+    field_u128  u128    40;
+    field_u256  u256    41;
 
     field_string  string    50;
     field_bytes   bytes     51;

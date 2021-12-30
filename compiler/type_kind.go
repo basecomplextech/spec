@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/baseone-run/spec/parser"
 )
@@ -147,5 +148,5 @@ func (k Kind) String() string {
 		return "reference"
 	}
 
-	return ""
+	return strconv.Itoa(int(k))
 }

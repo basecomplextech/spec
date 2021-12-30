@@ -188,6 +188,13 @@ func (w *writer) messageWriteField(field *compiler.MessageField) error {
 		w.linef(`w.Field(%d)`, field.Tag)
 		w.line(`}`)
 
+	case compiler.KindU128,
+		compiler.KindU256:
+		w.line(`{`)
+		w.writerWrite(typ, val)
+		w.linef(`w.Field(%d)`, field.Tag)
+		w.line(`}`)
+
 	case compiler.KindBytes:
 		w.linef(`if len(%v) > 0 {`, val)
 		w.linef(`w.Bytes(%v)`, val)

@@ -19,6 +19,9 @@ var builtin = map[Kind]*Type{
 	KindUint32: newBuiltinType(KindUint32),
 	KindUint64: newBuiltinType(KindUint64),
 
+	KindU128: newBuiltinType(KindU128),
+	KindU256: newBuiltinType(KindU256),
+
 	KindFloat32: newBuiltinType(KindFloat32),
 	KindFloat64: newBuiltinType(KindFloat64),
 

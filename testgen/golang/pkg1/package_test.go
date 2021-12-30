@@ -3,6 +3,8 @@ package pkg1
 import (
 	"testing"
 
+	"github.com/baseone-run/library/u128"
+	"github.com/baseone-run/library/u256"
 	"github.com/baseone-run/spec/testgen/golang/pkg2"
 	"github.com/baseone-run/spec/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
@@ -22,6 +24,9 @@ func testMessage() *Message {
 		FieldUint16: 2,
 		FieldUint32: 3,
 		FieldUint64: 4,
+
+		FieldU128: u128.Random(),
+		FieldU256: u256.Random(),
 
 		FieldFloat32: 10.0,
 		FieldFloat64: 20.0,

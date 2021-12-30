@@ -39,6 +39,11 @@ func _typeName(typ *compiler.Type, data bool) string {
 	case compiler.KindUint64:
 		return "uint64"
 
+	case compiler.KindU128:
+		return "spec.U128"
+	case compiler.KindU256:
+		return "spec.U256"
+
 	case compiler.KindFloat32:
 		return "float32"
 	case compiler.KindFloat64:

@@ -130,7 +130,7 @@ func TestCompiler__should_compile_options(t *testing.T) {
 
 	gopkg := file1.OptionMap["go_package"]
 	require.NotNil(t, gopkg)
-	assert.Equal(t, "github.com/baseone-run/spec/generated/golang/pkg1", gopkg.Value)
+	assert.Equal(t, "github.com/baseone-run/spec/testgen/golang/pkg1", gopkg.Value)
 }
 
 // Definitions
@@ -233,7 +233,7 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 22)
+	assert.Len(t, def.Message.Fields, 24)
 }
 
 func TestCompiler__should_compile_message_field_names(t *testing.T) {
@@ -248,7 +248,7 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 22)
+	require.Len(t, def.Message.FieldNames, 24)
 	assert.Contains(t, msg.FieldNames, "field_bool")
 	assert.Contains(t, msg.FieldNames, "field_enum")
 	assert.Contains(t, msg.FieldNames, "field_int8")
@@ -266,7 +266,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 22)
+	require.Len(t, def.Message.FieldTags, 24)
 	assert.Contains(t, msg.FieldTags, 1)
 	assert.Contains(t, msg.FieldTags, 2)
 	assert.Contains(t, msg.FieldTags, 10)

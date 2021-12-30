@@ -35,6 +35,11 @@ func (w *writer) dataGet(typ *compiler.Type, data string, i string) string {
 	case compiler.KindUint64:
 		return fmt.Sprintf(`%v.Uint64(%v)`, data, i)
 
+	case compiler.KindU128:
+		return fmt.Sprintf(`%v.U128(%v)`, data, i)
+	case compiler.KindU256:
+		return fmt.Sprintf(`%v.U256(%v)`, data, i)
+
 	case compiler.KindFloat32:
 		return fmt.Sprintf(`%v.Float32(%v)`, data, i)
 	case compiler.KindFloat64:
@@ -97,6 +102,11 @@ func (w *writer) readerRead(typ *compiler.Type, reader string, i string) string 
 		return fmt.Sprintf(`%v.ReadUint32(%v)`, reader, i)
 	case compiler.KindUint64:
 		return fmt.Sprintf(`%v.ReadUint64(%v)`, reader, i)
+
+	case compiler.KindU128:
+		return fmt.Sprintf(`%v.ReadU128(%v)`, reader, i)
+	case compiler.KindU256:
+		return fmt.Sprintf(`%v.ReadU256(%v)`, reader, i)
 
 	case compiler.KindFloat32:
 		return fmt.Sprintf(`%v.ReadFloat32(%v)`, reader, i)
@@ -198,6 +208,11 @@ func (w *writer) writerWrite(typ *compiler.Type, val string) error {
 		w.linef(`w.Uint32(%v)`, val)
 	case compiler.KindUint64:
 		w.linef(`w.Uint64(%v)`, val)
+
+	case compiler.KindU128:
+		w.linef(`w.U128(%v)`, val)
+	case compiler.KindU256:
+		w.linef(`w.U256(%v)`, val)
 
 	case compiler.KindFloat32:
 		w.linef(`w.Float32(%v)`, val)
