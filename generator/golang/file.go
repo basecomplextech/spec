@@ -40,6 +40,11 @@ func (w *writer) line(args ...string) {
 }
 
 func (w *writer) linef(format string, args ...interface{}) {
+	if len(args) == 0 {
+		w.line(format)
+		return
+	}
+
 	s := fmt.Sprintf(format, args...)
 	w.b.WriteString(s)
 	w.b.WriteString("\n")
