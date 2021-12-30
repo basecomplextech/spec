@@ -4,7 +4,7 @@ type MessageData struct {
 	m message
 }
 
-// NewMessageData parses and returns message data, but does not validate it.
+// NewMessageData reads and returns message data, but does not validate its fields.
 func NewMessageData(b []byte) (MessageData, error) {
 	m, err := readMessage(b)
 	if err != nil {
@@ -13,7 +13,7 @@ func NewMessageData(b []byte) (MessageData, error) {
 	return MessageData{m}, nil
 }
 
-// ReadMessageData reads, recursively validates and returns message data.
+// ReadMessageData reads and returns message data, and recursively validates its fields.
 func ReadMessageData(b []byte) (MessageData, error) {
 	m, err := readMessage(b)
 	if err != nil {

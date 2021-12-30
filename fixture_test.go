@@ -171,7 +171,10 @@ func (m *TestMessage) Read(b []byte) error {
 
 		m.List = make([]int64, 0, list.Len())
 		for i := 0; i < list.Len(); i++ {
-			val := list.Int64(i)
+			val, err := list.ReadInt64(i)
+			if err != nil {
+				return err
+			}
 			m.List = append(m.List, val)
 		}
 	}
@@ -185,7 +188,10 @@ func (m *TestMessage) Read(b []byte) error {
 
 		m.Messages = make([]*TestSubMessage, 0, list.Len())
 		for i := 0; i < list.Len(); i++ {
-			data := list.Element(i)
+			data, err := list.Read(i)
+			if err != nil {
+				return err
+			}
 			if len(data) == 0 {
 				continue
 			}
@@ -207,7 +213,10 @@ func (m *TestMessage) Read(b []byte) error {
 
 		m.Strings = make([]string, 0, list.Len())
 		for i := 0; i < list.Len(); i++ {
-			s := list.String(i)
+			s, err := list.ReadString(i)
+			if err != nil {
+				return err
+			}
 			m.Strings = append(m.Strings, s)
 		}
 	}

@@ -16,6 +16,43 @@ func NewMessageReader(b []byte) (MessageReader, error) {
 	return MessageReader{m}, nil
 }
 
+// Reflect access
+
+// Len returns the number of fields in the message.
+func (r MessageReader) Len() int {
+	return r.m.len()
+}
+
+// Read returns a field data by a tag or nil.
+// The field is at data end, but data slice can be larger than field.
+func (r MessageReader) Read(tag uint16) ([]byte, error) {
+	end := r.m.table.offset(r.m.big, tag)
+	switch {
+	case end < 0:
+		return nil, nil
+	case end > int(r.m.body):
+		return nil, r.rangeError(tag, end)
+	}
+
+	b := r.m.data[:end]
+	return b, nil
+}
+
+// ReadByIndex returns a field data by an index or nil.
+// The field is at data end, but data slice can be larger than field.
+func (r MessageReader) ReadByIndex(i int) ([]byte, error) {
+	end := r.m.table.offsetByIndex(r.m.big, i)
+	switch {
+	case end < 0:
+		return nil, nil
+	case end > int(r.m.body):
+		return nil, r.indexError(i, end)
+	}
+
+	b := r.m.data[:end]
+	return b, nil
+}
+
 // Direct access
 
 func (r MessageReader) ReadBool(tag uint16) (bool, error) {
@@ -187,17 +224,17 @@ func (r MessageReader) ReadString(tag uint16) (string, error) {
 	return readString(b)
 }
 
-func (r MessageReader) ReadList(tag uint16) (ListData, error) {
+func (r MessageReader) ReadList(tag uint16) (ListReader, error) {
 	end := r.m.table.offset(r.m.big, tag)
 	switch {
 	case end < 0:
-		return ListData{}, nil
+		return ListReader{}, nil
 	case end > int(r.m.body):
-		return ListData{}, r.rangeError(tag, end)
+		return ListReader{}, r.rangeError(tag, end)
 	}
 
 	b := r.m.data[:end]
-	return NewListData(b)
+	return NewListReader(b)
 }
 
 func (r MessageReader) ReadMessage(tag uint16) (MessageReader, error) {
@@ -214,6 +251,11 @@ func (r MessageReader) ReadMessage(tag uint16) (MessageReader, error) {
 }
 
 // private
+
+func (r MessageReader) indexError(index int, end int) error {
+	return fmt.Errorf("field offset out of range: field index=%d, offset=%d, body=%d",
+		index, end, r.m.body)
+}
 
 func (r MessageReader) rangeError(tag uint16, end int) error {
 	return fmt.Errorf("field offset out of range: field=%d, offset=%d, body=%d", tag, end, r.m.body)

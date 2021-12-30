@@ -3,7 +3,7 @@ package spec
 // Data is a raw value data.
 type Data []byte
 
-// NewData parses and returns value data, but does not validate it.
+// NewData reads and returns value data, but does not validate its children.
 func NewData(b []byte) (Data, error) {
 	t, err := readType(b)
 	if err != nil {
@@ -15,59 +15,13 @@ func NewData(b []byte) (Data, error) {
 	return Data(b), nil
 }
 
-// ReadData reads, recursively validates and returns value data.
+// ReadData reads and returns value data, and recursively validates its children.
 func ReadData(b []byte) (Data, error) {
 	d := Data(b)
 	if err := d.validate(); err != nil {
 		return Data{}, err
 	}
 	return d, nil
-}
-
-func (d Data) validate() error {
-	t, err := readType(d)
-	if err != nil {
-		return err
-	}
-
-	switch t {
-	case TypeNil, TypeTrue, TypeFalse:
-		return nil
-
-	case TypeInt8:
-		_, err = readInt8(d)
-	case TypeInt16:
-		_, err = readInt16(d)
-	case TypeInt32:
-		_, err = readInt32(d)
-	case TypeInt64:
-		_, err = readInt64(d)
-
-	case TypeUint8:
-		_, err = readUint8(d)
-	case TypeUint16:
-		_, err = readUint16(d)
-	case TypeUint32:
-		_, err = readUint32(d)
-	case TypeUint64:
-		_, err = readUint64(d)
-
-	case TypeFloat32:
-		_, err = readFloat32(d)
-	case TypeFloat64:
-		_, err = readFloat64(d)
-
-	case TypeBytes:
-		_, err = readBytes(d)
-	case TypeString:
-		_, err = readString(d)
-
-	case TypeList:
-		_, err = ReadListData(d)
-	case TypeMessage:
-		_, err = ReadMessageData(d)
-	}
-	return err
 }
 
 func (d Data) Type() Type {
@@ -158,4 +112,52 @@ func (d Data) List() ListData {
 func (d Data) Message() MessageData {
 	v, _ := NewMessageData(d)
 	return v
+}
+
+// private
+
+func (d Data) validate() error {
+	t, err := readType(d)
+	if err != nil {
+		return err
+	}
+
+	switch t {
+	case TypeNil, TypeTrue, TypeFalse:
+		return nil
+
+	case TypeInt8:
+		_, err = readInt8(d)
+	case TypeInt16:
+		_, err = readInt16(d)
+	case TypeInt32:
+		_, err = readInt32(d)
+	case TypeInt64:
+		_, err = readInt64(d)
+
+	case TypeUint8:
+		_, err = readUint8(d)
+	case TypeUint16:
+		_, err = readUint16(d)
+	case TypeUint32:
+		_, err = readUint32(d)
+	case TypeUint64:
+		_, err = readUint64(d)
+
+	case TypeFloat32:
+		_, err = readFloat32(d)
+	case TypeFloat64:
+		_, err = readFloat64(d)
+
+	case TypeBytes:
+		_, err = readBytes(d)
+	case TypeString:
+		_, err = readString(d)
+
+	case TypeList:
+		_, err = ReadListData(d)
+	case TypeMessage:
+		_, err = ReadMessageData(d)
+	}
+	return err
 }

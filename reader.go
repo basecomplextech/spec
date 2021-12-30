@@ -78,10 +78,10 @@ func (r Reader) String() (string, error) {
 	return readString(r.b)
 }
 
-func (r Reader) List() (ListData, error) {
-	return NewListData(r.b)
+func (r Reader) List() (ListReader, error) {
+	return NewListReader(r.b)
 }
 
-func (r Reader) Message() (MessageData, error) {
-	return NewMessageData(r.b)
+func (r Reader) Message() (MessageReader, error) {
+	return NewMessageReader(r.b)
 }
