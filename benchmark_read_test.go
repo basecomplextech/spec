@@ -198,6 +198,36 @@ func Benchmark_JSONUnmarshal(b *testing.B) {
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
 
+func Benchmark_JSONEncode(b *testing.B) {
+	msg := newTestMessage()
+	data, err := json.Marshal(msg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	buf := &bytes.Buffer{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+
+		if err := json.NewEncoder(buf).Encode(msg); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(len(data)), "size")
+	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
+}
+
 // private
 
 func walkMessageData(m TestMessageData) (int, error) {

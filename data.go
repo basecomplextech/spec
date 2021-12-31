@@ -12,7 +12,7 @@ type Data []byte
 
 // NewData reads and returns value data, but does not validate its children.
 func NewData(b []byte) (Data, error) {
-	t, err := readType(b)
+	t, _, err := readType(b)
 	if err != nil {
 		return Data{}, err
 	}
@@ -32,92 +32,92 @@ func ReadData(b []byte) (Data, error) {
 }
 
 func (d Data) Type() Type {
-	v, _ := readType(d)
+	v, _, _ := readType(d)
 	return v
 }
 
 func (d Data) Nil() bool {
-	v, _ := readType(d)
+	v, _, _ := readType(d)
 	return v == TypeNil
 }
 
 func (d Data) Bool() bool {
-	v, _ := readBool(d)
+	v, _, _ := readBool(d)
 	return v
 }
 
 func (d Data) Byte() byte {
-	v, _ := readByte(d)
+	v, _, _ := readByte(d)
 	return v
 }
 
 func (d Data) Int8() int8 {
-	v, _ := readInt8(d)
+	v, _, _ := readInt8(d)
 	return v
 }
 
 func (d Data) Int16() int16 {
-	v, _ := readInt16(d)
+	v, _, _ := readInt16(d)
 	return v
 }
 
 func (d Data) Int32() int32 {
-	v, _ := readInt32(d)
+	v, _, _ := readInt32(d)
 	return v
 }
 
 func (d Data) Int64() int64 {
-	v, _ := readInt64(d)
+	v, _, _ := readInt64(d)
 	return v
 }
 
 func (d Data) Uint8() uint8 {
-	v, _ := readUint8(d)
+	v, _, _ := readUint8(d)
 	return v
 }
 
 func (d Data) Uint16() uint16 {
-	v, _ := readUint16(d)
+	v, _, _ := readUint16(d)
 	return v
 }
 
 func (d Data) Uint32() uint32 {
-	v, _ := readUint32(d)
+	v, _, _ := readUint32(d)
 	return v
 }
 
 func (d Data) Uint64() uint64 {
-	v, _ := readUint64(d)
+	v, _, _ := readUint64(d)
 	return v
 }
 
 func (d Data) U128() u128.U128 {
-	v, _ := readU128(d)
+	v, _, _ := readU128(d)
 	return v
 }
 
 func (d Data) U256() u256.U256 {
-	v, _ := readU256(d)
+	v, _, _ := readU256(d)
 	return v
 }
 
 func (d Data) Float32() float32 {
-	v, _ := readFloat32(d)
+	v, _, _ := readFloat32(d)
 	return v
 }
 
 func (d Data) Float64() float64 {
-	v, _ := readFloat64(d)
+	v, _, _ := readFloat64(d)
 	return v
 }
 
 func (d Data) Bytes() []byte {
-	v, _ := readBytes(d)
+	v, _, _ := readBytes(d)
 	return v
 }
 
 func (d Data) String() string {
-	v, _ := readString(d)
+	v, _, _ := readString(d)
 	return v
 }
 
@@ -134,7 +134,7 @@ func (d Data) Message() MessageData {
 // private
 
 func (d Data) validate() error {
-	t, err := readType(d)
+	t, _, err := readType(d)
 	if err != nil {
 		return err
 	}
@@ -147,37 +147,37 @@ func (d Data) validate() error {
 		return nil
 
 	case TypeInt8:
-		_, err = readInt8(d)
+		_, _, err = readInt8(d)
 	case TypeInt16:
-		_, err = readInt16(d)
+		_, _, err = readInt16(d)
 	case TypeInt32:
-		_, err = readInt32(d)
+		_, _, err = readInt32(d)
 	case TypeInt64:
-		_, err = readInt64(d)
+		_, _, err = readInt64(d)
 
 	case TypeUint8:
-		_, err = readUint8(d)
+		_, _, err = readUint8(d)
 	case TypeUint16:
-		_, err = readUint16(d)
+		_, _, err = readUint16(d)
 	case TypeUint32:
-		_, err = readUint32(d)
+		_, _, err = readUint32(d)
 	case TypeUint64:
-		_, err = readUint64(d)
+		_, _, err = readUint64(d)
 
 	case TypeU128:
-		_, err = readU128(d)
+		_, _, err = readU128(d)
 	case TypeU256:
-		_, err = readU256(d)
+		_, _, err = readU256(d)
 
 	case TypeFloat32:
-		_, err = readFloat32(d)
+		_, _, err = readFloat32(d)
 	case TypeFloat64:
-		_, err = readFloat64(d)
+		_, _, err = readFloat64(d)
 
 	case TypeBytes:
-		_, err = readBytes(d)
+		_, _, err = readBytes(d)
 	case TypeString:
-		_, err = readString(d)
+		_, _, err = readString(d)
 
 	case TypeList:
 		_, err = ReadListData(d)

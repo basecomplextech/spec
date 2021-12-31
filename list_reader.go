@@ -14,7 +14,7 @@ type ListReader struct {
 
 // NewListReader parses and returns list data, but does not validate it.
 func NewListReader(b []byte) (ListReader, error) {
-	l, err := readList(b)
+	l, _, err := readList(b)
 	if err != nil {
 		return ListReader{}, err
 	}
@@ -54,7 +54,8 @@ func (r ListReader) ReadBool(i int) (bool, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readBool(b)
+	v, _, err := readBool(b)
+	return v, err
 }
 
 func (r ListReader) ReadInt8(i int) (int8, error) {
@@ -67,7 +68,8 @@ func (r ListReader) ReadInt8(i int) (int8, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readInt8(b)
+	v, _, err := readInt8(b)
+	return v, err
 }
 
 func (r ListReader) ReadInt16(i int) (int16, error) {
@@ -80,7 +82,8 @@ func (r ListReader) ReadInt16(i int) (int16, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readInt16(b)
+	v, _, err := readInt16(b)
+	return v, err
 }
 
 func (r ListReader) ReadInt32(i int) (int32, error) {
@@ -93,7 +96,8 @@ func (r ListReader) ReadInt32(i int) (int32, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readInt32(b)
+	v, _, err := readInt32(b)
+	return v, err
 }
 
 func (r ListReader) ReadInt64(i int) (int64, error) {
@@ -106,7 +110,8 @@ func (r ListReader) ReadInt64(i int) (int64, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readInt64(b)
+	v, _, err := readInt64(b)
+	return v, err
 }
 
 func (r ListReader) ReadUint8(i int) (uint8, error) {
@@ -119,7 +124,8 @@ func (r ListReader) ReadUint8(i int) (uint8, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readUint8(b)
+	v, _, err := readUint8(b)
+	return v, err
 }
 
 func (r ListReader) ReadUint16(i int) (uint16, error) {
@@ -132,7 +138,8 @@ func (r ListReader) ReadUint16(i int) (uint16, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readUint16(b)
+	v, _, err := readUint16(b)
+	return v, err
 }
 
 func (r ListReader) ReadUint32(i int) (uint32, error) {
@@ -145,7 +152,8 @@ func (r ListReader) ReadUint32(i int) (uint32, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readUint32(b)
+	v, _, err := readUint32(b)
+	return v, err
 }
 
 func (r ListReader) ReadUint64(i int) (uint64, error) {
@@ -158,7 +166,8 @@ func (r ListReader) ReadUint64(i int) (uint64, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readUint64(b)
+	v, _, err := readUint64(b)
+	return v, err
 }
 
 func (r ListReader) ReadU128(i int) (u128.U128, error) {
@@ -171,7 +180,8 @@ func (r ListReader) ReadU128(i int) (u128.U128, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readU128(b)
+	v, _, err := readU128(b)
+	return v, err
 }
 
 func (r ListReader) ReadU256(i int) (u256.U256, error) {
@@ -184,7 +194,8 @@ func (r ListReader) ReadU256(i int) (u256.U256, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readU256(b)
+	v, _, err := readU256(b)
+	return v, err
 }
 
 func (r ListReader) ReadFloat32(i int) (float32, error) {
@@ -197,7 +208,8 @@ func (r ListReader) ReadFloat32(i int) (float32, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readFloat32(b)
+	v, _, err := readFloat32(b)
+	return v, err
 }
 
 func (r ListReader) ReadFloat64(i int) (float64, error) {
@@ -210,7 +222,8 @@ func (r ListReader) ReadFloat64(i int) (float64, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readFloat64(b)
+	v, _, err := readFloat64(b)
+	return v, err
 }
 
 func (r ListReader) ReadBytes(i int) ([]byte, error) {
@@ -223,7 +236,8 @@ func (r ListReader) ReadBytes(i int) ([]byte, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readBytes(b)
+	v, _, err := readBytes(b)
+	return v, err
 }
 
 func (r ListReader) ReadString(i int) (string, error) {
@@ -236,7 +250,8 @@ func (r ListReader) ReadString(i int) (string, error) {
 	}
 
 	b := r.l.data[start:end]
-	return readString(b)
+	v, _, err := readString(b)
+	return v, err
 }
 
 func (r ListReader) ReadList(i int) (ListReader, error) {

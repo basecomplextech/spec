@@ -165,7 +165,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tsize)
 
 		// read list
-		list, err := readList(b)
+		list, _, err := readList(b)
 		if err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tsize)
 
 		// read message
-		msg, err := readMessage(b)
+		msg, _, err := readMessage(b)
 		if err != nil {
 			return err
 		}

@@ -14,38 +14,46 @@ func TestReadType__should_return_type(t *testing.T) {
 	b := []byte{}
 	b = append(b, byte(TypeString))
 
-	v, err := readType(b)
+	v, n, err := readType(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, v, TypeString)
 }
 
 func TestReadType__should_return_nil_when_empty(t *testing.T) {
 	b := []byte{}
 
-	v, err := readType(b)
+	v, n, err := readType(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, v, TypeNil)
 }
 
 // readBool
 
 func TestReadBool__should_read_bool_value(t *testing.T) {
-	v, err := readBool([]byte{byte(TypeTrue)})
+	b := []byte{byte(TypeTrue)}
+	v, n, err := readBool(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, true, v)
 
-	v, err = readBool([]byte{byte(TypeFalse)})
+	b = []byte{byte(TypeFalse)}
+	v, n, err = readBool(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, false, v)
 }
 
@@ -55,10 +63,12 @@ func TestReadInt8__should_read_int8(t *testing.T) {
 	b := []byte{}
 	b = writeInt8(b, 1)
 
-	v, err := readInt8(b)
+	v, n, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int8(1), v)
 }
 
@@ -66,10 +76,12 @@ func TestReadInt8__should_read_int8_from_int16(t *testing.T) {
 	b := []byte{}
 	b = writeInt16(b, 1)
 
-	v, err := readInt8(b)
+	v, n, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int8(1), v)
 }
 
@@ -77,10 +89,12 @@ func TestReadInt8__should_read_int8_from_int32(t *testing.T) {
 	b := []byte{}
 	b = writeInt32(b, 1)
 
-	v, err := readInt8(b)
+	v, n, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int8(1), v)
 }
 
@@ -88,10 +102,12 @@ func TestReadInt8__should_read_int8_from_int64(t *testing.T) {
 	b := []byte{}
 	b = writeInt64(b, 1)
 
-	v, err := readInt8(b)
+	v, n, err := readInt8(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int8(1), v)
 }
 
@@ -101,10 +117,12 @@ func TestReadInt16__should_read_int16(t *testing.T) {
 	b := []byte{}
 	b = writeInt16(b, 1)
 
-	v, err := readInt16(b)
+	v, n, err := readInt16(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int16(1), v)
 }
 
@@ -114,10 +132,12 @@ func TestReadInt32__should_read_int32(t *testing.T) {
 	b := []byte{}
 	b = writeInt32(b, 1)
 
-	v, err := readInt32(b)
+	v, n, err := readInt32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int32(1), v)
 }
 
@@ -127,10 +147,12 @@ func TestReadInt64__should_read_int64(t *testing.T) {
 	b := []byte{}
 	b = writeInt64(b, 1)
 
-	v, err := readInt64(b)
+	v, n, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int64(1), v)
 }
 
@@ -138,10 +160,12 @@ func TestReadInt64__should_read_int64_from_int8(t *testing.T) {
 	b := []byte{}
 	b = writeInt8(b, 1)
 
-	v, err := readInt64(b)
+	v, n, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int64(1), v)
 }
 
@@ -149,10 +173,12 @@ func TestReadInt64__should_read_int64_from_int16(t *testing.T) {
 	b := []byte{}
 	b = writeInt16(b, 1)
 
-	v, err := readInt64(b)
+	v, n, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int64(1), v)
 }
 
@@ -160,10 +186,12 @@ func TestReadInt64__should_read_int64_from_int32(t *testing.T) {
 	b := []byte{}
 	b = writeInt32(b, 1)
 
-	v, err := readInt64(b)
+	v, n, err := readInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, int64(1), v)
 }
 
@@ -173,10 +201,12 @@ func TestReadFloat32__should_read_float32(t *testing.T) {
 	b := []byte{}
 	b = writeFloat32(b, math.MaxFloat32)
 
-	v, err := readFloat32(b)
+	v, n, err := readFloat32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, float32(math.MaxFloat32), v)
 }
 
@@ -184,10 +214,12 @@ func TestReadFloat32__should_read_float32_from_float64(t *testing.T) {
 	b := []byte{}
 	b = writeFloat64(b, math.MaxFloat32)
 
-	v, err := readFloat32(b)
+	v, n, err := readFloat32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, float32(math.MaxFloat32), v)
 }
 
@@ -197,10 +229,12 @@ func TestReadFloat64__should_read_float64(t *testing.T) {
 	b := []byte{}
 	b = writeFloat64(b, math.MaxFloat64)
 
-	v, err := readFloat64(b)
+	v, n, err := readFloat64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, float64(math.MaxFloat64), v)
 }
 
@@ -208,10 +242,12 @@ func TestReadFloat64__should_read_float64_from_float32(t *testing.T) {
 	b := []byte{}
 	b = writeFloat32(b, math.MaxFloat32)
 
-	v, err := readFloat64(b)
+	v, n, err := readFloat64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, float64(math.MaxFloat32), v)
 }
 
@@ -226,11 +262,12 @@ func TestReadBytes__should_read_bytes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v1, err := readBytes(b)
+	v1, n, err := readBytes(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, v, v1)
 }
 
@@ -245,11 +282,12 @@ func TestReadString__should_read_string(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v1, err := readString(b)
+	v1, n, err := readString(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	assert.Equal(t, n, len(b))
 	assert.Equal(t, v, v1)
 }
 
@@ -257,10 +295,12 @@ func TestReadString__should_read_string(t *testing.T) {
 
 func TestReadList__should_read_list(t *testing.T) {
 	b := testWriteList(t)
-	_, err := readList(b)
+	_, n, err := readList(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 }
 
 func TestReadListTable__should_read_list_table(t *testing.T) {
@@ -288,7 +328,8 @@ func TestReadList__should_return_error_when_invalid_type(t *testing.T) {
 	b := testWriteList(t)
 	b[len(b)-1] = byte(TypeMessage)
 
-	_, err := readList(b)
+	_, n, err := readList(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected type")
 }
@@ -298,7 +339,8 @@ func TestReadList__should_return_error_when_invalid_table_size(t *testing.T) {
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = append(b, byte(TypeList))
 
-	_, err := readList(b)
+	_, n, err := readList(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table size")
 }
@@ -309,7 +351,8 @@ func TestReadList__should_return_error_when_invalid_body_size(t *testing.T) {
 	b = _writeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
-	_, err := readList(b)
+	_, n, err := readList(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body size")
 }
@@ -323,7 +366,8 @@ func TestReadList__should_return_error_when_invalid_table(t *testing.T) {
 	b = _writeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
-	_, err = readList(b)
+	_, n, err := readList(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table")
 }
@@ -337,7 +381,8 @@ func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
 	b = _writeListTableSize(b, 0)
 	b = append(b, byte(TypeList))
 
-	_, err = readList(b)
+	_, n, err := readList(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body")
 }
@@ -346,10 +391,12 @@ func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
 
 func TestReadMessage__should_read_message(t *testing.T) {
 	b := testWriteMessage(t)
-	_, err := readMessage(b)
+	_, n, err := readMessage(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	assert.Equal(t, n, len(b))
 }
 
 func TestReadMessageTable__should_read_message_table(t *testing.T) {
@@ -377,7 +424,8 @@ func TestReadMessage__should_return_error_when_invalid_type(t *testing.T) {
 	b := testWriteMessage(t)
 	b[len(b)-1] = byte(TypeList)
 
-	_, err := readMessage(b)
+	_, n, err := readMessage(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected type")
 }
@@ -387,7 +435,8 @@ func TestReadMessage__should_return_error_when_invalid_table_size(t *testing.T) 
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = append(b, byte(TypeMessage))
 
-	_, err := readMessage(b)
+	_, n, err := readMessage(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table size")
 }
@@ -398,7 +447,8 @@ func TestReadMessage__should_return_error_when_invalid_body_size(t *testing.T) {
 	b = _writeListTableSize(b, 1000)
 	b = append(b, byte(TypeMessage))
 
-	_, err := readMessage(b)
+	_, n, err := readMessage(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body size")
 }
@@ -412,7 +462,8 @@ func TestReadMessage__should_return_error_when_invalid_table(t *testing.T) {
 	b = _writeListTableSize(b, 1000)
 	b = append(b, byte(TypeMessage))
 
-	_, err = readMessage(b)
+	_, n, err := readMessage(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table")
 }
@@ -426,7 +477,8 @@ func TestReadMessage__should_return_error_when_invalid_body(t *testing.T) {
 	b = _writeListTableSize(b, 0)
 	b = append(b, byte(TypeMessage))
 
-	_, err = readMessage(b)
+	_, n, err := readMessage(b)
+	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body")
 }

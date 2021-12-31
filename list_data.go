@@ -11,7 +11,7 @@ type ListData struct {
 
 // NewListData reads and returns list data, but does not validate its elements.
 func NewListData(b []byte) (ListData, error) {
-	l, err := readList(b)
+	l, _, err := readList(b)
 	if err != nil {
 		return ListData{}, err
 	}
@@ -20,7 +20,7 @@ func NewListData(b []byte) (ListData, error) {
 
 // ReadListData reads and returns list data, and recursively validates its elements.
 func ReadListData(b []byte) (ListData, error) {
-	l, err := readList(b)
+	l, _, err := readList(b)
 	if err != nil {
 		return ListData{}, err
 	}
@@ -61,7 +61,7 @@ func (d ListData) Bool(i int) bool {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readBool(b)
+	v, _, _ := readBool(b)
 	return v
 }
 
@@ -75,7 +75,7 @@ func (d ListData) Int8(i int) int8 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readInt8(b)
+	v, _, _ := readInt8(b)
 	return v
 }
 
@@ -89,7 +89,7 @@ func (d ListData) Int16(i int) int16 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readInt16(b)
+	v, _, _ := readInt16(b)
 	return v
 }
 
@@ -103,7 +103,7 @@ func (d ListData) Int32(i int) int32 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readInt32(b)
+	v, _, _ := readInt32(b)
 	return v
 }
 
@@ -117,7 +117,7 @@ func (d ListData) Int64(i int) int64 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readInt64(b)
+	v, _, _ := readInt64(b)
 	return v
 }
 
@@ -131,7 +131,7 @@ func (d ListData) Uint8(i int) uint8 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readUint8(b)
+	v, _, _ := readUint8(b)
 	return v
 }
 
@@ -145,7 +145,7 @@ func (d ListData) Uint16(i int) uint16 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readUint16(b)
+	v, _, _ := readUint16(b)
 	return v
 }
 
@@ -159,7 +159,7 @@ func (d ListData) Uint32(i int) uint32 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readUint32(b)
+	v, _, _ := readUint32(b)
 	return v
 }
 
@@ -173,7 +173,7 @@ func (d ListData) Uint64(i int) uint64 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readUint64(b)
+	v, _, _ := readUint64(b)
 	return v
 }
 
@@ -187,7 +187,7 @@ func (d ListData) U128(i int) u128.U128 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readU128(b)
+	v, _, _ := readU128(b)
 	return v
 }
 
@@ -201,7 +201,7 @@ func (d ListData) U256(i int) u256.U256 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readU256(b)
+	v, _, _ := readU256(b)
 	return v
 }
 
@@ -215,7 +215,7 @@ func (d ListData) Float32(i int) float32 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readFloat32(b)
+	v, _, _ := readFloat32(b)
 	return v
 }
 
@@ -229,7 +229,7 @@ func (d ListData) Float64(i int) float64 {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readFloat64(b)
+	v, _, _ := readFloat64(b)
 	return v
 }
 
@@ -243,7 +243,7 @@ func (d ListData) Bytes(i int) []byte {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readBytes(b)
+	v, _, _ := readBytes(b)
 	return v
 }
 
@@ -257,7 +257,7 @@ func (d ListData) String(i int) string {
 	}
 
 	b := d.l.data[start:end]
-	v, _ := readString(b)
+	v, _, _ := readString(b)
 	return v
 }
 

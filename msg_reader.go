@@ -14,7 +14,7 @@ type MessageReader struct {
 
 // NewMessageReader returns a new message reader or an error.
 func NewMessageReader(b []byte) (MessageReader, error) {
-	m, err := readMessage(b)
+	m, _, err := readMessage(b)
 	if err != nil {
 		return MessageReader{}, err
 	}
@@ -70,7 +70,8 @@ func (r MessageReader) ReadBool(tag uint16) (bool, error) {
 	}
 
 	b := r.m.data[:end]
-	return readBool(b)
+	v, _, err := readBool(b)
+	return v, err
 }
 
 func (r MessageReader) ReadInt8(tag uint16) (int8, error) {
@@ -83,7 +84,8 @@ func (r MessageReader) ReadInt8(tag uint16) (int8, error) {
 	}
 
 	b := r.m.data[:end]
-	return readInt8(b)
+	v, _, err := readInt8(b)
+	return v, err
 }
 
 func (r MessageReader) ReadInt16(tag uint16) (int16, error) {
@@ -96,7 +98,8 @@ func (r MessageReader) ReadInt16(tag uint16) (int16, error) {
 	}
 
 	b := r.m.data[:end]
-	return readInt16(b)
+	v, _, err := readInt16(b)
+	return v, err
 }
 
 func (r MessageReader) ReadInt32(tag uint16) (int32, error) {
@@ -109,7 +112,8 @@ func (r MessageReader) ReadInt32(tag uint16) (int32, error) {
 	}
 
 	b := r.m.data[:end]
-	return readInt32(b)
+	v, _, err := readInt32(b)
+	return v, err
 }
 
 func (r MessageReader) ReadInt64(tag uint16) (int64, error) {
@@ -122,7 +126,8 @@ func (r MessageReader) ReadInt64(tag uint16) (int64, error) {
 	}
 
 	b := r.m.data[:end]
-	return readInt64(b)
+	v, _, err := readInt64(b)
+	return v, err
 }
 
 func (r MessageReader) ReadUint8(tag uint16) (uint8, error) {
@@ -135,7 +140,8 @@ func (r MessageReader) ReadUint8(tag uint16) (uint8, error) {
 	}
 
 	b := r.m.data[:end]
-	return readUint8(b)
+	v, _, err := readUint8(b)
+	return v, err
 }
 
 func (r MessageReader) ReadUint16(tag uint16) (uint16, error) {
@@ -148,7 +154,8 @@ func (r MessageReader) ReadUint16(tag uint16) (uint16, error) {
 	}
 
 	b := r.m.data[:end]
-	return readUint16(b)
+	v, _, err := readUint16(b)
+	return v, err
 }
 
 func (r MessageReader) ReadUint32(tag uint16) (uint32, error) {
@@ -161,7 +168,8 @@ func (r MessageReader) ReadUint32(tag uint16) (uint32, error) {
 	}
 
 	b := r.m.data[:end]
-	return readUint32(b)
+	v, _, err := readUint32(b)
+	return v, err
 }
 
 func (r MessageReader) ReadUint64(tag uint16) (uint64, error) {
@@ -174,7 +182,8 @@ func (r MessageReader) ReadUint64(tag uint16) (uint64, error) {
 	}
 
 	b := r.m.data[:end]
-	return readUint64(b)
+	v, _, err := readUint64(b)
+	return v, err
 }
 
 func (r MessageReader) ReadU128(tag uint16) (u128.U128, error) {
@@ -187,7 +196,8 @@ func (r MessageReader) ReadU128(tag uint16) (u128.U128, error) {
 	}
 
 	b := r.m.data[:end]
-	return readU128(b)
+	v, _, err := readU128(b)
+	return v, err
 }
 
 func (r MessageReader) ReadU256(tag uint16) (u256.U256, error) {
@@ -200,7 +210,8 @@ func (r MessageReader) ReadU256(tag uint16) (u256.U256, error) {
 	}
 
 	b := r.m.data[:end]
-	return readU256(b)
+	v, _, err := readU256(b)
+	return v, err
 }
 
 func (r MessageReader) ReadFloat32(tag uint16) (float32, error) {
@@ -213,7 +224,8 @@ func (r MessageReader) ReadFloat32(tag uint16) (float32, error) {
 	}
 
 	b := r.m.data[:end]
-	return readFloat32(b)
+	v, _, err := readFloat32(b)
+	return v, err
 }
 
 func (r MessageReader) ReadFloat64(tag uint16) (float64, error) {
@@ -226,7 +238,8 @@ func (r MessageReader) ReadFloat64(tag uint16) (float64, error) {
 	}
 
 	b := r.m.data[:end]
-	return readFloat64(b)
+	v, _, err := readFloat64(b)
+	return v, err
 }
 
 func (r MessageReader) ReadBytes(tag uint16) ([]byte, error) {
@@ -239,7 +252,8 @@ func (r MessageReader) ReadBytes(tag uint16) ([]byte, error) {
 	}
 
 	b := r.m.data[:end]
-	return readBytes(b)
+	v, _, err := readBytes(b)
+	return v, err
 }
 
 func (r MessageReader) ReadString(tag uint16) (string, error) {
@@ -252,7 +266,8 @@ func (r MessageReader) ReadString(tag uint16) (string, error) {
 	}
 
 	b := r.m.data[:end]
-	return readString(b)
+	v, _, err := readString(b)
+	return v, err
 }
 
 func (r MessageReader) ReadList(tag uint16) (ListReader, error) {

@@ -145,6 +145,9 @@ const {
     typeUint16 = 0x21
     typeUint32 = 0x22
     typeUint64 = 0x23
+
+    typeU128 = 0x24
+    typeU256 = 0x25
     
     typeFloat32 = 0x30
     typeFloat64 = 0x31
@@ -157,6 +160,8 @@ const {
 
     typeMessage    = 0x60
 	typeMessageBig = 0x61
+
+    typeStruct = 0x70
 }
 
 // value holds any value, it is a union of a value body and a type.
@@ -175,6 +180,9 @@ value struct {
         
         float32 float32
         float64 float64
+        
+        u128 u128
+        u256 u256
         
         bytes {
             data  []byte
@@ -199,6 +207,11 @@ value struct {
             table      messageTable // field offsets ordered by tags
             bodySize   varint
             tableSize  varint
+        }
+
+        struct {
+            body       []byte       // field values
+            bodySize   varint
         }
     }
 
