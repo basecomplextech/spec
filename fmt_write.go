@@ -338,6 +338,26 @@ func _writeMessageBodySize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
+// struct
+
+func writeStruct(b []byte, bodySize int) ([]byte, error) {
+	if bodySize > MaxSize {
+		return nil, fmt.Errorf("write: struct too large, max size=%d, actual size=%d", MaxSize, bodySize)
+	}
+
+	bsize := uint32(bodySize)
+	b = _writeStructBodySize(b, bsize)
+	b = append(b, byte(TypeStruct))
+	return b, nil
+}
+
+func _writeStructBodySize(b []byte, size uint32) []byte {
+	p := [maxVarintLen32]byte{}
+	n := writeReverseUvarint(p[:], uint64(size))
+	off := maxVarintLen32 - n
+	return append(b, p[off:]...)
+}
+
 // private
 
 // writeAlloc grows a buffer by n bytes and returns a new buffer and an allocated segment.

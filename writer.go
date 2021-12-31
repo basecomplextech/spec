@@ -476,7 +476,7 @@ func (w *Writer) EndMessage() error {
 	bsize := len(w.buf) - message.start
 	table := w.fields.pop(message.tableStart)
 
-	// write mesasge
+	// write message
 	var err error
 	w.buf, err = writeMessage(w.buf, bsize, table)
 	if err != nil {
@@ -491,6 +491,72 @@ func (w *Writer) EndMessage() error {
 	}
 	return nil
 }
+
+// Struct
+
+func (w *Writer) BeginStruct() error {
+	if w.err != nil {
+		return w.err
+	}
+
+	// push struct
+	start := len(w.buf)
+	w.objects.pushStruct(start)
+	return nil
+}
+
+func (w *Writer) StructField() error {
+	if w.err != nil {
+		return w.err
+	}
+
+	// check struct
+	obj, ok := w.objects.peek()
+	switch {
+	case !ok:
+		return w.fail(fmt.Errorf("field: cannot write struct field, not struct writer"))
+	case obj.type_ != objectTypeStruct:
+		return w.fail(fmt.Errorf("field: cannot write struct field, not struct writer"))
+	}
+
+	// just consume data
+	w.popData()
+	return nil
+}
+
+func (w *Writer) EndStruct() error {
+	if w.err != nil {
+		return w.err
+	}
+
+	// pop struct
+	obj, ok := w.objects.pop()
+	switch {
+	case !ok:
+		return w.fail(fmt.Errorf("end struct: not struct writer"))
+	case obj.type_ != objectTypeStruct:
+		return w.fail(fmt.Errorf("end struct: not struct writer"))
+	}
+
+	bsize := len(w.buf) - obj.start
+
+	// write struct
+	var err error
+	w.buf, err = writeStruct(w.buf, bsize)
+	if err != nil {
+		return w.fail(err)
+	}
+
+	// push data
+	start := obj.start
+	end := len(w.buf)
+	if err := w.setData(start, end); err != nil {
+		return w.fail(err)
+	}
+	return nil
+}
+
+// private
 
 func (w *Writer) fail(err error) error {
 	if w.err != nil {

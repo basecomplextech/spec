@@ -650,3 +650,41 @@ func _readMessageTable(b []byte, size uint32, big bool) (messageTable, error) {
 	v := messageTable(p)
 	return v, nil
 }
+
+// struct
+
+func readStruct(b []byte) (bodySize int, n int, err error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
+	// read type
+	t, n := _readType(b)
+	if n < 0 {
+		return 0, -1, fmt.Errorf("read struct: invalid type")
+	}
+
+	// check type
+	switch t {
+	default:
+		return 0, -1, fmt.Errorf("read struct: unexpected type, expected=%d, actual=%d", TypeStruct, t)
+	case TypeNil:
+		return 0, 0, nil
+	case TypeStruct:
+	}
+
+	// body size
+	off := len(b) - n
+	bsize, bn := _readStructBodySize(b[:off])
+	if bn < 0 {
+		return 0, -1, fmt.Errorf("read struct: invalid body size")
+	}
+
+	// done
+	total := n + bn + int(bsize)
+	return int(bsize), total, nil
+}
+
+func _readStructBodySize(b []byte) (uint32, int) {
+	return readReverseUvarint32(b)
+}

@@ -35,6 +35,8 @@ type TestMessage struct {
 	List     []int64           `tag:"50"`
 	Messages []*TestSubMessage `tag:"51"`
 	Strings  []string          `tag:"52"`
+
+	Struct TestStruct `tag:"60"`
 }
 
 func newTestMessage() *TestMessage {
@@ -77,6 +79,11 @@ func newTestMessage() *TestMessage {
 		List:     list,
 		Messages: messages,
 		Strings:  strings,
+
+		Struct: TestStruct{
+			X: 100,
+			Y: 200,
+		},
 	}
 }
 
@@ -96,6 +103,13 @@ func newTestSubMessage(i int) *TestSubMessage {
 		Int32: int32(i + 100),
 		Int64: int64(i + 1000),
 	}
+}
+
+// TestStruct
+
+type TestStruct struct {
+	X int64
+	Y int64
 }
 
 // Marshal
@@ -246,6 +260,17 @@ func (m *TestMessage) Unmarshal(b []byte) error {
 			m.Strings = append(m.Strings, s)
 		}
 	}
+
+	// struct:60
+	{
+		data, err := r.Read(60)
+		if err != nil {
+			return err
+		}
+		if err := m.Struct.Unmarshal(data); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -269,6 +294,26 @@ func (m *TestSubMessage) Unmarshal(b []byte) error {
 		return err
 	}
 	m.Int64, err = r.ReadInt64(4)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *TestStruct) Unmarshal(b []byte) error {
+	r, err := ReadStruct(b)
+	switch {
+	case err != nil:
+		return err
+	case len(r) == 0:
+		return nil
+	}
+
+	s.Y, r, err = r.ReadInt64()
+	if err != nil {
+		return err
+	}
+	s.X, r, err = r.ReadInt64()
 	if err != nil {
 		return err
 	}
@@ -357,6 +402,10 @@ func (m TestMessage) Write(w *Writer) error {
 		w.Field(52)
 	}
 
+	// struct:60
+	m.Struct.Write(w)
+	w.Field(60)
+
 	return w.EndMessage()
 }
 
@@ -378,7 +427,21 @@ func (m TestSubMessage) Write(w *Writer) error {
 	return w.EndMessage()
 }
 
-// Value
+func (s TestStruct) Write(w *Writer) error {
+	if err := w.BeginStruct(); err != nil {
+		return err
+	}
+
+	w.Int64(s.X)
+	w.StructField()
+
+	w.Int64(s.Y)
+	w.StructField()
+
+	return w.EndStruct()
+}
+
+// Data
 
 type TestMessageData struct{ d MessageData }
 
@@ -400,6 +463,12 @@ func (d TestMessageData) Bytes() []byte      { return d.d.Bytes(41) }
 func (d TestMessageData) List() ListData     { return d.d.List(50) }
 func (d TestMessageData) Messages() ListData { return d.d.List(51) }
 func (d TestMessageData) Strings() ListData  { return d.d.List(52) }
+
+func (d TestMessageData) Struct() TestStruct {
+	data := d.d.Element(60)
+	v, _ := readTestStruct(data)
+	return v
+}
 
 func getTestMessageData(b []byte) (TestMessageData, error) {
 	m, err := NewMessageData(b)
@@ -438,4 +507,10 @@ func readTestSubMessageData(b []byte) (TestSubMessageData, error) {
 		return TestSubMessageData{}, err
 	}
 	return TestSubMessageData{m}, nil
+}
+
+func readTestStruct(b []byte) (TestStruct, error) {
+	s := TestStruct{}
+	err := s.Unmarshal(b)
+	return s, err
 }

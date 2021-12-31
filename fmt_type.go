@@ -42,6 +42,8 @@ const (
 
 	TypeMessage    Type = 0x60
 	TypeMessageBig Type = 0x61
+
+	TypeStruct = 0x70
 )
 
 func checkType(t Type) error {
@@ -74,7 +76,9 @@ func checkType(t Type) error {
 		TypeListBig,
 
 		TypeMessage,
-		TypeMessageBig:
+		TypeMessageBig,
+
+		TypeStruct:
 		return nil
 	}
 
@@ -132,6 +136,9 @@ func (t Type) String() string {
 		return "message"
 	case TypeMessageBig:
 		return "message_big"
+
+	case TypeStruct:
+		return "struct"
 	}
 
 	return strconv.Itoa(int(t))

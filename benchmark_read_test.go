@@ -287,6 +287,11 @@ func walkMessageData(m TestMessageData) (int, error) {
 		}
 	}
 
+	{
+		str := m.Struct()
+		v += int(str.X)
+		v += int(str.Y)
+	}
 	return v, nil
 }
 

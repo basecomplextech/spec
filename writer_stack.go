@@ -8,6 +8,7 @@ const (
 	objectTypeUndefined objectType = iota
 	objectTypeList
 	objectTypeMessage
+	objectTypeStruct
 )
 
 type objectEntry struct {
@@ -67,6 +68,14 @@ func (s *objectStack) pushMessage(start int, tableStart int) {
 		type_:      objectTypeMessage,
 		start:      start,
 		tableStart: tableStart,
+	}
+	s.stack = append(s.stack, e)
+}
+
+func (s *objectStack) pushStruct(start int) {
+	e := objectEntry{
+		type_: objectTypeStruct,
+		start: start,
 	}
 	s.stack = append(s.stack, e)
 }
