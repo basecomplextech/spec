@@ -4,10 +4,7 @@ go 1.17
 
 require (
 	github.com/baseone-run/library v0.0.0-20211207070218-4f5ce0b9a194
-	github.com/gogo/protobuf v1.3.2
-	github.com/google/flatbuffers v2.0.0+incompatible
 	github.com/stretchr/testify v1.7.0
-	google.golang.org/protobuf v1.27.1
 )
 
 require (
