@@ -59,21 +59,31 @@ func newDefinition(pkg *Package, file *File, pdef *parser.Definition) (*Definiti
 	case DefinitionEnum:
 		def.Enum, err = newEnum(def, pdef.Enum)
 		if err != nil {
-			return nil, fmt.Errorf("invalid enum %q: %w", def.Name, err)
+			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}
 
 	case DefinitionMessage:
 		def.Message, err = newMessage(def, pdef.Message)
 		if err != nil {
-			return nil, fmt.Errorf("invalid message %q: %w", def.Name, err)
+			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}
 
 	case DefinitionStruct:
 		def.Struct, err = newStruct(def, pdef.Struct)
 		if err != nil {
-			return nil, fmt.Errorf("invalid struct %q: %w", def.Name, err)
+			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}
 	}
 
 	return def, nil
+}
+
+func (d *Definition) validate() error {
+	switch d.Type {
+	case DefinitionEnum:
+	case DefinitionMessage:
+	case DefinitionStruct:
+		return d.Struct.validate()
+	}
+	return nil
 }

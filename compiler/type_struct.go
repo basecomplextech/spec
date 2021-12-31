@@ -38,6 +38,15 @@ func newStruct(def *Definition, pstr *parser.Struct) (*Struct, error) {
 	return str, nil
 }
 
+func (s *Struct) validate() error {
+	for _, field := range s.Fields {
+		if err := field.validate(); err != nil {
+			return fmt.Errorf("%v: %w", s.Def.Name, err)
+		}
+	}
+	return nil
+}
+
 // Field
 
 type StructField struct {
@@ -56,4 +65,18 @@ func newStructField(pfield *parser.StructField) (*StructField, error) {
 		Type: type_,
 	}
 	return f, nil
+}
+
+func (f *StructField) validate() error {
+	t := f.Type
+
+	switch {
+	case t.builtin():
+		return nil
+	case t.Kind == KindStruct:
+		return nil
+	}
+
+	return fmt.Errorf("%v: structs support only value types or other structs, actual=%v",
+		f.Name, t.Kind)
 }

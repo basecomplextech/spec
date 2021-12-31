@@ -40,7 +40,10 @@ func testMessage() *Message {
 				Value: "b",
 			},
 		},
-		Value: Struct{},
+		Value: Struct{
+			Key:   123,
+			Value: 456,
+		},
 		Imported: &pkg2.SubMessage{
 			Key:   "key",
 			Value: pkg3.Value{},

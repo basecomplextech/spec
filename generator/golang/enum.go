@@ -52,7 +52,7 @@ func (w *writer) readEnum(def *compiler.Definition) error {
 	name := def.Name
 	w.linef(`func Read%v(b []byte) (%v, error) {`, name, name)
 	w.linef(`r := spec.NewReader(b)`)
-	w.linef(`v, err := r.ReadInt32()`)
+	w.linef(`v, _, err := r.ReadInt32()`)
 	w.linef(`if err != nil {
 		return 0, err
 	}`)

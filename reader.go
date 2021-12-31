@@ -159,6 +159,27 @@ func (r Reader) ReadString() (string, Reader, error) {
 	return v, r.read(n), err
 }
 
+func (r Reader) ReadStruct() ([]byte, Reader, error) {
+	bodySize, n, err := readStruct(r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	switch {
+	case err != nil:
+		return nil, r, err
+	case n == 0:
+		return nil, r, err
+	}
+
+	start := len(r) - n
+	end := start + bodySize
+	// TODO: Check body size
+
+	b := r[start:end]
+	return b, r.read(n), err
+}
+
 func (r Reader) ReadList() (ListReader, error) {
 	return NewListReader(r)
 }

@@ -41,6 +41,8 @@ message TestMessage {
     field_string  string  50;
     field_bytes   bytes   51;
 
+    field_struct  TestStruct 52;
+
     list        []int64             60;
     messages    []TestSubMessage    61;
     strings     []string            62;

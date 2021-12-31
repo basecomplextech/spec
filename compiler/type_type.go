@@ -84,6 +84,11 @@ func newBuiltinType(kind Kind) *Type {
 	}
 }
 
+func (t *Type) builtin() bool {
+	_, ok := builtin[t.Kind]
+	return ok
+}
+
 func (t *Type) resolve(def *Definition, impOrNil *Import) {
 	if t.Kind != KindReference {
 		panic("type already resolved")

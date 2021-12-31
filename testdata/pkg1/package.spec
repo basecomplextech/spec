@@ -28,6 +28,7 @@ message Message {
 
     field_string  string    50;
     field_bytes   bytes     51;
+    field_struct  Struct    52;
 
     msg         Node            60;
     value       Struct          61;

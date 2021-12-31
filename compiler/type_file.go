@@ -98,6 +98,15 @@ func (f *File) lookupImport(name string) (*Import, bool) {
 	return imp, ok
 }
 
+func (f *File) validate() error {
+	for _, def := range f.Definitions {
+		if err := def.validate(); err != nil {
+			return fmt.Errorf("%v: %w", f.Name, err)
+		}
+	}
+	return nil
+}
+
 // Import
 
 type Import struct {

@@ -35,6 +35,8 @@ const (
 	KindBytes
 	KindString
 
+	// list
+
 	KindList
 
 	// resolved
