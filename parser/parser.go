@@ -1,3 +1,5 @@
+//go:generate goyacc -l -v grammar.out -o grammar.go grammar.y
+
 package parser
 
 import (
