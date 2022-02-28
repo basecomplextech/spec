@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/baseone-run/spec/parser"
+	"github.com/complexl/spec/parser"
 )
 
 type PackageState string

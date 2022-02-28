@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/baseone-run/spec/compiler"
+	"github.com/complexl/spec/compiler"
 )
 
 func (w *writer) message(def *compiler.Definition) error {

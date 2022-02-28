@@ -3,8 +3,8 @@ package spec
 import (
 	"fmt"
 
-	"github.com/baseone-run/library/u128"
-	"github.com/baseone-run/library/u256"
+	"github.com/complexl/library/u128"
+	"github.com/complexl/library/u256"
 )
 
 // MessageReader reads a message from a byte slice.

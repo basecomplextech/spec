@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/baseone-run/spec/compiler"
-	"github.com/baseone-run/spec/generator"
+	"github.com/complexl/spec/compiler"
+	"github.com/complexl/spec/generator"
 	"github.com/spf13/cobra"
 )
 

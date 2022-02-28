@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/baseone-run/spec/parser"
+	"github.com/complexl/spec/parser"
 )
 
 type File struct {

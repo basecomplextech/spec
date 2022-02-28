@@ -130,7 +130,7 @@ func TestCompiler__should_compile_options(t *testing.T) {
 
 	gopkg := file1.OptionMap["go_package"]
 	require.NotNil(t, gopkg)
-	assert.Equal(t, "github.com/baseone-run/spec/testgen/golang/pkg1", gopkg.Value)
+	assert.Equal(t, "github.com/complexl/spec/testgen/golang/pkg1", gopkg.Value)
 }
 
 // Definitions

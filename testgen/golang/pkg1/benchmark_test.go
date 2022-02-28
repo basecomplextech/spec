@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/baseone-run/spec"
+	"github.com/complexl/spec"
 )
 
 func BenchmarkRead(b *testing.B) {

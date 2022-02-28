@@ -6,7 +6,7 @@ import (
 	"go/format"
 	"strings"
 
-	"github.com/baseone-run/spec/compiler"
+	"github.com/complexl/spec/compiler"
 )
 
 const (
@@ -59,7 +59,7 @@ func (w *writer) file(file *compiler.File) error {
 
 	// imports
 	w.line("import (")
-	w.line(`"github.com/baseone-run/spec"`)
+	w.line(`"github.com/complexl/spec"`)
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)
 		w.linef(`"%v"`, pkg)

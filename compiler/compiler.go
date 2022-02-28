@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/baseone-run/spec/parser"
+	"github.com/complexl/spec/parser"
 )
 
 type Compiler interface {

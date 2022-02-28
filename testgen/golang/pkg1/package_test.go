@@ -3,10 +3,10 @@ package pkg1
 import (
 	"testing"
 
-	"github.com/baseone-run/library/u128"
-	"github.com/baseone-run/library/u256"
-	"github.com/baseone-run/spec/testgen/golang/pkg2"
-	"github.com/baseone-run/spec/testgen/golang/sub/pkg3"
+	"github.com/complexl/library/u128"
+	"github.com/complexl/library/u256"
+	"github.com/complexl/spec/testgen/golang/pkg2"
+	"github.com/complexl/spec/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
 )
 

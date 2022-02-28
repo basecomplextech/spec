@@ -3,7 +3,7 @@ package generator
 import (
 	"testing"
 
-	"github.com/baseone-run/spec/compiler"
+	"github.com/complexl/spec/compiler"
 )
 
 func TestGenerator_Golang__should_generate_go_package(t *testing.T) {
