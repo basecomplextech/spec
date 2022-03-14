@@ -178,7 +178,8 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 			}
 		}
 
-	case TypeMessage:
+	case TypeMessage,
+		TypeMessageBig:
 		// read table size
 		off := len(b) - 1
 		tsize, tn := _readMessageTableSize(b[:off])

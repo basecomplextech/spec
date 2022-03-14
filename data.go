@@ -181,7 +181,8 @@ func (d Data) validate() error {
 
 	case TypeList:
 		_, err = ReadListData(d)
-	case TypeMessage:
+	case TypeMessage,
+		TypeMessageBig:
 		_, err = ReadMessageData(d)
 
 	case TypeStruct:
