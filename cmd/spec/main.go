@@ -11,7 +11,7 @@ import (
 func main() {
 	var importPath []string
 	generateGo := &cobra.Command{
-		Use:   "go [-i import_paths] -o input_dir output_dir",
+		Use:   "go [-i import_paths] input_dir output_dir",
 		Short: "Generates a Go package",
 		Long:  `Generates a Go package`,
 		Args:  cobra.ExactArgs(2),

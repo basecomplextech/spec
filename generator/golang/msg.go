@@ -270,6 +270,9 @@ func (w *writer) messageData(def *compiler.Definition) error {
 	if err := w.readMessageData(def); err != nil {
 		return err
 	}
+	if err := w.messageDataData(def); err != nil {
+		return err
+	}
 	if err := w.messageDataMethods(def); err != nil {
 		return err
 	}
@@ -313,6 +316,13 @@ func (w *writer) readMessageData(def *compiler.Definition) error {
 	w.linef(`return %v{d}, nil`, name)
 	w.linef(`}`)
 	w.line()
+	return nil
+}
+
+func (w *writer) messageDataData(def *compiler.Definition) error {
+	w.linef(`func (d %vData) Data() []byte {`, def.Name)
+	w.linef(`return d.d.Data()`)
+	w.linef(`}`)
 	return nil
 }
 

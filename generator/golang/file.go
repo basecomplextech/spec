@@ -60,12 +60,20 @@ func (w *writer) file(file *compiler.File) error {
 	// imports
 	w.line("import (")
 	w.line(`"github.com/complexl/spec"`)
+	w.line(`"github.com/complexl/library/u128"`)
+	w.line(`"github.com/complexl/library/u256"`)
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)
 		w.linef(`"%v"`, pkg)
 	}
 	w.line(")")
 	w.line()
+
+	// empty values for imports
+	w.line(`var (`)
+	w.line(`_ u128.U128 = u128.U128{}`)
+	w.line(`_ u256.U256 = u256.U256{}`)
+	w.line(`)`)
 
 	// definitions
 	return w.definitions(file)
