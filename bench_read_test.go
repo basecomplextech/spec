@@ -9,7 +9,7 @@ import (
 )
 
 func Benchmark_Marshal(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 	data, err := msg.Marshal()
 	if err != nil {
 		b.Fatal(err)
@@ -41,7 +41,7 @@ func Benchmark_Marshal(b *testing.B) {
 }
 
 func Benchmark_Unmarshal(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 	data, err := msg.Marshal()
 	if err != nil {
 		b.Fatal(err)
@@ -71,7 +71,7 @@ func Benchmark_Unmarshal(b *testing.B) {
 }
 
 func Benchmark_ReadData(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 	data, err := msg.Marshal()
 	if err != nil {
 		b.Fatal(err)
@@ -86,7 +86,7 @@ func Benchmark_ReadData(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		_, err := readTestMessageData(data)
+		_, err := ReadTestMessage(data)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -102,7 +102,7 @@ func Benchmark_ReadData(b *testing.B) {
 }
 
 func Benchmark_Walk(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 	data, err := msg.Marshal()
 	if err != nil {
 		b.Fatal(err)
@@ -111,7 +111,7 @@ func Benchmark_Walk(b *testing.B) {
 	size := len(data)
 	compressed := compressedSize(data)
 
-	d, err := readTestMessageData(data)
+	d, err := ReadTestMessage(data)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func Benchmark_Walk(b *testing.B) {
 // Standard JSON
 
 func Benchmark_JSONMarshal(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 	data, err := json.Marshal(msg)
 	if err != nil {
 		b.Fatal(err)
@@ -170,7 +170,7 @@ func Benchmark_JSONMarshal(b *testing.B) {
 }
 
 func Benchmark_JSONUnmarshal(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -182,7 +182,7 @@ func Benchmark_JSONUnmarshal(b *testing.B) {
 
 	t0 := time.Now()
 
-	msg1 := &TestMessage{}
+	msg1 := &TestObject{}
 	for i := 0; i < b.N; i++ {
 		if err := json.Unmarshal(data, msg1); err != nil {
 			b.Fatal(err)
@@ -199,7 +199,7 @@ func Benchmark_JSONUnmarshal(b *testing.B) {
 }
 
 func Benchmark_JSONEncode(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 	data, err := json.Marshal(msg)
 	if err != nil {
 		b.Fatal(err)
@@ -230,7 +230,7 @@ func Benchmark_JSONEncode(b *testing.B) {
 
 // private
 
-func walkMessageData(m TestMessageData) (int, error) {
+func walkMessageData(m TestMessage) (int, error) {
 	var v int
 
 	v += int(m.Int8())
@@ -265,7 +265,7 @@ func walkMessageData(m TestMessageData) (int, error) {
 				continue
 			}
 
-			sub, err := getTestSubMessageData(data)
+			sub, err := NewTestSubMessage(data)
 			if err != nil {
 				return 0, err
 			}

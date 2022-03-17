@@ -8,9 +8,90 @@ import (
 	"github.com/complexl/library/u256"
 )
 
-// Fixture messages
+type TestMessage struct{ m Message }
 
-type TestMessage struct {
+func NewTestMessage(b []byte) (TestMessage, error) {
+	m, err := NewMessage(b)
+	if err != nil {
+		return TestMessage{}, err
+	}
+	return TestMessage{m}, nil
+}
+
+func ReadTestMessage(b []byte) (TestMessage, error) {
+	m, err := ReadMessage(b)
+	if err != nil {
+		return TestMessage{}, err
+	}
+	return TestMessage{m}, nil
+}
+
+func (m TestMessage) Bool() bool       { return m.m.Bool(1) }
+func (m TestMessage) Int8() int8       { return m.m.Int8(10) }
+func (m TestMessage) Int16() int16     { return m.m.Int16(11) }
+func (m TestMessage) Int32() int32     { return m.m.Int32(12) }
+func (m TestMessage) Int64() int64     { return m.m.Int64(13) }
+func (m TestMessage) Uint8() uint8     { return m.m.Uint8(20) }
+func (m TestMessage) Uint16() uint16   { return m.m.Uint16(21) }
+func (m TestMessage) Uint32() uint32   { return m.m.Uint32(22) }
+func (m TestMessage) Uint64() uint64   { return m.m.Uint64(23) }
+func (m TestMessage) U128() u128.U128  { return m.m.U128(24) }
+func (m TestMessage) U256() u256.U256  { return m.m.U256(25) }
+func (m TestMessage) Float32() float32 { return m.m.Float32(30) }
+func (m TestMessage) Float64() float64 { return m.m.Float64(31) }
+func (m TestMessage) String() string   { return m.m.String(40) }
+func (m TestMessage) Bytes() []byte    { return m.m.Bytes(41) }
+func (m TestMessage) List() List       { return m.m.List(50) }
+func (m TestMessage) Messages() List   { return m.m.List(51) }
+func (m TestMessage) Strings() List    { return m.m.List(52) }
+
+func (m TestMessage) Struct() TestStruct {
+	data := m.m.Field(60)
+	v, _ := ReadTestStruct(data)
+	return v
+}
+
+// SubMessage
+
+type TestSubMessage struct{ m Message }
+
+func NewTestSubMessage(b []byte) (TestSubMessage, error) {
+	m, err := NewMessage(b)
+	if err != nil {
+		return TestSubMessage{}, err
+	}
+	return TestSubMessage{m}, nil
+}
+
+func ReadTestSubMessage(b []byte) (TestSubMessage, error) {
+	m, err := ReadMessage(b)
+	if err != nil {
+		return TestSubMessage{}, err
+	}
+	return TestSubMessage{m}, nil
+}
+
+func (m TestSubMessage) Int8() int8   { return m.m.Int8(1) }
+func (m TestSubMessage) Int16() int16 { return m.m.Int16(2) }
+func (m TestSubMessage) Int32() int32 { return m.m.Int32(3) }
+func (m TestSubMessage) Int64() int64 { return m.m.Int64(4) }
+
+// Struct
+
+type TestStruct struct {
+	X int64
+	Y int64
+}
+
+func ReadTestStruct(b []byte) (TestStruct, error) {
+	s := TestStruct{}
+	err := s.Unmarshal(b)
+	return s, err
+}
+
+// Objects
+
+type TestObject struct {
 	Bool bool `tag:"1"`
 
 	Int8  int8  `tag:"10"`
@@ -32,22 +113,22 @@ type TestMessage struct {
 	String string `tag:"40"`
 	Bytes  []byte `tag:"41"`
 
-	List     []int64           `tag:"50"`
-	Messages []*TestSubMessage `tag:"51"`
-	Strings  []string          `tag:"52"`
+	List     []int64          `tag:"50"`
+	Messages []*TestSubObject `tag:"51"`
+	Strings  []string         `tag:"52"`
 
 	// Struct TestStruct `tag:"60"`
 }
 
-func newTestMessage() *TestMessage {
+func newTestObject() *TestObject {
 	list := make([]int64, 0, 10)
 	for i := 0; i < cap(list); i++ {
 		list = append(list, int64(i))
 	}
 
-	messages := make([]*TestSubMessage, 0, 10)
+	messages := make([]*TestSubObject, 0, 10)
 	for i := 0; i < cap(messages); i++ {
-		sub := newTestSubMessage(i)
+		sub := newTestSubObject(i)
 		messages = append(messages, sub)
 	}
 
@@ -57,7 +138,7 @@ func newTestMessage() *TestMessage {
 		strings = append(strings, s)
 	}
 
-	return &TestMessage{
+	return &TestObject{
 		Bool: true,
 
 		Int8:  math.MaxInt8,
@@ -87,17 +168,17 @@ func newTestMessage() *TestMessage {
 	}
 }
 
-// TestSubMessage
+// TestSubObject
 
-type TestSubMessage struct {
+type TestSubObject struct {
 	Int8  int8  `tag:"1"`
 	Int16 int16 `tag:"2"`
 	Int32 int32 `tag:"3"`
 	Int64 int64 `tag:"4"`
 }
 
-func newTestSubMessage(i int) *TestSubMessage {
-	return &TestSubMessage{
+func newTestSubObject(i int) *TestSubObject {
+	return &TestSubObject{
 		Int8:  int8(i + 1),
 		Int16: int16(i + 10),
 		Int32: int32(i + 100),
@@ -105,26 +186,19 @@ func newTestSubMessage(i int) *TestSubMessage {
 	}
 }
 
-// TestStruct
-
-type TestStruct struct {
-	X int64
-	Y int64
-}
-
 // Marshal
 
-func (m *TestMessage) Marshal() ([]byte, error) {
+func (m *TestObject) Marshal() ([]byte, error) {
 	return Write(m)
 }
 
-func (m *TestMessage) MarshalTo(buf []byte) ([]byte, error) {
+func (m *TestObject) MarshalTo(buf []byte) ([]byte, error) {
 	return WriteTo(m, buf)
 }
 
 // Unmarshal
 
-func (m *TestMessage) Unmarshal(b []byte) error {
+func (m *TestObject) Unmarshal(b []byte) error {
 	r, err := NewMessage(b)
 	if err != nil {
 		return err
@@ -172,14 +246,14 @@ func (m *TestMessage) Unmarshal(b []byte) error {
 	{
 		list := r.List(51)
 
-		m.Messages = make([]*TestSubMessage, 0, list.Count())
+		m.Messages = make([]*TestSubObject, 0, list.Count())
 		for i := 0; i < list.Count(); i++ {
 			data := list.Element(i)
 			if len(data) == 0 {
 				continue
 			}
 
-			val := &TestSubMessage{}
+			val := &TestSubObject{}
 			if err := val.Unmarshal(data); err != nil {
 				return err
 			}
@@ -209,7 +283,7 @@ func (m *TestMessage) Unmarshal(b []byte) error {
 	return nil
 }
 
-func (m *TestSubMessage) Unmarshal(b []byte) error {
+func (m *TestSubObject) Unmarshal(b []byte) error {
 	r, err := ReadMessage(b)
 	if err != nil {
 		return err
@@ -248,7 +322,7 @@ func (s *TestStruct) Unmarshal(b []byte) error {
 
 // Write
 
-func (m TestMessage) Write(w *Writer) error {
+func (m TestObject) Write(w *Writer) error {
 	if err := w.BeginMessage(); err != nil {
 		return err
 	}
@@ -336,7 +410,7 @@ func (m TestMessage) Write(w *Writer) error {
 	return w.EndMessage()
 }
 
-func (m TestSubMessage) Write(w *Writer) error {
+func (m TestSubObject) Write(w *Writer) error {
 	if err := w.BeginMessage(); err != nil {
 		return err
 	}
@@ -366,78 +440,4 @@ func (s TestStruct) Write(w *Writer) error {
 	w.StructField()
 
 	return w.EndStruct()
-}
-
-// Data
-
-type TestMessageData struct{ d Message }
-
-func (d TestMessageData) Bool() bool       { return d.d.Bool(1) }
-func (d TestMessageData) Int8() int8       { return d.d.Int8(10) }
-func (d TestMessageData) Int16() int16     { return d.d.Int16(11) }
-func (d TestMessageData) Int32() int32     { return d.d.Int32(12) }
-func (d TestMessageData) Int64() int64     { return d.d.Int64(13) }
-func (d TestMessageData) Uint8() uint8     { return d.d.Uint8(20) }
-func (d TestMessageData) Uint16() uint16   { return d.d.Uint16(21) }
-func (d TestMessageData) Uint32() uint32   { return d.d.Uint32(22) }
-func (d TestMessageData) Uint64() uint64   { return d.d.Uint64(23) }
-func (d TestMessageData) U128() u128.U128  { return d.d.U128(24) }
-func (d TestMessageData) U256() u256.U256  { return d.d.U256(25) }
-func (d TestMessageData) Float32() float32 { return d.d.Float32(30) }
-func (d TestMessageData) Float64() float64 { return d.d.Float64(31) }
-func (d TestMessageData) String() string   { return d.d.String(40) }
-func (d TestMessageData) Bytes() []byte    { return d.d.Bytes(41) }
-func (d TestMessageData) List() List       { return d.d.List(50) }
-func (d TestMessageData) Messages() List   { return d.d.List(51) }
-func (d TestMessageData) Strings() List    { return d.d.List(52) }
-
-func (d TestMessageData) Struct() TestStruct {
-	data := d.d.Field(60)
-	v, _ := readTestStruct(data)
-	return v
-}
-
-func getTestMessageData(b []byte) (TestMessageData, error) {
-	m, err := NewMessage(b)
-	if err != nil {
-		return TestMessageData{}, err
-	}
-	return TestMessageData{m}, nil
-}
-
-func readTestMessageData(b []byte) (TestMessageData, error) {
-	m, err := ReadMessage(b)
-	if err != nil {
-		return TestMessageData{}, err
-	}
-	return TestMessageData{m}, nil
-}
-
-type TestSubMessageData struct{ d Message }
-
-func (d TestSubMessageData) Int8() int8   { return d.d.Int8(1) }
-func (d TestSubMessageData) Int16() int16 { return d.d.Int16(2) }
-func (d TestSubMessageData) Int32() int32 { return d.d.Int32(3) }
-func (d TestSubMessageData) Int64() int64 { return d.d.Int64(4) }
-
-func getTestSubMessageData(b []byte) (TestSubMessageData, error) {
-	m, err := NewMessage(b)
-	if err != nil {
-		return TestSubMessageData{}, err
-	}
-	return TestSubMessageData{m}, nil
-}
-
-func readTestSubMessageData(b []byte) (TestSubMessageData, error) {
-	m, err := ReadMessage(b)
-	if err != nil {
-		return TestSubMessageData{}, err
-	}
-	return TestSubMessageData{m}, nil
-}
-
-func readTestStruct(b []byte) (TestStruct, error) {
-	s := TestStruct{}
-	err := s.Unmarshal(b)
-	return s, err
 }

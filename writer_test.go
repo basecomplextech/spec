@@ -8,7 +8,7 @@ import (
 )
 
 func TestWriter_Message__should_write_message(t *testing.T) {
-	msg := newTestMessage()
+	msg := newTestObject()
 
 	w := NewWriter()
 	if err := msg.Write(w); err != nil {
@@ -19,7 +19,7 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg1 := &TestMessage{}
+	msg1 := &TestObject{}
 	if err := msg1.Unmarshal(b); err != nil {
 		t.Fatal(err)
 	}

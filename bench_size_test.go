@@ -6,7 +6,7 @@ import (
 )
 
 func _BenchmarkSizeDistribution(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 
 	w := NewWriter()
 	if err := msg.Write(w); err != nil {

@@ -57,7 +57,7 @@ func testMessage() *Message {
 	}
 }
 
-func testMessageData(t *testing.T) []byte {
+func TestMessage(t *testing.T) []byte {
 	m := testMessage()
 
 	data, err := m.Marshal()
@@ -84,7 +84,7 @@ func TestMessage_Marshal_Unmarshal(t *testing.T) {
 }
 
 func TestReadMessageData(t *testing.T) {
-	d := testMessageData(t)
+	d := TestMessage(t)
 
 	data, err := ReadMessageData(d)
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 )
 
 func Benchmark_Write(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 
 	buf := make([]byte, 0, 4096)
 	size := int64(0)
@@ -60,7 +60,7 @@ func Benchmark_Write(b *testing.B) {
 // Standard JSON
 
 func BenchmarkJSON_Write(b *testing.B) {
-	msg := newTestMessage()
+	msg := newTestObject()
 
 	buf := make([]byte, 0, 4096)
 	buffer := bytes.NewBuffer(buf)
