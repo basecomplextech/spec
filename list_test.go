@@ -2,8 +2,6 @@ package spec
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func testWriteList(t *testing.T) []byte {
@@ -56,33 +54,4 @@ func testWriteList(t *testing.T) []byte {
 		t.Fatal(err)
 	}
 	return b
-}
-
-// Getters
-
-func TestList_Getters__should_access_elements(t *testing.T) {
-	b := testWriteList(t)
-	l, err := NewList(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, int8(1), l.Int8(0))
-	assert.Equal(t, int16(1), l.Int16(1))
-	assert.Equal(t, int32(1), l.Int32(2))
-	assert.Equal(t, int64(1), l.Int64(3))
-
-	assert.Equal(t, uint8(1), l.Uint8(4))
-	assert.Equal(t, uint16(1), l.Uint16(5))
-	assert.Equal(t, uint32(1), l.Uint32(6))
-	assert.Equal(t, uint64(1), l.Uint64(7))
-
-	assert.Equal(t, float32(1), l.Float32(8))
-	assert.Equal(t, float64(1), l.Float64(9))
-
-	assert.Equal(t, "hello, world", l.String(10))
-	assert.Equal(t, []byte("hello, world"), l.Bytes(11))
-
-	assert.Equal(t, 1, l.List(12).Count())
-	assert.Equal(t, 1, l.Message(13).Count())
 }

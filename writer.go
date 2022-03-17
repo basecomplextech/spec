@@ -32,6 +32,11 @@ type Writer struct {
 	_fields   [128]messageField
 }
 
+// Writable can write itself using a writer.
+type Writable interface {
+	Write(w *Writer) error
+}
+
 // NewWriter returns a new writer with a default buffer.
 //
 // Usually, it is better to use Write(obj) and WriteTo(obj, buf), than to construct

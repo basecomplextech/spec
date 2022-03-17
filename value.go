@@ -7,187 +7,191 @@ import (
 	"github.com/complexl/library/u256"
 )
 
-// Data is a raw value data.
-type Data []byte
+// Value is a raw value.
+type Value []byte
 
-// NewData reads and returns value data, but does not validate its children.
-func NewData(b []byte) (Data, error) {
-	t, _, err := readType(b)
+// NewValue reads and returns a value or zero on an error.
+func NewValue(b []byte) Value {
+	t, _, err := ReadType(b)
 	if err != nil {
-		return Data{}, err
+		return Value{}
 	}
 	if err := checkType(t); err != nil {
-		return Data{}, err
+		return Value{}
 	}
-	return Data(b), nil
+	return Value(b)
 }
 
-// ReadData reads and returns value data, and recursively validates its children.
-func ReadData(b []byte) (Data, error) {
-	d := Data(b)
-	if err := d.validate(); err != nil {
-		return Data{}, err
+// ReadValue reads, recursively validates and returns a value.
+func ReadValue(b []byte) (Value, int, error) {
+	t, n, err := ReadType(b)
+	if err != nil {
+		return Value{}, n, err
 	}
-	return d, nil
+	if err := checkType(t); err != nil {
+		return Value{}, n, err
+	}
+
+	v := Value(b)
+	if err := v.validate(); err != nil {
+		return Value{}, n, err
+	}
+	return v, n, nil
 }
 
-func (d Data) Type() Type {
-	v, _, _ := readType(d)
-	return v
+func (v Value) Type() Type {
+	p, _, _ := ReadType(v)
+	return p
 }
 
-func (d Data) Nil() bool {
-	v, _, _ := readType(d)
-	return v == TypeNil
+func (v Value) Nil() bool {
+	p, _, _ := ReadType(v)
+	return p == TypeNil
 }
 
-func (d Data) Bool() bool {
-	v, _, _ := readBool(d)
-	return v
+func (v Value) Bool() bool {
+	p, _, _ := ReadBool(v)
+	return p
 }
 
-func (d Data) Byte() byte {
-	v, _, _ := readByte(d)
-	return v
+func (v Value) Byte() byte {
+	p, _, _ := ReadByte(v)
+	return p
 }
 
-func (d Data) Int8() int8 {
-	v, _, _ := readInt8(d)
-	return v
+func (v Value) Int8() int8 {
+	p, _, _ := ReadInt8(v)
+	return p
 }
 
-func (d Data) Int16() int16 {
-	v, _, _ := readInt16(d)
-	return v
+func (v Value) Int16() int16 {
+	p, _, _ := ReadInt16(v)
+	return p
 }
 
-func (d Data) Int32() int32 {
-	v, _, _ := readInt32(d)
-	return v
+func (v Value) Int32() int32 {
+	p, _, _ := ReadInt32(v)
+	return p
 }
 
-func (d Data) Int64() int64 {
-	v, _, _ := readInt64(d)
-	return v
+func (v Value) Int64() int64 {
+	p, _, _ := ReadInt64(v)
+	return p
 }
 
-func (d Data) Uint8() uint8 {
-	v, _, _ := readUint8(d)
-	return v
+func (v Value) Uint8() uint8 {
+	p, _, _ := ReadUint8(v)
+	return p
 }
 
-func (d Data) Uint16() uint16 {
-	v, _, _ := readUint16(d)
-	return v
+func (v Value) Uint16() uint16 {
+	p, _, _ := ReadUint16(v)
+	return p
 }
 
-func (d Data) Uint32() uint32 {
-	v, _, _ := readUint32(d)
-	return v
+func (v Value) Uint32() uint32 {
+	p, _, _ := ReadUint32(v)
+	return p
 }
 
-func (d Data) Uint64() uint64 {
-	v, _, _ := readUint64(d)
-	return v
+func (v Value) Uint64() uint64 {
+	p, _, _ := ReadUint64(v)
+	return p
 }
 
-func (d Data) U128() u128.U128 {
-	v, _, _ := readU128(d)
-	return v
+func (v Value) U128() u128.U128 {
+	p, _, _ := ReadU128(v)
+	return p
 }
 
-func (d Data) U256() u256.U256 {
-	v, _, _ := readU256(d)
-	return v
+func (v Value) U256() u256.U256 {
+	p, _, _ := ReadU256(v)
+	return p
 }
 
-func (d Data) Float32() float32 {
-	v, _, _ := readFloat32(d)
-	return v
+func (v Value) Float32() float32 {
+	p, _, _ := ReadFloat32(v)
+	return p
 }
 
-func (d Data) Float64() float64 {
-	v, _, _ := readFloat64(d)
-	return v
+func (v Value) Float64() float64 {
+	p, _, _ := ReadFloat64(v)
+	return p
 }
 
-func (d Data) Bytes() []byte {
-	v, _, _ := readBytes(d)
-	return v
+func (v Value) Bytes() []byte {
+	p, _, _ := ReadBytes(v)
+	return p
 }
 
-func (d Data) String() string {
-	v, _, _ := readString(d)
-	return v
+func (v Value) String() string {
+	p, _, _ := ReadString(v)
+	return p
 }
 
-func (d Data) List() List {
-	v, _ := NewList(d)
-	return v
-}
-
-func (d Data) Message() Message {
-	v, _ := NewMessage(d)
-	return v
+func (v Value) Message() Message {
+	return NewMessage(v)
 }
 
 // private
 
-func (d Data) validate() error {
-	t, _, err := readType(d)
+func (v Value) validate() error {
+	t, _, err := ReadType(v)
 	if err != nil {
 		return err
 	}
 
 	switch t {
 	default:
-		return fmt.Errorf("unsupported type %v", t)
+		return fmt.Errorf("unsupported type %d", t)
 
 	case TypeNil, TypeTrue, TypeFalse:
 		return nil
 
 	case TypeInt8:
-		_, _, err = readInt8(d)
+		_, _, err = ReadInt8(v)
 	case TypeInt16:
-		_, _, err = readInt16(d)
+		_, _, err = ReadInt16(v)
 	case TypeInt32:
-		_, _, err = readInt32(d)
+		_, _, err = ReadInt32(v)
 	case TypeInt64:
-		_, _, err = readInt64(d)
+		_, _, err = ReadInt64(v)
 
 	case TypeUint8:
-		_, _, err = readUint8(d)
+		_, _, err = ReadUint8(v)
 	case TypeUint16:
-		_, _, err = readUint16(d)
+		_, _, err = ReadUint16(v)
 	case TypeUint32:
-		_, _, err = readUint32(d)
+		_, _, err = ReadUint32(v)
 	case TypeUint64:
-		_, _, err = readUint64(d)
+		_, _, err = ReadUint64(v)
 
 	case TypeU128:
-		_, _, err = readU128(d)
+		_, _, err = ReadU128(v)
 	case TypeU256:
-		_, _, err = readU256(d)
+		_, _, err = ReadU256(v)
 
 	case TypeFloat32:
-		_, _, err = readFloat32(d)
+		_, _, err = ReadFloat32(v)
 	case TypeFloat64:
-		_, _, err = readFloat64(d)
+		_, _, err = ReadFloat64(v)
 
 	case TypeBytes:
-		_, _, err = readBytes(d)
+		_, _, err = ReadBytes(v)
 	case TypeString:
-		_, _, err = readString(d)
+		_, _, err = ReadString(v)
 
-	case TypeList:
-		_, err = ReadList(d)
+	case TypeList,
+		TypeListBig:
+		_, _, err = ReadList(v, ReadValue)
+
 	case TypeMessage,
 		TypeMessageBig:
-		_, err = ReadMessage(d)
+		_, _, err = ReadMessage(v)
 
 		// TODO: Uncomment
 		// case TypeStruct:
-		// 	_, err = ReadStruct(d)
+		// 	_, err = ReadStruct(v)
 	}
 	return err
 }

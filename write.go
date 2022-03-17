@@ -9,11 +9,6 @@ import (
 	"github.com/complexl/library/u256"
 )
 
-// Writable can write itself using a writer.
-type Writable interface {
-	Write(w *Writer) error
-}
-
 // Write writes a writable.
 func Write(w Writable) ([]byte, error) {
 	return WriteTo(w, nil)

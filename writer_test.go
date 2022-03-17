@@ -51,14 +51,14 @@ func TestWriter_List__should_write_list(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	list, err := ReadList(b)
+	list, _, err := ReadList(b, ReadInt64)
 	if err != nil {
 		t.Fatal(err)
 	}
 	items1 := []int64{
-		list.Int64(0),
-		list.Int64(1),
-		list.Int64(2),
+		list.Element(0),
+		list.Element(1),
+		list.Element(2),
 	}
 
 	assert.Equal(t, []int64{1, 2, 3}, items1)

@@ -10,6 +10,14 @@ const (
 	listElementBigSize   = 4
 )
 
+type list struct {
+	data  []byte
+	table listTable
+
+	body uint32 // body size
+	big  bool   // small/big table format
+}
+
 // listTable is a serialized array of list element offsets ordered by index.
 // the serialization format depends on whether the list is big or small, see isBigList().
 //

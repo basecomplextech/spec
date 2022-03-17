@@ -14,20 +14,17 @@ type TestMessage struct {
 	m Message
 }
 
-func NewTestMessage(b []byte) (TestMessage, error) {
-	m, err := NewMessage(b)
-	if err != nil {
-		return TestMessage{}, err
-	}
-	return TestMessage{m}, nil
+func NewTestMessage(b []byte) TestMessage {
+	m := NewMessage(b)
+	return TestMessage{m}
 }
 
-func ReadTestMessage(b []byte) (TestMessage, error) {
-	m, err := ReadMessage(b)
+func ReadTestMessage(b []byte) (TestMessage, int, error) {
+	m, n, err := ReadMessage(b)
 	if err != nil {
-		return TestMessage{}, err
+		return TestMessage{}, n, err
 	}
-	return TestMessage{m}, nil
+	return TestMessage{m}, n, nil
 }
 
 func WriteTestMessage(w *Writer) TestMessageWriter {
@@ -80,14 +77,17 @@ func (m TestMessage) String() string {
 func (m TestMessage) Bytes() []byte {
 	return m.m.Bytes(41)
 }
-func (m TestMessage) List() List {
-	return m.m.List(50)
+func (m TestMessage) List() List[int64] {
+	b := m.m.Field(50)
+	return NewList[int64](b, ReadInt64)
 }
-func (m TestMessage) Messages() List {
-	return m.m.List(51)
+func (m TestMessage) Messages() List[TestSubmessage] {
+	b := m.m.Field(51)
+	return NewList[TestSubmessage](b, ReadTestSubmessage)
 }
-func (m TestMessage) Strings() List {
-	return m.m.List(52)
+func (m TestMessage) Strings() List[string] {
+	b := m.m.Field(52)
+	return NewList[string](b, ReadString)
 }
 func (m TestMessage) Struct() TestStruct {
 	data := m.m.Field(60)
@@ -196,20 +196,17 @@ type TestSubmessage struct {
 	m Message
 }
 
-func NewTestSubmessage(b []byte) (TestSubmessage, error) {
-	m, err := NewMessage(b)
-	if err != nil {
-		return TestSubmessage{}, err
-	}
-	return TestSubmessage{m}, nil
+func NewTestSubmessage(b []byte) TestSubmessage {
+	m := NewMessage(b)
+	return TestSubmessage{m}
 }
 
-func ReadTestSubmessage(b []byte) (TestSubmessage, error) {
-	m, err := ReadMessage(b)
+func ReadTestSubmessage(b []byte) (TestSubmessage, int, error) {
+	m, n, err := ReadMessage(b)
 	if err != nil {
-		return TestSubmessage{}, err
+		return TestSubmessage{}, n, err
 	}
-	return TestSubmessage{m}, nil
+	return TestSubmessage{m}, n, nil
 }
 
 func WriteTestSubmessage(w *Writer) TestSubmessageWriter {
@@ -337,75 +334,75 @@ func newTestObject() *TestObject {
 }
 
 func (m *TestObject) Read(b []byte) error {
-	r, err := ReadMessage(b)
+	r, _, err := ReadTestMessage(b)
 	if err != nil {
 		return err
 	}
 
 	// bool:1
-	m.Bool = r.Bool(1)
+	m.Bool = r.Bool()
 
 	// int:10-13
-	m.Int8 = r.Int8(10)
-	m.Int16 = r.Int16(11)
-	m.Int32 = r.Int32(12)
-	m.Int64 = r.Int64(13)
+	m.Int8 = r.Int8()
+	m.Int16 = r.Int16()
+	m.Int32 = r.Int32()
+	m.Int64 = r.Int64()
 
 	// uint:20-22
-	m.Uint8 = r.Uint8(20)
-	m.Uint16 = r.Uint16(21)
-	m.Uint32 = r.Uint32(22)
-	m.Uint64 = r.Uint64(23)
+	m.Uint8 = r.Uint8()
+	m.Uint16 = r.Uint16()
+	m.Uint32 = r.Uint32()
+	m.Uint64 = r.Uint64()
 
 	// u128/u256:24-25
-	m.U128 = r.U128(24)
-	m.U256 = r.U256(25)
+	m.U128 = r.U128()
+	m.U256 = r.U256()
 
 	// float:30-31
-	m.Float32 = r.Float32(30)
-	m.Float64 = r.Float64(31)
+	m.Float32 = r.Float32()
+	m.Float64 = r.Float64()
 
 	// string/bytes:40-41
-	m.String = r.String(40)
-	m.Bytes = r.Bytes(41)
+	m.String = r.String()
+	m.Bytes = r.Bytes()
 
 	// list:50
 	{
-		list := r.List(50)
-
+		list := r.List()
 		m.List = make([]int64, 0, list.Count())
+
 		for i := 0; i < list.Count(); i++ {
-			val := list.Int64(i)
-			m.List = append(m.List, val)
+			el := list.Element(i)
+			m.List = append(m.List, el)
 		}
 	}
 
 	// messages:51
 	{
-		list := r.List(51)
-
+		list := r.Messages()
 		m.Messages = make([]*TestSubobject, 0, list.Count())
+
 		for i := 0; i < list.Count(); i++ {
-			data := list.Element(i)
+			data := list.ElementBytes(i)
 			if len(data) == 0 {
 				continue
 			}
 
-			val := &TestSubobject{}
-			if err := val.Read(data); err != nil {
+			el := &TestSubobject{}
+			if err := el.Read(data); err != nil {
 				return err
 			}
-			m.Messages = append(m.Messages, val)
+			m.Messages = append(m.Messages, el)
 		}
 	}
 
 	// strings:52
 	{
-		list := r.List(52)
-
+		list := r.Strings()
 		m.Strings = make([]string, 0, list.Count())
+
 		for i := 0; i < list.Count(); i++ {
-			s := list.String(i)
+			s := list.Element(i)
 			m.Strings = append(m.Strings, s)
 		}
 	}
@@ -458,9 +455,7 @@ func (m *TestObject) Write(w TestMessageWriter) error {
 			msg.Write(next)
 			list.EndNext()
 		}
-		if err := w.EndMessages(); err != nil {
-			panic(err)
-		}
+		w.EndMessages()
 	}
 
 	if len(m.Strings) > 0 {
@@ -506,7 +501,7 @@ func newTestSubobject(i int) *TestSubobject {
 }
 
 func (m *TestSubobject) Read(b []byte) error {
-	r, err := ReadMessage(b)
+	r, _, err := ReadMessage(b)
 	if err != nil {
 		return err
 	}
@@ -519,12 +514,10 @@ func (m *TestSubobject) Read(b []byte) error {
 }
 
 func (m TestSubobject) Write(w TestSubmessageWriter) error {
-	// int:1-4
 	w.Int8(m.Int8)
 	w.Int16(m.Int16)
 	w.Int32(m.Int32)
 	w.Int64(m.Int64)
-
 	return w.End()
 }
 

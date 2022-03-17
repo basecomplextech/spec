@@ -13,23 +13,26 @@ type Message struct {
 	big  bool   // big/small table format
 }
 
-// NewMessage reads and returns a message, but does not validate its fields.
-func NewMessage(b []byte) (Message, error) {
+// NewMessage reads and returns a message or zero on an error.
+func NewMessage(b []byte) Message {
 	m, _, err := readMessage(b)
-	return m, err
+	if err != nil {
+		return Message{}
+	}
+	return m
 }
 
 // ReadMessage reads, recursively vaildates and returns a message.
-func ReadMessage(b []byte) (Message, error) {
-	m, _, err := readMessage(b)
+func ReadMessage(b []byte) (Message, int, error) {
+	m, n, err := readMessage(b)
 	if err != nil {
-		return Message{}, err
+		return Message{}, n, err
 	}
 
 	if err := m.Validate(); err != nil {
-		return Message{}, err
+		return Message{}, n, err
 	}
-	return m, nil
+	return m, n, nil
 }
 
 // Data returns the exact message data.
@@ -75,7 +78,7 @@ func (m Message) Validate() error {
 		if len(data) == 0 {
 			continue
 		}
-		if _, err := ReadData(data); err != nil {
+		if _, _, err := ReadValue(data); err != nil {
 			return err
 		}
 	}
@@ -94,7 +97,7 @@ func (m Message) Bool(tag uint16) bool {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readBool(b)
+	v, _, _ := ReadBool(b)
 	return v
 }
 
@@ -108,7 +111,7 @@ func (m Message) Int8(tag uint16) int8 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readInt8(b)
+	v, _, _ := ReadInt8(b)
 	return v
 }
 
@@ -122,7 +125,7 @@ func (m Message) Int16(tag uint16) int16 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readInt16(b)
+	v, _, _ := ReadInt16(b)
 	return v
 }
 
@@ -136,7 +139,7 @@ func (m Message) Int32(tag uint16) int32 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readInt32(b)
+	v, _, _ := ReadInt32(b)
 	return v
 }
 
@@ -150,7 +153,7 @@ func (m Message) Int64(tag uint16) int64 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readInt64(b)
+	v, _, _ := ReadInt64(b)
 	return v
 }
 
@@ -164,7 +167,7 @@ func (m Message) Uint8(tag uint16) uint8 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readUint8(b)
+	v, _, _ := ReadUint8(b)
 	return v
 }
 
@@ -178,7 +181,7 @@ func (m Message) Uint16(tag uint16) uint16 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readUint16(b)
+	v, _, _ := ReadUint16(b)
 	return v
 }
 
@@ -192,7 +195,7 @@ func (m Message) Uint32(tag uint16) uint32 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readUint32(b)
+	v, _, _ := ReadUint32(b)
 	return v
 }
 
@@ -206,7 +209,7 @@ func (m Message) Uint64(tag uint16) uint64 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readUint64(b)
+	v, _, _ := ReadUint64(b)
 	return v
 }
 
@@ -220,7 +223,7 @@ func (m Message) U128(tag uint16) u128.U128 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readU128(b)
+	v, _, _ := ReadU128(b)
 	return v
 }
 
@@ -234,7 +237,7 @@ func (m Message) U256(tag uint16) u256.U256 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readU256(b)
+	v, _, _ := ReadU256(b)
 	return v
 }
 
@@ -248,7 +251,7 @@ func (m Message) Float32(tag uint16) float32 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readFloat32(b)
+	v, _, _ := ReadFloat32(b)
 	return v
 }
 
@@ -262,7 +265,7 @@ func (m Message) Float64(tag uint16) float64 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readFloat64(b)
+	v, _, _ := ReadFloat64(b)
 	return v
 }
 
@@ -276,7 +279,7 @@ func (m Message) Bytes(tag uint16) []byte {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readBytes(b)
+	v, _, _ := ReadBytes(b)
 	return v
 }
 
@@ -290,21 +293,7 @@ func (m Message) String(tag uint16) string {
 	}
 
 	b := m.data[:end]
-	v, _, _ := readString(b)
-	return v
-}
-
-func (m Message) List(tag uint16) List {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return List{}
-	case end > int(m.body):
-		return List{}
-	}
-
-	b := m.data[:end]
-	v, _ := NewList(b)
+	v, _, _ := ReadString(b)
 	return v
 }
 
@@ -318,6 +307,5 @@ func (m Message) Message(tag uint16) Message {
 	}
 
 	b := m.data[:end]
-	v, _ := NewMessage(b)
-	return v
+	return NewMessage(b)
 }

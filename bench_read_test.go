@@ -24,7 +24,7 @@ func Benchmark_Read(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		_, err := ReadTestMessage(data)
+		_, _, err := ReadTestMessage(data)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -49,7 +49,7 @@ func Benchmark_Walk(b *testing.B) {
 	size := len(data)
 	compressed := compressedSize(data)
 
-	d, err := ReadTestMessage(data)
+	d, _, err := ReadTestMessage(data)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -260,7 +260,7 @@ func walkMessage(m TestMessage) (int, error) {
 	{
 		list := m.List()
 		for i := 0; i < list.Count(); i++ {
-			v1 := list.Int64(i)
+			v1 := list.Element(i)
 			v += int(v1)
 		}
 	}
@@ -268,15 +268,7 @@ func walkMessage(m TestMessage) (int, error) {
 	{
 		list := m.Messages()
 		for i := 0; i < list.Count(); i++ {
-			data := list.Element(i)
-			if len(data) == 0 {
-				continue
-			}
-
-			sub, err := NewTestSubmessage(data)
-			if err != nil {
-				return 0, err
-			}
+			sub := list.Element(i)
 
 			v += int(sub.Int8())
 			v += int(sub.Int16())
@@ -288,7 +280,7 @@ func walkMessage(m TestMessage) (int, error) {
 	{
 		list := m.Strings()
 		for i := 0; i < list.Count(); i++ {
-			v := list.String(i)
+			v := list.Element(i)
 			if len(v) == 0 {
 				panic("empty string")
 			}
