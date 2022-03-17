@@ -9,7 +9,8 @@ func _BenchmarkSizeDistribution(b *testing.B) {
 	msg := newTestObject()
 
 	w := NewWriter()
-	if err := msg.Write(w); err != nil {
+	mw := WriteTestMessage(w)
+	if err := msg.Write(mw); err != nil {
 		b.Fatal(err)
 	}
 	data, err := w.End()

@@ -8,69 +8,7 @@ import (
 	"time"
 )
 
-func Benchmark_Marshal(b *testing.B) {
-	msg := newTestObject()
-	data, err := msg.Marshal()
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	size := len(data)
-	compressed := compressedSize(data)
-	buf := make([]byte, 0, 4096)
-
-	b.SetBytes(int64(size))
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	t0 := time.Now()
-	for i := 0; i < b.N; i++ {
-		buf, err = msg.MarshalTo(buf)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
-
-	b.ReportMetric(rps, "rps")
-	b.ReportMetric(float64(size), "size")
-	b.ReportMetric(float64(compressed), "size-zlib")
-}
-
-func Benchmark_Unmarshal(b *testing.B) {
-	msg := newTestObject()
-	data, err := msg.Marshal()
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	size := len(data)
-	compressed := compressedSize(data)
-
-	b.SetBytes(int64(size))
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	t0 := time.Now()
-	for i := 0; i < b.N; i++ {
-		if err := msg.Unmarshal(data); err != nil {
-			b.Fatal(err)
-		}
-	}
-
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
-
-	b.ReportMetric(rps, "rps")
-	b.ReportMetric(float64(size), "size")
-	b.ReportMetric(float64(compressed), "size-zlib")
-}
-
-func Benchmark_ReadData(b *testing.B) {
+func Benchmark_Read(b *testing.B) {
 	msg := newTestObject()
 	data, err := msg.Marshal()
 	if err != nil {
@@ -122,13 +60,83 @@ func Benchmark_Walk(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		v, err := walkMessageData(d)
+		v, err := walkMessage(d)
 		if err != nil {
 			b.Fatal(err)
 		}
 		if v == 0 {
 			b.Fatal()
 		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressed), "size-zlib")
+}
+
+func Benchmark_ReadObject(b *testing.B) {
+	msg := newTestObject()
+	data, err := msg.Marshal()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	size := len(data)
+	compressed := compressedSize(data)
+
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		if err := msg.Read(data); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressed), "size-zlib")
+}
+
+func Benchmark_WriteObject(b *testing.B) {
+	msg := newTestObject()
+	buf := make([]byte, 0, 4096)
+	w := NewWriterBuffer(buf)
+
+	data, err := msg.Marshal()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	size := len(data)
+	compressed := compressedSize(data)
+
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		mw := WriteTestMessage(w)
+		if err := msg.Write(mw); err != nil {
+			b.Fatal(err)
+		}
+		if _, err := w.End(); err != nil {
+			b.Fatal(err)
+		}
+
+		w.Reset()
+		w.buf = buf[:0]
 	}
 
 	t1 := time.Now()
@@ -230,7 +238,7 @@ func Benchmark_JSONEncode(b *testing.B) {
 
 // private
 
-func walkMessageData(m TestMessage) (int, error) {
+func walkMessage(m TestMessage) (int, error) {
 	var v int
 
 	v += int(m.Int8())

@@ -19,7 +19,8 @@ func Benchmark_Write(b *testing.B) {
 
 	var size int
 	for i := 0; i < b.N; i++ {
-		if err := msg.Write(w); err != nil {
+		mw := WriteTestMessage(w)
+		if err := msg.Write(mw); err != nil {
 			b.Fatal(err)
 		}
 
@@ -36,7 +37,6 @@ func Benchmark_Write(b *testing.B) {
 		w.buf = buf[:0]
 
 		size = len(data)
-
 	}
 
 	t1 := time.Now()

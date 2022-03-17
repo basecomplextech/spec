@@ -164,41 +164,24 @@ func (w TestMessageWriter) Bytes(v []byte) error {
 	w.w.Bytes(v)
 	return w.w.Field(41)
 }
-func (w TestMessageWriter) List(v []int64) error {
-	if len(v) == 0 {
-		return nil
-	}
-
-	w.w.BeginList()
-	for _, val := range v {
-		w.w.Int64(val)
-		w.w.Element()
-	}
+func (w TestMessageWriter) BeginList() ListValueWriter[int64] {
+	return WriteValueList(w.w, w.w.Int64)
+}
+func (w TestMessageWriter) EndList() error {
 	w.w.EndList()
 	return w.w.Field(50)
 }
-func (w TestMessageWriter) Messages(v []*TestSubobject) error {
-	if len(v) == 0 {
-		return nil
-	}
-	w.w.BeginList()
-	for _, val := range v {
-		val.Write(w.w)
-		w.w.Element()
-	}
+func (w TestMessageWriter) BeginMessages() ListWriter[TestSubmessageWriter] {
+	return WriteList(w.w, WriteTestSubmessage)
+}
+func (w TestMessageWriter) EndMessages() error {
 	w.w.EndList()
 	return w.w.Field(51)
 }
-func (w TestMessageWriter) Strings(v []string) error {
-	if len(v) == 0 {
-		return nil
-	}
-
-	w.w.BeginList()
-	for _, val := range v {
-		w.w.String(val)
-		w.w.Element()
-	}
+func (w TestMessageWriter) BeginStrings() ListValueWriter[string] {
+	return WriteValueList(w.w, w.w.String)
+}
+func (w TestMessageWriter) EndStrings() error {
 	w.w.EndList()
 	return w.w.Field(52)
 }
@@ -353,15 +336,7 @@ func newTestObject() *TestObject {
 	}
 }
 
-func (m *TestObject) Marshal() ([]byte, error) {
-	return Write(m)
-}
-
-func (m *TestObject) MarshalTo(buf []byte) ([]byte, error) {
-	return WriteTo(m, buf)
-}
-
-func (m *TestObject) Unmarshal(b []byte) error {
+func (m *TestObject) Read(b []byte) error {
 	r, err := ReadMessage(b)
 	if err != nil {
 		return err
@@ -417,7 +392,7 @@ func (m *TestObject) Unmarshal(b []byte) error {
 			}
 
 			val := &TestSubobject{}
-			if err := val.Unmarshal(data); err != nil {
+			if err := val.Read(data); err != nil {
 				return err
 			}
 			m.Messages = append(m.Messages, val)
@@ -446,9 +421,7 @@ func (m *TestObject) Unmarshal(b []byte) error {
 	return nil
 }
 
-func (m *TestObject) Write(writer *Writer) error {
-	w := WriteTestMessage(writer)
-
+func (m *TestObject) Write(w TestMessageWriter) error {
 	w.Bool(m.Bool)
 
 	w.Int8(m.Int8)
@@ -470,15 +443,48 @@ func (m *TestObject) Write(writer *Writer) error {
 	w.String(m.String)
 	w.Bytes(m.Bytes)
 
-	w.List(m.List)
-	w.Messages(m.Messages)
-	w.Strings(m.Strings)
+	if len(m.List) > 0 {
+		list := w.BeginList()
+		for _, value := range m.List {
+			list.Next(value)
+		}
+		w.EndList()
+	}
+
+	if len(m.Messages) > 0 {
+		list := w.BeginMessages()
+		for _, msg := range m.Messages {
+			next := list.BeginNext()
+			msg.Write(next)
+			list.EndNext()
+		}
+		if err := w.EndMessages(); err != nil {
+			panic(err)
+		}
+	}
+
+	if len(m.Strings) > 0 {
+		list := w.BeginStrings()
+		for _, v := range m.Strings {
+			list.Next(v)
+		}
+		w.EndStrings()
+	}
 
 	// struct:60
 	// TODO: Uncomment
 	// m.Struct.Write(w)
 	// w.Field(60)
-	return w.w.EndMessage()
+	return w.End()
+}
+
+func (m *TestObject) Marshal() ([]byte, error) {
+	w := NewWriter()
+	mw := WriteTestMessage(w)
+	if err := m.Write(mw); err != nil {
+		return nil, err
+	}
+	return w.End()
 }
 
 // TestSubobject
@@ -499,15 +505,7 @@ func newTestSubobject(i int) *TestSubobject {
 	}
 }
 
-func (m *TestSubobject) Marshal() ([]byte, error) {
-	return Write(m)
-}
-
-func (m *TestSubobject) MarshalTo(b []byte) ([]byte, error) {
-	return WriteTo(m, b)
-}
-
-func (m *TestSubobject) Unmarshal(b []byte) error {
+func (m *TestSubobject) Read(b []byte) error {
 	r, err := ReadMessage(b)
 	if err != nil {
 		return err
@@ -520,16 +518,14 @@ func (m *TestSubobject) Unmarshal(b []byte) error {
 	return nil
 }
 
-func (m TestSubobject) Write(writer *Writer) error {
-	w := WriteTestSubmessage(writer)
-
+func (m TestSubobject) Write(w TestSubmessageWriter) error {
 	// int:1-4
 	w.Int8(m.Int8)
 	w.Int16(m.Int16)
 	w.Int32(m.Int32)
 	w.Int64(m.Int64)
 
-	return w.w.EndMessage()
+	return w.End()
 }
 
 // TestStruct

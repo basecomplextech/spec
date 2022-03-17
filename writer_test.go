@@ -11,7 +11,8 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 	msg := newTestObject()
 
 	w := NewWriter()
-	if err := msg.Write(w); err != nil {
+	mw := WriteTestMessage(w)
+	if err := msg.Write(mw); err != nil {
 		t.Fatal(err)
 	}
 	b, err := w.End()
@@ -20,7 +21,7 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 	}
 
 	msg1 := &TestObject{}
-	if err := msg1.Unmarshal(b); err != nil {
+	if err := msg1.Read(b); err != nil {
 		t.Fatal(err)
 	}
 
