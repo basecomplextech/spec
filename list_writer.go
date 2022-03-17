@@ -5,7 +5,7 @@ type ListWriter[W any] struct {
 	begin func(*Writer) W
 }
 
-func WriteList[W any](w *Writer, begin func(*Writer) W) ListWriter[W] {
+func BeginList[W any](w *Writer, begin func(*Writer) W) ListWriter[W] {
 	w.BeginList()
 
 	return ListWriter[W]{
@@ -24,21 +24,21 @@ func (w ListWriter[W]) EndNext() error {
 
 // Value
 
-type ListValueWriter[T any] struct {
+type ValueListWriter[T any] struct {
 	w     *Writer
 	write func(el T) error
 }
 
-func WriteValueList[T any](w *Writer, write func(el T) error) ListValueWriter[T] {
+func BeginValueList[T any](w *Writer, write func(T) error) ValueListWriter[T] {
 	w.BeginList()
 
-	return ListValueWriter[T]{
+	return ValueListWriter[T]{
 		w:     w,
 		write: write,
 	}
 }
 
-func (w ListValueWriter[T]) Next(el T) error {
+func (w ValueListWriter[T]) Next(el T) error {
 	w.write(el)
 	return w.w.Element()
 }

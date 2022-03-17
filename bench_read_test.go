@@ -127,7 +127,7 @@ func Benchmark_WriteObject(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		mw := WriteTestMessage(w)
+		mw := BeginTestMessage(w)
 		if err := msg.Write(mw); err != nil {
 			b.Fatal(err)
 		}

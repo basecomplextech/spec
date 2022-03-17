@@ -19,7 +19,7 @@ func Benchmark_Write(b *testing.B) {
 
 	var size int
 	for i := 0; i < b.N; i++ {
-		mw := WriteTestMessage(w)
+		mw := BeginTestMessage(w)
 		if err := msg.Write(mw); err != nil {
 			b.Fatal(err)
 		}

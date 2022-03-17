@@ -11,7 +11,7 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 	msg := newTestObject()
 
 	w := NewWriter()
-	mw := WriteTestMessage(w)
+	mw := BeginTestMessage(w)
 	if err := msg.Write(mw); err != nil {
 		t.Fatal(err)
 	}
