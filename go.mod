@@ -1,9 +1,9 @@
 module github.com/complexl/spec
 
-go 1.17
+go 1.18
 
 require (
-	github.com/complexl/library v0.0.0-20220227140518-7b4956c8a568
+	github.com/complexl/library v0.0.0-20220312071121-ef62ec949de5
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 )
