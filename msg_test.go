@@ -60,7 +60,7 @@ func testWriteMessage(t *testing.T) []byte {
 
 func TestMessage_Getters__should_access_fields(t *testing.T) {
 	b := testWriteMessage(t)
-	m, err := NewMessageData(b)
+	m, err := NewMessage(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,5 +82,5 @@ func TestMessage_Getters__should_access_fields(t *testing.T) {
 	assert.Equal(t, []byte("hello, world"), m.Bytes(31))
 
 	assert.Equal(t, 1, m.List(40).Len())
-	assert.Equal(t, 1, m.Message(50).Len())
+	assert.Equal(t, 1, m.Message(50).Count())
 }

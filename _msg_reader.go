@@ -25,7 +25,7 @@ func NewMessageReader(b []byte) (MessageReader, error) {
 
 // Len returns the number of fields in the message.
 func (r MessageReader) Len() int {
-	return r.m.len()
+	return r.m.count()
 }
 
 // Read returns a field data by a tag or nil.

@@ -465,7 +465,7 @@ func (d TestMessageData) Messages() ListData { return d.d.List(51) }
 func (d TestMessageData) Strings() ListData  { return d.d.List(52) }
 
 func (d TestMessageData) Struct() TestStruct {
-	data := d.d.Element(60)
+	data := d.d.Field(60)
 	v, _ := readTestStruct(data)
 	return v
 }

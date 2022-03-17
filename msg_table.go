@@ -10,54 +10,25 @@ const (
 	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
-type message struct {
-	data  []byte
-	table messageTable
-
-	body uint32 // body size
-	big  bool   // big/small table format
+// messageField specifies a field tag and a field value offset in message data array.
+//
+//  +----------+-------------------+
+// 	| tag(1/2) |    offset(2/4)    |
+//  +----------+-------------------+
+//
+type messageField struct {
+	tag    uint16
+	offset uint32
 }
 
-// element returns a field data by a tag or nil.
-func (m message) element(tag uint16) []byte {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return nil
-	case end > int(m.body):
-		return nil
-	}
-	return m.data[:end]
-}
-
-// field returns a field data by a tag or nil.
-func (m message) field(tag uint16) []byte {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return nil
-	case end > int(m.body):
-		return nil
-	}
-	return m.data[:end]
-}
-
-// fieldByIndex returns a field data by an index or nil.
-func (m message) fieldByIndex(i int) []byte {
-	end := m.table.offsetByIndex(m.big, i)
-	switch {
-	case end < 0:
-		return nil
-	case end > int(m.body):
-		return nil
-	}
-	return m.data[:end]
-}
-
-// len returns the number of fields in the message.
-func (m message) len() int {
-	return m.table.count(m.big)
-}
+// messageTable is a serialized array of message fields ordered by tags.
+//
+//          field0                field1                field2
+//  +---------------------+---------------------+---------------------+
+// 	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
+//  +---------------------+---------------------+---------------------+
+//
+type messageTable []byte
 
 // isBigList returns true if any field tag > uint8 or offset > uint16.
 func isBigMessage(table []messageField) bool {
@@ -79,26 +50,6 @@ func isBigMessage(table []messageField) bool {
 
 	return false
 }
-
-// messageField specifies a field tag and a field value offset in message data array.
-//
-//  +----------+-------------------+
-// 	| tag(1/2) |    offset(2/4)    |
-//  +----------+-------------------+
-//
-type messageField struct {
-	tag    uint16
-	offset uint32
-}
-
-// messageTable is a serialized array of message fields ordered by tags.
-//
-//          field0                field1                field2
-//  +---------------------+---------------------+---------------------+
-// 	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
-//  +---------------------+---------------------+---------------------+
-//
-type messageTable []byte
 
 // count returns the number of fields in the table.
 func (t messageTable) count(big bool) int {

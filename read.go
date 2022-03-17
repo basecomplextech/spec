@@ -555,8 +555,8 @@ func _readListTable(b []byte, size uint32, big bool) (listTable, error) {
 
 // message
 
-func readMessage(b []byte) (message, int, error) {
-	msg := message{}
+func readMessage(b []byte) (Message, int, error) {
+	msg := Message{}
 	if len(b) == 0 {
 		return msg, 0, nil
 	}
@@ -606,7 +606,7 @@ func readMessage(b []byte) (message, int, error) {
 	}
 
 	// done
-	msg = message{
+	msg = Message{
 		data:  b[off:],
 		table: table,
 		body:  bsize,

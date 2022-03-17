@@ -204,7 +204,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		}
 
 		// read fields
-		for i := 0; i < msg.len(); i++ {
+		for i := 0; i < msg.count(); i++ {
 			field := msg.fieldByIndex(i)
 			if err := _computeSizeDistribution(field, d); err != nil {
 				return err
