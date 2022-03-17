@@ -2,12 +2,19 @@ package spec
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
 )
 
 const WriteBufferSize = 4096
+
+var writerPool = &sync.Pool{
+	New: func() interface{} {
+		return EmptyWriter()
+	},
+}
 
 // Write writes a value.
 type Writer struct {
@@ -26,12 +33,18 @@ type Writer struct {
 }
 
 // NewWriter returns a new writer with a default buffer.
+//
+// Usually, it is better to use Write(obj) and WriteTo(obj, buf), than to construct
+// a new writer directly. These methods internally use a writer pool.
 func NewWriter() *Writer {
 	buf := make([]byte, 0, WriteBufferSize)
 	return NewWriterBuffer(buf)
 }
 
 // NewWriterBuffer returns a new writer with a buffer.
+//
+// Usually, it is better to use Write(obj) and WriteTo(obj, buf), than to construct
+// a new writer directly. These methods internally use a writer pool.
 func NewWriterBuffer(buf []byte) *Writer {
 	w := &Writer{}
 
