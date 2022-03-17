@@ -36,7 +36,7 @@ type TestMessage struct {
 	Messages []*TestSubMessage `tag:"51"`
 	Strings  []string          `tag:"52"`
 
-	Struct TestStruct `tag:"60"`
+	// Struct TestStruct `tag:"60"`
 }
 
 func newTestMessage() *TestMessage {
@@ -80,10 +80,10 @@ func newTestMessage() *TestMessage {
 		Messages: messages,
 		Strings:  strings,
 
-		Struct: TestStruct{
-			X: 100,
-			Y: 200,
-		},
+		// Struct: TestStruct{
+		// 	X: 100,
+		// 	Y: 200,
+		// },
 	}
 }
 
@@ -125,113 +125,56 @@ func (m *TestMessage) MarshalTo(buf []byte) ([]byte, error) {
 // Unmarshal
 
 func (m *TestMessage) Unmarshal(b []byte) error {
-	r, err := NewMessageReader(b)
+	r, err := NewMessage(b)
 	if err != nil {
 		return err
 	}
 
 	// bool:1
-	m.Bool, err = r.ReadBool(1)
-	if err != nil {
-		return err
-	}
+	m.Bool = r.Bool(1)
 
 	// int:10-13
-	m.Int8, err = r.ReadInt8(10)
-	if err != nil {
-		return err
-	}
-	m.Int16, err = r.ReadInt16(11)
-	if err != nil {
-		return err
-	}
-	m.Int32, err = r.ReadInt32(12)
-	if err != nil {
-		return err
-	}
-	m.Int64, err = r.ReadInt64(13)
-	if err != nil {
-		return err
-	}
+	m.Int8 = r.Int8(10)
+	m.Int16 = r.Int16(11)
+	m.Int32 = r.Int32(12)
+	m.Int64 = r.Int64(13)
 
 	// uint:20-22
-	m.Uint8, err = r.ReadUint8(20)
-	if err != nil {
-		return err
-	}
-	m.Uint16, err = r.ReadUint16(21)
-	if err != nil {
-		return err
-	}
-	m.Uint32, err = r.ReadUint32(22)
-	if err != nil {
-		return err
-	}
-	m.Uint64, err = r.ReadUint64(23)
-	if err != nil {
-		return err
-	}
+	m.Uint8 = r.Uint8(20)
+	m.Uint16 = r.Uint16(21)
+	m.Uint32 = r.Uint32(22)
+	m.Uint64 = r.Uint64(23)
 
 	// u128/u256:24-25
-	m.U128, err = r.ReadU128(24)
-	if err != nil {
-		return err
-	}
-	m.U256, err = r.ReadU256(25)
-	if err != nil {
-		return err
-	}
+	m.U128 = r.U128(24)
+	m.U256 = r.U256(25)
 
 	// float:30-31
-	m.Float32, err = r.ReadFloat32(30)
-	if err != nil {
-		return err
-	}
-	m.Float64, err = r.ReadFloat64(31)
-	if err != nil {
-		return err
-	}
+	m.Float32 = r.Float32(30)
+	m.Float64 = r.Float64(31)
 
 	// string/bytes:40-41
-	m.String, err = r.ReadString(40)
-	if err != nil {
-		return err
-	}
-	m.Bytes, err = r.ReadBytes(41)
-	if err != nil {
-		return err
-	}
+	m.String = r.String(40)
+	m.Bytes = r.Bytes(41)
 
 	// list:50
 	{
-		list, err := r.ReadList(50)
-		if err != nil {
-			return err
-		}
+		list := r.List(50)
 
-		m.List = make([]int64, 0, list.Len())
-		for i := 0; i < list.Len(); i++ {
-			val, err := list.ReadInt64(i)
-			if err != nil {
-				return err
-			}
+		m.List = make([]int64, 0, list.Count())
+		for i := 0; i < list.Count(); i++ {
+			val := list.Int64(i)
 			m.List = append(m.List, val)
 		}
 	}
 
 	// messages:51
 	{
-		list, err := r.ReadList(51)
-		if err != nil {
-			return err
-		}
+		list := r.List(51)
 
-		m.Messages = make([]*TestSubMessage, 0, list.Len())
-		for i := 0; i < list.Len(); i++ {
-			data, err := list.Read(i)
-			if err != nil {
-				return err
-			}
+		m.Messages = make([]*TestSubMessage, 0, list.Count())
+		for i := 0; i < list.Count(); i++ {
+			data := list.Element(i)
 			if len(data) == 0 {
 				continue
 			}
@@ -246,78 +189,61 @@ func (m *TestMessage) Unmarshal(b []byte) error {
 
 	// strings:52
 	{
-		list, err := r.ReadList(52)
-		if err != nil {
-			return err
-		}
+		list := r.List(52)
 
-		m.Strings = make([]string, 0, list.Len())
-		for i := 0; i < list.Len(); i++ {
-			s, err := list.ReadString(i)
-			if err != nil {
-				return err
-			}
+		m.Strings = make([]string, 0, list.Count())
+		for i := 0; i < list.Count(); i++ {
+			s := list.String(i)
 			m.Strings = append(m.Strings, s)
 		}
 	}
 
 	// struct:60
-	{
-		data, err := r.Read(60)
-		if err != nil {
-			return err
-		}
-		if err := m.Struct.Unmarshal(data); err != nil {
-			return err
-		}
-	}
+	// TODO: Uncomment
+	// {
+	// 	data := r.Field(60)
+	// 	if err := m.Struct.Unmarshal(data); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
 func (m *TestSubMessage) Unmarshal(b []byte) error {
-	r, err := NewMessageReader(b)
+	r, err := ReadMessage(b)
 	if err != nil {
 		return err
 	}
 
 	// int:1-4
-	m.Int8, err = r.ReadInt8(1)
-	if err != nil {
-		return err
-	}
-	m.Int16, err = r.ReadInt16(2)
-	if err != nil {
-		return err
-	}
-	m.Int32, err = r.ReadInt32(3)
-	if err != nil {
-		return err
-	}
-	m.Int64, err = r.ReadInt64(4)
-	if err != nil {
-		return err
-	}
+	m.Int8 = r.Int8(1)
+	m.Int16 = r.Int16(2)
+	m.Int32 = r.Int32(3)
+	m.Int64 = r.Int64(4)
 	return nil
 }
 
 func (s *TestStruct) Unmarshal(b []byte) error {
-	r, err := ReadStruct(b)
-	switch {
-	case err != nil:
-		return err
-	case len(r) == 0:
-		return nil
-	}
-
-	s.Y, r, err = r.ReadInt64()
-	if err != nil {
-		return err
-	}
-	s.X, r, err = r.ReadInt64()
-	if err != nil {
-		return err
-	}
 	return nil
+
+	// TODO: Uncomment
+	// r, err := ReadStruct(b)
+	// switch {
+	// case err != nil:
+	// 	return err
+	// case len(r) == 0:
+	// 	return nil
+	// }
+
+	// s.Y, r, err = r.ReadInt64()
+	// if err != nil {
+	// 	return err
+	// }
+	// s.X, r, err = r.ReadInt64()
+	// if err != nil {
+	// 	return err
+	// }
+	// return nil
 }
 
 // Write
@@ -403,8 +329,9 @@ func (m TestMessage) Write(w *Writer) error {
 	}
 
 	// struct:60
-	m.Struct.Write(w)
-	w.Field(60)
+	// TODO: Uncomment
+	// m.Struct.Write(w)
+	// w.Field(60)
 
 	return w.EndMessage()
 }
@@ -443,26 +370,26 @@ func (s TestStruct) Write(w *Writer) error {
 
 // Data
 
-type TestMessageData struct{ d MessageData }
+type TestMessageData struct{ d Message }
 
-func (d TestMessageData) Bool() bool         { return d.d.Bool(1) }
-func (d TestMessageData) Int8() int8         { return d.d.Int8(10) }
-func (d TestMessageData) Int16() int16       { return d.d.Int16(11) }
-func (d TestMessageData) Int32() int32       { return d.d.Int32(12) }
-func (d TestMessageData) Int64() int64       { return d.d.Int64(13) }
-func (d TestMessageData) Uint8() uint8       { return d.d.Uint8(20) }
-func (d TestMessageData) Uint16() uint16     { return d.d.Uint16(21) }
-func (d TestMessageData) Uint32() uint32     { return d.d.Uint32(22) }
-func (d TestMessageData) Uint64() uint64     { return d.d.Uint64(23) }
-func (d TestMessageData) U128() u128.U128    { return d.d.U128(24) }
-func (d TestMessageData) U256() u256.U256    { return d.d.U256(25) }
-func (d TestMessageData) Float32() float32   { return d.d.Float32(30) }
-func (d TestMessageData) Float64() float64   { return d.d.Float64(31) }
-func (d TestMessageData) String() string     { return d.d.String(40) }
-func (d TestMessageData) Bytes() []byte      { return d.d.Bytes(41) }
-func (d TestMessageData) List() ListData     { return d.d.List(50) }
-func (d TestMessageData) Messages() ListData { return d.d.List(51) }
-func (d TestMessageData) Strings() ListData  { return d.d.List(52) }
+func (d TestMessageData) Bool() bool       { return d.d.Bool(1) }
+func (d TestMessageData) Int8() int8       { return d.d.Int8(10) }
+func (d TestMessageData) Int16() int16     { return d.d.Int16(11) }
+func (d TestMessageData) Int32() int32     { return d.d.Int32(12) }
+func (d TestMessageData) Int64() int64     { return d.d.Int64(13) }
+func (d TestMessageData) Uint8() uint8     { return d.d.Uint8(20) }
+func (d TestMessageData) Uint16() uint16   { return d.d.Uint16(21) }
+func (d TestMessageData) Uint32() uint32   { return d.d.Uint32(22) }
+func (d TestMessageData) Uint64() uint64   { return d.d.Uint64(23) }
+func (d TestMessageData) U128() u128.U128  { return d.d.U128(24) }
+func (d TestMessageData) U256() u256.U256  { return d.d.U256(25) }
+func (d TestMessageData) Float32() float32 { return d.d.Float32(30) }
+func (d TestMessageData) Float64() float64 { return d.d.Float64(31) }
+func (d TestMessageData) String() string   { return d.d.String(40) }
+func (d TestMessageData) Bytes() []byte    { return d.d.Bytes(41) }
+func (d TestMessageData) List() List       { return d.d.List(50) }
+func (d TestMessageData) Messages() List   { return d.d.List(51) }
+func (d TestMessageData) Strings() List    { return d.d.List(52) }
 
 func (d TestMessageData) Struct() TestStruct {
 	data := d.d.Field(60)
@@ -471,7 +398,7 @@ func (d TestMessageData) Struct() TestStruct {
 }
 
 func getTestMessageData(b []byte) (TestMessageData, error) {
-	m, err := NewMessageData(b)
+	m, err := NewMessage(b)
 	if err != nil {
 		return TestMessageData{}, err
 	}
@@ -479,14 +406,14 @@ func getTestMessageData(b []byte) (TestMessageData, error) {
 }
 
 func readTestMessageData(b []byte) (TestMessageData, error) {
-	m, err := ReadMessageData(b)
+	m, err := ReadMessage(b)
 	if err != nil {
 		return TestMessageData{}, err
 	}
 	return TestMessageData{m}, nil
 }
 
-type TestSubMessageData struct{ d MessageData }
+type TestSubMessageData struct{ d Message }
 
 func (d TestSubMessageData) Int8() int8   { return d.d.Int8(1) }
 func (d TestSubMessageData) Int16() int16 { return d.d.Int16(2) }
@@ -494,7 +421,7 @@ func (d TestSubMessageData) Int32() int32 { return d.d.Int32(3) }
 func (d TestSubMessageData) Int64() int64 { return d.d.Int64(4) }
 
 func getTestSubMessageData(b []byte) (TestSubMessageData, error) {
-	m, err := NewMessageData(b)
+	m, err := NewMessage(b)
 	if err != nil {
 		return TestSubMessageData{}, err
 	}
@@ -502,7 +429,7 @@ func getTestSubMessageData(b []byte) (TestSubMessageData, error) {
 }
 
 func readTestSubMessageData(b []byte) (TestSubMessageData, error) {
-	m, err := ReadMessageData(b)
+	m, err := ReadMessage(b)
 	if err != nil {
 		return TestSubMessageData{}, err
 	}

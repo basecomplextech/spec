@@ -81,6 +81,6 @@ func TestMessage_Getters__should_access_fields(t *testing.T) {
 	assert.Equal(t, "hello, world", m.String(30))
 	assert.Equal(t, []byte("hello, world"), m.Bytes(31))
 
-	assert.Equal(t, 1, m.List(40).Len())
+	assert.Equal(t, 1, m.List(40).Count())
 	assert.Equal(t, 1, m.Message(50).Count())
 }

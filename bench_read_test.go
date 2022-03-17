@@ -251,7 +251,7 @@ func walkMessageData(m TestMessageData) (int, error) {
 
 	{
 		list := m.List()
-		for i := 0; i < list.Len(); i++ {
+		for i := 0; i < list.Count(); i++ {
 			v1 := list.Int64(i)
 			v += int(v1)
 		}
@@ -259,7 +259,7 @@ func walkMessageData(m TestMessageData) (int, error) {
 
 	{
 		list := m.Messages()
-		for i := 0; i < list.Len(); i++ {
+		for i := 0; i < list.Count(); i++ {
 			data := list.Element(i)
 			if len(data) == 0 {
 				continue
@@ -279,7 +279,7 @@ func walkMessageData(m TestMessageData) (int, error) {
 
 	{
 		list := m.Strings()
-		for i := 0; i < list.Len(); i++ {
+		for i := 0; i < list.Count(); i++ {
 			v := list.String(i)
 			if len(v) == 0 {
 				panic("empty string")

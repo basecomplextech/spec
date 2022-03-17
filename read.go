@@ -457,8 +457,8 @@ func _readStringBody(b []byte, size uint32) (string, error) {
 
 // list
 
-func readList(b []byte) (list, int, error) {
-	l := list{}
+func readList(b []byte) (List, int, error) {
+	l := List{}
 	if len(b) == 0 {
 		return l, 0, nil
 	}
@@ -508,7 +508,7 @@ func readList(b []byte) (list, int, error) {
 	}
 
 	// done
-	l = list{
+	l = List{
 		data:  b[off:],
 		table: table,
 		body:  bsize,

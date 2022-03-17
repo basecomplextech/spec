@@ -121,13 +121,13 @@ func (d Data) String() string {
 	return v
 }
 
-func (d Data) List() ListData {
-	v, _ := NewListData(d)
+func (d Data) List() List {
+	v, _ := NewList(d)
 	return v
 }
 
-func (d Data) Message() MessageData {
-	v, _ := NewMessageData(d)
+func (d Data) Message() Message {
+	v, _ := NewMessage(d)
 	return v
 }
 
@@ -180,13 +180,14 @@ func (d Data) validate() error {
 		_, _, err = readString(d)
 
 	case TypeList:
-		_, err = ReadListData(d)
+		_, err = ReadList(d)
 	case TypeMessage,
 		TypeMessageBig:
-		_, err = ReadMessageData(d)
+		_, err = ReadMessage(d)
 
-	case TypeStruct:
-		_, err = ReadStruct(d)
+		// TODO: Uncomment
+		// case TypeStruct:
+		// 	_, err = ReadStruct(d)
 	}
 	return err
 }

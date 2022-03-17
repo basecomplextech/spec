@@ -10,7 +10,17 @@ const (
 	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
-// messageField specifies a field tag and a field value offset in message data array.
+// messageTable is a serialized array of message fields ordered by tags.
+// the serialization format depends on whether the message is big or small, see isBigMessage().
+//
+//          field0                field1                field2
+//  +---------------------+---------------------+---------------------+
+// 	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
+//  +---------------------+---------------------+---------------------+
+//
+type messageTable []byte
+
+// messageField specifies a tag and a value offset in a message byte array.
 //
 //  +----------+-------------------+
 // 	| tag(1/2) |    offset(2/4)    |
@@ -20,15 +30,6 @@ type messageField struct {
 	tag    uint16
 	offset uint32
 }
-
-// messageTable is a serialized array of message fields ordered by tags.
-//
-//          field0                field1                field2
-//  +---------------------+---------------------+---------------------+
-// 	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
-//  +---------------------+---------------------+---------------------+
-//
-type messageTable []byte
 
 // isBigList returns true if any field tag > uint8 or offset > uint16.
 func isBigMessage(table []messageField) bool {

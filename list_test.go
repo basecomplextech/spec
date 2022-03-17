@@ -1,191 +1,88 @@
 package spec
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func testListElements() []listElement {
-	return testListElementsN(10)
+func testWriteList(t *testing.T) []byte {
+	w := NewWriter()
+	w.BeginList()
+
+	w.Int8(1)
+	w.Element()
+	w.Int16(1)
+	w.Element()
+	w.Int32(1)
+	w.Element()
+	w.Int64(1)
+	w.Element()
+
+	w.Uint8(1)
+	w.Element()
+	w.Uint16(1)
+	w.Element()
+	w.Uint32(1)
+	w.Element()
+	w.Uint64(1)
+	w.Element()
+
+	w.Float32(1)
+	w.Element()
+	w.Float64(1)
+	w.Element()
+
+	w.String("hello, world")
+	w.Element()
+	w.Bytes([]byte("hello, world"))
+	w.Element()
+
+	w.BeginList()
+	w.String("element1")
+	w.Element()
+	w.EndList()
+	w.Element()
+
+	w.BeginMessage()
+	w.String("field1")
+	w.Field(1)
+	w.EndMessage()
+	w.Element()
+
+	w.EndList()
+	b, err := w.End()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
 }
 
-func testListElementsN(n int) []listElement {
-	return testListElementsSizeN(false, n)
-}
+// Getters
 
-func testListElementsSize(big bool) []listElement {
-	return testListElementsSizeN(big, 10)
-}
-
-func testListElementsSizeN(big bool, n int) []listElement {
-	start := uint32(0)
-	if big {
-		start = math.MaxUint16 + 1
-	}
-
-	result := make([]listElement, 0, n)
-	for i := 0; i < n; i++ {
-		elem := listElement{
-			offset: start + uint32(i*10),
-		}
-		result = append(result, elem)
-	}
-	return result
-}
-
-// isBigList
-
-func TestIsBigList__should_return_true_when_count_greater_than_uint8(t *testing.T) {
-	smallTable := testListElementsN(math.MaxUint8)
-	bigTable := testListElementsN(math.MaxUint8 + 1)
-
-	assert.False(t, isBigList(smallTable))
-	assert.True(t, isBigList(bigTable))
-}
-
-func TestIsBigList__should_return_true_when_offset_greater_than_uint16(t *testing.T) {
-	smallTable := testListElementsSizeN(false, 1)
-	bigTable := testListElementsSizeN(true, 1)
-
-	assert.False(t, isBigList(smallTable))
-	assert.True(t, isBigList(bigTable))
-}
-
-// count
-
-func TestListTable_count_big__should_return_number_of_elements(t *testing.T) {
-	big := true
-	elements := testListElementsSize(big)
-
-	data, size, err := _writeListTable(nil, elements, big)
-	if err != nil {
-		t.Fatal(err)
-	}
-	table, err := _readListTable(data, size, big)
+func TestList_Getters__should_access_elements(t *testing.T) {
+	b := testWriteList(t)
+	l, err := NewList(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	n := table.count(big)
-	assert.Equal(t, len(elements), n)
-}
+	assert.Equal(t, int8(1), l.Int8(0))
+	assert.Equal(t, int16(1), l.Int16(1))
+	assert.Equal(t, int32(1), l.Int32(2))
+	assert.Equal(t, int64(1), l.Int64(3))
 
-func TestListTable_count_smal__should_return_number_of_elements(t *testing.T) {
-	small := false
-	elements := testListElementsSize(small)
+	assert.Equal(t, uint8(1), l.Uint8(4))
+	assert.Equal(t, uint16(1), l.Uint16(5))
+	assert.Equal(t, uint32(1), l.Uint32(6))
+	assert.Equal(t, uint64(1), l.Uint64(7))
 
-	data, size, err := _writeListTable(nil, elements, small)
-	if err != nil {
-		t.Fatal(err)
-	}
-	table, err := _readListTable(data, size, small)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Equal(t, float32(1), l.Float32(8))
+	assert.Equal(t, float64(1), l.Float64(9))
 
-	n := table.count(small)
-	assert.Equal(t, len(elements), n)
-}
+	assert.Equal(t, "hello, world", l.String(10))
+	assert.Equal(t, []byte("hello, world"), l.Bytes(11))
 
-// offset: big
-
-func TestListTable_offset_big__should_return_start_end_offset_by_index(t *testing.T) {
-	big := true
-	elements := testListElementsSize(big)
-
-	data, size, err := _writeListTable(nil, elements, big)
-	if err != nil {
-		t.Fatal(err)
-	}
-	table, err := _readListTable(data, size, big)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for i, elem := range elements {
-		prev := 0
-		if i > 0 {
-			_, prev = table.offset(big, i-1)
-		}
-
-		start, end := table.offset(big, i)
-		require.Equal(t, prev, start)
-		require.Equal(t, int(elem.offset), end)
-	}
-}
-
-func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *testing.T) {
-	big := true
-	elements := testListElementsSize(big)
-
-	data, size, err := _writeListTable(nil, elements, big)
-	if err != nil {
-		t.Fatal(err)
-	}
-	table, err := _readListTable(data, size, big)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	start, end := table.offset(big, -1)
-	assert.Equal(t, -1, start)
-	assert.Equal(t, -1, end)
-
-	n := table.count(big)
-	start, end = table.offset(big, n)
-	assert.Equal(t, -1, start)
-	assert.Equal(t, -1, end)
-}
-
-// offset: small
-
-func TestListTable_offset_small__should_return_start_end_offset_by_index(t *testing.T) {
-	small := false
-	elements := testListElementsSize(small)
-
-	data, size, err := _writeListTable(nil, elements, small)
-	if err != nil {
-		t.Fatal(err)
-	}
-	table, err := _readListTable(data, size, small)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for i, elem := range elements {
-		prev := 0
-		if i > 0 {
-			_, prev = table.offset(small, i-1)
-		}
-
-		start, end := table.offset(small, i)
-		require.Equal(t, prev, start)
-		require.Equal(t, int(elem.offset), end)
-	}
-}
-
-func TestListTable_offset_small__should_return_minus_one_when_out_of_range(t *testing.T) {
-	small := false
-	elements := testListElementsSize(small)
-
-	data, size, err := _writeListTable(nil, elements, small)
-	if err != nil {
-		t.Fatal(err)
-	}
-	table, err := _readListTable(data, size, small)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	start, end := table.offset(small, -1)
-	assert.Equal(t, -1, start)
-	assert.Equal(t, -1, end)
-
-	n := table.count(small)
-	start, end = table.offset(small, n)
-	assert.Equal(t, -1, start)
-	assert.Equal(t, -1, end)
+	assert.Equal(t, 1, l.List(12).Count())
+	assert.Equal(t, 1, l.Message(13).Count())
 }

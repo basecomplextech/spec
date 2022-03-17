@@ -50,7 +50,7 @@ func TestWriter_List__should_write_list(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	list, err := ReadListData(b)
+	list, err := ReadList(b)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -32,6 +32,11 @@ func ReadMessage(b []byte) (Message, error) {
 	return m, nil
 }
 
+// Data returns the exact message data.
+func (m Message) Data() []byte {
+	return m.data
+}
+
 // Count returns the number of fields in the message.
 func (m Message) Count() int {
 	return m.table.count(m.big)
@@ -289,17 +294,17 @@ func (m Message) String(tag uint16) string {
 	return v
 }
 
-func (m Message) List(tag uint16) ListData {
+func (m Message) List(tag uint16) List {
 	end := m.table.offset(m.big, tag)
 	switch {
 	case end < 0:
-		return ListData{}
+		return List{}
 	case end > int(m.body):
-		return ListData{}
+		return List{}
 	}
 
 	b := m.data[:end]
-	v, _ := NewListData(b)
+	v, _ := NewList(b)
 	return v
 }
 
