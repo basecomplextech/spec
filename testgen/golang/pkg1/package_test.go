@@ -44,7 +44,7 @@ func testMessage() *Message {
 			Key:   123,
 			Value: 456,
 		},
-		Imported: &pkg2.SubMessage{
+		Imported: &pkg2.Submessage{
 			Key:   "key",
 			Value: pkg3.Value{},
 		},
@@ -53,7 +53,7 @@ func testMessage() *Message {
 		ListStrings:  []string{"a", "b", "c"},
 		ListValues:   []Struct{},
 		ListMessages: []*Node{{Value: "1"}, {Value: "2"}},
-		ListImported: []*pkg2.SubMessage{{Key: "A"}, {Key: "B"}},
+		ListImported: []*pkg2.Submessage{{Key: "A"}, {Key: "B"}},
 	}
 }
 

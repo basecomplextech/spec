@@ -366,7 +366,7 @@ func TestCompiler__should_compile_imported_type(t *testing.T) {
 
 	// resolved
 	type_ := field.Type
-	assert.Equal(t, "SubMessage", type_.Name)
+	assert.Equal(t, "Submessage", type_.Name)
 	assert.Equal(t, "pkg2", type_.ImportName)
 	assert.Equal(t, KindMessage, type_.Kind)
 	assert.NotNil(t, type_.Ref)
@@ -445,7 +445,7 @@ func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 	// element
 	elem := type_.Element
 	assert.Equal(t, KindMessage, elem.Kind)
-	assert.Equal(t, "SubMessage", elem.Name)
+	assert.Equal(t, "Submessage", elem.Name)
 	assert.Equal(t, "pkg2", elem.ImportName)
 	assert.NotNil(t, elem.Ref)
 	assert.NotNil(t, elem.Import)

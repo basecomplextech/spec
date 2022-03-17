@@ -265,7 +265,7 @@ func walkMessageData(m TestMessage) (int, error) {
 				continue
 			}
 
-			sub, err := NewTestSubMessage(data)
+			sub, err := NewTestSubmessage(data)
 			if err != nil {
 				return 0, err
 			}

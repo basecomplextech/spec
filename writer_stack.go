@@ -120,7 +120,7 @@ func (s *listStack) pop(offset int) []listElement {
 // Each message externally stores its start offset in the buffer, and provides the offset
 // when inserting new fields. Message fields are kept sorted by tags using the insertion sort.
 //
-//	       message0          submessage1         submessage2
+//	       message0          Submessage1         Submessage2
 //	+-------------------+-------------------+-------------------+
 //	| f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 |
 //	+-------------------+-------------------+-------------------+

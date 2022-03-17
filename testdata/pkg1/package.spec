@@ -32,13 +32,13 @@ message Message {
 
     msg         Node            60;
     value       Struct          61;
-    imported    pkg2.SubMessage 62;
+    imported    pkg2.Submessage 62;
 
     list_ints       []int64             70;
     list_strings    []string            71;
     list_values     []Struct            73;
     list_messages   []Node              74;
-    list_imported   []pkg2.SubMessage   75;
+    list_imported   []pkg2.Submessage   75;
 }
 
 message Node {

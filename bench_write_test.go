@@ -9,28 +9,15 @@ import (
 
 func Benchmark_Write(b *testing.B) {
 	msg := newTestObject()
-
 	buf := make([]byte, 0, 4096)
-	size := int64(0)
 	w := NewWriterBuffer(buf)
-	{
-		if err := msg.Write(w); err != nil {
-			b.Fatal(err)
-		}
-		data, err := w.End()
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		size = int64(len(data))
-		b.SetBytes(size)
-	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	t0 := time.Now()
 
+	var size int
 	for i := 0; i < b.N; i++ {
 		if err := msg.Write(w); err != nil {
 			b.Fatal(err)
@@ -47,6 +34,9 @@ func Benchmark_Write(b *testing.B) {
 		// b.Fatal(len(data))
 		w.Reset()
 		w.buf = buf[:0]
+
+		size = len(data)
+
 	}
 
 	t1 := time.Now()
@@ -61,26 +51,15 @@ func Benchmark_Write(b *testing.B) {
 
 func BenchmarkJSON_Write(b *testing.B) {
 	msg := newTestObject()
-
 	buf := make([]byte, 0, 4096)
 	buffer := bytes.NewBuffer(buf)
-	size := int64(0)
-
-	{
-		data, err := json.Marshal(msg)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		size = int64(len(data))
-		b.SetBytes(size)
-	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	t0 := time.Now()
 
+	var size int
 	for i := 0; i < b.N; i++ {
 		e := json.NewEncoder(buffer)
 		if err := e.Encode(msg); err != nil {
@@ -90,7 +69,7 @@ func BenchmarkJSON_Write(b *testing.B) {
 			b.Fatal(buffer.Len())
 		}
 
-		// b.Fatal(buffer.Len(), buffer.String())
+		size = buffer.Len()
 		buffer.Reset()
 	}
 
