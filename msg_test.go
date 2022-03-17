@@ -10,19 +10,14 @@ func testWriteMessage(t *testing.T) []byte {
 	w := NewWriter()
 	w.BeginMessage()
 
-	w.Int8(1)
+	w.Byte(1)
 	w.Field(1)
-	w.Int16(1)
-	w.Field(2)
+
 	w.Int32(1)
 	w.Field(3)
 	w.Int64(1)
 	w.Field(4)
 
-	w.Uint8(1)
-	w.Field(10)
-	w.Uint16(1)
-	w.Field(11)
 	w.Uint32(1)
 	w.Field(12)
 	w.Uint64(1)
@@ -65,13 +60,11 @@ func TestMessage_Getters__should_access_fields(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, int8(1), m.Int8(1))
-	assert.Equal(t, int16(1), m.Int16(2))
+	assert.Equal(t, byte(1), m.Byte(1))
+
 	assert.Equal(t, int32(1), m.Int32(3))
 	assert.Equal(t, int64(1), m.Int64(4))
 
-	assert.Equal(t, uint8(1), m.Uint8(10))
-	assert.Equal(t, uint16(1), m.Uint16(11))
 	assert.Equal(t, uint32(1), m.Uint32(12))
 	assert.Equal(t, uint64(1), m.Uint64(13))
 

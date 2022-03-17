@@ -86,7 +86,7 @@ func (w *writer) readerRead(typ *compiler.Type, reader string, i string) string 
 		return fmt.Sprintf(`%v.ReadBool(%v)`, reader, i)
 
 	case compiler.KindInt8:
-		return fmt.Sprintf(`%v.ReadInt8(%v)`, reader, i)
+		return fmt.Sprintf(`%v.ReadByte(%v)`, reader, i)
 	case compiler.KindInt16:
 		return fmt.Sprintf(`%v.ReadInt16(%v)`, reader, i)
 	case compiler.KindInt32:

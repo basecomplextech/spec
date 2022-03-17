@@ -17,16 +17,13 @@ const (
 	TypeNil   Type = 0x00
 	TypeTrue  Type = 0x01
 	TypeFalse Type = 0x02
+	TypeByte  Type = 0x03
 
-	TypeInt8  Type = 0x10
-	TypeInt16 Type = 0x11
-	TypeInt32 Type = 0x12
-	TypeInt64 Type = 0x13
+	TypeInt32 Type = 0x10
+	TypeInt64 Type = 0x11
 
-	TypeUint8  Type = 0x20
-	TypeUint16 Type = 0x21
-	TypeUint32 Type = 0x22
-	TypeUint64 Type = 0x23
+	TypeUint32 Type = 0x20
+	TypeUint64 Type = 0x21
 
 	TypeU128 Type = 0x24
 	TypeU256 Type = 0x25
@@ -52,14 +49,11 @@ func checkType(t Type) error {
 		TypeNil,
 		TypeTrue,
 		TypeFalse,
+		TypeByte,
 
-		TypeInt8,
-		TypeInt16,
 		TypeInt32,
 		TypeInt64,
 
-		TypeUint8,
-		TypeUint16,
 		TypeUint32,
 		TypeUint64,
 
@@ -93,20 +87,14 @@ func (t Type) String() string {
 		return "true"
 	case TypeFalse:
 		return "false"
-
-	case TypeInt8:
+	case TypeByte:
 		return "int8"
-	case TypeInt16:
-		return "int16"
+
 	case TypeInt32:
 		return "int32"
 	case TypeInt64:
 		return "int64"
 
-	case TypeUint8:
-		return "uint8"
-	case TypeUint16:
-		return "uint16"
 	case TypeUint32:
 		return "uint32"
 	case TypeUint64:

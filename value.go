@@ -59,16 +59,6 @@ func (v Value) Byte() byte {
 	return p
 }
 
-func (v Value) Int8() int8 {
-	p, _, _ := ReadInt8(v)
-	return p
-}
-
-func (v Value) Int16() int16 {
-	p, _, _ := ReadInt16(v)
-	return p
-}
-
 func (v Value) Int32() int32 {
 	p, _, _ := ReadInt32(v)
 	return p
@@ -76,16 +66,6 @@ func (v Value) Int32() int32 {
 
 func (v Value) Int64() int64 {
 	p, _, _ := ReadInt64(v)
-	return p
-}
-
-func (v Value) Uint8() uint8 {
-	p, _, _ := ReadUint8(v)
-	return p
-}
-
-func (v Value) Uint16() uint16 {
-	p, _, _ := ReadUint16(v)
 	return p
 }
 
@@ -147,20 +127,14 @@ func (v Value) validate() error {
 
 	case TypeNil, TypeTrue, TypeFalse:
 		return nil
+	case TypeByte:
+		_, _, err = ReadByte(v)
 
-	case TypeInt8:
-		_, _, err = ReadInt8(v)
-	case TypeInt16:
-		_, _, err = ReadInt16(v)
 	case TypeInt32:
 		_, _, err = ReadInt32(v)
 	case TypeInt64:
 		_, _, err = ReadInt64(v)
 
-	case TypeUint8:
-		_, _, err = ReadUint8(v)
-	case TypeUint16:
-		_, _, err = ReadUint16(v)
 	case TypeUint32:
 		_, _, err = ReadUint32(v)
 	case TypeUint64:
@@ -181,12 +155,10 @@ func (v Value) validate() error {
 	case TypeString:
 		_, _, err = ReadString(v)
 
-	case TypeList,
-		TypeListBig:
+	case TypeList, TypeListBig:
 		_, _, err = ReadList(v, ReadValue)
 
-	case TypeMessage,
-		TypeMessageBig:
+	case TypeMessage, TypeMessageBig:
 		_, _, err = ReadMessage(v)
 
 		// TODO: Uncomment

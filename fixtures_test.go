@@ -35,60 +35,66 @@ func WriteTestMessage(w *Writer) TestMessageWriter {
 func (m TestMessage) Bool() bool {
 	return m.m.Bool(1)
 }
-func (m TestMessage) Int8() int8 {
-	return m.m.Int8(10)
+
+func (m TestMessage) Byte() byte {
+	return m.m.Byte(2)
 }
-func (m TestMessage) Int16() int16 {
-	return m.m.Int16(11)
-}
+
 func (m TestMessage) Int32() int32 {
-	return m.m.Int32(12)
+	return m.m.Int32(10)
 }
+
 func (m TestMessage) Int64() int64 {
-	return m.m.Int64(13)
+	return m.m.Int64(11)
 }
-func (m TestMessage) Uint8() uint8 {
-	return m.m.Uint8(20)
-}
-func (m TestMessage) Uint16() uint16 {
-	return m.m.Uint16(21)
-}
+
 func (m TestMessage) Uint32() uint32 {
-	return m.m.Uint32(22)
+	return m.m.Uint32(20)
 }
+
 func (m TestMessage) Uint64() uint64 {
-	return m.m.Uint64(23)
+	return m.m.Uint64(21)
 }
+
 func (m TestMessage) U128() u128.U128 {
-	return m.m.U128(24)
+	return m.m.U128(22)
 }
+
 func (m TestMessage) U256() u256.U256 {
-	return m.m.U256(25)
+	return m.m.U256(23)
 }
+
 func (m TestMessage) Float32() float32 {
 	return m.m.Float32(30)
 }
+
 func (m TestMessage) Float64() float64 {
 	return m.m.Float64(31)
 }
+
 func (m TestMessage) String() string {
 	return m.m.String(40)
 }
+
 func (m TestMessage) Bytes() []byte {
 	return m.m.Bytes(41)
 }
+
 func (m TestMessage) List() List[int64] {
 	b := m.m.Field(50)
-	return NewList[int64](b, ReadInt64)
+	return NewList(b, ReadInt64)
 }
+
 func (m TestMessage) Messages() List[TestSubmessage] {
 	b := m.m.Field(51)
-	return NewList[TestSubmessage](b, ReadTestSubmessage)
+	return NewList(b, ReadTestSubmessage)
 }
+
 func (m TestMessage) Strings() List[string] {
 	b := m.m.Field(52)
-	return NewList[string](b, ReadString)
+	return NewList(b, ReadString)
 }
+
 func (m TestMessage) Struct() TestStruct {
 	data := m.m.Field(60)
 	v, _ := ReadTestStruct(data)
@@ -104,87 +110,94 @@ type TestMessageWriter struct {
 func (w TestMessageWriter) End() error {
 	return w.w.EndMessage()
 }
+
 func (w TestMessageWriter) Bool(v bool) error {
 	w.w.Bool(v)
 	return w.w.Field(1)
 }
-func (w TestMessageWriter) Int8(v int8) error {
-	w.w.Int8(v)
-	return w.w.Field(10)
+
+func (w TestMessageWriter) Byte(v byte) error {
+	w.w.Byte(v)
+	return w.w.Field(2)
 }
-func (w TestMessageWriter) Int16(v int16) error {
-	w.w.Int16(v)
-	return w.w.Field(11)
-}
+
 func (w TestMessageWriter) Int32(v int32) error {
 	w.w.Int32(v)
-	return w.w.Field(12)
+	return w.w.Field(10)
 }
+
 func (w TestMessageWriter) Int64(v int64) error {
 	w.w.Int64(v)
-	return w.w.Field(13)
+	return w.w.Field(11)
 }
-func (w TestMessageWriter) Uint8(v uint8) error {
-	w.w.Uint8(v)
-	return w.w.Field(20)
-}
-func (w TestMessageWriter) Uint16(v uint16) error {
-	w.w.Uint16(v)
-	return w.w.Field(21)
-}
+
 func (w TestMessageWriter) Uint32(v uint32) error {
 	w.w.Uint32(v)
-	return w.w.Field(22)
+	return w.w.Field(20)
 }
+
 func (w TestMessageWriter) Uint64(v uint64) error {
 	w.w.Uint64(v)
-	return w.w.Field(23)
+	return w.w.Field(21)
 }
+
 func (w TestMessageWriter) U128(v u128.U128) error {
 	w.w.U128(v)
-	return w.w.Field(24)
+	return w.w.Field(22)
 }
+
 func (w TestMessageWriter) U256(v u256.U256) error {
 	w.w.U256(v)
-	return w.w.Field(25)
+	return w.w.Field(23)
 }
+
 func (w TestMessageWriter) Float32(v float32) error {
 	w.w.Float32(v)
 	return w.w.Field(30)
 }
+
 func (w TestMessageWriter) Float64(v float64) error {
 	w.w.Float64(v)
 	return w.w.Field(31)
 }
+
 func (w TestMessageWriter) String(v string) error {
 	w.w.String(v)
 	return w.w.Field(40)
 }
+
 func (w TestMessageWriter) Bytes(v []byte) error {
 	w.w.Bytes(v)
 	return w.w.Field(41)
 }
+
 func (w TestMessageWriter) BeginList() ListValueWriter[int64] {
 	return WriteValueList(w.w, w.w.Int64)
 }
+
 func (w TestMessageWriter) EndList() error {
 	w.w.EndList()
 	return w.w.Field(50)
 }
+
 func (w TestMessageWriter) BeginMessages() ListWriter[TestSubmessageWriter] {
 	return WriteList(w.w, WriteTestSubmessage)
 }
+
 func (w TestMessageWriter) EndMessages() error {
 	w.w.EndList()
 	return w.w.Field(51)
 }
+
 func (w TestMessageWriter) BeginStrings() ListValueWriter[string] {
 	return WriteValueList(w.w, w.w.String)
 }
+
 func (w TestMessageWriter) EndStrings() error {
 	w.w.EndList()
 	return w.w.Field(52)
 }
+
 func (w TestMessageWriter) Struct(v TestStruct) error {
 	// return w.w.Field(60)
 	return nil
@@ -214,17 +227,16 @@ func WriteTestSubmessage(w *Writer) TestSubmessageWriter {
 	return TestSubmessageWriter{w}
 }
 
-func (m TestSubmessage) Int8() int8 {
-	return m.m.Int8(1)
+func (m TestSubmessage) Byte() byte {
+	return m.m.Byte(1)
 }
-func (m TestSubmessage) Int16() int16 {
-	return m.m.Int16(2)
-}
+
 func (m TestSubmessage) Int32() int32 {
-	return m.m.Int32(3)
+	return m.m.Int32(2)
 }
+
 func (m TestSubmessage) Int64() int64 {
-	return m.m.Int64(4)
+	return m.m.Int64(3)
 }
 
 // TestSubmessageWriter
@@ -237,37 +249,32 @@ func (w TestSubmessageWriter) End() error {
 	return w.w.EndMessage()
 }
 
-func (w TestSubmessageWriter) Int8(v int8) error {
-	w.w.Int8(v)
+func (w TestSubmessageWriter) Byte(v byte) error {
+	w.w.Byte(v)
 	return w.w.Field(1)
 }
-func (w TestSubmessageWriter) Int16(v int16) error {
-	w.w.Int16(v)
-	return w.w.Field(2)
-}
+
 func (w TestSubmessageWriter) Int32(v int32) error {
 	w.w.Int32(v)
-	return w.w.Field(3)
+	return w.w.Field(2)
 }
+
 func (w TestSubmessageWriter) Int64(v int64) error {
 	w.w.Int64(v)
-	return w.w.Field(4)
+	return w.w.Field(3)
 }
 
 // Objects
 
 type TestObject struct {
 	Bool bool `tag:"1"`
+	Byte byte `tag:"2"`
 
-	Int8  int8  `tag:"10"`
-	Int16 int16 `tag:"11"`
-	Int32 int32 `tag:"12"`
-	Int64 int64 `tag:"13"`
+	Int32 int32 `tag:"10"`
+	Int64 int64 `tag:"11"`
 
-	Uint8  uint8  `tag:"20"`
-	Uint16 uint16 `tag:"21"`
-	Uint32 uint32 `tag:"22"`
-	Uint64 uint64 `tag:"23"`
+	Uint32 uint32 `tag:"20"`
+	Uint64 uint64 `tag:"21"`
 
 	U128 u128.U128 `tag:"24"`
 	U256 u256.U256 `tag:"25"`
@@ -305,14 +312,11 @@ func newTestObject() *TestObject {
 
 	return &TestObject{
 		Bool: true,
+		Byte: math.MaxInt8,
 
-		Int8:  math.MaxInt8,
-		Int16: math.MaxInt16,
 		Int32: math.MaxInt32,
 		Int64: math.MaxInt64,
 
-		Uint8:  math.MaxUint8,
-		Uint16: math.MaxUint16,
 		Uint32: math.MaxUint32,
 		Uint64: math.MaxUint64,
 
@@ -339,18 +343,12 @@ func (m *TestObject) Read(b []byte) error {
 		return err
 	}
 
-	// bool:1
 	m.Bool = r.Bool()
+	m.Byte = r.Byte()
 
-	// int:10-13
-	m.Int8 = r.Int8()
-	m.Int16 = r.Int16()
 	m.Int32 = r.Int32()
 	m.Int64 = r.Int64()
 
-	// uint:20-22
-	m.Uint8 = r.Uint8()
-	m.Uint16 = r.Uint16()
 	m.Uint32 = r.Uint32()
 	m.Uint64 = r.Uint64()
 
@@ -420,14 +418,11 @@ func (m *TestObject) Read(b []byte) error {
 
 func (m *TestObject) Write(w TestMessageWriter) error {
 	w.Bool(m.Bool)
+	w.Byte(m.Byte)
 
-	w.Int8(m.Int8)
-	w.Int16(m.Int16)
 	w.Int32(m.Int32)
 	w.Int64(m.Int64)
 
-	w.Uint8(m.Uint8)
-	w.Uint16(m.Uint16)
 	w.Uint32(m.Uint32)
 	w.Uint64(m.Uint64)
 
@@ -485,16 +480,14 @@ func (m *TestObject) Marshal() ([]byte, error) {
 // TestSubobject
 
 type TestSubobject struct {
-	Int8  int8  `tag:"1"`
-	Int16 int16 `tag:"2"`
-	Int32 int32 `tag:"3"`
-	Int64 int64 `tag:"4"`
+	Byte  byte  `tag:"1"`
+	Int32 int32 `tag:"2"`
+	Int64 int64 `tag:"3"`
 }
 
 func newTestSubobject(i int) *TestSubobject {
 	return &TestSubobject{
-		Int8:  int8(i + 1),
-		Int16: int16(i + 10),
+		Byte:  byte(i + 1),
 		Int32: int32(i + 100),
 		Int64: int64(i + 1000),
 	}
@@ -506,16 +499,14 @@ func (m *TestSubobject) Read(b []byte) error {
 		return err
 	}
 
-	m.Int8 = r.Int8(1)
-	m.Int16 = r.Int16(2)
-	m.Int32 = r.Int32(3)
-	m.Int64 = r.Int64(4)
+	m.Byte = r.Byte(1)
+	m.Int32 = r.Int32(2)
+	m.Int64 = r.Int64(3)
 	return nil
 }
 
 func (m TestSubobject) Write(w TestSubmessageWriter) error {
-	w.Int8(m.Int8)
-	w.Int16(m.Int16)
+	w.Byte(m.Byte)
 	w.Int32(m.Int32)
 	w.Int64(m.Int64)
 	return w.End()

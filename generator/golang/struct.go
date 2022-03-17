@@ -106,7 +106,7 @@ func (w *writer) structUnmarshalField(field *compiler.StructField) error {
 		}`)
 
 	case compiler.KindInt8:
-		w.linef(`s.%v, r, err = r.ReadInt8()`, name)
+		w.linef(`s.%v, r, err = r.ReadByte()`, name)
 		w.linef(`if err != nil {
 			return err
 		}`)

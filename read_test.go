@@ -57,73 +57,45 @@ func TestReadBool__should_read_bool_value(t *testing.T) {
 	assert.Equal(t, false, v)
 }
 
-// ReadInt8
+// ReadByte
 
-func TestReadInt8__should_read_int8(t *testing.T) {
+func TestReadByte__should_read_byte(t *testing.T) {
 	b := []byte{}
-	b = writeInt8(b, 1)
+	b = writeByte(b, 1)
 
-	v, n, err := ReadInt8(b)
+	v, n, err := ReadByte(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Equal(t, n, len(b))
-	assert.Equal(t, int8(1), v)
+	assert.Equal(t, byte(1), v)
 }
 
-func TestReadInt8__should_read_int8_from_int16(t *testing.T) {
-	b := []byte{}
-	b = writeInt16(b, 1)
-
-	v, n, err := ReadInt8(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, n, len(b))
-	assert.Equal(t, int8(1), v)
-}
-
-func TestReadInt8__should_read_int8_from_int32(t *testing.T) {
+func TestReadByte__should_read_byte_from_int32(t *testing.T) {
 	b := []byte{}
 	b = writeInt32(b, 1)
 
-	v, n, err := ReadInt8(b)
+	v, n, err := ReadByte(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Equal(t, n, len(b))
-	assert.Equal(t, int8(1), v)
+	assert.Equal(t, byte(1), v)
 }
 
-func TestReadInt8__should_read_int8_from_int64(t *testing.T) {
+func TestReadByte__should_read_byte_from_int64(t *testing.T) {
 	b := []byte{}
 	b = writeInt64(b, 1)
 
-	v, n, err := ReadInt8(b)
+	v, n, err := ReadByte(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Equal(t, n, len(b))
-	assert.Equal(t, int8(1), v)
-}
-
-// Int16
-
-func TestReadInt16__should_read_int16(t *testing.T) {
-	b := []byte{}
-	b = writeInt16(b, 1)
-
-	v, n, err := ReadInt16(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, n, len(b))
-	assert.Equal(t, int16(1), v)
+	assert.Equal(t, byte(1), v)
 }
 
 // Int32
@@ -156,22 +128,9 @@ func TestReadInt64__should_read_int64(t *testing.T) {
 	assert.Equal(t, int64(1), v)
 }
 
-func TestReadInt64__should_read_int64_from_int8(t *testing.T) {
+func TestReadInt64__should_read_int64_from_byte(t *testing.T) {
 	b := []byte{}
-	b = writeInt8(b, 1)
-
-	v, n, err := ReadInt64(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, n, len(b))
-	assert.Equal(t, int64(1), v)
-}
-
-func TestReadInt64__should_read_int64_from_int16(t *testing.T) {
-	b := []byte{}
-	b = writeInt16(b, 1)
+	b = writeByte(b, 1)
 
 	v, n, err := ReadInt64(b)
 	if err != nil {

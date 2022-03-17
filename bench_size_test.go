@@ -103,27 +103,18 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	d.types += n
 
 	switch t {
-	case TypeNil,
-		TypeTrue,
-		TypeFalse:
+	case TypeNil, TypeTrue, TypeFalse:
 		return nil
 
-	case TypeInt8,
-		TypeInt16,
-		TypeInt32,
-		TypeInt64:
+	case TypeByte, TypeInt32, TypeInt64:
 		_, vn := readInt(b)
 		d.values += vn - n
 
-	case TypeUint8,
-		TypeUint16,
-		TypeUint32,
-		TypeUint64:
+	case TypeUint32, TypeUint64:
 		_, vn := readInt(b)
 		d.values += vn - n
 
-	case TypeFloat32,
-		TypeFloat64:
+	case TypeFloat32, TypeFloat64:
 		_, vn := readFloat(b)
 		d.values += vn - n
 
@@ -147,7 +138,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.sizes += sn
 		d.strings += int(size)
 
-	case TypeList:
+	case TypeList, TypeListBig:
 		// read table size
 		off := len(b) - 1
 		tsize, tn := _readListTableSize(b[:off])
@@ -179,8 +170,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 			}
 		}
 
-	case TypeMessage,
-		TypeMessageBig:
+	case TypeMessage, TypeMessageBig:
 		// read table size
 		off := len(b) - 1
 		tsize, tn := _readMessageTableSize(b[:off])

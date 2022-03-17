@@ -241,13 +241,11 @@ func Benchmark_JSONEncode(b *testing.B) {
 func walkMessage(m TestMessage) (int, error) {
 	var v int
 
-	v += int(m.Int8())
-	v += int(m.Int16())
+	v += int(m.Byte())
+
 	v += int(m.Int32())
 	v += int(m.Int64())
 
-	v += int(m.Uint8())
-	v += int(m.Uint16())
 	v += int(m.Uint32())
 	v += int(m.Uint64())
 
@@ -270,8 +268,7 @@ func walkMessage(m TestMessage) (int, error) {
 		for i := 0; i < list.Count(); i++ {
 			sub := list.Element(i)
 
-			v += int(sub.Int8())
-			v += int(sub.Int16())
+			v += int(sub.Byte())
 			v += int(sub.Int32())
 			v += int(sub.Int64())
 		}

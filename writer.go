@@ -135,31 +135,12 @@ func (w *Writer) Bool(v bool) error {
 }
 
 func (w *Writer) Byte(v byte) error {
-	return w.Uint8(v)
-}
-
-func (w *Writer) Int8(v int8) error {
 	if w.err != nil {
 		return w.err
 	}
 
 	start := len(w.buf)
-	w.buf = writeInt8(w.buf, v)
-	end := len(w.buf)
-
-	if err := w.setData(start, end); err != nil {
-		return w.fail(err)
-	}
-	return nil
-}
-
-func (w *Writer) Int16(v int16) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := len(w.buf)
-	w.buf = writeInt16(w.buf, v)
+	w.buf = writeByte(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -190,36 +171,6 @@ func (w *Writer) Int64(v int64) error {
 
 	start := len(w.buf)
 	w.buf = writeInt64(w.buf, v)
-	end := len(w.buf)
-
-	if err := w.setData(start, end); err != nil {
-		return w.fail(err)
-	}
-	return nil
-}
-
-func (w *Writer) Uint8(v uint8) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := len(w.buf)
-	w.buf = writeUint8(w.buf, v)
-	end := len(w.buf)
-
-	if err := w.setData(start, end); err != nil {
-		return w.fail(err)
-	}
-	return nil
-}
-
-func (w *Writer) Uint16(v uint16) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := len(w.buf)
-	w.buf = writeUint16(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {

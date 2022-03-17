@@ -43,19 +43,9 @@ func writeBool(b []byte, v bool) []byte {
 	}
 }
 
-func writeInt8(b []byte, v int8) []byte {
-	b = append(b, uint8(v))
-	b = append(b, byte(TypeInt8))
-	return b
-}
-
-func writeInt16(b []byte, v int16) []byte {
-	p := [maxVarintLen16]byte{}
-	n := writeReverseVarint(p[:], int64(v))
-	off := maxVarintLen16 - n
-
-	b = append(b, p[off:]...)
-	b = append(b, byte(TypeInt16))
+func writeByte(b []byte, v byte) []byte {
+	b = append(b, v)
+	b = append(b, byte(TypeByte))
 	return b
 }
 
@@ -76,22 +66,6 @@ func writeInt64(b []byte, v int64) []byte {
 
 	b = append(b, p[off:]...)
 	b = append(b, byte(TypeInt64))
-	return b
-}
-
-func writeUint8(b []byte, v uint8) []byte {
-	b = append(b, v)
-	b = append(b, byte(TypeUint8))
-	return b
-}
-
-func writeUint16(b []byte, v uint16) []byte {
-	p := [maxVarintLen16]byte{}
-	n := writeReverseUvarint(p[:], uint64(v))
-	off := maxVarintLen16 - n
-
-	b = append(b, p[off:]...)
-	b = append(b, byte(TypeUint16))
 	return b
 }
 

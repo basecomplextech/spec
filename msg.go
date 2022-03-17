@@ -101,7 +101,7 @@ func (m Message) Bool(tag uint16) bool {
 	return v
 }
 
-func (m Message) Int8(tag uint16) int8 {
+func (m Message) Byte(tag uint16) byte {
 	end := m.table.offset(m.big, tag)
 	switch {
 	case end < 0:
@@ -111,21 +111,7 @@ func (m Message) Int8(tag uint16) int8 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadInt8(b)
-	return v
-}
-
-func (m Message) Int16(tag uint16) int16 {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return 0
-	case end > int(m.body):
-		return 0
-	}
-
-	b := m.data[:end]
-	v, _, _ := ReadInt16(b)
+	v, _, _ := ReadByte(b)
 	return v
 }
 
@@ -154,34 +140,6 @@ func (m Message) Int64(tag uint16) int64 {
 
 	b := m.data[:end]
 	v, _, _ := ReadInt64(b)
-	return v
-}
-
-func (m Message) Uint8(tag uint16) uint8 {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return 0
-	case end > int(m.body):
-		return 0
-	}
-
-	b := m.data[:end]
-	v, _, _ := ReadUint8(b)
-	return v
-}
-
-func (m Message) Uint16(tag uint16) uint16 {
-	end := m.table.offset(m.big, tag)
-	switch {
-	case end < 0:
-		return 0
-	case end > int(m.body):
-		return 0
-	}
-
-	b := m.data[:end]
-	v, _, _ := ReadUint16(b)
 	return v
 }
 
