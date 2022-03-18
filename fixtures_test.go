@@ -74,8 +74,8 @@ func BeginTestMessage(e *Encoder) TestMessageEncoder {
 	return TestMessageEncoder{e}
 }
 
-func (e TestMessageEncoder) End() error {
-	return e.e.EndNested()
+func (e TestMessageEncoder) End() ([]byte, error) {
+	return e.e.End()
 }
 
 func (e TestMessageEncoder) Bool(v bool) error {
@@ -199,8 +199,8 @@ func BeginSubmessage(e *Encoder) TestSubmessageEncoder {
 	return TestSubmessageEncoder{e}
 }
 
-func (e TestSubmessageEncoder) End() error {
-	return e.e.EndNested()
+func (e TestSubmessageEncoder) End() ([]byte, error) {
+	return e.e.End()
 }
 
 func (e TestSubmessageEncoder) Int32(v int32) error {
@@ -255,8 +255,8 @@ func BeginTestSubmessage(e *Encoder) TestElementEncoder {
 	return TestElementEncoder{e}
 }
 
-func (e TestElementEncoder) End() error {
-	return e.e.EndNested()
+func (e TestElementEncoder) End() ([]byte, error) {
+	return e.e.End()
 }
 
 func (e TestElementEncoder) Byte(v byte) error {

@@ -36,16 +36,15 @@ func testEncodeMessage(t *testing.T) []byte {
 	w.BeginList()
 	w.String("element1")
 	w.Element()
-	w.EndList()
+	w.End()
 	w.Field(40)
 
 	w.BeginMessage()
 	w.String("field1")
 	w.Field(1)
-	w.EndMessage()
+	w.End()
 	w.Field(50)
 
-	w.EndMessage()
 	b, err := w.End()
 	if err != nil {
 		t.Fatal(err)

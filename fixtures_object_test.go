@@ -195,7 +195,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 		if err := m.Submessage.Encode(sub); err != nil {
 			return err
 		}
-		if err := sub.End(); err != nil {
+		if _, err := sub.End(); err != nil {
 			return err
 		}
 	}
@@ -207,7 +207,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 				return err
 			}
 		}
-		if err := list.End(); err != nil {
+		if _, err := list.End(); err != nil {
 			return err
 		}
 	}
@@ -219,11 +219,11 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 			if err := msg.Encode(next); err != nil {
 				return err
 			}
-			if err := next.End(); err != nil {
+			if _, err := next.End(); err != nil {
 				return err
 			}
 		}
-		if err := list.End(); err != nil {
+		if _, err := list.End(); err != nil {
 			return err
 		}
 	}
@@ -235,7 +235,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 				return err
 			}
 		}
-		if err := list.End(); err != nil {
+		if _, err := list.End(); err != nil {
 			return err
 		}
 	}
@@ -253,10 +253,7 @@ func (m *TestObject) Marshal() ([]byte, error) {
 	if err := m.Encode(me); err != nil {
 		return nil, err
 	}
-	if err := me.End(); err != nil {
-		return nil, err
-	}
-	return e.End()
+	return me.End()
 }
 
 // TestSubobject

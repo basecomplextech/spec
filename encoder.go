@@ -79,71 +79,47 @@ func (e *Encoder) Reset() {
 	e.fields.reset()
 }
 
-// End ends writing, returns the result bytes, and resets the encoder.
-func (e *Encoder) End() ([]byte, error) {
+// End ends a nested object and a parent field/element if present.
+func (e *Encoder) End() (result []byte, err error) {
 	if e.err != nil {
 		return nil, e.err
 	}
 
-	switch {
-	case e.err != nil:
-		return nil, e.err
-	case e.objects.len() > 0:
-		return nil, fmt.Errorf("end: incomplete object, nested stack size=%d", e.objects.len())
-	}
-
-	// pop data
-	data := e.popData()
-
-	// return and reset
-	b := e.buf[data.start:data.end]
-	e.Reset()
-	return b, nil
-}
-
-// EndNested ends a nested object and a parent field/element if present.
-func (e *Encoder) EndNested() error {
-	if e.err != nil {
-		return e.err
-	}
-
+	// end top object
 	obj, ok := e.objects.peek()
 	if !ok {
-		return e.fail(errors.New("end: cannot end object, empty stack"))
+		return nil, e.fail(fmt.Errorf("end: encode stack is empty"))
 	}
 
-	// end nested object
 	switch obj.type_ {
 	case objectTypeList:
-		if _, err := e.EndList(); err != nil {
-			return err
+		result, err = e.endList()
+		if err != nil {
+			return nil, err
 		}
+
 	case objectTypeMessage:
-		if _, err := e.EndMessage(); err != nil {
-			return err
+		result, err = e.endMessage()
+		if err != nil {
+			return nil, err
 		}
 	default:
-		return e.fail(errors.New("end: not nested encoder"))
+		return nil, e.fail(errors.New("end: not nested encoder"))
 	}
 
-	// peek parent object
+	// end parent field/element
 	obj, ok = e.objects.peek()
 	if !ok {
-		return nil
+		return result, nil
 	}
 
-	// end field/element
 	switch obj.type_ {
 	case objectTypeElement:
-		if _, err := e.EndElement(); err != nil {
-			return err
-		}
+		return e.endElement()
 	case objectTypeField:
-		if _, err := e.EndField(); err != nil {
-			return err
-		}
+		return e.endField()
 	}
-	return nil
+	return result, nil
 }
 
 // Primitive
@@ -394,7 +370,31 @@ func (e *Encoder) BeginElement() error {
 	return nil
 }
 
-func (e *Encoder) EndElement() ([]byte, error) {
+func (e *Encoder) Element() error {
+	if e.err != nil {
+		return e.err
+	}
+
+	// check list
+	list, ok := e.objects.peek()
+	switch {
+	case !ok:
+		return e.fail(errors.New("element: cannot encode element, not list encoder"))
+	case list.type_ != objectTypeList:
+		return e.fail(errors.New("element: cannot encode element, not list encoder"))
+	}
+
+	// pop data
+	data := e.popData()
+
+	// append element relative offset
+	offset := uint32(data.end - list.start)
+	element := listElement{offset: offset}
+	e.elements.push(element)
+	return nil
+}
+
+func (e *Encoder) endElement() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -430,31 +430,7 @@ func (e *Encoder) EndElement() ([]byte, error) {
 	return b, nil
 }
 
-func (e *Encoder) Element() error {
-	if e.err != nil {
-		return e.err
-	}
-
-	// check list
-	list, ok := e.objects.peek()
-	switch {
-	case !ok:
-		return e.fail(errors.New("element: cannot encode element, not list encoder"))
-	case list.type_ != objectTypeList:
-		return e.fail(errors.New("element: cannot encode element, not list encoder"))
-	}
-
-	// pop data
-	data := e.popData()
-
-	// append element relative offset
-	offset := uint32(data.end - list.start)
-	element := listElement{offset: offset}
-	e.elements.push(element)
-	return nil
-}
-
-func (e *Encoder) EndList() ([]byte, error) {
+func (e *Encoder) endList() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -523,7 +499,33 @@ func (e *Encoder) BeginField(tag uint16) error {
 	return nil
 }
 
-func (e *Encoder) EndField() ([]byte, error) {
+func (e *Encoder) Field(tag uint16) error {
+	if e.err != nil {
+		return e.err
+	}
+
+	// check message
+	message, ok := e.objects.peek()
+	switch {
+	case !ok:
+		return e.fail(errors.New("field: cannot encode field, not message encoder"))
+	case message.type_ != objectTypeMessage:
+		return e.fail(errors.New("field: cannot encode field, not message encoder"))
+	}
+
+	// pop data
+	data := e.popData()
+
+	// insert field tag and relative offset
+	f := messageField{
+		tag:    tag,
+		offset: uint32(data.end - message.start),
+	}
+	e.fields.insert(message.tableStart, f)
+	return nil
+}
+
+func (e *Encoder) endField() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -562,33 +564,7 @@ func (e *Encoder) EndField() ([]byte, error) {
 	return b, nil
 }
 
-func (e *Encoder) Field(tag uint16) error {
-	if e.err != nil {
-		return e.err
-	}
-
-	// check message
-	message, ok := e.objects.peek()
-	switch {
-	case !ok:
-		return e.fail(errors.New("field: cannot encode field, not message encoder"))
-	case message.type_ != objectTypeMessage:
-		return e.fail(errors.New("field: cannot encode field, not message encoder"))
-	}
-
-	// pop data
-	data := e.popData()
-
-	// insert field tag and relative offset
-	f := messageField{
-		tag:    tag,
-		offset: uint32(data.end - message.start),
-	}
-	e.fields.insert(message.tableStart, f)
-	return nil
-}
-
-func (e *Encoder) EndMessage() ([]byte, error) {
+func (e *Encoder) endMessage() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}

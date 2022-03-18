@@ -15,10 +15,6 @@ func TestEncoder__should_encode_message(t *testing.T) {
 	if err := msg.Encode(me); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.EndNested(); err != nil {
-		t.Fatal(err)
-	}
-
 	b, err := e.End()
 	if err != nil {
 		t.Fatal(err)
@@ -46,9 +42,6 @@ func TestEncoder__should_encode_list(t *testing.T) {
 
 	e.Int64(3)
 	e.Element()
-	if _, err := e.EndList(); err != nil {
-		t.Fatal(err)
-	}
 
 	b, err := e.End()
 	if err != nil {
@@ -72,18 +65,19 @@ func TestEncoder__should_encode_list(t *testing.T) {
 
 func TestEncoder_End__should_return_finished_bytes(t *testing.T) {
 	e := NewEncoder()
-	e.Bool(true)
+	e.BeginMessage()
+
 	b, err := e.End()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, []byte{byte(TypeTrue)}, b)
+	assert.Equal(t, byte(TypeMessage), b[len(b)-1])
 }
 
 func TestEncoder_End__should_return_error_when_not_finished(t *testing.T) {
 	e := NewEncoder()
-	e.BeginMessage()
+	e.Bool(true)
 
 	_, err := e.End()
 	assert.Error(t, err)

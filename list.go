@@ -114,8 +114,8 @@ func BeginList[W any](e *Encoder, next func(*Encoder) W) ListEncoder[W] {
 }
 
 // End ends the list.
-func (e ListEncoder[W]) End() error {
-	return e.e.EndNested()
+func (e ListEncoder[W]) End() ([]byte, error) {
+	return e.e.End()
 }
 
 // Next returns the next element encoder.
@@ -144,8 +144,8 @@ func BeginValueList[T any](e *Encoder, encode func(T) error) ListValueEncoder[T]
 }
 
 // End ends the list.
-func (e ListValueEncoder[T]) End() error {
-	return e.e.EndNested()
+func (e ListValueEncoder[T]) End() ([]byte, error) {
+	return e.e.End()
 }
 
 // Next encodes the next element.
