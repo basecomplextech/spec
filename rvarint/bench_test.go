@@ -1,4 +1,4 @@
-package spec
+package rvarint
 
 import (
 	"encoding/binary"
@@ -6,15 +6,15 @@ import (
 	"testing"
 )
 
-// read
+// Decode
 
-func BenchmarkReadReverseUvarint32(b *testing.B) {
-	buf := make([]byte, maxVarintLen32)
-	writeReverseUvarint(buf, math.MaxUint32)
+func BenchmarkUint32(b *testing.B) {
+	buf := make([]byte, MaxLen32)
+	PutUint64(buf, math.MaxUint32)
 	b.SetBytes(8)
 
 	for i := 0; i < b.N; i++ {
-		v, n := readReverseUvarint(buf)
+		v, n := Uint32(buf)
 		if v != math.MaxUint32 {
 			b.Fatal()
 		}
@@ -24,13 +24,13 @@ func BenchmarkReadReverseUvarint32(b *testing.B) {
 	}
 }
 
-func BenchmarkReadReverseUvarint64(b *testing.B) {
-	buf := make([]byte, maxVarintLen64)
-	writeReverseUvarint(buf, math.MaxUint64)
+func BenchmarkUint64(b *testing.B) {
+	buf := make([]byte, MaxLen64)
+	PutUint64(buf, math.MaxUint64)
 	b.SetBytes(8)
 
 	for i := 0; i < b.N; i++ {
-		v, n := readReverseUvarint(buf)
+		v, n := Uint64(buf)
 		if v != math.MaxUint64 {
 			b.Fatal()
 		}
@@ -40,33 +40,33 @@ func BenchmarkReadReverseUvarint64(b *testing.B) {
 	}
 }
 
-// write
+// Encode
 
-func BenchmarkWriteReverseUvarint32(b *testing.B) {
-	buf := make([]byte, maxVarintLen32)
+func BenchmarkPutUint32(b *testing.B) {
+	buf := make([]byte, MaxLen32)
 	b.SetBytes(4)
 
 	for i := 0; i < b.N; i++ {
-		n := writeReverseUvarint(buf, math.MaxUint32)
+		n := PutUint64(buf, math.MaxUint32)
 		if n <= 0 {
 			b.Fatal()
 		}
 	}
 }
 
-func BenchmarkWriteReverseUvarint64(b *testing.B) {
-	buf := make([]byte, maxVarintLen64)
+func BenchmarkPutUint64(b *testing.B) {
+	buf := make([]byte, MaxLen64)
 	b.SetBytes(8)
 
 	for i := 0; i < b.N; i++ {
-		n := writeReverseUvarint(buf, math.MaxUint64)
+		n := PutUint64(buf, math.MaxUint64)
 		if n <= 0 {
 			b.Fatal()
 		}
 	}
 }
 
-// standard varint
+// Standard varint
 
 func BenchmarkUvarint64(b *testing.B) {
 	buf := make([]byte, binary.MaxVarintLen64)
@@ -96,7 +96,7 @@ func BenchmarkPutUvarint64(b *testing.B) {
 	}
 }
 
-// standard big endian
+// Standard big endian
 
 func BenchmarkBigEndianUint64(b *testing.B) {
 	buf := make([]byte, 8)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
+	"github.com/complexl/spec/rvarint"
 )
 
 // Write writes a writable.
@@ -50,9 +51,9 @@ func writeByte(b []byte, v byte) []byte {
 }
 
 func writeInt32(b []byte, v int32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseVarint(p[:], int64(v))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutInt64(p[:], int64(v))
+	off := rvarint.MaxLen32 - n
 
 	b = append(b, p[off:]...)
 	b = append(b, byte(TypeInt32))
@@ -60,9 +61,9 @@ func writeInt32(b []byte, v int32) []byte {
 }
 
 func writeInt64(b []byte, v int64) []byte {
-	p := [maxVarintLen64]byte{}
-	n := writeReverseVarint(p[:], v)
-	off := maxVarintLen64 - n
+	p := [rvarint.MaxLen64]byte{}
+	n := rvarint.PutInt64(p[:], v)
+	off := rvarint.MaxLen64 - n
 
 	b = append(b, p[off:]...)
 	b = append(b, byte(TypeInt64))
@@ -70,9 +71,9 @@ func writeInt64(b []byte, v int64) []byte {
 }
 
 func writeUint32(b []byte, v uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(v))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(v))
+	off := rvarint.MaxLen32 - n
 
 	b = append(b, p[off:]...)
 	b = append(b, byte(TypeUint32))
@@ -80,9 +81,9 @@ func writeUint32(b []byte, v uint32) []byte {
 }
 
 func writeUint64(b []byte, v uint64) []byte {
-	p := [maxVarintLen64]byte{}
-	n := writeReverseUvarint(p[:], v)
-	off := maxVarintLen64 - n
+	p := [rvarint.MaxLen64]byte{}
+	n := rvarint.PutUint64(p[:], v)
+	off := rvarint.MaxLen64 - n
 
 	b = append(b, p[off:]...)
 	b = append(b, byte(TypeUint64))
@@ -138,9 +139,9 @@ func writeBytes(b []byte, v []byte) ([]byte, error) {
 }
 
 func _writeBytesSize(b []byte, size uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(size))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
@@ -160,9 +161,9 @@ func writeString(b []byte, s string) ([]byte, error) {
 }
 
 func _writeStringSize(b []byte, size uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(size))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
@@ -236,16 +237,16 @@ func _writeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, e
 }
 
 func _writeListTableSize(b []byte, size uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(size))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
 func _writeListBodySize(b []byte, size uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(size))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
@@ -321,16 +322,16 @@ func _writeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint3
 }
 
 func _writeMessageTableSize(b []byte, size uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(size))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
 func _writeMessageBodySize(b []byte, size uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(size))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
@@ -348,9 +349,9 @@ func writeStruct(b []byte, bodySize int) ([]byte, error) {
 }
 
 func _writeStructBodySize(b []byte, size uint32) []byte {
-	p := [maxVarintLen32]byte{}
-	n := writeReverseUvarint(p[:], uint64(size))
-	off := maxVarintLen32 - n
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
+	"github.com/complexl/spec/rvarint"
 )
 
 // ReadFunc is a generic read function, it should return a value, a number of read bytes, or an error.
@@ -206,7 +207,7 @@ func readInt(b []byte) (int64, int) {
 
 	case TypeInt32,
 		TypeInt64:
-		v, vn := readReverseVarint(b)
+		v, vn := rvarint.Int64(b)
 		if vn < 0 {
 			return 0, -1
 		}
@@ -216,7 +217,7 @@ func readInt(b []byte) (int64, int) {
 
 	case TypeUint32,
 		TypeUint64:
-		v, vn := readReverseUvarint(b)
+		v, vn := rvarint.Uint64(b)
 		if vn < 0 {
 			return 0, -1
 		}
@@ -257,7 +258,7 @@ func readUint(b []byte) (uint64, int) {
 
 	case TypeInt32,
 		TypeInt64:
-		v, vn := readReverseVarint(b)
+		v, vn := rvarint.Int64(b)
 		if vn < 0 {
 			return 0, -1
 		}
@@ -267,7 +268,7 @@ func readUint(b []byte) (uint64, int) {
 
 	case TypeUint32,
 		TypeUint64:
-		v, vn := readReverseUvarint(b)
+		v, vn := rvarint.Uint64(b)
 		if vn < 0 {
 			return 0, -1
 		}
@@ -349,7 +350,7 @@ func readBytes(b []byte) ([]byte, int, error) {
 }
 
 func _readBytesSize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
+	return rvarint.Uint32(b)
 }
 
 func _readBytesBody(b []byte, size uint32) ([]byte, error) {
@@ -396,7 +397,7 @@ func readString(b []byte) (string, int, error) {
 }
 
 func _readStringSize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
+	return rvarint.Uint32(b)
 }
 
 func _readStringBody(b []byte, size uint32) (string, error) {
@@ -476,11 +477,11 @@ func readList(b []byte) (list, int, error) {
 }
 
 func _readListTableSize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
+	return rvarint.Uint32(b)
 }
 
 func _readListBodySize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
+	return rvarint.Uint32(b)
 }
 
 func _readListTable(b []byte, size uint32, big bool) (listTable, error) {
@@ -574,11 +575,11 @@ func readMessage(b []byte) (Message, int, error) {
 }
 
 func _readMessageTableSize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
+	return rvarint.Uint32(b)
 }
 
 func _readMessageBodySize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
+	return rvarint.Uint32(b)
 }
 
 func _readMessageTable(b []byte, size uint32, big bool) (messageTable, error) {
@@ -642,5 +643,5 @@ func readStruct(b []byte) (bodySize int, n int, err error) {
 }
 
 func _readStructBodySize(b []byte) (uint32, int) {
-	return readReverseUvarint32(b)
+	return rvarint.Uint32(b)
 }
