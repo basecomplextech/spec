@@ -29,9 +29,10 @@ type TestObject struct {
 	String string `tag:"40"`
 	Bytes  []byte `tag:"41"`
 
-	List     []int64          `tag:"50"`
-	Messages []*TestSubobject `tag:"51"`
-	Strings  []string         `tag:"52"`
+	Submessage *TestSubobject       `tag:"50"`
+	List       []int64              `tag:"51"`
+	Messages   []*TestObjectElement `tag:"52"`
+	Strings    []string             `tag:"53"`
 
 	// Struct TestStruct `tag:"60"`
 }
@@ -42,9 +43,9 @@ func newTestObject() *TestObject {
 		list = append(list, int64(i))
 	}
 
-	messages := make([]*TestSubobject, 0, 10)
+	messages := make([]*TestObjectElement, 0, 10)
 	for i := 0; i < cap(messages); i++ {
-		sub := newTestSubobject(i)
+		sub := newTestObjectElement(i)
 		messages = append(messages, sub)
 	}
 
@@ -81,36 +82,47 @@ func newTestObject() *TestObject {
 	}
 }
 
-func (m *TestObject) Read(b []byte) error {
-	r, _, err := ReadTestMessage(b)
+func (m *TestObject) Decode(b []byte) error {
+	msg, _, err := DecodeTestMessage(b)
 	if err != nil {
 		return err
 	}
 
-	m.Bool = r.Bool()
-	m.Byte = r.Byte()
+	m.Bool = msg.Bool()
+	m.Byte = msg.Byte()
 
-	m.Int32 = r.Int32()
-	m.Int64 = r.Int64()
+	m.Int32 = msg.Int32()
+	m.Int64 = msg.Int64()
 
-	m.Uint32 = r.Uint32()
-	m.Uint64 = r.Uint64()
+	m.Uint32 = msg.Uint32()
+	m.Uint64 = msg.Uint64()
 
 	// u128/u256:24-25
-	m.U128 = r.U128()
-	m.U256 = r.U256()
+	m.U128 = msg.U128()
+	m.U256 = msg.U256()
 
 	// float:30-31
-	m.Float32 = r.Float32()
-	m.Float64 = r.Float64()
+	m.Float32 = msg.Float32()
+	m.Float64 = msg.Float64()
 
 	// string/bytes:40-41
-	m.String = r.String()
-	m.Bytes = r.Bytes()
+	m.String = msg.String()
+	m.Bytes = msg.Bytes()
 
-	// list:50
+	// submessage
 	{
-		list := r.List()
+		p := msg.Submessage().Bytes()
+		sub := &TestSubobject{}
+		if err := sub.Decode(p); err != nil {
+			return err
+		}
+
+		m.Submessage = sub
+	}
+
+	// list:51
+	{
+		list := msg.List()
 		m.List = make([]int64, 0, list.Count())
 
 		for i := 0; i < list.Count(); i++ {
@@ -119,10 +131,10 @@ func (m *TestObject) Read(b []byte) error {
 		}
 	}
 
-	// messages:51
+	// messages:52
 	{
-		list := r.Messages()
-		m.Messages = make([]*TestSubobject, 0, list.Count())
+		list := msg.Messages()
+		m.Messages = make([]*TestObjectElement, 0, list.Count())
 
 		for i := 0; i < list.Count(); i++ {
 			data := list.ElementBytes(i)
@@ -130,17 +142,17 @@ func (m *TestObject) Read(b []byte) error {
 				continue
 			}
 
-			el := &TestSubobject{}
-			if err := el.Read(data); err != nil {
+			el := &TestObjectElement{}
+			if err := el.Decode(data); err != nil {
 				return err
 			}
 			m.Messages = append(m.Messages, el)
 		}
 	}
 
-	// strings:52
+	// strings:53
 	{
-		list := r.Strings()
+		list := msg.Strings()
 		m.Strings = make([]string, 0, list.Count())
 
 		for i := 0; i < list.Count(); i++ {
@@ -152,7 +164,7 @@ func (m *TestObject) Read(b []byte) error {
 	// struct:60
 	// TODO: Uncomment
 	// {
-	// 	data := r.Field(60)
+	// 	data := msg.Field(60)
 	// 	if err := m.Struct.Unmarshal(data); err != nil {
 	// 		return err
 	// 	}
@@ -179,6 +191,14 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	e.String(m.String)
 	e.Bytes(m.Bytes)
 
+	if m.Submessage != nil {
+		se := e.BeginSubmessage()
+		if err := m.Submessage.Encode(se); err != nil {
+			return err
+		}
+		e.EndSubmessage()
+	}
+
 	if len(m.List) > 0 {
 		list := e.BeginList()
 		for _, value := range m.List {
@@ -191,7 +211,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 		list := e.BeginMessages()
 		for _, msg := range m.Messages {
 			next := list.BeginElement()
-			msg.Write(next)
+			msg.Encode(next)
 			list.EndElement()
 		}
 		e.EndMessages()
@@ -224,32 +244,63 @@ func (m *TestObject) Marshal() ([]byte, error) {
 // TestSubobject
 
 type TestSubobject struct {
+	Int32 int32 `tag:"1"`
+	Int64 int64 `tag:"2"`
+}
+
+func newTestSubobject() *TestSubobject {
+	return &TestSubobject{
+		Int32: 1,
+		Int64: 2,
+	}
+}
+
+func (m *TestSubobject) Decode(b []byte) error {
+	msg, _, err := DecodeTestSubmessage(b)
+	if err != nil {
+		return err
+	}
+
+	m.Int32 = msg.Int32()
+	m.Int64 = msg.Int64()
+	return nil
+}
+
+func (m *TestSubobject) Encode(e TestSubmessageEncoder) error {
+	e.Int32(m.Int32)
+	e.Int64(m.Int64)
+	return nil
+}
+
+// TestObjectElement
+
+type TestObjectElement struct {
 	Byte  byte  `tag:"1"`
 	Int32 int32 `tag:"2"`
 	Int64 int64 `tag:"3"`
 }
 
-func newTestSubobject(i int) *TestSubobject {
-	return &TestSubobject{
+func newTestObjectElement(i int) *TestObjectElement {
+	return &TestObjectElement{
 		Byte:  byte(i + 1),
 		Int32: int32(i + 100),
 		Int64: int64(i + 1000),
 	}
 }
 
-func (m *TestSubobject) Read(b []byte) error {
-	r, _, err := DecodeMessage(b)
+func (m *TestObjectElement) Decode(b []byte) error {
+	msg, _, err := DecodeMessage(b)
 	if err != nil {
 		return err
 	}
 
-	m.Byte = r.Byte(1)
-	m.Int32 = r.Int32(2)
-	m.Int64 = r.Int64(3)
+	m.Byte = msg.Byte(1)
+	m.Int32 = msg.Int32(2)
+	m.Int64 = msg.Int64(3)
 	return nil
 }
 
-func (m TestSubobject) Write(e TestSubmessageEncoder) error {
+func (m TestObjectElement) Encode(e TestElementEncoder) error {
 	e.Byte(m.Byte)
 	e.Int32(m.Int32)
 	e.Int64(m.Int64)

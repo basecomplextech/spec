@@ -11,12 +11,12 @@ type TestMessage struct {
 	m Message
 }
 
-func NewTestMessage(b []byte) TestMessage {
+func GetTestMessage(b []byte) TestMessage {
 	m := GetMessage(b)
 	return TestMessage{m}
 }
 
-func ReadTestMessage(b []byte) (TestMessage, int, error) {
+func DecodeTestMessage(b []byte) (TestMessage, int, error) {
 	m, n, err := DecodeMessage(b)
 	if err != nil {
 		return TestMessage{}, n, err
@@ -37,18 +37,23 @@ func (m TestMessage) Float64() float64 { return m.m.Float64(31) }
 func (m TestMessage) String() string   { return m.m.String(40) }
 func (m TestMessage) Bytes() []byte    { return m.m.Bytes(41) }
 
-func (m TestMessage) List() List[int64] {
+func (m TestMessage) Submessage() TestSubmessage {
 	b := m.m.Field(50)
+	return GetTestSubmessage(b)
+}
+
+func (m TestMessage) List() List[int64] {
+	b := m.m.Field(51)
 	return GetList(b, DecodeInt64)
 }
 
-func (m TestMessage) Messages() List[TestSubmessage] {
-	b := m.m.Field(51)
-	return GetList(b, ReadTestSubmessage)
+func (m TestMessage) Messages() List[TestElement] {
+	b := m.m.Field(52)
+	return GetList(b, DecodeTestElement)
 }
 
 func (m TestMessage) Strings() List[string] {
-	b := m.m.Field(52)
+	b := m.m.Field(53)
 	return GetList(b, DecodeString)
 }
 
@@ -133,22 +138,31 @@ func (e TestMessageEncoder) Bytes(v []byte) error {
 	return e.e.Field(41)
 }
 
+func (e TestMessageEncoder) BeginSubmessage() TestSubmessageEncoder {
+	return BeginSubmessage(e.e)
+}
+
+func (e TestMessageEncoder) EndSubmessage() error {
+	e.e.EndMessage()
+	return e.e.Field(50)
+}
+
 func (e TestMessageEncoder) BeginList() ListValueEncoder[int64] {
 	return BeginValueList(e.e, e.e.Int64)
 }
 
 func (e TestMessageEncoder) EndList() error {
 	e.e.EndList()
-	return e.e.Field(50)
+	return e.e.Field(51)
 }
 
-func (e TestMessageEncoder) BeginMessages() ListEncoder[TestSubmessageEncoder] {
+func (e TestMessageEncoder) BeginMessages() ListEncoder[TestElementEncoder] {
 	return BeginList(e.e, BeginTestSubmessage)
 }
 
 func (e TestMessageEncoder) EndMessages() error {
 	e.e.EndList()
-	return e.e.Field(51)
+	return e.e.Field(52)
 }
 
 func (e TestMessageEncoder) BeginStrings() ListValueEncoder[string] {
@@ -157,7 +171,7 @@ func (e TestMessageEncoder) BeginStrings() ListValueEncoder[string] {
 
 func (e TestMessageEncoder) EndStrings() error {
 	e.e.EndList()
-	return e.e.Field(52)
+	return e.e.Field(53)
 }
 
 func (e TestMessageEncoder) Struct(v TestStruct) error {
@@ -171,12 +185,12 @@ type TestSubmessage struct {
 	m Message
 }
 
-func NewTestSubmessage(b []byte) TestSubmessage {
+func GetTestSubmessage(b []byte) TestSubmessage {
 	m := GetMessage(b)
 	return TestSubmessage{m}
 }
 
-func ReadTestSubmessage(b []byte) (TestSubmessage, int, error) {
+func DecodeTestSubmessage(b []byte) (TestSubmessage, int, error) {
 	m, n, err := DecodeMessage(b)
 	if err != nil {
 		return TestSubmessage{}, n, err
@@ -184,17 +198,9 @@ func ReadTestSubmessage(b []byte) (TestSubmessage, int, error) {
 	return TestSubmessage{m}, n, nil
 }
 
-func (m TestSubmessage) Byte() byte {
-	return m.m.Byte(1)
-}
-
-func (m TestSubmessage) Int32() int32 {
-	return m.m.Int32(2)
-}
-
-func (m TestSubmessage) Int64() int64 {
-	return m.m.Int64(3)
-}
+func (m TestSubmessage) Bytes() []byte { return m.m.Data() }
+func (m TestSubmessage) Int32() int32  { return m.m.Int32(1) }
+func (m TestSubmessage) Int64() int64  { return m.m.Int64(2) }
 
 // TestSubmessageEncoder
 
@@ -202,26 +208,83 @@ type TestSubmessageEncoder struct {
 	e *Encoder
 }
 
-func BeginTestSubmessage(e *Encoder) TestSubmessageEncoder {
+func BeginSubmessage(e *Encoder) TestSubmessageEncoder {
 	e.BeginMessage()
+
 	return TestSubmessageEncoder{e}
-}
-
-func (e TestSubmessageEncoder) End() error {
-	return e.e.EndMessage()
-}
-
-func (e TestSubmessageEncoder) Byte(v byte) error {
-	e.e.Byte(v)
-	return e.e.Field(1)
 }
 
 func (e TestSubmessageEncoder) Int32(v int32) error {
 	e.e.Int32(v)
-	return e.e.Field(2)
+	return e.e.Field(1)
 }
 
 func (e TestSubmessageEncoder) Int64(v int64) error {
+	e.e.Int64(v)
+	return e.e.Field(2)
+}
+
+// TestElement
+
+type TestElement struct {
+	m Message
+}
+
+func GetTestElement(b []byte) TestElement {
+	m := GetMessage(b)
+	return TestElement{m}
+}
+
+func DecodeTestElement(b []byte) (TestElement, int, error) {
+	m, n, err := DecodeMessage(b)
+	if err != nil {
+		return TestElement{}, n, err
+	}
+	return TestElement{m}, n, nil
+}
+
+func (m TestElement) Byte() byte {
+	return m.m.Byte(1)
+}
+
+func (m TestElement) Int32() int32 {
+	return m.m.Int32(2)
+}
+
+func (m TestElement) Int64() int64 {
+	return m.m.Int64(3)
+}
+
+// TestElementEncoder
+
+type TestElementEncoder struct {
+	e *Encoder
+}
+
+func BeginTestSubmessage(e *Encoder) TestElementEncoder {
+	e.BeginMessage()
+	return TestElementEncoder{e}
+}
+
+func EndTestSubmessage(e *Encoder) error {
+	return e.EndMessage()
+}
+
+func (e TestElementEncoder) End() error {
+	return EndTestSubmessage(e.e)
+}
+
+func (e TestElementEncoder) Byte(v byte) error {
+	e.e.Byte(v)
+	return e.e.Field(1)
+}
+
+func (e TestElementEncoder) Int32(v int32) error {
+	e.e.Int32(v)
+	return e.e.Field(2)
+}
+
+func (e TestElementEncoder) Int64(v int64) error {
 	e.e.Int64(v)
 	return e.e.Field(3)
 }

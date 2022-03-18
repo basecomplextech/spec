@@ -24,7 +24,7 @@ func Benchmark_Read(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		_, _, err := ReadTestMessage(data)
+		_, _, err := DecodeTestMessage(data)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -49,7 +49,7 @@ func Benchmark_Walk(b *testing.B) {
 	size := len(data)
 	compressed := compressedSize(data)
 
-	d, _, err := ReadTestMessage(data)
+	d, _, err := DecodeTestMessage(data)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func Benchmark_ReadObject(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		if err := msg.Read(data); err != nil {
+		if err := msg.Decode(data); err != nil {
 			b.Fatal(err)
 		}
 	}

@@ -44,13 +44,13 @@ message TestMessage {
     field_struct  TestStruct 52;
 
     list        []int64             60;
-    messages    []TestSubobject    61;
+    messages    []TestObjectElement    61;
     strings     []string            62;
 
     imported    pkg.ImportedMessage 70;
 }
 
-message TestSubobject {
+message TestObjectElement {
     field_int8    int8    1;
     field_int16   int16   2;
     field_int32   int32   3;

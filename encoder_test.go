@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWriter_Message__should_write_message(t *testing.T) {
+func TestEncoder_Message__should_encode_message(t *testing.T) {
 	msg := newTestObject()
 
 	e := NewEncoder()
@@ -21,7 +21,7 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 	}
 
 	msg1 := &TestObject{}
-	if err := msg1.Read(b); err != nil {
+	if err := msg1.Decode(b); err != nil {
 		t.Fatal(err)
 	}
 
@@ -30,7 +30,7 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 
 // List
 
-func TestWriter_List__should_write_list(t *testing.T) {
+func TestEncoder_List__should_encode_list(t *testing.T) {
 	e := NewEncoder()
 	e.BeginList()
 
@@ -66,7 +66,7 @@ func TestWriter_List__should_write_list(t *testing.T) {
 
 // End
 
-func TestWriter_End__should_return_finished_bytes(t *testing.T) {
+func TestEncoder_End__should_return_finished_bytes(t *testing.T) {
 	e := NewEncoder()
 	e.Bool(true)
 	b, err := e.End()
@@ -77,7 +77,7 @@ func TestWriter_End__should_return_finished_bytes(t *testing.T) {
 	assert.Equal(t, []byte{byte(TypeTrue)}, b)
 }
 
-func TestWriter_End__should_return_error_when_not_finished(t *testing.T) {
+func TestEncoder_End__should_return_error_when_not_finished(t *testing.T) {
 	e := NewEncoder()
 	e.BeginMessage()
 
@@ -87,7 +87,7 @@ func TestWriter_End__should_return_error_when_not_finished(t *testing.T) {
 
 // Data
 
-func TestWriter_Data__should_return_error_when_unconsumed_data(t *testing.T) {
+func TestEncoder_Data__should_return_error_when_unconsumed_data(t *testing.T) {
 	e := NewEncoder()
 	e.BeginMessage()
 	e.Int64(1)
@@ -98,13 +98,13 @@ func TestWriter_Data__should_return_error_when_unconsumed_data(t *testing.T) {
 
 // Element
 
-func TestWriter_Element__should_return_error_when_not_in_list(t *testing.T) {
+func TestEncoder_Element__should_return_error_when_not_in_list(t *testing.T) {
 	e := NewEncoder()
 	err := e.Element()
 	assert.Error(t, err)
 }
 
-func TestWriter_Element__should_return_error_when_in_message(t *testing.T) {
+func TestEncoder_Element__should_return_error_when_in_message(t *testing.T) {
 	e := NewEncoder()
 	e.BeginMessage()
 
@@ -114,13 +114,13 @@ func TestWriter_Element__should_return_error_when_in_message(t *testing.T) {
 
 // Field
 
-func TestWriter_Field__should_return_error_when_not_in_message(t *testing.T) {
+func TestEncoder_Field__should_return_error_when_not_in_message(t *testing.T) {
 	e := NewEncoder()
 	err := e.Field(1)
 	assert.Error(t, err)
 }
 
-func TestWriter_Field__should_return_error_when_in_list(t *testing.T) {
+func TestEncoder_Field__should_return_error_when_in_list(t *testing.T) {
 	e := NewEncoder()
 	e.BeginList()
 	err := e.Field(1)
@@ -129,7 +129,7 @@ func TestWriter_Field__should_return_error_when_in_list(t *testing.T) {
 
 // Struct size
 
-func TestWriter__struct_size_must_be_less_or_equal_2048(t *testing.T) {
+func TestEncoder__struct_size_must_be_less_or_equal_2048(t *testing.T) {
 	// 2048 is 1/2 of 4kb page or 1/4 of 8kb page.
 
 	e := Encoder{}
