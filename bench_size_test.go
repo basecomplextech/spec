@@ -3,6 +3,8 @@ package spec
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func _BenchmarkSizeDistribution(b *testing.B) {
@@ -20,6 +22,12 @@ func _BenchmarkSizeDistribution(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+
+	msg1 := &TestObject{}
+	if err := msg1.Decode(data); err != nil {
+		b.Fatal(err)
+	}
+	require.Equal(b, msg, msg1)
 
 	_, p, err := computeSizeDistribution(data)
 	if err != nil {
@@ -119,6 +127,20 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeFloat32, TypeFloat64:
 		_, vn := decodeFloat64(b)
+		d.values += vn - n
+
+	case TypeU128:
+		_, vn, err := DecodeU128(b)
+		if err != nil {
+			return err
+		}
+		d.values += vn - n
+
+	case TypeU256:
+		_, vn, err := DecodeU256(b)
+		if err != nil {
+			return err
+		}
 		d.values += vn - n
 
 	case TypeBytes:

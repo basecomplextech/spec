@@ -14,33 +14,33 @@ const (
 type Type uint8
 
 const (
-	TypeNil   Type = 0x00
-	TypeTrue  Type = 0x01
-	TypeFalse Type = 0x02
-	TypeByte  Type = 0x03
+	TypeNil   Type = 00
+	TypeTrue  Type = 01
+	TypeFalse Type = 02
+	TypeByte  Type = 03
 
-	TypeInt32 Type = 0x10
-	TypeInt64 Type = 0x11
+	TypeInt32 Type = 10
+	TypeInt64 Type = 11
 
-	TypeUint32 Type = 0x20
-	TypeUint64 Type = 0x21
+	TypeUint32 Type = 20
+	TypeUint64 Type = 21
 
-	TypeU128 Type = 0x24
-	TypeU256 Type = 0x25
+	TypeU128 Type = 30
+	TypeU256 Type = 31
 
-	TypeFloat32 Type = 0x30
-	TypeFloat64 Type = 0x31
+	TypeFloat32 Type = 40
+	TypeFloat64 Type = 41
 
-	TypeBytes  Type = 0x40
-	TypeString Type = 0x41
+	TypeBytes  Type = 50
+	TypeString Type = 51
 
-	TypeList    Type = 0x50
-	TypeListBig Type = 0x51
+	TypeList    Type = 60
+	TypeListBig Type = 61
 
-	TypeMessage    Type = 0x60
-	TypeMessageBig Type = 0x61
+	TypeMessage    Type = 70
+	TypeMessageBig Type = 71
 
-	TypeStruct = 0x70
+	TypeStruct = 80
 )
 
 func checkType(t Type) error {

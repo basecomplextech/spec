@@ -81,6 +81,10 @@ func (e *Encoder) Reset() {
 
 // End ends writing, returns the result bytes, and resets the encoder.
 func (e *Encoder) End() ([]byte, error) {
+	if e.err != nil {
+		return nil, e.err
+	}
+
 	switch {
 	case e.err != nil:
 		return nil, e.err
