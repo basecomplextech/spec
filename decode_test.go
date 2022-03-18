@@ -252,9 +252,9 @@ func TestDecodeString__should_decode_string(t *testing.T) {
 
 // List
 
-func TestDecodeList__should_decode_list(t *testing.T) {
+func TestDecodeListMeta__should_decode_list(t *testing.T) {
 	b := testWriteList(t)
-	_, n, err := decodeList(b)
+	_, n, err := decodeListMeta(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,40 +283,40 @@ func TestDecodeListTable__should_decode_list_table(t *testing.T) {
 	}
 }
 
-func TestDecodeList__should_return_error_when_invalid_type(t *testing.T) {
+func TestDecodeListMeta__should_return_error_when_invalid_type(t *testing.T) {
 	b := testWriteList(t)
 	b[len(b)-1] = byte(TypeMessage)
 
-	_, n, err := decodeList(b)
+	_, n, err := decodeListMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected type")
 }
 
-func TestDecodeList__should_return_error_when_invalid_table_size(t *testing.T) {
+func TestDecodeListMeta__should_return_error_when_invalid_table_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = append(b, byte(TypeList))
 
-	_, n, err := decodeList(b)
+	_, n, err := decodeListMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table size")
 }
 
-func TestDecodeList__should_return_error_when_invalid_body_size(t *testing.T) {
+func TestDecodeListMeta__should_return_error_when_invalid_body_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
-	_, n, err := decodeList(b)
+	_, n, err := decodeListMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body size")
 }
 
-func TestDecodeList__should_return_error_when_invalid_table(t *testing.T) {
+func TestDecodeListMeta__should_return_error_when_invalid_table(t *testing.T) {
 	b, _, err := encodeListTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -325,13 +325,13 @@ func TestDecodeList__should_return_error_when_invalid_table(t *testing.T) {
 	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
-	_, n, err := decodeList(b)
+	_, n, err := decodeListMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table")
 }
 
-func TestDecodeList__should_return_error_when_invalid_body(t *testing.T) {
+func TestDecodeListMeta__should_return_error_when_invalid_body(t *testing.T) {
 	b, _, err := encodeListTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -340,7 +340,7 @@ func TestDecodeList__should_return_error_when_invalid_body(t *testing.T) {
 	b = encodeListTableSize(b, 0)
 	b = append(b, byte(TypeList))
 
-	_, n, err := decodeList(b)
+	_, n, err := decodeListMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body")

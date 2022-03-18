@@ -108,10 +108,10 @@ func TestListTable_offset_big__should_return_start_end_offset_by_index(t *testin
 	for i, elem := range elements {
 		prev := 0
 		if i > 0 {
-			_, prev = table.offset(big, i-1)
+			_, prev = table.offset_big(i - 1)
 		}
 
-		start, end := table.offset(big, i)
+		start, end := table.offset_big(i)
 		require.Equal(t, prev, start)
 		require.Equal(t, int(elem.offset), end)
 	}
@@ -130,12 +130,12 @@ func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *test
 		t.Fatal(err)
 	}
 
-	start, end := table.offset(big, -1)
+	start, end := table.offset_big(-1)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 
 	n := table.count(big)
-	start, end = table.offset(big, n)
+	start, end = table.offset_big(n)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 }
@@ -143,14 +143,14 @@ func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *test
 // offset: small
 
 func TestListTable_offset_small__should_return_start_end_offset_by_index(t *testing.T) {
-	small := false
-	elements := testListElementsSize(small)
+	big := false
+	elements := testListElementsSize(big)
 
-	data, size, err := encodeListTable(nil, elements, small)
+	data, size, err := encodeListTable(nil, elements, big)
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := decodeListTable(data, size, small)
+	table, err := decodeListTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,34 +158,34 @@ func TestListTable_offset_small__should_return_start_end_offset_by_index(t *test
 	for i, elem := range elements {
 		prev := 0
 		if i > 0 {
-			_, prev = table.offset(small, i-1)
+			_, prev = table.offset_small(i - 1)
 		}
 
-		start, end := table.offset(small, i)
+		start, end := table.offset_small(i)
 		require.Equal(t, prev, start)
 		require.Equal(t, int(elem.offset), end)
 	}
 }
 
 func TestListTable_offset_small__should_return_minus_one_when_out_of_range(t *testing.T) {
-	small := false
-	elements := testListElementsSize(small)
+	big := false
+	elements := testListElementsSize(big)
 
-	data, size, err := encodeListTable(nil, elements, small)
+	data, size, err := encodeListTable(nil, elements, big)
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := decodeListTable(data, size, small)
+	table, err := decodeListTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	start, end := table.offset(small, -1)
+	start, end := table.offset_small(-1)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 
-	n := table.count(small)
-	start, end = table.offset(small, n)
+	n := table.count(big)
+	start, end = table.offset_small(n)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 }

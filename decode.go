@@ -412,26 +412,26 @@ func decodeStringBody(b []byte, size uint32) (string, error) {
 	return s, nil
 }
 
-// List
+// List meta
 
-func decodeList(b []byte) (list, int, error) {
-	l := list{}
+func decodeListMeta(b []byte) (listMeta, int, error) {
+	meta := listMeta{}
 	if len(b) == 0 {
-		return l, 0, nil
+		return meta, 0, nil
 	}
 
 	// decode type
 	t, n := decodeType(b)
 	if n < 0 {
-		return l, -1, errors.New("decode list: invalid data")
+		return meta, -1, errors.New("decode list: invalid data")
 	}
 
 	// check type
 	switch t {
 	default:
-		return l, -1, fmt.Errorf("decode list: unexpected type, expected=%d, actual=%d", TypeList, t)
+		return meta, -1, fmt.Errorf("decode list: unexpected type, expected=%d, actual=%d", TypeList, t)
 	case TypeNil:
-		return l, n, nil
+		return meta, n, nil
 	case TypeList, TypeListBig:
 	}
 	big := t == TypeListBig
@@ -440,40 +440,39 @@ func decodeList(b []byte) (list, int, error) {
 	off := len(b) - 1
 	tsize, tn := decodeListTableSize(b[:off])
 	if tn < 0 {
-		return l, -1, errors.New("decode list: invalid table size")
+		return meta, -1, errors.New("decode list: invalid table size")
 	}
 
 	// body size
 	off -= int(tn)
 	bsize, dn := decodeListBodySize(b[:off])
 	if dn < 0 {
-		return l, -1, errors.New("decode list: invalid body size")
+		return meta, -1, errors.New("decode list: invalid body size")
 	}
 
 	// table
 	off -= int(dn)
 	table, err := decodeListTable(b[:off], tsize, big)
 	if err != nil {
-		return l, -1, err
+		return meta, -1, err
 	}
 
 	// body
 	off -= int(tsize)
 	off -= int(bsize)
 	if off < 0 {
-		return l, -1, errors.New("decode list: invalid body")
+		return meta, -1, errors.New("decode list: invalid body")
 	}
 
 	// done
-	l = list{
-		data:  b[off:],
+	meta = listMeta{
 		table: table,
 		body:  bsize,
 		big:   big,
 	}
 
 	total := n + tn + dn + int(tsize) + int(bsize)
-	return l, total, nil
+	return meta, total, nil
 }
 
 func decodeListTableSize(b []byte) (uint32, int) {

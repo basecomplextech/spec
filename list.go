@@ -1,19 +1,23 @@
 package spec
 
 type List[T any] struct {
-	list
+	meta listMeta
+	data []byte
+
 	read func(b []byte) (T, int, error)
 }
 
 // NewList reads and returns list data, but does not validate its elements.
 func NewList[T any](b []byte, read func([]byte) (T, int, error)) List[T] {
-	list, _, err := decodeList(b)
+	meta, n, err := decodeListMeta(b)
 	if err != nil {
 		return List[T]{}
 	}
+	data := b[len(b)-n:]
 
 	l := List[T]{
-		list: list,
+		meta: meta,
+		data: data,
 		read: read,
 	}
 	return l
@@ -21,13 +25,15 @@ func NewList[T any](b []byte, read func([]byte) (T, int, error)) List[T] {
 
 // ReadList reads and returns list data, and recursively validates its elements.
 func ReadList[T any](b []byte, read func([]byte) (T, int, error)) (List[T], int, error) {
-	list, n, err := decodeList(b)
+	meta, n, err := decodeListMeta(b)
 	if err != nil {
 		return List[T]{}, n, err
 	}
+	data := b[len(b)-n:]
 
 	l := List[T]{
-		list: list,
+		meta: meta,
+		data: data,
 		read: read,
 	}
 	if err := l.Validate(); err != nil {
@@ -43,16 +49,16 @@ func (l List[T]) Data() []byte {
 
 // Count returns the number of elements in the list.
 func (l List[T]) Count() int {
-	return l.table.count(l.big)
+	return l.meta.count()
 }
 
 // ElementBytes returns an element or zero.
 func (l List[T]) Element(i int) (result T) {
-	start, end := l.table.offset(l.big, i)
+	start, end := l.meta.offset(i)
 	switch {
 	case start < 0:
 		return
-	case end > int(l.body):
+	case end > int(l.meta.body):
 		return
 	}
 
@@ -63,11 +69,11 @@ func (l List[T]) Element(i int) (result T) {
 
 // ElementBytes returns element data or nil.
 func (l List[T]) ElementBytes(i int) []byte {
-	start, end := l.table.offset(l.big, i)
+	start, end := l.meta.offset(i)
 	switch {
 	case start < 0:
 		return nil
-	case end > int(l.body):
+	case end > int(l.meta.body):
 		return nil
 	}
 	return l.data[start:end]

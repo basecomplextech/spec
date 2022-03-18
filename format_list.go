@@ -10,12 +10,25 @@ const (
 	listElementBigSize   = 4
 )
 
-type list struct {
-	data  []byte
+type listMeta struct {
 	table listTable
 
 	body uint32 // body size
 	big  bool   // small/big table format
+}
+
+// count returns the number of elements in the table.
+func (m listMeta) count() int {
+	return m.table.count(m.big)
+}
+
+// offset returns an element start/end by an index or -1/-1.
+func (m listMeta) offset(i int) (int, int) {
+	if m.big {
+		return m.table.offset_big(i)
+	} else {
+		return m.table.offset_small(i)
+	}
 }
 
 // listTable is a serialized array of list element offsets ordered by index.
@@ -71,7 +84,12 @@ func (t listTable) elements(big bool) []listElement {
 
 	result := make([]listElement, 0, n)
 	for i := 0; i < n; i++ {
-		_, end := t.offset(big, i)
+		var end int
+		if big {
+			_, end = t.offset_big(i)
+		} else {
+			_, end = t.offset_small(i)
+		}
 
 		elem := listElement{
 			offset: uint32(end),
@@ -81,16 +99,7 @@ func (t listTable) elements(big bool) []listElement {
 	return result
 }
 
-// offset returns an element start/end by its index or -1/-1.
-func (t listTable) offset(big bool, i int) (int, int) {
-	if big {
-		return t._offset_big(i)
-	} else {
-		return t._offset_small(i)
-	}
-}
-
-func (t listTable) _offset_big(i int) (int, int) {
+func (t listTable) offset_big(i int) (int, int) {
 	size := listElementBigSize
 	n := len(t) / size
 
@@ -116,7 +125,7 @@ func (t listTable) _offset_big(i int) (int, int) {
 	return start, end
 }
 
-func (t listTable) _offset_small(i int) (int, int) {
+func (t listTable) offset_small(i int) (int, int) {
 	size := listElementSmallSize
 	n := len(t) / size
 
