@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEncoder_Message__should_encode_message(t *testing.T) {
+func TestEncoder__should_encode_message(t *testing.T) {
 	msg := newTestObject()
 
 	e := NewEncoder()
@@ -34,7 +34,7 @@ func TestEncoder_Message__should_encode_message(t *testing.T) {
 
 // List
 
-func TestEncoder_List__should_encode_list(t *testing.T) {
+func TestEncoder__should_encode_list(t *testing.T) {
 	e := NewEncoder()
 	e.BeginList()
 
@@ -46,7 +46,7 @@ func TestEncoder_List__should_encode_list(t *testing.T) {
 
 	e.Int64(3)
 	e.Element()
-	if err := e.EndList(); err != nil {
+	if _, err := e.EndList(); err != nil {
 		t.Fatal(err)
 	}
 

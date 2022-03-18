@@ -115,11 +115,11 @@ func (e *Encoder) EndNested() error {
 	// end nested object
 	switch obj.type_ {
 	case objectTypeList:
-		if err := e.EndList(); err != nil {
+		if _, err := e.EndList(); err != nil {
 			return err
 		}
 	case objectTypeMessage:
-		if err := e.EndMessage(); err != nil {
+		if _, err := e.EndMessage(); err != nil {
 			return err
 		}
 	default:
@@ -135,9 +135,13 @@ func (e *Encoder) EndNested() error {
 	// end field/element
 	switch obj.type_ {
 	case objectTypeElement:
-		return e.EndElement()
+		if _, err := e.EndElement(); err != nil {
+			return err
+		}
 	case objectTypeField:
-		return e.EndField()
+		if _, err := e.EndField(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -390,20 +394,40 @@ func (e *Encoder) BeginElement() error {
 	return nil
 }
 
-func (e *Encoder) EndElement() error {
+func (e *Encoder) EndElement() ([]byte, error) {
 	if e.err != nil {
-		return e.err
+		return nil, e.err
 	}
 
+	// check element
 	elem, ok := e.objects.pop()
 	switch {
 	case !ok:
-		return e.fail(errors.New("end element: not an element"))
+		return nil, e.fail(errors.New("end element: not an element"))
 	case elem.type_ != objectTypeElement:
-		return e.fail(errors.New("end element: not an element"))
+		return nil, e.fail(errors.New("end element: not an element"))
 	}
 
-	return e.Element()
+	// check list
+	list, ok := e.objects.peek()
+	switch {
+	case !ok:
+		return nil, e.fail(errors.New("end element: parent not a list"))
+	case list.type_ != objectTypeList:
+		return nil, e.fail(errors.New("end element: parent not list encoder"))
+	}
+
+	// pop data
+	data := e.popData()
+
+	// append element relative offset
+	offset := uint32(data.end - list.start)
+	element := listElement{offset: offset}
+	e.elements.push(element)
+
+	// return data
+	b := e.buf[elem.start:data.end]
+	return b, nil
 }
 
 func (e *Encoder) Element() error {
@@ -430,18 +454,18 @@ func (e *Encoder) Element() error {
 	return nil
 }
 
-func (e *Encoder) EndList() error {
+func (e *Encoder) EndList() ([]byte, error) {
 	if e.err != nil {
-		return e.err
+		return nil, e.err
 	}
 
 	// pop list
 	list, ok := e.objects.pop()
 	switch {
 	case !ok:
-		return e.fail(errors.New("end list: not list encoder"))
+		return nil, e.fail(errors.New("end list: not list encoder"))
 	case list.type_ != objectTypeList:
-		return e.fail(errors.New("end list: not list encoder"))
+		return nil, e.fail(errors.New("end list: not list encoder"))
 	}
 
 	bsize := len(e.buf) - list.start
@@ -451,16 +475,17 @@ func (e *Encoder) EndList() error {
 	var err error
 	e.buf, err = encodeListMeta(e.buf, bsize, table)
 	if err != nil {
-		return e.fail(err)
+		return nil, e.fail(err)
 	}
 
 	// push data entry
 	start := list.start
 	end := len(e.buf)
 	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
+		return nil, e.fail(err)
 	}
-	return nil
+
+	return e.buf[start:end], nil
 }
 
 // Message
@@ -498,21 +523,43 @@ func (e *Encoder) BeginField(tag uint16) error {
 	return nil
 }
 
-func (e *Encoder) EndField() error {
+func (e *Encoder) EndField() ([]byte, error) {
 	if e.err != nil {
-		return e.err
+		return nil, e.err
 	}
 
+	// check field
 	field, ok := e.objects.pop()
 	switch {
 	case !ok:
-		return e.fail(errors.New("end field: not a field"))
+		return nil, e.fail(errors.New("end field: not a field"))
 	case field.type_ != objectTypeField:
-		return e.fail(errors.New("end field: not a field"))
+		return nil, e.fail(errors.New("end field: not a field"))
+	}
+	tag := field.tag()
+
+	// check message
+	message, ok := e.objects.peek()
+	switch {
+	case !ok:
+		return nil, e.fail(errors.New("field: cannot encode field, not message encoder"))
+	case message.type_ != objectTypeMessage:
+		return nil, e.fail(errors.New("field: cannot encode field, not message encoder"))
 	}
 
-	tag := field.tag()
-	return e.Field(tag)
+	// pop data
+	data := e.popData()
+
+	// insert field with tag and relative offset
+	f := messageField{
+		tag:    tag,
+		offset: uint32(data.end - message.start),
+	}
+	e.fields.insert(message.tableStart, f)
+
+	// return data
+	b := e.buf[field.start:data.end]
+	return b, nil
 }
 
 func (e *Encoder) Field(tag uint16) error {
@@ -541,18 +588,18 @@ func (e *Encoder) Field(tag uint16) error {
 	return nil
 }
 
-func (e *Encoder) EndMessage() error {
+func (e *Encoder) EndMessage() ([]byte, error) {
 	if e.err != nil {
-		return e.err
+		return nil, e.err
 	}
 
 	// pop message
 	message, ok := e.objects.pop()
 	switch {
 	case !ok:
-		return e.fail(errors.New("end message: not message encoder"))
+		return nil, e.fail(errors.New("end message: not message encoder"))
 	case message.type_ != objectTypeMessage:
-		return e.fail(errors.New("end message: not message encoder"))
+		return nil, e.fail(errors.New("end message: not message encoder"))
 	}
 
 	bsize := len(e.buf) - message.start
@@ -562,16 +609,19 @@ func (e *Encoder) EndMessage() error {
 	var err error
 	e.buf, err = encodeMessageMeta(e.buf, bsize, table)
 	if err != nil {
-		return e.fail(err)
+		return nil, e.fail(err)
 	}
 
 	// push data
 	start := message.start
 	end := len(e.buf)
 	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
+		return nil, e.fail(err)
 	}
-	return nil
+
+	// return data
+	b := e.buf[start:end]
+	return b, nil
 }
 
 // Struct
