@@ -10,33 +10,11 @@ import (
 	"github.com/complexl/spec/rvarint"
 )
 
-// Write writes a writable.
-func Write(w Writable) ([]byte, error) {
-	return WriteTo(w, nil)
-}
-
-// WriteTo writes a writeable to a buffer or allocates a new one when the buffer is too small.
-func WriteTo(w Writable, buf []byte) ([]byte, error) {
-	wr := writerPool.Get().(*Writer)
-	wr.Init(buf)
-
-	defer writerPool.Put(wr)
-	defer wr.Reset()
-
-	if err := w.Write(wr); err != nil {
-		return nil, err
-	}
-
-	return wr.End()
-}
-
-// internal
-
-func writeNil(b []byte) []byte {
+func EncodeNil(b []byte) []byte {
 	return append(b, byte(TypeNil))
 }
 
-func writeBool(b []byte, v bool) []byte {
+func EncodeBool(b []byte, v bool) []byte {
 	if v {
 		return append(b, byte(TypeTrue))
 	} else {
@@ -44,13 +22,13 @@ func writeBool(b []byte, v bool) []byte {
 	}
 }
 
-func writeByte(b []byte, v byte) []byte {
+func EncodeByte(b []byte, v byte) []byte {
 	b = append(b, v)
 	b = append(b, byte(TypeByte))
 	return b
 }
 
-func writeInt32(b []byte, v int32) []byte {
+func EncodeInt32(b []byte, v int32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutInt64(p[:], int64(v))
 	off := rvarint.MaxLen32 - n
@@ -60,7 +38,7 @@ func writeInt32(b []byte, v int32) []byte {
 	return b
 }
 
-func writeInt64(b []byte, v int64) []byte {
+func EncodeInt64(b []byte, v int64) []byte {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutInt64(p[:], v)
 	off := rvarint.MaxLen64 - n
@@ -70,7 +48,7 @@ func writeInt64(b []byte, v int64) []byte {
 	return b
 }
 
-func writeUint32(b []byte, v uint32) []byte {
+func EncodeUint32(b []byte, v uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(v))
 	off := rvarint.MaxLen32 - n
@@ -80,7 +58,7 @@ func writeUint32(b []byte, v uint32) []byte {
 	return b
 }
 
-func writeUint64(b []byte, v uint64) []byte {
+func EncodeUint64(b []byte, v uint64) []byte {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutUint64(p[:], v)
 	off := rvarint.MaxLen64 - n
@@ -90,23 +68,23 @@ func writeUint64(b []byte, v uint64) []byte {
 	return b
 }
 
-// u128/u256
+// U128/U256
 
-func writeU128(b []byte, v u128.U128) []byte {
+func EncodeU128(b []byte, v u128.U128) []byte {
 	b = append(b, v[:]...)
 	b = append(b, byte(TypeU128))
 	return b
 }
 
-func writeU256(b []byte, v u256.U256) []byte {
+func EncodeU256(b []byte, v u256.U256) []byte {
 	b = append(b, v[:]...)
 	b = append(b, byte(TypeU256))
 	return b
 }
 
-// float
+// Float
 
-func writeFloat32(b []byte, v float32) []byte {
+func EncodeFloat32(b []byte, v float32) []byte {
 	p := [4]byte{}
 	binary.BigEndian.PutUint32(p[:], math.Float32bits(v))
 
@@ -115,7 +93,7 @@ func writeFloat32(b []byte, v float32) []byte {
 	return b
 }
 
-func writeFloat64(b []byte, v float64) []byte {
+func EncodeFloat64(b []byte, v float64) []byte {
 	p := [8]byte{}
 	binary.BigEndian.PutUint64(p[:], math.Float64bits(v))
 
@@ -124,30 +102,30 @@ func writeFloat64(b []byte, v float64) []byte {
 	return b
 }
 
-// bytes
+// Bytes
 
-func writeBytes(b []byte, v []byte) ([]byte, error) {
+func EncodeBytes(b []byte, v []byte) ([]byte, error) {
 	size := len(v)
 	if size > MaxSize {
 		return nil, fmt.Errorf("write: bytes too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
 	b = append(b, v...)
-	b = _writeBytesSize(b, uint32(size))
+	b = encodeBytesSize(b, uint32(size))
 	b = append(b, byte(TypeBytes))
 	return b, nil
 }
 
-func _writeBytesSize(b []byte, size uint32) []byte {
+func encodeBytesSize(b []byte, size uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
-// string
+// String
 
-func writeString(b []byte, s string) ([]byte, error) {
+func EncodeString(b []byte, s string) ([]byte, error) {
 	size := len(s)
 	if size > MaxSize {
 		return nil, fmt.Errorf("write: string too large, max size=%d, actual size=%d", MaxSize, size)
@@ -155,21 +133,21 @@ func writeString(b []byte, s string) ([]byte, error) {
 
 	b = append(b, s...)
 	b = append(b, 0) // zero byte
-	b = _writeStringSize(b, uint32(size))
+	b = encodeStringSize(b, uint32(size))
 	b = append(b, byte(TypeString))
 	return b, nil
 }
 
-func _writeStringSize(b []byte, size uint32) []byte {
+func encodeStringSize(b []byte, size uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
-// list
+// List
 
-func writeList(b []byte, bodySize int, table []listElement) ([]byte, error) {
+func encodeList(b []byte, bodySize int, table []listElement) ([]byte, error) {
 	if bodySize > MaxSize {
 		return nil, fmt.Errorf("write: list too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
@@ -189,19 +167,19 @@ func writeList(b []byte, bodySize int, table []listElement) ([]byte, error) {
 
 	// write table
 	var err error
-	b, tsize, err = _writeListTable(b, table, big)
+	b, tsize, err = encodeListTable(b, table, big)
 	if err != nil {
 		return nil, err
 	}
 
 	// write sizes and type
-	b = _writeListBodySize(b, bsize)
-	b = _writeListTableSize(b, tsize)
+	b = encodeListBodySize(b, bsize)
+	b = encodeListTableSize(b, tsize)
 	b = append(b, byte(type_))
 	return b, nil
 }
 
-func _writeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, error) {
+func encodeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, error) {
 	// element size
 	var elemSize int
 	if big {
@@ -217,7 +195,7 @@ func _writeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, e
 	}
 
 	// alloc table
-	b, p := writeAlloc(b, size)
+	b, p := encodeGrow(b, size)
 	off := 0
 
 	// write elements
@@ -236,23 +214,23 @@ func _writeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, e
 	return b, uint32(size), nil
 }
 
-func _writeListTableSize(b []byte, size uint32) []byte {
+func encodeListTableSize(b []byte, size uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
-func _writeListBodySize(b []byte, size uint32) []byte {
+func encodeListBodySize(b []byte, size uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
-// message
+// Message
 
-func writeMessage(b []byte, bodySize int, table []messageField) ([]byte, error) {
+func encodeMessage(b []byte, bodySize int, table []messageField) ([]byte, error) {
 	if bodySize > MaxSize {
 		return nil, fmt.Errorf("write: message too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
@@ -272,19 +250,19 @@ func writeMessage(b []byte, bodySize int, table []messageField) ([]byte, error) 
 
 	// write table
 	var err error
-	b, tsize, err = _writeMessageTable(b, table, big)
+	b, tsize, err = encodeMessageTable(b, table, big)
 	if err != nil {
 		return nil, err
 	}
 
 	// write sizes and type
-	b = _writeMessageBodySize(b, bsize)
-	b = _writeMessageTableSize(b, tsize)
+	b = encodeMessageBodySize(b, bsize)
+	b = encodeMessageTableSize(b, tsize)
 	b = append(b, byte(type_))
 	return b, nil
 }
 
-func _writeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint32, error) {
+func encodeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint32, error) {
 	// field size
 	var fieldSize int
 	if big {
@@ -300,7 +278,7 @@ func _writeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint3
 	}
 
 	// alloc table
-	b, p := writeAlloc(b, size)
+	b, p := encodeGrow(b, size)
 	off := 0
 
 	// write fields
@@ -321,34 +299,34 @@ func _writeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint3
 	return b, uint32(size), nil
 }
 
-func _writeMessageTableSize(b []byte, size uint32) []byte {
+func encodeMessageTableSize(b []byte, size uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
-func _writeMessageBodySize(b []byte, size uint32) []byte {
+func encodeMessageBodySize(b []byte, size uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
 	return append(b, p[off:]...)
 }
 
-// struct
+// Struct
 
-func writeStruct(b []byte, bodySize int) ([]byte, error) {
+func encodeStruct(b []byte, bodySize int) ([]byte, error) {
 	if bodySize > MaxSize {
 		return nil, fmt.Errorf("write: struct too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
 
 	bsize := uint32(bodySize)
-	b = _writeStructBodySize(b, bsize)
+	b = encodeStructBodySize(b, bsize)
 	b = append(b, byte(TypeStruct))
 	return b, nil
 }
 
-func _writeStructBodySize(b []byte, size uint32) []byte {
+func encodeStructBodySize(b []byte, size uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
@@ -357,8 +335,8 @@ func _writeStructBodySize(b []byte, size uint32) []byte {
 
 // private
 
-// writeAlloc grows a buffer by n bytes and returns a new buffer and an allocated segment.
-func writeAlloc(b []byte, n int) ([]byte, []byte) {
+// encodeGrow grows a buffer by n bytes and returns a new buffer and an allocated slice.
+func encodeGrow(b []byte, n int) ([]byte, []byte) {
 	cp := cap(b)
 	ln := len(b)
 

@@ -61,7 +61,7 @@ func TestReadBool__should_read_bool_value(t *testing.T) {
 
 func TestReadByte__should_read_byte(t *testing.T) {
 	b := []byte{}
-	b = writeByte(b, 1)
+	b = EncodeByte(b, 1)
 
 	v, n, err := ReadByte(b)
 	if err != nil {
@@ -74,7 +74,7 @@ func TestReadByte__should_read_byte(t *testing.T) {
 
 func TestReadByte__should_read_byte_from_int32(t *testing.T) {
 	b := []byte{}
-	b = writeInt32(b, 1)
+	b = EncodeInt32(b, 1)
 
 	v, n, err := ReadByte(b)
 	if err != nil {
@@ -87,7 +87,7 @@ func TestReadByte__should_read_byte_from_int32(t *testing.T) {
 
 func TestReadByte__should_read_byte_from_int64(t *testing.T) {
 	b := []byte{}
-	b = writeInt64(b, 1)
+	b = EncodeInt64(b, 1)
 
 	v, n, err := ReadByte(b)
 	if err != nil {
@@ -102,7 +102,7 @@ func TestReadByte__should_read_byte_from_int64(t *testing.T) {
 
 func TestReadInt32__should_read_int32(t *testing.T) {
 	b := []byte{}
-	b = writeInt32(b, 1)
+	b = EncodeInt32(b, 1)
 
 	v, n, err := ReadInt32(b)
 	if err != nil {
@@ -117,7 +117,7 @@ func TestReadInt32__should_read_int32(t *testing.T) {
 
 func TestReadInt64__should_read_int64(t *testing.T) {
 	b := []byte{}
-	b = writeInt64(b, 1)
+	b = EncodeInt64(b, 1)
 
 	v, n, err := ReadInt64(b)
 	if err != nil {
@@ -130,7 +130,7 @@ func TestReadInt64__should_read_int64(t *testing.T) {
 
 func TestReadInt64__should_read_int64_from_byte(t *testing.T) {
 	b := []byte{}
-	b = writeByte(b, 1)
+	b = EncodeByte(b, 1)
 
 	v, n, err := ReadInt64(b)
 	if err != nil {
@@ -143,7 +143,7 @@ func TestReadInt64__should_read_int64_from_byte(t *testing.T) {
 
 func TestReadInt64__should_read_int64_from_int32(t *testing.T) {
 	b := []byte{}
-	b = writeInt32(b, 1)
+	b = EncodeInt32(b, 1)
 
 	v, n, err := ReadInt64(b)
 	if err != nil {
@@ -158,7 +158,7 @@ func TestReadInt64__should_read_int64_from_int32(t *testing.T) {
 
 func TestReadFloat32__should_read_float32(t *testing.T) {
 	b := []byte{}
-	b = writeFloat32(b, math.MaxFloat32)
+	b = EncodeFloat32(b, math.MaxFloat32)
 
 	v, n, err := ReadFloat32(b)
 	if err != nil {
@@ -171,7 +171,7 @@ func TestReadFloat32__should_read_float32(t *testing.T) {
 
 func TestReadFloat32__should_read_float32_from_float64(t *testing.T) {
 	b := []byte{}
-	b = writeFloat64(b, math.MaxFloat32)
+	b = EncodeFloat64(b, math.MaxFloat32)
 
 	v, n, err := ReadFloat32(b)
 	if err != nil {
@@ -186,7 +186,7 @@ func TestReadFloat32__should_read_float32_from_float64(t *testing.T) {
 
 func TestReadFloat64__should_read_float64(t *testing.T) {
 	b := []byte{}
-	b = writeFloat64(b, math.MaxFloat64)
+	b = EncodeFloat64(b, math.MaxFloat64)
 
 	v, n, err := ReadFloat64(b)
 	if err != nil {
@@ -199,7 +199,7 @@ func TestReadFloat64__should_read_float64(t *testing.T) {
 
 func TestReadFloat64__should_read_float64_from_float32(t *testing.T) {
 	b := []byte{}
-	b = writeFloat32(b, math.MaxFloat32)
+	b = EncodeFloat32(b, math.MaxFloat32)
 
 	v, n, err := ReadFloat64(b)
 	if err != nil {
@@ -216,7 +216,7 @@ func TestReadBytes__should_read_bytes(t *testing.T) {
 	b := []byte{}
 	v := []byte("hello, world")
 
-	b, err := writeBytes(b, v)
+	b, err := EncodeBytes(b, v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -236,7 +236,7 @@ func TestReadString__should_read_string(t *testing.T) {
 	b := []byte{}
 	v := "hello, world"
 
-	b, err := writeString(b, v)
+	b, err := EncodeString(b, v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,7 +268,7 @@ func TestReadListTable__should_read_list_table(t *testing.T) {
 	for i := 0; i <= len(elements); i++ {
 		ee0 := elements[i:]
 
-		table0, size, err := _writeListTable(nil, ee0, false)
+		table0, size, err := encodeListTable(nil, ee0, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -307,7 +307,7 @@ func TestReadList__should_return_error_when_invalid_table_size(t *testing.T) {
 func TestReadList__should_return_error_when_invalid_body_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
-	b = _writeListTableSize(b, 1000)
+	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
 	_, n, err := readList(b)
@@ -317,12 +317,12 @@ func TestReadList__should_return_error_when_invalid_body_size(t *testing.T) {
 }
 
 func TestReadList__should_return_error_when_invalid_table(t *testing.T) {
-	b, _, err := _writeListTable(nil, nil, true)
+	b, _, err := encodeListTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = _writeListBodySize(b, 0)
-	b = _writeListTableSize(b, 1000)
+	b = encodeListBodySize(b, 0)
+	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
 	_, n, err := readList(b)
@@ -332,12 +332,12 @@ func TestReadList__should_return_error_when_invalid_table(t *testing.T) {
 }
 
 func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
-	b, _, err := _writeListTable(nil, nil, true)
+	b, _, err := encodeListTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = _writeListBodySize(b, 1000)
-	b = _writeListTableSize(b, 0)
+	b = encodeListBodySize(b, 1000)
+	b = encodeListTableSize(b, 0)
 	b = append(b, byte(TypeList))
 
 	_, n, err := readList(b)
@@ -364,7 +364,7 @@ func TestReadMessageTable__should_read_message_table(t *testing.T) {
 	for i := 0; i <= len(fields); i++ {
 		fields0 := fields[i:]
 
-		data, size, err := _writeMessageTable(nil, fields0, false)
+		data, size, err := encodeMessageTable(nil, fields0, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -403,7 +403,7 @@ func TestReadMessage__should_return_error_when_invalid_table_size(t *testing.T) 
 func TestReadMessage__should_return_error_when_invalid_body_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
-	b = _writeListTableSize(b, 1000)
+	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeMessage))
 
 	_, n, err := readMessage(b)
@@ -413,12 +413,12 @@ func TestReadMessage__should_return_error_when_invalid_body_size(t *testing.T) {
 }
 
 func TestReadMessage__should_return_error_when_invalid_table(t *testing.T) {
-	b, _, err := _writeMessageTable(nil, nil, true)
+	b, _, err := encodeMessageTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = _writeListBodySize(b, 0)
-	b = _writeListTableSize(b, 1000)
+	b = encodeListBodySize(b, 0)
+	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeMessage))
 
 	_, n, err := readMessage(b)
@@ -428,12 +428,12 @@ func TestReadMessage__should_return_error_when_invalid_table(t *testing.T) {
 }
 
 func TestReadMessage__should_return_error_when_invalid_body(t *testing.T) {
-	b, _, err := _writeMessageTable(nil, nil, true)
+	b, _, err := encodeMessageTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = _writeListBodySize(b, 1000)
-	b = _writeListTableSize(b, 0)
+	b = encodeListBodySize(b, 1000)
+	b = encodeListTableSize(b, 0)
 	b = append(b, byte(TypeMessage))
 
 	_, n, err := readMessage(b)

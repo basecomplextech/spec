@@ -83,7 +83,7 @@ func TestMessageTable_count_big__should_return_number_of_fields(t *testing.T) {
 	big := true
 	fields := testMessageFieldsSizeN(big, 10)
 
-	data, size, err := _writeMessageTable(nil, fields, big)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestMessageTable_count_small__should_return_number_of_fields(t *testing.T) 
 	small := false
 	fields := testMessageFieldsSizeN(small, 10)
 
-	data, size, err := _writeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestMessageTable_offset_big__should_return_start_end_offset_by_tag(t *testi
 	big := true
 	fields := testMessageFieldsSize(big)
 
-	data, size, err := _writeMessageTable(nil, fields, big)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestMessageTable_offset_big__should_return_minus_one_when_field_not_found(t
 	big := true
 	fields := testMessageFieldsSize(big)
 
-	data, size, err := _writeMessageTable(nil, fields, big)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ func TestMessageTable_offset_small__should_return_start_end_offset_by_tag(t *tes
 	small := false
 	fields := testMessageFieldsSize(small)
 
-	data, size, err := _writeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestMessageTable_offset_small__should_return_minus_one_when_field_not_found
 	small := false
 	fields := testMessageFieldsSize(small)
 
-	data, size, err := _writeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestMessageTable_offsetByIndex_big__should_return_start_end_offset_by_index
 	big := true
 	fields := testMessageFieldsSize(big)
 
-	data, size, err := _writeMessageTable(nil, fields, big)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +221,7 @@ func TestMessageTable_offsetByIndex_big__should_return_minus_one_when_field_not_
 	big := true
 	fields := testMessageFieldsSize(big)
 
-	data, size, err := _writeMessageTable(nil, fields, big)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func TestMessageTable_offsetByIndex_small__should_return_start_end_offset_by_ind
 	small := false
 	fields := testMessageFieldsSize(small)
 
-	data, size, err := _writeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +262,7 @@ func TestMessageTable_offsetByIndex_small__should_return_minus_one_when_field_no
 	small := false
 	fields := testMessageFieldsSize(small)
 
-	data, size, err := _writeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +284,7 @@ func TestMessageTable_field_big__should_return_field_by_index(t *testing.T) {
 	big := true
 	fields := testMessageFieldsSize(big)
 
-	data, size, err := _writeMessageTable(nil, fields, big)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +304,7 @@ func TestMessageTable_field_big__should_return_false_when_index_out_of_range(t *
 	big := true
 	fields := testMessageFieldsSize(big)
 
-	data, size, err := _writeMessageTable(nil, fields, big)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,7 +327,7 @@ func TestMessageTable_field_small__should_return_field_by_index(t *testing.T) {
 	small := false
 	fields := testMessageFieldsSize(small)
 
-	data, size, err := _writeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +348,7 @@ func TestMessageTable_field_small__should_return_false_when_index_out_of_range(t
 	small := false
 	fields := testMessageFieldsSize(small)
 
-	data, size, err := _writeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, small)
 	if err != nil {
 		t.Fatal(err)
 	}

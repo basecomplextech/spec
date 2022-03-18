@@ -37,6 +37,26 @@ type Writable interface {
 	Write(w *Writer) error
 }
 
+// Write writes a writable.
+func Write(w Writable) ([]byte, error) {
+	return WriteTo(w, nil)
+}
+
+// WriteTo writes a writeable to a buffer or allocates a new one when the buffer is too small.
+func WriteTo(w Writable, buf []byte) ([]byte, error) {
+	wr := writerPool.Get().(*Writer)
+	wr.Init(buf)
+
+	defer writerPool.Put(wr)
+	defer wr.Reset()
+
+	if err := w.Write(wr); err != nil {
+		return nil, err
+	}
+
+	return wr.End()
+}
+
 // NewWriter returns a new writer with a default buffer.
 //
 // Usually, it is better to use Write(obj) and WriteTo(obj, buf), than to construct
@@ -110,7 +130,7 @@ func (w *Writer) Nil() error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeNil(w.buf)
+	w.buf = EncodeNil(w.buf)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -125,7 +145,7 @@ func (w *Writer) Bool(v bool) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeBool(w.buf, v)
+	w.buf = EncodeBool(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -140,7 +160,7 @@ func (w *Writer) Byte(v byte) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeByte(w.buf, v)
+	w.buf = EncodeByte(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -155,7 +175,7 @@ func (w *Writer) Int32(v int32) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeInt32(w.buf, v)
+	w.buf = EncodeInt32(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -170,7 +190,7 @@ func (w *Writer) Int64(v int64) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeInt64(w.buf, v)
+	w.buf = EncodeInt64(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -185,7 +205,7 @@ func (w *Writer) Uint32(v uint32) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeUint32(w.buf, v)
+	w.buf = EncodeUint32(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -200,7 +220,7 @@ func (w *Writer) Uint64(v uint64) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeUint64(w.buf, v)
+	w.buf = EncodeUint64(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -217,7 +237,7 @@ func (w *Writer) U128(v u128.U128) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeU128(w.buf, v)
+	w.buf = EncodeU128(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -232,7 +252,7 @@ func (w *Writer) U256(v u256.U256) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeU256(w.buf, v)
+	w.buf = EncodeU256(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -249,7 +269,7 @@ func (w *Writer) Float32(v float32) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeFloat32(w.buf, v)
+	w.buf = EncodeFloat32(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -264,7 +284,7 @@ func (w *Writer) Float64(v float64) error {
 	}
 
 	start := len(w.buf)
-	w.buf = writeFloat64(w.buf, v)
+	w.buf = EncodeFloat64(w.buf, v)
 	end := len(w.buf)
 
 	if err := w.setData(start, end); err != nil {
@@ -283,7 +303,7 @@ func (w *Writer) Bytes(v []byte) error {
 	start := len(w.buf)
 
 	var err error
-	w.buf, err = writeBytes(w.buf, v)
+	w.buf, err = EncodeBytes(w.buf, v)
 	if err != nil {
 		return w.fail(err)
 	}
@@ -303,7 +323,7 @@ func (w *Writer) String(v string) error {
 	start := len(w.buf)
 
 	var err error
-	w.buf, err = writeString(w.buf, v)
+	w.buf, err = EncodeString(w.buf, v)
 	if err != nil {
 		return w.fail(err)
 	}
@@ -373,7 +393,7 @@ func (w *Writer) EndList() error {
 
 	// write list
 	var err error
-	w.buf, err = writeList(w.buf, bsize, table)
+	w.buf, err = encodeList(w.buf, bsize, table)
 	if err != nil {
 		return w.fail(err)
 	}
@@ -447,7 +467,7 @@ func (w *Writer) EndMessage() error {
 
 	// write message
 	var err error
-	w.buf, err = writeMessage(w.buf, bsize, table)
+	w.buf, err = encodeMessage(w.buf, bsize, table)
 	if err != nil {
 		return w.fail(err)
 	}
@@ -511,7 +531,7 @@ func (w *Writer) EndStruct() error {
 
 	// write struct
 	var err error
-	w.buf, err = writeStruct(w.buf, bsize)
+	w.buf, err = encodeStruct(w.buf, bsize)
 	if err != nil {
 		return w.fail(err)
 	}
