@@ -10,8 +10,8 @@ type Message struct {
 	data []byte
 }
 
-// NewMessage reads and returns a message or zero on an error.
-func NewMessage(b []byte) Message {
+// GetMessage decodes and returns a message without recursive validation, or an empty message on error.
+func GetMessage(b []byte) Message {
 	meta, n, err := decodeMessageMeta(b)
 	if err != nil {
 		return Message{}
@@ -24,8 +24,8 @@ func NewMessage(b []byte) Message {
 	}
 }
 
-// ReadMessage reads, recursively vaildates and returns a message.
-func ReadMessage(b []byte) (Message, int, error) {
+// DecodeMessage decodes, recursively vaildates and returns a message.
+func DecodeMessage(b []byte) (Message, int, error) {
 	meta, n, err := decodeMessageMeta(b)
 	if err != nil {
 		return Message{}, n, err
@@ -272,5 +272,5 @@ func (m Message) Message(tag uint16) Message {
 	}
 
 	b := m.data[:end]
-	return NewMessage(b)
+	return GetMessage(b)
 }

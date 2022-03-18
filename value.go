@@ -110,7 +110,7 @@ func (v Value) String() string {
 }
 
 func (v Value) Message() Message {
-	return NewMessage(v)
+	return GetMessage(v)
 }
 
 // private
@@ -159,7 +159,7 @@ func (v Value) validate() error {
 		_, _, err = DecodeList(v, ReadValue)
 
 	case TypeMessage, TypeMessageBig:
-		_, _, err = ReadMessage(v)
+		_, _, err = DecodeMessage(v)
 
 		// TODO: Uncomment
 		// case TypeStruct:

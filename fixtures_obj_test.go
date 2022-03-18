@@ -238,7 +238,7 @@ func newTestSubobject(i int) *TestSubobject {
 }
 
 func (m *TestSubobject) Read(b []byte) error {
-	r, _, err := ReadMessage(b)
+	r, _, err := DecodeMessage(b)
 	if err != nil {
 		return err
 	}

@@ -12,12 +12,12 @@ type TestMessage struct {
 }
 
 func NewTestMessage(b []byte) TestMessage {
-	m := NewMessage(b)
+	m := GetMessage(b)
 	return TestMessage{m}
 }
 
 func ReadTestMessage(b []byte) (TestMessage, int, error) {
-	m, n, err := ReadMessage(b)
+	m, n, err := DecodeMessage(b)
 	if err != nil {
 		return TestMessage{}, n, err
 	}
@@ -207,12 +207,12 @@ type TestSubmessage struct {
 }
 
 func NewTestSubmessage(b []byte) TestSubmessage {
-	m := NewMessage(b)
+	m := GetMessage(b)
 	return TestSubmessage{m}
 }
 
 func ReadTestSubmessage(b []byte) (TestSubmessage, int, error) {
-	m, n, err := ReadMessage(b)
+	m, n, err := DecodeMessage(b)
 	if err != nil {
 		return TestSubmessage{}, n, err
 	}

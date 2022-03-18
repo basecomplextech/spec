@@ -27,7 +27,7 @@ func BenchmarkRead(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		if _, err := ReadMessage(data); err != nil {
+		if _, err := DecodeMessage(data); err != nil {
 			b.Fatal(err)
 		}
 	}

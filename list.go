@@ -7,7 +7,7 @@ type List[T any] struct {
 	decode func(b []byte) (T, int, error)
 }
 
-// GetList decodes and returns a list without validation, or an empty list on error.
+// GetList decodes and returns a list without recursive validation, or an empty list on error.
 func GetList[T any](b []byte, decode func([]byte) (T, int, error)) List[T] {
 	meta, n, err := decodeListMeta(b)
 	if err != nil {

@@ -189,7 +189,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tsize)
 
 		// read message meta
-		msg, _, err := ReadMessage(b)
+		msg, _, err := DecodeMessage(b)
 		if err != nil {
 			return err
 		}

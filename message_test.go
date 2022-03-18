@@ -55,7 +55,7 @@ func testEncodeMessage(t *testing.T) []byte {
 
 func TestMessage_Getters__should_access_fields(t *testing.T) {
 	b := testEncodeMessage(t)
-	m, _, err := ReadMessage(b)
+	m, _, err := DecodeMessage(b)
 	if err != nil {
 		t.Fatal(err)
 	}
