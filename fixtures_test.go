@@ -74,17 +74,17 @@ func (m TestMessage) Bytes() []byte {
 
 func (m TestMessage) List() List[int64] {
 	b := m.m.Field(50)
-	return NewList(b, DecodeInt64)
+	return GetList(b, DecodeInt64)
 }
 
 func (m TestMessage) Messages() List[TestSubmessage] {
 	b := m.m.Field(51)
-	return NewList(b, ReadTestSubmessage)
+	return GetList(b, ReadTestSubmessage)
 }
 
 func (m TestMessage) Strings() List[string] {
 	b := m.m.Field(52)
-	return NewList(b, DecodeString)
+	return GetList(b, DecodeString)
 }
 
 func (m TestMessage) Struct() TestStruct {
@@ -168,7 +168,7 @@ func (w TestMessageWriter) Bytes(v []byte) error {
 	return w.w.Field(41)
 }
 
-func (w TestMessageWriter) BeginList() ValueListWriter[int64] {
+func (w TestMessageWriter) BeginList() ListValueEncoder[int64] {
 	return BeginValueList(w.w, w.w.Int64)
 }
 
@@ -177,7 +177,7 @@ func (w TestMessageWriter) EndList() error {
 	return w.w.Field(50)
 }
 
-func (w TestMessageWriter) BeginMessages() ListWriter[TestSubmessageWriter] {
+func (w TestMessageWriter) BeginMessages() ListEncoder[TestSubmessageWriter] {
 	return BeginList(w.w, BeginTestSubmessage)
 }
 
@@ -186,7 +186,7 @@ func (w TestMessageWriter) EndMessages() error {
 	return w.w.Field(51)
 }
 
-func (w TestMessageWriter) BeginStrings() ValueListWriter[string] {
+func (w TestMessageWriter) BeginStrings() ListValueEncoder[string] {
 	return BeginValueList(w.w, w.w.String)
 }
 

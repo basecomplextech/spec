@@ -4,11 +4,11 @@ type List[T any] struct {
 	meta listMeta
 	data []byte
 
-	read func(b []byte) (T, int, error)
+	decode func(b []byte) (T, int, error)
 }
 
-// NewList reads and returns list data, but does not validate its elements.
-func NewList[T any](b []byte, read func([]byte) (T, int, error)) List[T] {
+// GetList decodes and returns a list without validation, or an empty list on error.
+func GetList[T any](b []byte, decode func([]byte) (T, int, error)) List[T] {
 	meta, n, err := decodeListMeta(b)
 	if err != nil {
 		return List[T]{}
@@ -16,15 +16,15 @@ func NewList[T any](b []byte, read func([]byte) (T, int, error)) List[T] {
 	data := b[len(b)-n:]
 
 	l := List[T]{
-		meta: meta,
-		data: data,
-		read: read,
+		meta:   meta,
+		data:   data,
+		decode: decode,
 	}
 	return l
 }
 
-// ReadList reads and returns list data, and recursively validates its elements.
-func ReadList[T any](b []byte, read func([]byte) (T, int, error)) (List[T], int, error) {
+// DecodeList decodes, recursively validates and returns a list.
+func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (List[T], int, error) {
 	meta, n, err := decodeListMeta(b)
 	if err != nil {
 		return List[T]{}, n, err
@@ -32,9 +32,9 @@ func ReadList[T any](b []byte, read func([]byte) (T, int, error)) (List[T], int,
 	data := b[len(b)-n:]
 
 	l := List[T]{
-		meta: meta,
-		data: data,
-		read: read,
+		meta:   meta,
+		data:   data,
+		decode: decode,
 	}
 	if err := l.Validate(); err != nil {
 		return List[T]{}, n, err
@@ -63,7 +63,7 @@ func (l List[T]) Element(i int) (result T) {
 	}
 
 	b := l.data[start:end]
-	result, _, _ = l.read(b)
+	result, _, _ = l.decode(b)
 	return result
 }
 
@@ -93,4 +93,56 @@ func (l List[T]) Validate() error {
 		}
 	}
 	return nil
+}
+
+// Encoder
+
+// ListEncoder encodes a list.
+type ListEncoder[W any] struct {
+	w    *Writer
+	next func(*Writer) W
+}
+
+// BeginList begins and returns a new list encoder.
+func BeginList[W any](w *Writer, next func(*Writer) W) ListEncoder[W] {
+	w.BeginList()
+
+	return ListEncoder[W]{
+		w:    w,
+		next: next,
+	}
+}
+
+// BeginElement an encoder for the next element.
+func (e ListEncoder[W]) BeginElement() W {
+	return e.next(e.w)
+}
+
+// EndElement ends an element.
+func (e ListEncoder[W]) EndElement() error {
+	return e.w.Element()
+}
+
+// Value
+
+// ListValueEncoder encodes a list of primitive values.
+type ListValueEncoder[T any] struct {
+	w      *Writer
+	encode func(el T) error
+}
+
+// BeginValueList begins and returns a new list encoder for primitive values.
+func BeginValueList[T any](w *Writer, encode func(T) error) ListValueEncoder[T] {
+	w.BeginList()
+
+	return ListValueEncoder[T]{
+		w:      w,
+		encode: encode,
+	}
+}
+
+// Element encodes the next element.
+func (e ListValueEncoder[T]) Element(el T) error {
+	e.encode(el)
+	return e.w.Element()
 }

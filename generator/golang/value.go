@@ -125,7 +125,7 @@ func (w *writer) readerRead(typ *compiler.Type, reader string, i string) string 
 		elemType := objectType(elem)
 
 		// begin
-		w.linef(`list, err := %v.ReadList(%v)`, reader, i)
+		w.linef(`list, err := %v.DecodeList(%v)`, reader, i)
 		w.linef(`if err != nil {
 			return err
 		}`)

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func testWriteList(t *testing.T) []byte {
+func testEncodeList(t *testing.T) []byte {
 	w := NewWriter()
 	w.BeginList()
 

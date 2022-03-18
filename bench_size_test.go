@@ -157,7 +157,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tsize)
 
 		// read list
-		list, _, err := ReadList(b, ReadValue)
+		list, _, err := DecodeList(b, ReadValue)
 		if err != nil {
 			return err
 		}

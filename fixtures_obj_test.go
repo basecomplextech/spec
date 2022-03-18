@@ -182,7 +182,7 @@ func (m *TestObject) Write(w TestMessageWriter) error {
 	if len(m.List) > 0 {
 		list := w.BeginList()
 		for _, value := range m.List {
-			list.Next(value)
+			list.Element(value)
 		}
 		w.EndList()
 	}
@@ -190,9 +190,9 @@ func (m *TestObject) Write(w TestMessageWriter) error {
 	if len(m.Messages) > 0 {
 		list := w.BeginMessages()
 		for _, msg := range m.Messages {
-			next := list.BeginNext()
+			next := list.BeginElement()
 			msg.Write(next)
-			list.EndNext()
+			list.EndElement()
 		}
 		w.EndMessages()
 	}
@@ -200,7 +200,7 @@ func (m *TestObject) Write(w TestMessageWriter) error {
 	if len(m.Strings) > 0 {
 		list := w.BeginStrings()
 		for _, v := range m.Strings {
-			list.Next(v)
+			list.Element(v)
 		}
 		w.EndStrings()
 	}

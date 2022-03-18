@@ -156,7 +156,7 @@ func (v Value) validate() error {
 		_, _, err = DecodeString(v)
 
 	case TypeList, TypeListBig:
-		_, _, err = ReadList(v, ReadValue)
+		_, _, err = DecodeList(v, ReadValue)
 
 	case TypeMessage, TypeMessageBig:
 		_, _, err = ReadMessage(v)

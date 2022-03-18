@@ -253,7 +253,7 @@ func TestDecodeString__should_decode_string(t *testing.T) {
 // List
 
 func TestDecodeListMeta__should_decode_list(t *testing.T) {
-	b := testWriteList(t)
+	b := testEncodeList(t)
 	_, n, err := decodeListMeta(b)
 	if err != nil {
 		t.Fatal(err)
@@ -284,7 +284,7 @@ func TestDecodeListTable__should_decode_list_table(t *testing.T) {
 }
 
 func TestDecodeListMeta__should_return_error_when_invalid_type(t *testing.T) {
-	b := testWriteList(t)
+	b := testEncodeList(t)
 	b[len(b)-1] = byte(TypeMessage)
 
 	_, n, err := decodeListMeta(b)
