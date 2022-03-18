@@ -232,7 +232,7 @@ func encodeListBodySize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
-// Message
+// Message meta
 
 func encodeMessage(b []byte, bodySize int, table []messageField) ([]byte, error) {
 	if bodySize > MaxSize {

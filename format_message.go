@@ -10,6 +10,45 @@ const (
 	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
+type messageMeta struct {
+	table messageTable
+
+	body uint32 // message body size
+	big  bool   // big/small table format
+}
+
+// count returns the number of fields in the message.
+func (m messageMeta) count() int {
+	return m.table.count(m.big)
+}
+
+// offset returns field end offset by a tag or -1.
+func (m messageMeta) offset(tag uint16) int {
+	if m.big {
+		return m.table.offset_big(tag)
+	} else {
+		return m.table.offset_small(tag)
+	}
+}
+
+// offsetByIndex returns field end offset by an index or -1.
+func (m messageMeta) offsetByIndex(i int) int {
+	if m.big {
+		return m.table.offsetByIndex_big(i)
+	} else {
+		return m.table.offsetByIndex_small(i)
+	}
+}
+
+// field returns a field by an index or false,
+func (m messageMeta) field(i int) (messageField, bool) {
+	if m.big {
+		return m.table.field_big(i)
+	} else {
+		return m.table.field_small(i)
+	}
+}
+
 // messageTable is a serialized array of message fields ordered by tags.
 // the serialization format depends on whether the message is big or small, see isBigMessage().
 //
@@ -65,16 +104,7 @@ func (t messageTable) count(big bool) int {
 
 // offset
 
-// offset returns field end offset by its tag or -1.
-func (t messageTable) offset(big bool, tag uint16) int {
-	if big {
-		return t._offset_big(tag)
-	} else {
-		return t._offset_small(tag)
-	}
-}
-
-func (t messageTable) _offset_big(tag uint16) int {
+func (t messageTable) offset_big(tag uint16) int {
 	size := messageFieldBigSize
 	n := len(t) / size
 
@@ -108,7 +138,7 @@ func (t messageTable) _offset_big(tag uint16) int {
 	return -1
 }
 
-func (t messageTable) _offset_small(tag uint16) int {
+func (t messageTable) offset_small(tag uint16) int {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
@@ -144,16 +174,7 @@ func (t messageTable) _offset_small(tag uint16) int {
 
 // offsetByIndex
 
-// offsetByIndex returns field end offset by its index or -1.
-func (t messageTable) offsetByIndex(big bool, i int) int {
-	if big {
-		return t._offsetByIndex_big(i)
-	} else {
-		return t._offsetByIndex_small(i)
-	}
-}
-
-func (t messageTable) _offsetByIndex_big(i int) int {
+func (t messageTable) offsetByIndex_big(i int) int {
 	size := messageFieldBigSize
 	n := len(t) / size
 
@@ -172,7 +193,7 @@ func (t messageTable) _offsetByIndex_big(i int) int {
 	return int(binary.BigEndian.Uint32(t[off+2:]))
 }
 
-func (t messageTable) _offsetByIndex_small(i int) int {
+func (t messageTable) offsetByIndex_small(i int) int {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
@@ -193,16 +214,7 @@ func (t messageTable) _offsetByIndex_small(i int) int {
 
 // field
 
-// field returns a field by its index or false,
-func (t messageTable) field(big bool, i int) (messageField, bool) {
-	if big {
-		return t._field_big(i)
-	} else {
-		return t._field_small(i)
-	}
-}
-
-func (t messageTable) _field_big(i int) (f messageField, ok bool) {
+func (t messageTable) field_big(i int) (f messageField, ok bool) {
 	size := messageFieldBigSize
 	n := len(t) / size
 
@@ -226,7 +238,7 @@ func (t messageTable) _field_big(i int) (f messageField, ok bool) {
 	return
 }
 
-func (t messageTable) _field_small(i int) (f messageField, ok bool) {
+func (t messageTable) field_small(i int) (f messageField, ok bool) {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
@@ -256,10 +268,18 @@ func (t messageTable) fields(big bool) []messageField {
 
 	result := make([]messageField, 0, n)
 	for i := 0; i < n; i++ {
-		field, ok := t.field(big, i)
+		var field messageField
+		var ok bool
+
+		if big {
+			field, ok = t.field_big(i)
+		} else {
+			field, ok = t.field_small(i)
+		}
 		if !ok {
 			continue
 		}
+
 		result = append(result, field)
 	}
 	return result

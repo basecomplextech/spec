@@ -510,26 +510,26 @@ func decodeListTable(b []byte, size uint32, big bool) (listTable, error) {
 	return v, nil
 }
 
-// Message
+// Message meta
 
-func decodeMessage(b []byte) (Message, int, error) {
-	msg := Message{}
+func decodeMessageMeta(b []byte) (messageMeta, int, error) {
+	meta := messageMeta{}
 	if len(b) == 0 {
-		return msg, 0, nil
+		return meta, 0, nil
 	}
 
 	// decode type
 	t, n := decodeType(b)
 	if n < 0 {
-		return msg, -1, errors.New("decode message: invalid type")
+		return meta, -1, errors.New("decode message: invalid type")
 	}
 
 	// check type
 	switch t {
 	default:
-		return msg, -1, fmt.Errorf("decode message: unexpected type, expected=%d, actual=%d", TypeMessage, t)
+		return meta, -1, fmt.Errorf("decode message: unexpected type, expected=%d, actual=%d", TypeMessage, t)
 	case TypeNil:
-		return msg, 0, nil
+		return meta, 0, nil
 	case TypeMessage, TypeMessageBig:
 	}
 	big := t == TypeMessageBig
@@ -538,40 +538,39 @@ func decodeMessage(b []byte) (Message, int, error) {
 	off := len(b) - n
 	tsize, tn := decodeMessageTableSize(b[:off])
 	if tn < 0 {
-		return msg, -1, errors.New("decode message: invalid table size")
+		return meta, -1, errors.New("decode message: invalid table size")
 	}
 
 	// body size
 	off -= int(tn)
 	bsize, dn := decodeMessageBodySize(b[:off])
 	if dn < 0 {
-		return msg, -1, fmt.Errorf("decode message: invalid body size")
+		return meta, -1, fmt.Errorf("decode message: invalid body size")
 	}
 
 	// table
 	off -= int(dn)
 	table, err := decodeMessageTable(b[:off], tsize, big)
 	if err != nil {
-		return msg, -1, err
+		return meta, -1, err
 	}
 
 	// body
 	off -= int(tsize)
 	off -= int(bsize)
 	if off < 0 {
-		return msg, -1, errors.New("decode message: invalid body")
+		return meta, -1, errors.New("decode message: invalid body")
 	}
 
 	// done
-	msg = Message{
-		data:  b[off:],
+	meta = messageMeta{
 		table: table,
 		body:  bsize,
 		big:   big,
 	}
 
 	total := n + tn + dn + int(tsize) + int(bsize)
-	return msg, total, nil
+	return meta, total, nil
 }
 
 func decodeMessageTableSize(b []byte) (uint32, int) {

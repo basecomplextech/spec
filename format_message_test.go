@@ -129,7 +129,7 @@ func TestMessageTable_offset_big__should_return_start_end_offset_by_tag(t *testi
 	}
 
 	for _, field := range fields {
-		end := table.offset(big, field.tag)
+		end := table.offset_big(field.tag)
 		require.Equal(t, int(field.offset), end)
 	}
 }
@@ -147,52 +147,52 @@ func TestMessageTable_offset_big__should_return_minus_one_when_field_not_found(t
 		t.Fatal(err)
 	}
 
-	end := table.offset(big, 0)
+	end := table.offset_big(0)
 	assert.Equal(t, -1, end)
 
-	end = table.offset(big, math.MaxUint16)
+	end = table.offset_big(math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
 // offset: small
 
 func TestMessageTable_offset_small__should_return_start_end_offset_by_tag(t *testing.T) {
-	small := false
-	fields := testMessageFieldsSize(small)
+	big := false
+	fields := testMessageFieldsSize(big)
 
-	data, size, err := encodeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := decodeMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, field := range fields {
-		end := table.offset(small, field.tag)
+		end := table.offset_small(field.tag)
 		require.Equal(t, int(field.offset), end)
 	}
 }
 
 func TestMessageTable_offset_small__should_return_minus_one_when_field_not_found(t *testing.T) {
-	small := false
-	fields := testMessageFieldsSize(small)
+	big := false
+	fields := testMessageFieldsSize(big)
 
-	data, size, err := encodeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := decodeMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	end := table.offset(small, 0)
+	end := table.offset_small(0)
 	assert.Equal(t, -1, end)
 
-	end = table.offset(small, math.MaxUint16)
+	end = table.offset_small(math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
@@ -212,7 +212,7 @@ func TestMessageTable_offsetByIndex_big__should_return_start_end_offset_by_index
 	}
 
 	for i, field := range fields {
-		end := table.offsetByIndex(big, i)
+		end := table.offsetByIndex_big(i)
 		require.Equal(t, int(field.offset), end)
 	}
 }
@@ -230,51 +230,51 @@ func TestMessageTable_offsetByIndex_big__should_return_minus_one_when_field_not_
 		t.Fatal(err)
 	}
 
-	end := table.offsetByIndex(big, -1)
+	end := table.offsetByIndex_big(-1)
 	assert.Equal(t, -1, end)
 
-	end = table.offsetByIndex(big, math.MaxUint16)
+	end = table.offsetByIndex_big(math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
 // offsetByIndex: small
 
 func TestMessageTable_offsetByIndex_small__should_return_start_end_offset_by_index(t *testing.T) {
-	small := false
-	fields := testMessageFieldsSize(small)
+	big := false
+	fields := testMessageFieldsSize(big)
 
-	data, size, err := encodeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := decodeMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for i, field := range fields {
-		end := table.offsetByIndex(small, i)
+		end := table.offsetByIndex_small(i)
 		require.Equal(t, int(field.offset), end)
 	}
 }
 
 func TestMessageTable_offsetByIndex_small__should_return_minus_one_when_field_not_found(t *testing.T) {
-	small := false
-	fields := testMessageFieldsSize(small)
+	big := false
+	fields := testMessageFieldsSize(big)
 
-	data, size, err := encodeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := decodeMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	end := table.offsetByIndex(small, -1)
+	end := table.offsetByIndex_big(-1)
 	assert.Equal(t, -1, end)
 
-	end = table.offsetByIndex(small, math.MaxUint16)
+	end = table.offsetByIndex_big(math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 
@@ -294,7 +294,7 @@ func TestMessageTable_field_big__should_return_field_by_index(t *testing.T) {
 	}
 
 	for i, field := range fields {
-		field1, ok := table.field(big, i)
+		field1, ok := table.field_big(i)
 		assert.True(t, ok)
 		require.Equal(t, field, field1)
 	}
@@ -313,55 +313,55 @@ func TestMessageTable_field_big__should_return_false_when_index_out_of_range(t *
 		t.Fatal(err)
 	}
 
-	_, ok := table.field(big, -1)
+	_, ok := table.field_big(-1)
 	assert.False(t, ok)
 
 	n := table.count(big)
-	_, ok = table.field(big, n)
+	_, ok = table.field_big(n)
 	assert.False(t, ok)
 }
 
 // field: small
 
 func TestMessageTable_field_small__should_return_field_by_index(t *testing.T) {
-	small := false
-	fields := testMessageFieldsSize(small)
+	big := false
+	fields := testMessageFieldsSize(big)
 
-	data, size, err := encodeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := decodeMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for i, field := range fields {
-		field1, ok := table.field(small, i)
+		field1, ok := table.field_small(i)
 		assert.True(t, ok)
 		require.Equal(t, field, field1)
 	}
 }
 
 func TestMessageTable_field_small__should_return_false_when_index_out_of_range(t *testing.T) {
-	small := false
-	fields := testMessageFieldsSize(small)
+	big := false
+	fields := testMessageFieldsSize(big)
 
-	data, size, err := encodeMessageTable(nil, fields, small)
+	data, size, err := encodeMessageTable(nil, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	table, err := decodeMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, ok := table.field(small, -1)
+	_, ok := table.field_small(-1)
 	assert.False(t, ok)
 
-	n := table.count(small)
-	_, ok = table.field(small, n)
+	n := table.count(big)
+	_, ok = table.field_small(n)
 	assert.False(t, ok)
 }

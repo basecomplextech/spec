@@ -6,29 +6,36 @@ import (
 )
 
 type Message struct {
-	data  []byte
-	table messageTable
-
-	body uint32 // body size
-	big  bool   // big/small table format
+	meta messageMeta
+	data []byte
 }
 
 // NewMessage reads and returns a message or zero on an error.
 func NewMessage(b []byte) Message {
-	m, _, err := decodeMessage(b)
+	meta, n, err := decodeMessageMeta(b)
 	if err != nil {
 		return Message{}
 	}
-	return m
+
+	data := b[len(b)-n:]
+	return Message{
+		meta: meta,
+		data: data,
+	}
 }
 
 // ReadMessage reads, recursively vaildates and returns a message.
 func ReadMessage(b []byte) (Message, int, error) {
-	m, n, err := decodeMessage(b)
+	meta, n, err := decodeMessageMeta(b)
 	if err != nil {
 		return Message{}, n, err
 	}
+	data := b[len(b)-n:]
 
+	m := Message{
+		meta: meta,
+		data: data,
+	}
 	if err := m.Validate(); err != nil {
 		return Message{}, n, err
 	}
@@ -42,16 +49,16 @@ func (m Message) Data() []byte {
 
 // Count returns the number of fields in the message.
 func (m Message) Count() int {
-	return m.table.count(m.big)
+	return m.meta.count()
 }
 
 // Field returns field data by a tag or nil.
 func (m Message) Field(tag uint16) []byte {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return nil
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return nil
 	}
 	return m.data[:end]
@@ -59,11 +66,11 @@ func (m Message) Field(tag uint16) []byte {
 
 // FieldByIndex returns field data by an index or nil.
 func (m Message) FieldByIndex(i int) []byte {
-	end := m.table.offsetByIndex(m.big, i)
+	end := m.meta.offsetByIndex(i)
 	switch {
 	case end < 0:
 		return nil
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return nil
 	}
 	return m.data[:end]
@@ -88,11 +95,11 @@ func (m Message) Validate() error {
 // Direct access
 
 func (m Message) Bool(tag uint16) bool {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return false
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return false
 	}
 
@@ -102,11 +109,11 @@ func (m Message) Bool(tag uint16) bool {
 }
 
 func (m Message) Byte(tag uint16) byte {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return 0
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return 0
 	}
 
@@ -116,11 +123,11 @@ func (m Message) Byte(tag uint16) byte {
 }
 
 func (m Message) Int32(tag uint16) int32 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return 0
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return 0
 	}
 
@@ -130,11 +137,11 @@ func (m Message) Int32(tag uint16) int32 {
 }
 
 func (m Message) Int64(tag uint16) int64 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return 0
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return 0
 	}
 
@@ -144,11 +151,11 @@ func (m Message) Int64(tag uint16) int64 {
 }
 
 func (m Message) Uint32(tag uint16) uint32 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return 0
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return 0
 	}
 
@@ -158,11 +165,11 @@ func (m Message) Uint32(tag uint16) uint32 {
 }
 
 func (m Message) Uint64(tag uint16) uint64 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return 0
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return 0
 	}
 
@@ -172,11 +179,11 @@ func (m Message) Uint64(tag uint16) uint64 {
 }
 
 func (m Message) U128(tag uint16) u128.U128 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return u128.U128{}
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return u128.U128{}
 	}
 
@@ -186,11 +193,11 @@ func (m Message) U128(tag uint16) u128.U128 {
 }
 
 func (m Message) U256(tag uint16) u256.U256 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return u256.U256{}
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return u256.U256{}
 	}
 
@@ -200,11 +207,11 @@ func (m Message) U256(tag uint16) u256.U256 {
 }
 
 func (m Message) Float32(tag uint16) float32 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return 0
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return 0
 	}
 
@@ -214,11 +221,11 @@ func (m Message) Float32(tag uint16) float32 {
 }
 
 func (m Message) Float64(tag uint16) float64 {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return 0
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return 0
 	}
 
@@ -228,11 +235,11 @@ func (m Message) Float64(tag uint16) float64 {
 }
 
 func (m Message) Bytes(tag uint16) []byte {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return nil
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return nil
 	}
 
@@ -242,11 +249,11 @@ func (m Message) Bytes(tag uint16) []byte {
 }
 
 func (m Message) String(tag uint16) string {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return ""
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return ""
 	}
 
@@ -256,11 +263,11 @@ func (m Message) String(tag uint16) string {
 }
 
 func (m Message) Message(tag uint16) Message {
-	end := m.table.offset(m.big, tag)
+	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
 		return Message{}
-	case end > int(m.body):
+	case end > int(m.meta.body):
 		return Message{}
 	}
 
