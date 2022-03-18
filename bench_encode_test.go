@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Benchmark_Encode(b *testing.B) {
+func BenchmarkEncode(b *testing.B) {
 	msg := newTestObject()
 	buf := make([]byte, 0, 4096)
 	e := NewEncoderBuffer(buf)
@@ -50,10 +50,82 @@ func Benchmark_Encode(b *testing.B) {
 	b.ReportMetric(float64(size), "size")
 }
 
+func BenchmarkEncodeObject(b *testing.B) {
+	msg := newTestObject()
+	buf := make([]byte, 0, 4096)
+	e := NewEncoderBuffer(buf)
+
+	data, err := msg.Marshal()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	size := len(data)
+	compressed := compressedSize(data)
+
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		me := BeginTestMessage(e)
+		if err := msg.Encode(me); err != nil {
+			b.Fatal(err)
+		}
+		if _, err := e.End(); err != nil {
+			b.Fatal(err)
+		}
+
+		e.Reset()
+		e.buf = buf[:0]
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressed), "size-zlib")
+}
+
 // Standard JSON
 
-func BenchmarkJSON_Write(b *testing.B) {
+func BenchmarkJSON_Marshal(b *testing.B) {
 	msg := newTestObject()
+	data, err := json.Marshal(msg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		_, err := json.Marshal(msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	rps := float64(b.N) / sec
+
+	b.ReportMetric(rps, "rps")
+	b.ReportMetric(float64(len(data)), "size")
+	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
+}
+
+func BenchmarkJSON_Encode(b *testing.B) {
+	msg := newTestObject()
+	data, err := json.Marshal(msg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	buf := make([]byte, 0, 4096)
 	buffer := bytes.NewBuffer(buf)
 
@@ -82,4 +154,5 @@ func BenchmarkJSON_Write(b *testing.B) {
 
 	b.ReportMetric(rps, "rps")
 	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }

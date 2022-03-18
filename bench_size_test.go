@@ -13,6 +13,9 @@ func _BenchmarkSizeDistribution(b *testing.B) {
 	if err := msg.Encode(me); err != nil {
 		b.Fatal(err)
 	}
+	if err := me.End(); err != nil {
+		b.Fatal(err)
+	}
 	data, err := e.End()
 	if err != nil {
 		b.Fatal(err)
