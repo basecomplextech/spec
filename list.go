@@ -99,50 +99,57 @@ func (l List[T]) Validate() error {
 
 // ListEncoder encodes a list.
 type ListEncoder[W any] struct {
-	w    *Encoder
+	e    *Encoder
 	next func(*Encoder) W
 }
 
 // BeginList begins and returns a new list encoder.
-func BeginList[W any](w *Encoder, next func(*Encoder) W) ListEncoder[W] {
-	w.BeginList()
+func BeginList[W any](e *Encoder, next func(*Encoder) W) ListEncoder[W] {
+	e.BeginList()
 
 	return ListEncoder[W]{
-		w:    w,
+		e:    e,
 		next: next,
 	}
 }
 
-// BeginElement an encoder for the next element.
-func (e ListEncoder[W]) BeginElement() W {
-	return e.next(e.w)
+// End ends the list.
+func (e ListEncoder[W]) End() error {
+	return e.e.EndNested()
 }
 
-// EndElement ends an element.
-func (e ListEncoder[W]) EndElement() error {
-	return e.w.Element()
+// Next returns the next element encoder.
+func (e ListEncoder[W]) Next() W {
+	e.e.BeginElement()
+
+	return e.next(e.e)
 }
 
-// Value
+// Value encoder
 
 // ListValueEncoder encodes a list of primitive values.
 type ListValueEncoder[T any] struct {
-	w      *Encoder
+	e      *Encoder
 	encode func(el T) error
 }
 
 // BeginValueList begins and returns a new list encoder for primitive values.
-func BeginValueList[T any](w *Encoder, encode func(T) error) ListValueEncoder[T] {
-	w.BeginList()
+func BeginValueList[T any](e *Encoder, encode func(T) error) ListValueEncoder[T] {
+	e.BeginList()
 
 	return ListValueEncoder[T]{
-		w:      w,
+		e:      e,
 		encode: encode,
 	}
 }
 
-// Element encodes the next element.
-func (e ListValueEncoder[T]) Element(el T) error {
+// End ends the list.
+func (e ListValueEncoder[T]) End() error {
+	return e.e.EndNested()
+}
+
+// Next encodes the next element.
+func (e ListValueEncoder[T]) Next(el T) error {
 	e.encode(el)
-	return e.w.Element()
+	return e.e.Element()
 }

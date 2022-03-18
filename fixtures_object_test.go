@@ -110,8 +110,7 @@ func (m *TestObject) Decode(b []byte) error {
 	m.Bytes = msg.Bytes()
 
 	// submessage
-	{
-		p := msg.Submessage().Bytes()
+	if p := msg.Submessage().Bytes(); p != nil {
 		sub := &TestSubobject{}
 		if err := sub.Decode(p); err != nil {
 			return err
@@ -192,50 +191,69 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	e.Bytes(m.Bytes)
 
 	if m.Submessage != nil {
-		se := e.BeginSubmessage()
-		if err := m.Submessage.Encode(se); err != nil {
+		sub := e.Submessage()
+		if err := m.Submessage.Encode(sub); err != nil {
 			return err
 		}
-		e.EndSubmessage()
+		if err := sub.End(); err != nil {
+			return err
+		}
 	}
 
 	if len(m.List) > 0 {
-		list := e.BeginList()
+		list := e.List()
 		for _, value := range m.List {
-			list.Element(value)
+			if err := list.Next(value); err != nil {
+				return err
+			}
 		}
-		e.EndList()
+		if err := list.End(); err != nil {
+			return err
+		}
 	}
 
 	if len(m.Messages) > 0 {
-		list := e.BeginMessages()
+		list := e.Messages()
 		for _, msg := range m.Messages {
-			next := list.BeginElement()
-			msg.Encode(next)
-			list.EndElement()
+			next := list.Next()
+			if err := msg.Encode(next); err != nil {
+				return err
+			}
+			if err := next.End(); err != nil {
+				return err
+			}
 		}
-		e.EndMessages()
+		if err := list.End(); err != nil {
+			return err
+		}
 	}
 
 	if len(m.Strings) > 0 {
-		list := e.BeginStrings()
+		list := e.Strings()
 		for _, v := range m.Strings {
-			list.Element(v)
+			if err := list.Next(v); err != nil {
+				return err
+			}
 		}
-		e.EndStrings()
+		if err := list.End(); err != nil {
+			return err
+		}
 	}
 
 	// struct:60
 	// TODO: Uncomment
 	// m.Struct.Write(b)
 	// e.Field(60)
-	return e.End()
+	return nil
 }
 
 func (m *TestObject) Marshal() ([]byte, error) {
 	e := NewEncoder()
 	me := BeginTestMessage(e)
 	if err := m.Encode(me); err != nil {
+		return nil, err
+	}
+	if err := me.End(); err != nil {
 		return nil, err
 	}
 	return e.End()
@@ -304,5 +322,5 @@ func (m TestObjectElement) Encode(e TestElementEncoder) error {
 	e.Byte(m.Byte)
 	e.Int32(m.Int32)
 	e.Int64(m.Int64)
-	return e.End()
+	return nil
 }

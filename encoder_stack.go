@@ -7,7 +7,9 @@ type objectType byte
 const (
 	objectTypeUndefined objectType = iota
 	objectTypeList
+	objectTypeElement
 	objectTypeMessage
+	objectTypeField
 	objectTypeStruct
 )
 
@@ -15,6 +17,10 @@ type objectEntry struct {
 	start      int // start offset in data buffer
 	tableStart int // table offset in list/message stack
 	type_      objectType
+}
+
+func (e objectEntry) tag() uint16 {
+	return uint16(e.tableStart)
 }
 
 type objectStack struct {
@@ -63,11 +69,28 @@ func (s *objectStack) pushList(start int, tableStart int) {
 	s.stack = append(s.stack, e)
 }
 
+func (s *objectStack) pushElement(start int) {
+	e := objectEntry{
+		type_: objectTypeElement,
+		start: start,
+	}
+	s.stack = append(s.stack, e)
+}
+
 func (s *objectStack) pushMessage(start int, tableStart int) {
 	e := objectEntry{
 		type_:      objectTypeMessage,
 		start:      start,
 		tableStart: tableStart,
+	}
+	s.stack = append(s.stack, e)
+}
+
+func (s *objectStack) pushField(start int, tag uint16) {
+	e := objectEntry{
+		type_:      objectTypeField,
+		start:      start,
+		tableStart: int(tag),
 	}
 	s.stack = append(s.stack, e)
 }

@@ -75,7 +75,7 @@ func BeginTestMessage(e *Encoder) TestMessageEncoder {
 }
 
 func (e TestMessageEncoder) End() error {
-	return e.e.EndMessage()
+	return e.e.EndNested()
 }
 
 func (e TestMessageEncoder) Bool(v bool) error {
@@ -138,40 +138,25 @@ func (e TestMessageEncoder) Bytes(v []byte) error {
 	return e.e.Field(41)
 }
 
-func (e TestMessageEncoder) BeginSubmessage() TestSubmessageEncoder {
+func (e TestMessageEncoder) Submessage() TestSubmessageEncoder {
+	e.e.BeginField(50)
 	return BeginSubmessage(e.e)
 }
 
-func (e TestMessageEncoder) EndSubmessage() error {
-	e.e.EndMessage()
-	return e.e.Field(50)
-}
-
-func (e TestMessageEncoder) BeginList() ListValueEncoder[int64] {
+func (e TestMessageEncoder) List() ListValueEncoder[int64] {
+	e.e.BeginField(51)
 	return BeginValueList(e.e, e.e.Int64)
 }
 
-func (e TestMessageEncoder) EndList() error {
-	e.e.EndList()
-	return e.e.Field(51)
-}
+func (e TestMessageEncoder) Messages() ListEncoder[TestElementEncoder] {
+	e.e.BeginField(52)
 
-func (e TestMessageEncoder) BeginMessages() ListEncoder[TestElementEncoder] {
 	return BeginList(e.e, BeginTestSubmessage)
 }
 
-func (e TestMessageEncoder) EndMessages() error {
-	e.e.EndList()
-	return e.e.Field(52)
-}
-
-func (e TestMessageEncoder) BeginStrings() ListValueEncoder[string] {
+func (e TestMessageEncoder) Strings() ListValueEncoder[string] {
+	e.e.BeginField(53)
 	return BeginValueList(e.e, e.e.String)
-}
-
-func (e TestMessageEncoder) EndStrings() error {
-	e.e.EndList()
-	return e.e.Field(53)
 }
 
 func (e TestMessageEncoder) Struct(v TestStruct) error {
@@ -212,6 +197,10 @@ func BeginSubmessage(e *Encoder) TestSubmessageEncoder {
 	e.BeginMessage()
 
 	return TestSubmessageEncoder{e}
+}
+
+func (e TestSubmessageEncoder) End() error {
+	return e.e.EndNested()
 }
 
 func (e TestSubmessageEncoder) Int32(v int32) error {
@@ -266,12 +255,8 @@ func BeginTestSubmessage(e *Encoder) TestElementEncoder {
 	return TestElementEncoder{e}
 }
 
-func EndTestSubmessage(e *Encoder) error {
-	return e.EndMessage()
-}
-
 func (e TestElementEncoder) End() error {
-	return EndTestSubmessage(e.e)
+	return e.e.EndNested()
 }
 
 func (e TestElementEncoder) Byte(v byte) error {

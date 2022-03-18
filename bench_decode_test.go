@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func Benchmark_Read(b *testing.B) {
+func Benchmark_Decode(b *testing.B) {
 	msg := newTestObject()
 	data, err := msg.Marshal()
 	if err != nil {

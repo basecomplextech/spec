@@ -15,6 +15,10 @@ func TestEncoder_Message__should_encode_message(t *testing.T) {
 	if err := msg.Encode(me); err != nil {
 		t.Fatal(err)
 	}
+	if err := e.EndNested(); err != nil {
+		t.Fatal(err)
+	}
+
 	b, err := e.End()
 	if err != nil {
 		t.Fatal(err)

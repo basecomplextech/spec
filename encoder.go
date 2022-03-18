@@ -62,6 +62,23 @@ func newEncoder(buf []byte) *Encoder {
 	return e
 }
 
+// Init resets the encoder and sets its buffer.
+func (e *Encoder) Init(b []byte) {
+	e.Reset()
+	e.buf = b[:0]
+}
+
+// Reset clears the encoder and nils buffer.
+func (e *Encoder) Reset() {
+	e.buf = nil
+	e.err = nil
+	e.data = encodeData{}
+
+	e.objects.reset()
+	e.elements.reset()
+	e.fields.reset()
+}
+
 // End ends writing, returns the result bytes, and resets the encoder.
 func (e *Encoder) End() ([]byte, error) {
 	switch {
@@ -80,21 +97,45 @@ func (e *Encoder) End() ([]byte, error) {
 	return b, nil
 }
 
-// Init resets the encoder and sets its buffer.
-func (e *Encoder) Init(b []byte) {
-	e.Reset()
-	e.buf = b[:0]
-}
+// EndNested ends a nested object and a parent field/element if present.
+func (e *Encoder) EndNested() error {
+	if e.err != nil {
+		return e.err
+	}
 
-// Reset clears the encoder and nils buffer.
-func (e *Encoder) Reset() {
-	e.buf = nil
-	e.err = nil
-	e.data = encodeData{}
+	obj, ok := e.objects.peek()
+	if !ok {
+		return e.fail(errors.New("end: cannot end object, empty stack"))
+	}
 
-	e.objects.reset()
-	e.elements.reset()
-	e.fields.reset()
+	// end nested object
+	switch obj.type_ {
+	case objectTypeList:
+		if err := e.EndList(); err != nil {
+			return err
+		}
+	case objectTypeMessage:
+		if err := e.EndMessage(); err != nil {
+			return err
+		}
+	default:
+		return e.fail(errors.New("end: not nested encoder"))
+	}
+
+	// peek parent object
+	obj, ok = e.objects.peek()
+	if !ok {
+		return nil
+	}
+
+	// end field/element
+	switch obj.type_ {
+	case objectTypeElement:
+		return e.EndElement()
+	case objectTypeField:
+		return e.EndField()
+	}
+	return nil
 }
 
 // Primitive
@@ -325,6 +366,42 @@ func (e *Encoder) BeginList() error {
 	return nil
 }
 
+func (e *Encoder) BeginElement() error {
+	if e.err != nil {
+		return e.err
+	}
+
+	// check list
+	list, ok := e.objects.peek()
+	switch {
+	case !ok:
+		return e.fail(errors.New("begin element: cannot begin element, not list encoder"))
+	case list.type_ != objectTypeList:
+		return e.fail(errors.New("begin element: cannot begin element, not list encoder"))
+	}
+
+	// push list element
+	start := len(e.buf)
+	e.objects.pushElement(start)
+	return nil
+}
+
+func (e *Encoder) EndElement() error {
+	if e.err != nil {
+		return e.err
+	}
+
+	elem, ok := e.objects.pop()
+	switch {
+	case !ok:
+		return e.fail(errors.New("end element: not an element"))
+	case elem.type_ != objectTypeElement:
+		return e.fail(errors.New("end element: not an element"))
+	}
+
+	return e.Element()
+}
+
 func (e *Encoder) Element() error {
 	if e.err != nil {
 		return e.err
@@ -395,6 +472,43 @@ func (e *Encoder) BeginMessage() error {
 
 	e.objects.pushMessage(start, tableStart)
 	return nil
+}
+
+func (e *Encoder) BeginField(tag uint16) error {
+	if e.err != nil {
+		return e.err
+	}
+
+	// check message
+	message, ok := e.objects.peek()
+	switch {
+	case !ok:
+		return e.fail(errors.New("begin field: cannot begin field, not message encoder"))
+	case message.type_ != objectTypeMessage:
+		return e.fail(errors.New("begin field: cannot begin field, not message encoder"))
+	}
+
+	// push field
+	start := len(e.buf)
+	e.objects.pushField(start, tag)
+	return nil
+}
+
+func (e *Encoder) EndField() error {
+	if e.err != nil {
+		return e.err
+	}
+
+	field, ok := e.objects.pop()
+	switch {
+	case !ok:
+		return e.fail(errors.New("end field: not a field"))
+	case field.type_ != objectTypeField:
+		return e.fail(errors.New("end field: not a field"))
+	}
+
+	tag := field.tag()
+	return e.Field(tag)
 }
 
 func (e *Encoder) Field(tag uint16) error {

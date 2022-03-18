@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Benchmark_Write(b *testing.B) {
+func Benchmark_Encode(b *testing.B) {
 	msg := newTestObject()
 	buf := make([]byte, 0, 4096)
 	e := NewEncoderBuffer(buf)
@@ -21,6 +21,9 @@ func Benchmark_Write(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		me := BeginTestMessage(e)
 		if err := msg.Encode(me); err != nil {
+			b.Fatal(err)
+		}
+		if err := me.End(); err != nil {
 			b.Fatal(err)
 		}
 
