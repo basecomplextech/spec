@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ReadType
+// DecodeType
 
-func TestReadType__should_return_type(t *testing.T) {
+func TestDecodeType__should_return_type(t *testing.T) {
 	b := []byte{}
 	b = append(b, byte(TypeString))
 
-	v, n, err := ReadType(b)
+	v, n, err := DecodeType(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,10 +23,10 @@ func TestReadType__should_return_type(t *testing.T) {
 	assert.Equal(t, v, TypeString)
 }
 
-func TestReadType__should_return_nil_when_empty(t *testing.T) {
+func TestDecodeType__should_return_nil_when_empty(t *testing.T) {
 	b := []byte{}
 
-	v, n, err := ReadType(b)
+	v, n, err := DecodeType(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,11 +35,11 @@ func TestReadType__should_return_nil_when_empty(t *testing.T) {
 	assert.Equal(t, v, TypeNil)
 }
 
-// ReadBool
+// DecodeBool
 
-func TestReadBool__should_read_bool_value(t *testing.T) {
+func TestDecodeBool__should_decode_bool_value(t *testing.T) {
 	b := []byte{byte(TypeTrue)}
-	v, n, err := ReadBool(b)
+	v, n, err := DecodeBool(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestReadBool__should_read_bool_value(t *testing.T) {
 	assert.Equal(t, true, v)
 
 	b = []byte{byte(TypeFalse)}
-	v, n, err = ReadBool(b)
+	v, n, err = DecodeBool(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,13 +57,13 @@ func TestReadBool__should_read_bool_value(t *testing.T) {
 	assert.Equal(t, false, v)
 }
 
-// ReadByte
+// DecodeByte
 
-func TestReadByte__should_read_byte(t *testing.T) {
+func TestDecodeByte__should_decode_byte(t *testing.T) {
 	b := []byte{}
 	b = EncodeByte(b, 1)
 
-	v, n, err := ReadByte(b)
+	v, n, err := DecodeByte(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,11 +72,11 @@ func TestReadByte__should_read_byte(t *testing.T) {
 	assert.Equal(t, byte(1), v)
 }
 
-func TestReadByte__should_read_byte_from_int32(t *testing.T) {
+func TestDecodeByte__should_decode_byte_from_int32(t *testing.T) {
 	b := []byte{}
 	b = EncodeInt32(b, 1)
 
-	v, n, err := ReadByte(b)
+	v, n, err := DecodeByte(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,11 +85,11 @@ func TestReadByte__should_read_byte_from_int32(t *testing.T) {
 	assert.Equal(t, byte(1), v)
 }
 
-func TestReadByte__should_read_byte_from_int64(t *testing.T) {
+func TestDecodeByte__should_decode_byte_from_int64(t *testing.T) {
 	b := []byte{}
 	b = EncodeInt64(b, 1)
 
-	v, n, err := ReadByte(b)
+	v, n, err := DecodeByte(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,11 +100,11 @@ func TestReadByte__should_read_byte_from_int64(t *testing.T) {
 
 // Int32
 
-func TestReadInt32__should_read_int32(t *testing.T) {
+func TestDecodeInt32__should_decode_int32(t *testing.T) {
 	b := []byte{}
 	b = EncodeInt32(b, 1)
 
-	v, n, err := ReadInt32(b)
+	v, n, err := DecodeInt32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,11 +115,11 @@ func TestReadInt32__should_read_int32(t *testing.T) {
 
 // Int64
 
-func TestReadInt64__should_read_int64(t *testing.T) {
+func TestDecodeInt64__should_decode_int64(t *testing.T) {
 	b := []byte{}
 	b = EncodeInt64(b, 1)
 
-	v, n, err := ReadInt64(b)
+	v, n, err := DecodeInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,11 +128,11 @@ func TestReadInt64__should_read_int64(t *testing.T) {
 	assert.Equal(t, int64(1), v)
 }
 
-func TestReadInt64__should_read_int64_from_byte(t *testing.T) {
+func TestDecodeInt64__should_decode_int64_from_byte(t *testing.T) {
 	b := []byte{}
 	b = EncodeByte(b, 1)
 
-	v, n, err := ReadInt64(b)
+	v, n, err := DecodeInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,11 +141,11 @@ func TestReadInt64__should_read_int64_from_byte(t *testing.T) {
 	assert.Equal(t, int64(1), v)
 }
 
-func TestReadInt64__should_read_int64_from_int32(t *testing.T) {
+func TestDecodeInt64__should_decode_int64_from_int32(t *testing.T) {
 	b := []byte{}
 	b = EncodeInt32(b, 1)
 
-	v, n, err := ReadInt64(b)
+	v, n, err := DecodeInt64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,11 +156,11 @@ func TestReadInt64__should_read_int64_from_int32(t *testing.T) {
 
 // Float32
 
-func TestReadFloat32__should_read_float32(t *testing.T) {
+func TestDecodeFloat32__should_decode_float32(t *testing.T) {
 	b := []byte{}
 	b = EncodeFloat32(b, math.MaxFloat32)
 
-	v, n, err := ReadFloat32(b)
+	v, n, err := DecodeFloat32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,11 +169,11 @@ func TestReadFloat32__should_read_float32(t *testing.T) {
 	assert.Equal(t, float32(math.MaxFloat32), v)
 }
 
-func TestReadFloat32__should_read_float32_from_float64(t *testing.T) {
+func TestDecodeFloat32__should_decode_float32_from_float64(t *testing.T) {
 	b := []byte{}
 	b = EncodeFloat64(b, math.MaxFloat32)
 
-	v, n, err := ReadFloat32(b)
+	v, n, err := DecodeFloat32(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,11 +184,11 @@ func TestReadFloat32__should_read_float32_from_float64(t *testing.T) {
 
 // Float64
 
-func TestReadFloat64__should_read_float64(t *testing.T) {
+func TestDecodeFloat64__should_decode_float64(t *testing.T) {
 	b := []byte{}
 	b = EncodeFloat64(b, math.MaxFloat64)
 
-	v, n, err := ReadFloat64(b)
+	v, n, err := DecodeFloat64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,11 +197,11 @@ func TestReadFloat64__should_read_float64(t *testing.T) {
 	assert.Equal(t, float64(math.MaxFloat64), v)
 }
 
-func TestReadFloat64__should_read_float64_from_float32(t *testing.T) {
+func TestDecodeFloat64__should_decode_float64_from_float32(t *testing.T) {
 	b := []byte{}
 	b = EncodeFloat32(b, math.MaxFloat32)
 
-	v, n, err := ReadFloat64(b)
+	v, n, err := DecodeFloat64(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestReadFloat64__should_read_float64_from_float32(t *testing.T) {
 
 // Bytes
 
-func TestReadBytes__should_read_bytes(t *testing.T) {
+func TestDecodeBytes__should_decode_bytes(t *testing.T) {
 	b := []byte{}
 	v := []byte("hello, world")
 
@@ -221,7 +221,7 @@ func TestReadBytes__should_read_bytes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v1, n, err := ReadBytes(b)
+	v1, n, err := DecodeBytes(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestReadBytes__should_read_bytes(t *testing.T) {
 
 // String
 
-func TestReadString__should_read_string(t *testing.T) {
+func TestDecodeString__should_decode_string(t *testing.T) {
 	b := []byte{}
 	v := "hello, world"
 
@@ -241,7 +241,7 @@ func TestReadString__should_read_string(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v1, n, err := ReadString(b)
+	v1, n, err := DecodeString(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,9 +252,9 @@ func TestReadString__should_read_string(t *testing.T) {
 
 // List
 
-func TestReadList__should_read_list(t *testing.T) {
+func TestDecodeList__should_decode_list(t *testing.T) {
 	b := testWriteList(t)
-	_, n, err := readList(b)
+	_, n, err := decodeList(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +262,7 @@ func TestReadList__should_read_list(t *testing.T) {
 	assert.Equal(t, n, len(b))
 }
 
-func TestReadListTable__should_read_list_table(t *testing.T) {
+func TestDecodeListTable__should_decode_list_table(t *testing.T) {
 	elements := testListElements()
 
 	for i := 0; i <= len(elements); i++ {
@@ -273,7 +273,7 @@ func TestReadListTable__should_read_list_table(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		table1, err := _readListTable(table0, size, false)
+		table1, err := decodeListTable(table0, size, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -283,40 +283,40 @@ func TestReadListTable__should_read_list_table(t *testing.T) {
 	}
 }
 
-func TestReadList__should_return_error_when_invalid_type(t *testing.T) {
+func TestDecodeList__should_return_error_when_invalid_type(t *testing.T) {
 	b := testWriteList(t)
 	b[len(b)-1] = byte(TypeMessage)
 
-	_, n, err := readList(b)
+	_, n, err := decodeList(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected type")
 }
 
-func TestReadList__should_return_error_when_invalid_table_size(t *testing.T) {
+func TestDecodeList__should_return_error_when_invalid_table_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = append(b, byte(TypeList))
 
-	_, n, err := readList(b)
+	_, n, err := decodeList(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table size")
 }
 
-func TestReadList__should_return_error_when_invalid_body_size(t *testing.T) {
+func TestDecodeList__should_return_error_when_invalid_body_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
-	_, n, err := readList(b)
+	_, n, err := decodeList(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body size")
 }
 
-func TestReadList__should_return_error_when_invalid_table(t *testing.T) {
+func TestDecodeList__should_return_error_when_invalid_table(t *testing.T) {
 	b, _, err := encodeListTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -325,13 +325,13 @@ func TestReadList__should_return_error_when_invalid_table(t *testing.T) {
 	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeList))
 
-	_, n, err := readList(b)
+	_, n, err := decodeList(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table")
 }
 
-func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
+func TestDecodeList__should_return_error_when_invalid_body(t *testing.T) {
 	b, _, err := encodeListTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -340,7 +340,7 @@ func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
 	b = encodeListTableSize(b, 0)
 	b = append(b, byte(TypeList))
 
-	_, n, err := readList(b)
+	_, n, err := decodeList(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body")
@@ -348,9 +348,9 @@ func TestReadList__should_return_error_when_invalid_body(t *testing.T) {
 
 // Message
 
-func TestReadMessage__should_read_message(t *testing.T) {
-	b := testWriteMessage(t)
-	_, n, err := readMessage(b)
+func TestDecodeMessage__should_decode_message(t *testing.T) {
+	b := testEncodeMessage(t)
+	_, n, err := decodeMessage(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -358,7 +358,7 @@ func TestReadMessage__should_read_message(t *testing.T) {
 	assert.Equal(t, n, len(b))
 }
 
-func TestReadMessageTable__should_read_message_table(t *testing.T) {
+func TestDecodeMessageTable__should_decode_message_table(t *testing.T) {
 	fields := testMessageFields()
 
 	for i := 0; i <= len(fields); i++ {
@@ -369,7 +369,7 @@ func TestReadMessageTable__should_read_message_table(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		table1, err := _readMessageTable(data, size, false)
+		table1, err := decodeMessageTable(data, size, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -379,40 +379,40 @@ func TestReadMessageTable__should_read_message_table(t *testing.T) {
 	}
 }
 
-func TestReadMessage__should_return_error_when_invalid_type(t *testing.T) {
-	b := testWriteMessage(t)
+func TestDecodeMessage__should_return_error_when_invalid_type(t *testing.T) {
+	b := testEncodeMessage(t)
 	b[len(b)-1] = byte(TypeList)
 
-	_, n, err := readMessage(b)
+	_, n, err := decodeMessage(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected type")
 }
 
-func TestReadMessage__should_return_error_when_invalid_table_size(t *testing.T) {
+func TestDecodeMessage__should_return_error_when_invalid_table_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = append(b, byte(TypeMessage))
 
-	_, n, err := readMessage(b)
+	_, n, err := decodeMessage(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table size")
 }
 
-func TestReadMessage__should_return_error_when_invalid_body_size(t *testing.T) {
+func TestDecodeMessage__should_return_error_when_invalid_body_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeMessage))
 
-	_, n, err := readMessage(b)
+	_, n, err := decodeMessage(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body size")
 }
 
-func TestReadMessage__should_return_error_when_invalid_table(t *testing.T) {
+func TestDecodeMessage__should_return_error_when_invalid_table(t *testing.T) {
 	b, _, err := encodeMessageTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -421,13 +421,13 @@ func TestReadMessage__should_return_error_when_invalid_table(t *testing.T) {
 	b = encodeListTableSize(b, 1000)
 	b = append(b, byte(TypeMessage))
 
-	_, n, err := readMessage(b)
+	_, n, err := decodeMessage(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table")
 }
 
-func TestReadMessage__should_return_error_when_invalid_body(t *testing.T) {
+func TestDecodeMessage__should_return_error_when_invalid_body(t *testing.T) {
 	b, _, err := encodeMessageTable(nil, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -436,7 +436,7 @@ func TestReadMessage__should_return_error_when_invalid_body(t *testing.T) {
 	b = encodeListTableSize(b, 0)
 	b = append(b, byte(TypeMessage))
 
-	_, n, err := readMessage(b)
+	_, n, err := decodeMessage(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid body")

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testWriteMessage(t *testing.T) []byte {
+func testEncodeMessage(t *testing.T) []byte {
 	w := NewWriter()
 	w.BeginMessage()
 
@@ -54,7 +54,7 @@ func testWriteMessage(t *testing.T) []byte {
 }
 
 func TestMessage_Getters__should_access_fields(t *testing.T) {
-	b := testWriteMessage(t)
+	b := testEncodeMessage(t)
 	m, _, err := ReadMessage(b)
 	if err != nil {
 		t.Fatal(err)

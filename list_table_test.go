@@ -64,7 +64,7 @@ func TestListTable_count_big__should_return_number_of_elements(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readListTable(data, size, big)
+	table, err := decodeListTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestListTable_count_smal__should_return_number_of_elements(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readListTable(data, size, small)
+	table, err := decodeListTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestListTable_offset_big__should_return_start_end_offset_by_index(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readListTable(data, size, big)
+	table, err := decodeListTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readListTable(data, size, big)
+	table, err := decodeListTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestListTable_offset_small__should_return_start_end_offset_by_index(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readListTable(data, size, small)
+	table, err := decodeListTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func TestListTable_offset_small__should_return_minus_one_when_out_of_range(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readListTable(data, size, small)
+	table, err := decodeListTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}

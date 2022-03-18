@@ -9,7 +9,7 @@ func BenchmarkFieldTable_field(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size, false)
+	table, err := decodeMessageTable(data, size, false)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func BenchmarkFieldTable_offset(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size, false)
+	table, err := decodeMessageTable(data, size, false)
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -2,7 +2,7 @@ package spec
 
 // ReadStruct reads a struct and returns its body reader or nil,
 func ReadStruct(b []byte) (Reader, error) {
-	bodySize, n, err := readStruct(b)
+	bodySize, n, err := decodeStruct(b)
 	switch {
 	case err != nil:
 		return nil, err

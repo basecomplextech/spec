@@ -12,7 +12,7 @@ type Value []byte
 
 // NewValue reads and returns a value or zero on an error.
 func NewValue(b []byte) Value {
-	t, _, err := ReadType(b)
+	t, _, err := DecodeType(b)
 	if err != nil {
 		return Value{}
 	}
@@ -24,7 +24,7 @@ func NewValue(b []byte) Value {
 
 // ReadValue reads, recursively validates and returns a value.
 func ReadValue(b []byte) (Value, int, error) {
-	t, n, err := ReadType(b)
+	t, n, err := DecodeType(b)
 	if err != nil {
 		return Value{}, n, err
 	}
@@ -40,72 +40,72 @@ func ReadValue(b []byte) (Value, int, error) {
 }
 
 func (v Value) Type() Type {
-	p, _, _ := ReadType(v)
+	p, _, _ := DecodeType(v)
 	return p
 }
 
 func (v Value) Nil() bool {
-	p, _, _ := ReadType(v)
+	p, _, _ := DecodeType(v)
 	return p == TypeNil
 }
 
 func (v Value) Bool() bool {
-	p, _, _ := ReadBool(v)
+	p, _, _ := DecodeBool(v)
 	return p
 }
 
 func (v Value) Byte() byte {
-	p, _, _ := ReadByte(v)
+	p, _, _ := DecodeByte(v)
 	return p
 }
 
 func (v Value) Int32() int32 {
-	p, _, _ := ReadInt32(v)
+	p, _, _ := DecodeInt32(v)
 	return p
 }
 
 func (v Value) Int64() int64 {
-	p, _, _ := ReadInt64(v)
+	p, _, _ := DecodeInt64(v)
 	return p
 }
 
 func (v Value) Uint32() uint32 {
-	p, _, _ := ReadUint32(v)
+	p, _, _ := DecodeUint32(v)
 	return p
 }
 
 func (v Value) Uint64() uint64 {
-	p, _, _ := ReadUint64(v)
+	p, _, _ := DecodeUint64(v)
 	return p
 }
 
 func (v Value) U128() u128.U128 {
-	p, _, _ := ReadU128(v)
+	p, _, _ := DecodeU128(v)
 	return p
 }
 
 func (v Value) U256() u256.U256 {
-	p, _, _ := ReadU256(v)
+	p, _, _ := DecodeU256(v)
 	return p
 }
 
 func (v Value) Float32() float32 {
-	p, _, _ := ReadFloat32(v)
+	p, _, _ := DecodeFloat32(v)
 	return p
 }
 
 func (v Value) Float64() float64 {
-	p, _, _ := ReadFloat64(v)
+	p, _, _ := DecodeFloat64(v)
 	return p
 }
 
 func (v Value) Bytes() []byte {
-	p, _, _ := ReadBytes(v)
+	p, _, _ := DecodeBytes(v)
 	return p
 }
 
 func (v Value) String() string {
-	p, _, _ := ReadString(v)
+	p, _, _ := DecodeString(v)
 	return p
 }
 
@@ -116,7 +116,7 @@ func (v Value) Message() Message {
 // private
 
 func (v Value) validate() error {
-	t, _, err := ReadType(v)
+	t, _, err := DecodeType(v)
 	if err != nil {
 		return err
 	}
@@ -128,32 +128,32 @@ func (v Value) validate() error {
 	case TypeNil, TypeTrue, TypeFalse:
 		return nil
 	case TypeByte:
-		_, _, err = ReadByte(v)
+		_, _, err = DecodeByte(v)
 
 	case TypeInt32:
-		_, _, err = ReadInt32(v)
+		_, _, err = DecodeInt32(v)
 	case TypeInt64:
-		_, _, err = ReadInt64(v)
+		_, _, err = DecodeInt64(v)
 
 	case TypeUint32:
-		_, _, err = ReadUint32(v)
+		_, _, err = DecodeUint32(v)
 	case TypeUint64:
-		_, _, err = ReadUint64(v)
+		_, _, err = DecodeUint64(v)
 
 	case TypeU128:
-		_, _, err = ReadU128(v)
+		_, _, err = DecodeU128(v)
 	case TypeU256:
-		_, _, err = ReadU256(v)
+		_, _, err = DecodeU256(v)
 
 	case TypeFloat32:
-		_, _, err = ReadFloat32(v)
+		_, _, err = DecodeFloat32(v)
 	case TypeFloat64:
-		_, _, err = ReadFloat64(v)
+		_, _, err = DecodeFloat64(v)
 
 	case TypeBytes:
-		_, _, err = ReadBytes(v)
+		_, _, err = DecodeBytes(v)
 	case TypeString:
-		_, _, err = ReadString(v)
+		_, _, err = DecodeString(v)
 
 	case TypeList, TypeListBig:
 		_, _, err = ReadList(v, ReadValue)

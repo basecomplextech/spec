@@ -96,7 +96,7 @@ func computeSizeDistribution(b []byte) (*sizeDistrib, *sizeDistribPercent, error
 }
 
 func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
-	t, n := readType(b)
+	t, n := decodeType(b)
 	if n < 0 {
 		return fmt.Errorf("invalid type")
 	}
@@ -107,20 +107,20 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		return nil
 
 	case TypeByte, TypeInt32, TypeInt64:
-		_, vn := readInt(b)
+		_, vn := decodeInt64(b)
 		d.values += vn - n
 
 	case TypeUint32, TypeUint64:
-		_, vn := readInt(b)
+		_, vn := decodeInt64(b)
 		d.values += vn - n
 
 	case TypeFloat32, TypeFloat64:
-		_, vn := readFloat(b)
+		_, vn := decodeFloat64(b)
 		d.values += vn - n
 
 	case TypeBytes:
 		off := len(b) - 1
-		size, sn := _readBytesSize(b[:off])
+		size, sn := decodeBytesSize(b[:off])
 		if sn < 0 {
 			return fmt.Errorf("invalid bytes size")
 		}
@@ -130,7 +130,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeString:
 		off := len(b) - 1
-		size, sn := _readStringSize(b[:off])
+		size, sn := decodeStringSize(b[:off])
 		if n < 0 {
 			return fmt.Errorf("invalid string size")
 		}
@@ -141,14 +141,14 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	case TypeList, TypeListBig:
 		// read table size
 		off := len(b) - 1
-		tsize, tn := _readListTableSize(b[:off])
+		tsize, tn := decodeListTableSize(b[:off])
 		if tn < 0 {
 			return fmt.Errorf("invalid list table size")
 		}
 
 		// read data size
 		off -= tn
-		_, dn := _readListBodySize(b[:off])
+		_, dn := decodeListBodySize(b[:off])
 		if dn < 0 {
 			return fmt.Errorf("invalid list data size")
 		}
@@ -173,14 +173,14 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	case TypeMessage, TypeMessageBig:
 		// read table size
 		off := len(b) - 1
-		tsize, tn := _readMessageTableSize(b[:off])
+		tsize, tn := decodeMessageTableSize(b[:off])
 		if tn < 0 {
 			return fmt.Errorf("invalid message table size")
 		}
 
 		// read data size
 		off -= tn
-		_, dn := _readMessageBodySize(b[:off])
+		_, dn := decodeMessageBodySize(b[:off])
 		if dn < 0 {
 			return fmt.Errorf("invalid message data size")
 		}
@@ -189,7 +189,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tsize)
 
 		// read message
-		msg, _, err := readMessage(b)
+		msg, _, err := decodeMessage(b)
 		if err != nil {
 			return err
 		}

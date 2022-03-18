@@ -7,7 +7,7 @@ type List[T any] struct {
 
 // NewList reads and returns list data, but does not validate its elements.
 func NewList[T any](b []byte, read func([]byte) (T, int, error)) List[T] {
-	list, _, err := readList(b)
+	list, _, err := decodeList(b)
 	if err != nil {
 		return List[T]{}
 	}
@@ -21,7 +21,7 @@ func NewList[T any](b []byte, read func([]byte) (T, int, error)) List[T] {
 
 // ReadList reads and returns list data, and recursively validates its elements.
 func ReadList[T any](b []byte, read func([]byte) (T, int, error)) (List[T], int, error) {
-	list, n, err := readList(b)
+	list, n, err := decodeList(b)
 	if err != nil {
 		return List[T]{}, n, err
 	}

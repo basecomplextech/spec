@@ -87,7 +87,7 @@ func TestMessageTable_count_big__should_return_number_of_fields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, big)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func TestMessageTable_count_small__should_return_number_of_fields(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestMessageTable_offset_big__should_return_start_end_offset_by_tag(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, big)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestMessageTable_offset_big__should_return_minus_one_when_field_not_found(t
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, big)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestMessageTable_offset_small__should_return_start_end_offset_by_tag(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ func TestMessageTable_offset_small__should_return_minus_one_when_field_not_found
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func TestMessageTable_offsetByIndex_big__should_return_start_end_offset_by_index
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, big)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +225,7 @@ func TestMessageTable_offsetByIndex_big__should_return_minus_one_when_field_not_
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, big)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +247,7 @@ func TestMessageTable_offsetByIndex_small__should_return_start_end_offset_by_ind
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +266,7 @@ func TestMessageTable_offsetByIndex_small__should_return_minus_one_when_field_no
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +288,7 @@ func TestMessageTable_field_big__should_return_field_by_index(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, big)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -308,7 +308,7 @@ func TestMessageTable_field_big__should_return_false_when_index_out_of_range(t *
 	if err != nil {
 		t.Fatal(err)
 	}
-	table, err := _readMessageTable(data, size, big)
+	table, err := decodeMessageTable(data, size, big)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -332,7 +332,7 @@ func TestMessageTable_field_small__should_return_field_by_index(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,7 +353,7 @@ func TestMessageTable_field_small__should_return_false_when_index_out_of_range(t
 		t.Fatal(err)
 	}
 
-	table, err := _readMessageTable(data, size, small)
+	table, err := decodeMessageTable(data, size, small)
 	if err != nil {
 		t.Fatal(err)
 	}

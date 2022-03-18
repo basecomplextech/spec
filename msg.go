@@ -15,7 +15,7 @@ type Message struct {
 
 // NewMessage reads and returns a message or zero on an error.
 func NewMessage(b []byte) Message {
-	m, _, err := readMessage(b)
+	m, _, err := decodeMessage(b)
 	if err != nil {
 		return Message{}
 	}
@@ -24,7 +24,7 @@ func NewMessage(b []byte) Message {
 
 // ReadMessage reads, recursively vaildates and returns a message.
 func ReadMessage(b []byte) (Message, int, error) {
-	m, n, err := readMessage(b)
+	m, n, err := decodeMessage(b)
 	if err != nil {
 		return Message{}, n, err
 	}
@@ -97,7 +97,7 @@ func (m Message) Bool(tag uint16) bool {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadBool(b)
+	v, _, _ := DecodeBool(b)
 	return v
 }
 
@@ -111,7 +111,7 @@ func (m Message) Byte(tag uint16) byte {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadByte(b)
+	v, _, _ := DecodeByte(b)
 	return v
 }
 
@@ -125,7 +125,7 @@ func (m Message) Int32(tag uint16) int32 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadInt32(b)
+	v, _, _ := DecodeInt32(b)
 	return v
 }
 
@@ -139,7 +139,7 @@ func (m Message) Int64(tag uint16) int64 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadInt64(b)
+	v, _, _ := DecodeInt64(b)
 	return v
 }
 
@@ -153,7 +153,7 @@ func (m Message) Uint32(tag uint16) uint32 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadUint32(b)
+	v, _, _ := DecodeUint32(b)
 	return v
 }
 
@@ -167,7 +167,7 @@ func (m Message) Uint64(tag uint16) uint64 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadUint64(b)
+	v, _, _ := DecodeUint64(b)
 	return v
 }
 
@@ -181,7 +181,7 @@ func (m Message) U128(tag uint16) u128.U128 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadU128(b)
+	v, _, _ := DecodeU128(b)
 	return v
 }
 
@@ -195,7 +195,7 @@ func (m Message) U256(tag uint16) u256.U256 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadU256(b)
+	v, _, _ := DecodeU256(b)
 	return v
 }
 
@@ -209,7 +209,7 @@ func (m Message) Float32(tag uint16) float32 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadFloat32(b)
+	v, _, _ := DecodeFloat32(b)
 	return v
 }
 
@@ -223,7 +223,7 @@ func (m Message) Float64(tag uint16) float64 {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadFloat64(b)
+	v, _, _ := DecodeFloat64(b)
 	return v
 }
 
@@ -237,7 +237,7 @@ func (m Message) Bytes(tag uint16) []byte {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadBytes(b)
+	v, _, _ := DecodeBytes(b)
 	return v
 }
 
@@ -251,7 +251,7 @@ func (m Message) String(tag uint16) string {
 	}
 
 	b := m.data[:end]
-	v, _, _ := ReadString(b)
+	v, _, _ := DecodeString(b)
 	return v
 }
 

@@ -74,7 +74,7 @@ func (m TestMessage) Bytes() []byte {
 
 func (m TestMessage) List() List[int64] {
 	b := m.m.Field(50)
-	return NewList(b, ReadInt64)
+	return NewList(b, DecodeInt64)
 }
 
 func (m TestMessage) Messages() List[TestSubmessage] {
@@ -84,7 +84,7 @@ func (m TestMessage) Messages() List[TestSubmessage] {
 
 func (m TestMessage) Strings() List[string] {
 	b := m.m.Field(52)
-	return NewList(b, ReadString)
+	return NewList(b, DecodeString)
 }
 
 func (m TestMessage) Struct() TestStruct {
@@ -286,11 +286,11 @@ func (s *TestStruct) Unmarshal(b []byte) error {
 	// 	return nil
 	// }
 
-	// s.Y, r, err = r.ReadInt64()
+	// s.Y, r, err = r.DecodeInt64()
 	// if err != nil {
 	// 	return err
 	// }
-	// s.X, r, err = r.ReadInt64()
+	// s.X, r, err = r.DecodeInt64()
 	// if err != nil {
 	// 	return err
 	// }

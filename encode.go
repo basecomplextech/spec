@@ -28,6 +28,8 @@ func EncodeByte(b []byte, v byte) []byte {
 	return b
 }
 
+// Int
+
 func EncodeInt32(b []byte, v int32) []byte {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutInt64(p[:], int64(v))
@@ -47,6 +49,8 @@ func EncodeInt64(b []byte, v int64) []byte {
 	b = append(b, byte(TypeInt64))
 	return b
 }
+
+// Uint
 
 func EncodeUint32(b []byte, v uint32) []byte {
 	p := [rvarint.MaxLen32]byte{}
