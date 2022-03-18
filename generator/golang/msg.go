@@ -130,7 +130,7 @@ func (w *writer) messageReadField(field *compiler.MessageField) error {
 
 func (w *writer) messageWrite(def *compiler.Definition) error {
 	// begin
-	w.linef(`func (m *%v) Write(w *spec.Writer) error {`, def.Name)
+	w.linef(`func (m *%v) Write(w *spec.Encoder) error {`, def.Name)
 	w.linef(`if m == nil {
 		return w.Nil()
 	}`)

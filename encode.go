@@ -10,6 +10,33 @@ import (
 	"github.com/complexl/spec/rvarint"
 )
 
+// Encodable can write itself using a writer.
+type Encodable interface {
+	Encode(e *Encoder) error
+}
+
+// Encode writes a writable.
+func Encode(v Encodable) ([]byte, error) {
+	return EncodeTo(v, nil)
+}
+
+// EncodeTo writes a writeable to a buffer or allocates a new one when the buffer is too small.
+func EncodeTo(v Encodable, buf []byte) ([]byte, error) {
+	e := encoderPool.Get().(*Encoder)
+	e.Init(buf)
+
+	defer encoderPool.Put(e)
+	defer e.Reset()
+
+	if err := v.Encode(e); err != nil {
+		return nil, err
+	}
+
+	return e.End()
+}
+
+// Types
+
 func EncodeNil(b []byte) []byte {
 	return append(b, byte(TypeNil))
 }
@@ -149,9 +176,9 @@ func encodeStringSize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
-// List
+// list meta
 
-func encodeList(b []byte, bodySize int, table []listElement) ([]byte, error) {
+func encodeListMeta(b []byte, bodySize int, table []listElement) ([]byte, error) {
 	if bodySize > MaxSize {
 		return nil, fmt.Errorf("write: list too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
@@ -232,9 +259,9 @@ func encodeListBodySize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
-// Message meta
+// message meta
 
-func encodeMessage(b []byte, bodySize int, table []messageField) ([]byte, error) {
+func encodeMessageMeta(b []byte, bodySize int, table []messageField) ([]byte, error) {
 	if bodySize > MaxSize {
 		return nil, fmt.Errorf("write: message too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
@@ -317,7 +344,7 @@ func encodeMessageBodySize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
-// Struct
+// struct
 
 func encodeStruct(b []byte, bodySize int) ([]byte, error) {
 	if bodySize > MaxSize {

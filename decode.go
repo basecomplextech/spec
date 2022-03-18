@@ -412,7 +412,7 @@ func decodeStringBody(b []byte, size uint32) (string, error) {
 	return s, nil
 }
 
-// List meta
+// list meta
 
 func decodeListMeta(b []byte) (listMeta, int, error) {
 	meta := listMeta{}
@@ -509,7 +509,7 @@ func decodeListTable(b []byte, size uint32, big bool) (listTable, error) {
 	return v, nil
 }
 
-// Message meta
+// message meta
 
 func decodeMessageMeta(b []byte) (messageMeta, int, error) {
 	meta := messageMeta{}
@@ -606,7 +606,7 @@ func decodeMessageTable(b []byte, size uint32, big bool) (messageTable, error) {
 	return v, nil
 }
 
-// Struct
+// struct
 
 func decodeStruct(b []byte) (bodySize int, n int, err error) {
 	if len(b) == 0 {

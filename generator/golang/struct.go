@@ -200,7 +200,7 @@ func (w *writer) structUnmarshalField(field *compiler.StructField) error {
 }
 
 func (w *writer) structWrite(def *compiler.Definition) error {
-	w.linef(`func (s %v) Write(w *spec.Writer) error {`, def.Name)
+	w.linef(`func (s %v) Write(w *spec.Encoder) error {`, def.Name)
 	w.linef(`if err := w.BeginStruct(); err != nil {
 		return err
 	}`)

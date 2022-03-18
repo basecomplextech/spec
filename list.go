@@ -99,12 +99,12 @@ func (l List[T]) Validate() error {
 
 // ListEncoder encodes a list.
 type ListEncoder[W any] struct {
-	w    *Writer
-	next func(*Writer) W
+	w    *Encoder
+	next func(*Encoder) W
 }
 
 // BeginList begins and returns a new list encoder.
-func BeginList[W any](w *Writer, next func(*Writer) W) ListEncoder[W] {
+func BeginList[W any](w *Encoder, next func(*Encoder) W) ListEncoder[W] {
 	w.BeginList()
 
 	return ListEncoder[W]{
@@ -127,12 +127,12 @@ func (e ListEncoder[W]) EndElement() error {
 
 // ListValueEncoder encodes a list of primitive values.
 type ListValueEncoder[T any] struct {
-	w      *Writer
+	w      *Encoder
 	encode func(el T) error
 }
 
 // BeginValueList begins and returns a new list encoder for primitive values.
-func BeginValueList[T any](w *Writer, encode func(T) error) ListValueEncoder[T] {
+func BeginValueList[T any](w *Encoder, encode func(T) error) ListValueEncoder[T] {
 	w.BeginList()
 
 	return ListValueEncoder[T]{

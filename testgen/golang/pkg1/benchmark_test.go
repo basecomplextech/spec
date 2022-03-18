@@ -10,7 +10,7 @@ import (
 
 func BenchmarkRead(b *testing.B) {
 	msg := testMessage()
-	w := spec.NewWriter()
+	w := spec.NewEncoder()
 	if err := msg.Write(w); err != nil {
 		b.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func BenchmarkRead(b *testing.B) {
 func Benchmark_ReadData(b *testing.B) {
 	msg := testMessage()
 
-	w := spec.NewWriter()
+	w := spec.NewEncoder()
 	if err := msg.Write(w); err != nil {
 		b.Fatal(err)
 	}

@@ -111,7 +111,7 @@ func Benchmark_ReadObject(b *testing.B) {
 func Benchmark_WriteObject(b *testing.B) {
 	msg := newTestObject()
 	buf := make([]byte, 0, 4096)
-	w := NewWriterBuffer(buf)
+	e := NewEncoderBuffer(buf)
 
 	data, err := msg.Marshal()
 	if err != nil {
@@ -127,16 +127,16 @@ func Benchmark_WriteObject(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		mw := BeginTestMessage(w)
-		if err := msg.Write(mw); err != nil {
+		me := BeginTestMessage(e)
+		if err := msg.Encode(me); err != nil {
 			b.Fatal(err)
 		}
-		if _, err := w.End(); err != nil {
+		if _, err := e.End(); err != nil {
 			b.Fatal(err)
 		}
 
-		w.Reset()
-		w.buf = buf[:0]
+		e.Reset()
+		e.buf = buf[:0]
 	}
 
 	t1 := time.Now()
@@ -294,9 +294,9 @@ func walkMessage(m TestMessage) (int, error) {
 
 func compressedSize(b []byte) int {
 	buf := &bytes.Buffer{}
-	w := zlib.NewWriter(buf)
-	w.Write(b)
-	w.Close()
+	e := zlib.NewWriter(buf)
+	e.Write(b)
+	e.Close()
 	c := buf.Bytes()
 	return len(c)
 }

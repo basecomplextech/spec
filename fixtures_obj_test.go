@@ -160,65 +160,65 @@ func (m *TestObject) Read(b []byte) error {
 	return nil
 }
 
-func (m *TestObject) Write(w TestMessageWriter) error {
-	w.Bool(m.Bool)
-	w.Byte(m.Byte)
+func (m *TestObject) Encode(e TestMessageEncoder) error {
+	e.Bool(m.Bool)
+	e.Byte(m.Byte)
 
-	w.Int32(m.Int32)
-	w.Int64(m.Int64)
+	e.Int32(m.Int32)
+	e.Int64(m.Int64)
 
-	w.Uint32(m.Uint32)
-	w.Uint64(m.Uint64)
+	e.Uint32(m.Uint32)
+	e.Uint64(m.Uint64)
 
-	w.U128(m.U128)
-	w.U256(m.U256)
+	e.U128(m.U128)
+	e.U256(m.U256)
 
-	w.Float32(m.Float32)
-	w.Float64(m.Float64)
+	e.Float32(m.Float32)
+	e.Float64(m.Float64)
 
-	w.String(m.String)
-	w.Bytes(m.Bytes)
+	e.String(m.String)
+	e.Bytes(m.Bytes)
 
 	if len(m.List) > 0 {
-		list := w.BeginList()
+		list := e.BeginList()
 		for _, value := range m.List {
 			list.Element(value)
 		}
-		w.EndList()
+		e.EndList()
 	}
 
 	if len(m.Messages) > 0 {
-		list := w.BeginMessages()
+		list := e.BeginMessages()
 		for _, msg := range m.Messages {
 			next := list.BeginElement()
 			msg.Write(next)
 			list.EndElement()
 		}
-		w.EndMessages()
+		e.EndMessages()
 	}
 
 	if len(m.Strings) > 0 {
-		list := w.BeginStrings()
+		list := e.BeginStrings()
 		for _, v := range m.Strings {
 			list.Element(v)
 		}
-		w.EndStrings()
+		e.EndStrings()
 	}
 
 	// struct:60
 	// TODO: Uncomment
 	// m.Struct.Write(b)
-	// w.Field(60)
-	return w.End()
+	// e.Field(60)
+	return e.End()
 }
 
 func (m *TestObject) Marshal() ([]byte, error) {
-	w := NewWriter()
-	mw := BeginTestMessage(w)
-	if err := m.Write(mw); err != nil {
+	e := NewEncoder()
+	me := BeginTestMessage(e)
+	if err := m.Encode(me); err != nil {
 		return nil, err
 	}
-	return w.End()
+	return e.End()
 }
 
 // TestSubobject
@@ -249,9 +249,9 @@ func (m *TestSubobject) Read(b []byte) error {
 	return nil
 }
 
-func (m TestSubobject) Write(w TestSubmessageWriter) error {
-	w.Byte(m.Byte)
-	w.Int32(m.Int32)
-	w.Int64(m.Int64)
-	return w.End()
+func (m TestSubobject) Write(e TestSubmessageEncoder) error {
+	e.Byte(m.Byte)
+	e.Int32(m.Int32)
+	e.Int64(m.Int64)
+	return e.End()
 }

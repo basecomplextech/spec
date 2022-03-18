@@ -8,12 +8,12 @@ import (
 func _BenchmarkSizeDistribution(b *testing.B) {
 	msg := newTestObject()
 
-	w := NewWriter()
-	mw := BeginTestMessage(w)
-	if err := msg.Write(mw); err != nil {
+	e := NewEncoder()
+	me := BeginTestMessage(e)
+	if err := msg.Encode(me); err != nil {
 		b.Fatal(err)
 	}
-	data, err := w.End()
+	data, err := e.End()
 	if err != nil {
 		b.Fatal(err)
 	}

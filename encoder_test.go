@@ -10,12 +10,12 @@ import (
 func TestWriter_Message__should_write_message(t *testing.T) {
 	msg := newTestObject()
 
-	w := NewWriter()
-	mw := BeginTestMessage(w)
-	if err := msg.Write(mw); err != nil {
+	e := NewEncoder()
+	me := BeginTestMessage(e)
+	if err := msg.Encode(me); err != nil {
 		t.Fatal(err)
 	}
-	b, err := w.End()
+	b, err := e.End()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,22 +31,22 @@ func TestWriter_Message__should_write_message(t *testing.T) {
 // List
 
 func TestWriter_List__should_write_list(t *testing.T) {
-	w := NewWriter()
-	w.BeginList()
+	e := NewEncoder()
+	e.BeginList()
 
-	w.Int64(1)
-	w.Element()
+	e.Int64(1)
+	e.Element()
 
-	w.Int64(2)
-	w.Element()
+	e.Int64(2)
+	e.Element()
 
-	w.Int64(3)
-	w.Element()
-	if err := w.EndList(); err != nil {
+	e.Int64(3)
+	e.Element()
+	if err := e.EndList(); err != nil {
 		t.Fatal(err)
 	}
 
-	b, err := w.End()
+	b, err := e.End()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,9 +67,9 @@ func TestWriter_List__should_write_list(t *testing.T) {
 // End
 
 func TestWriter_End__should_return_finished_bytes(t *testing.T) {
-	w := NewWriter()
-	w.Bool(true)
-	b, err := w.End()
+	e := NewEncoder()
+	e.Bool(true)
+	b, err := e.End()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,52 +78,52 @@ func TestWriter_End__should_return_finished_bytes(t *testing.T) {
 }
 
 func TestWriter_End__should_return_error_when_not_finished(t *testing.T) {
-	w := NewWriter()
-	w.BeginMessage()
+	e := NewEncoder()
+	e.BeginMessage()
 
-	_, err := w.End()
+	_, err := e.End()
 	assert.Error(t, err)
 }
 
 // Data
 
 func TestWriter_Data__should_return_error_when_unconsumed_data(t *testing.T) {
-	w := NewWriter()
-	w.BeginMessage()
-	w.Int64(1)
+	e := NewEncoder()
+	e.BeginMessage()
+	e.Int64(1)
 
-	err := w.Int64(1)
+	err := e.Int64(1)
 	assert.Error(t, err)
 }
 
 // Element
 
 func TestWriter_Element__should_return_error_when_not_in_list(t *testing.T) {
-	w := NewWriter()
-	err := w.Element()
+	e := NewEncoder()
+	err := e.Element()
 	assert.Error(t, err)
 }
 
 func TestWriter_Element__should_return_error_when_in_message(t *testing.T) {
-	w := NewWriter()
-	w.BeginMessage()
+	e := NewEncoder()
+	e.BeginMessage()
 
-	err := w.Element()
+	err := e.Element()
 	assert.Error(t, err)
 }
 
 // Field
 
 func TestWriter_Field__should_return_error_when_not_in_message(t *testing.T) {
-	w := NewWriter()
-	err := w.Field(1)
+	e := NewEncoder()
+	err := e.Field(1)
 	assert.Error(t, err)
 }
 
 func TestWriter_Field__should_return_error_when_in_list(t *testing.T) {
-	w := NewWriter()
-	w.BeginList()
-	err := w.Field(1)
+	e := NewEncoder()
+	e.BeginList()
+	err := e.Field(1)
 	assert.Error(t, err)
 }
 
@@ -132,8 +132,8 @@ func TestWriter_Field__should_return_error_when_in_list(t *testing.T) {
 func TestWriter__struct_size_must_be_less_or_equal_2048(t *testing.T) {
 	// 2048 is 1/2 of 4kb page or 1/4 of 8kb page.
 
-	w := Writer{}
-	size := unsafe.Sizeof(w)
+	e := Encoder{}
+	size := unsafe.Sizeof(e)
 
 	assert.LessOrEqual(t, int(size), 2048)
 }

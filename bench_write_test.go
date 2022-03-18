@@ -10,7 +10,7 @@ import (
 func Benchmark_Write(b *testing.B) {
 	msg := newTestObject()
 	buf := make([]byte, 0, 4096)
-	w := NewWriterBuffer(buf)
+	e := NewEncoderBuffer(buf)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -19,12 +19,12 @@ func Benchmark_Write(b *testing.B) {
 
 	var size int
 	for i := 0; i < b.N; i++ {
-		mw := BeginTestMessage(w)
-		if err := msg.Write(mw); err != nil {
+		me := BeginTestMessage(e)
+		if err := msg.Encode(me); err != nil {
 			b.Fatal(err)
 		}
 
-		data, err := w.End()
+		data, err := e.End()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -33,8 +33,8 @@ func Benchmark_Write(b *testing.B) {
 		}
 
 		// b.Fatal(len(data))
-		w.Reset()
-		w.buf = buf[:0]
+		e.Reset()
+		e.buf = buf[:0]
 
 		size = len(data)
 	}

@@ -63,7 +63,7 @@ func (w *writer) readEnum(def *compiler.Definition) error {
 }
 
 func (w *writer) enumWrite(def *compiler.Definition) error {
-	w.linef(`func (e %v) Write(w *spec.Writer) error {`, def.Name)
+	w.linef(`func (e %v) Write(w *spec.Encoder) error {`, def.Name)
 	w.linef(`return w.Int32(int32(e))`)
 	w.linef(`}`)
 	w.line()
