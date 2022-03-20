@@ -13,7 +13,7 @@ const (
 type listMeta struct {
 	table listTable
 
-	body uint32 // body size
+	data uint32 // data size
 	big  bool   // small/big table format
 }
 

@@ -142,7 +142,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeBytes:
 		off := len(b) - 1
-		size, sn := decodeBytesSize(b[:off])
+		size, sn := decodeSize(b[:off])
 		if sn < 0 {
 			return fmt.Errorf("invalid bytes size")
 		}
@@ -152,7 +152,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeString:
 		off := len(b) - 1
-		size, sn := decodeStringSize(b[:off])
+		size, sn := decodeSize(b[:off])
 		if n < 0 {
 			return fmt.Errorf("invalid string size")
 		}
@@ -163,14 +163,14 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	case TypeList, TypeListBig:
 		// read table size
 		off := len(b) - 1
-		tsize, tn := decodeListTableSize(b[:off])
+		tsize, tn := decodeSize(b[:off])
 		if tn < 0 {
 			return fmt.Errorf("invalid list table size")
 		}
 
 		// read data size
 		off -= tn
-		_, dn := decodeListBodySize(b[:off])
+		_, dn := decodeSize(b[:off])
 		if dn < 0 {
 			return fmt.Errorf("invalid list data size")
 		}

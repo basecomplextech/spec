@@ -13,7 +13,7 @@ const (
 type messageMeta struct {
 	table messageTable
 
-	body uint32 // message body size
+	data uint32 // message data size
 	big  bool   // big/small table format
 }
 

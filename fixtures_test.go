@@ -24,6 +24,7 @@ func DecodeTestMessage(b []byte) (TestMessage, int, error) {
 	return TestMessage{m}, n, nil
 }
 
+func (m TestMessage) Bytes() []byte    { return m.m.Bytes() }
 func (m TestMessage) Bool() bool       { return m.m.Bool(1) }
 func (m TestMessage) Byte() byte       { return m.m.Byte(2) }
 func (m TestMessage) Int32() int32     { return m.m.Int32(10) }
@@ -35,7 +36,7 @@ func (m TestMessage) U256() u256.U256  { return m.m.U256(23) }
 func (m TestMessage) Float32() float32 { return m.m.Float32(30) }
 func (m TestMessage) Float64() float64 { return m.m.Float64(31) }
 func (m TestMessage) String() string   { return m.m.String(40) }
-func (m TestMessage) Bytes() []byte    { return m.m.Bytes(41) }
+func (m TestMessage) Bytes_() []byte   { return m.m.ByteSlice(41) }
 
 func (m TestMessage) Submessage() TestSubmessage {
 	b := m.m.Field(50)
@@ -183,7 +184,7 @@ func DecodeTestSubmessage(b []byte) (TestSubmessage, int, error) {
 	return TestSubmessage{m}, n, nil
 }
 
-func (m TestSubmessage) Bytes() []byte { return m.m.Data() }
+func (m TestSubmessage) Bytes() []byte { return m.m.Bytes() }
 func (m TestSubmessage) Int32() int32  { return m.m.Int32(1) }
 func (m TestSubmessage) Int64() int64  { return m.m.Int64(2) }
 

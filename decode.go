@@ -333,31 +333,27 @@ func DecodeBytes(b []byte) ([]byte, int, error) {
 
 	// bytes size
 	off := len(b) - n
-	size, sn := decodeBytesSize(b[:off])
+	size, sn := decodeSize(b[:off])
 	if sn < 0 {
 		return nil, -1, errors.New("decode bytes: invalid size")
 	}
 
-	// bytes body
+	// bytes data
 	off -= sn
-	body, err := decodeBytesBody(b[:off], size)
+	data, err := decodeBytesData(b[:off], size)
 	if err != nil {
 		return nil, -1, err
 	}
 
 	total := n + sn + int(size)
-	return body, total, nil
+	return data, total, nil
 }
 
-func decodeBytesSize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
-}
-
-func decodeBytesBody(b []byte, size uint32) ([]byte, error) {
+func decodeBytesData(b []byte, size uint32) ([]byte, error) {
 	end := len(b)
 	start := end - int(size)
 	if start < 0 {
-		return nil, fmt.Errorf("decode bytes: invalid body, expected size=%d, actual size=%d", size, len(b))
+		return nil, fmt.Errorf("decode bytes: invalid data, expected size=%d, actual size=%d", size, len(b))
 	}
 
 	v := b[start:end]
@@ -380,31 +376,27 @@ func DecodeString(b []byte) (string, int, error) {
 
 	// string size
 	off := len(b) - n
-	size, sn := decodeStringSize(b[:off])
+	size, sn := decodeSize(b[:off])
 	if sn < 0 {
 		return "", -1, fmt.Errorf("decode string: invalid size")
 	}
 
-	// string body
+	// string data
 	off -= (sn + 1) // zero byte
-	body, err := decodeStringBody(b[:off], size)
+	data, err := decodeStringData(b[:off], size)
 	if err != nil {
 		return "", -1, err
 	}
 
 	total := n + sn + 1 + int(size)
-	return body, total, err
+	return data, total, err
 }
 
-func decodeStringSize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
-}
-
-func decodeStringBody(b []byte, size uint32) (string, error) {
+func decodeStringData(b []byte, size uint32) (string, error) {
 	end := len(b)
 	start := end - int(size)
 	if start < 0 {
-		return "", fmt.Errorf("decode string: invalid body, expected size=%d, actual size=%d", size, len(b))
+		return "", fmt.Errorf("decode string: invalid data, expected size=%d, actual size=%d", size, len(b))
 	}
 
 	p := b[start:end]
@@ -438,16 +430,16 @@ func decodeListMeta(b []byte) (listMeta, int, error) {
 
 	// table size
 	off := len(b) - 1
-	tsize, tn := decodeListTableSize(b[:off])
+	tsize, tn := decodeSize(b[:off])
 	if tn < 0 {
 		return meta, -1, errors.New("decode list: invalid table size")
 	}
 
-	// body size
+	// data size
 	off -= int(tn)
-	bsize, dn := decodeListBodySize(b[:off])
+	dataSize, dn := decodeSize(b[:off])
 	if dn < 0 {
-		return meta, -1, errors.New("decode list: invalid body size")
+		return meta, -1, errors.New("decode list: invalid data size")
 	}
 
 	// table
@@ -457,30 +449,22 @@ func decodeListMeta(b []byte) (listMeta, int, error) {
 		return meta, -1, err
 	}
 
-	// body
+	// data
 	off -= int(tsize)
-	off -= int(bsize)
+	off -= int(dataSize)
 	if off < 0 {
-		return meta, -1, errors.New("decode list: invalid body")
+		return meta, -1, errors.New("decode list: invalid data")
 	}
 
 	// done
 	meta = listMeta{
 		table: table,
-		body:  bsize,
+		data:  dataSize,
 		big:   big,
 	}
 
-	total := n + tn + dn + int(tsize) + int(bsize)
+	total := n + tn + dn + int(tsize) + int(dataSize)
 	return meta, total, nil
-}
-
-func decodeListTableSize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
-}
-
-func decodeListBodySize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
 }
 
 func decodeListTable(b []byte, size uint32, big bool) (listTable, error) {
@@ -540,11 +524,11 @@ func decodeMessageMeta(b []byte) (messageMeta, int, error) {
 		return meta, -1, errors.New("decode message: invalid table size")
 	}
 
-	// body size
+	// data size
 	off -= int(tn)
-	bsize, dn := decodeMessageBodySize(b[:off])
+	dataSize, dn := decodeMessageBodySize(b[:off])
 	if dn < 0 {
-		return meta, -1, fmt.Errorf("decode message: invalid body size")
+		return meta, -1, fmt.Errorf("decode message: invalid data size")
 	}
 
 	// table
@@ -554,21 +538,21 @@ func decodeMessageMeta(b []byte) (messageMeta, int, error) {
 		return meta, -1, err
 	}
 
-	// body
+	// data
 	off -= int(tsize)
-	off -= int(bsize)
+	off -= int(dataSize)
 	if off < 0 {
-		return meta, -1, errors.New("decode message: invalid body")
+		return meta, -1, errors.New("decode message: invalid data")
 	}
 
 	// done
 	meta = messageMeta{
 		table: table,
-		body:  bsize,
+		data:  dataSize,
 		big:   big,
 	}
 
-	total := n + tn + dn + int(tsize) + int(bsize)
+	total := n + tn + dn + int(tsize) + int(dataSize)
 	return meta, total, nil
 }
 
@@ -630,16 +614,22 @@ func decodeStruct(b []byte) (bodySize int, n int, err error) {
 
 	// body size
 	off := len(b) - n
-	bsize, bn := decodeStructBodySize(b[:off])
+	dataSize, bn := decodeStructBodySize(b[:off])
 	if bn < 0 {
 		return 0, -1, errors.New("decode struct: invalid body size")
 	}
 
 	// done
-	total := n + bn + int(bsize)
-	return int(bsize), total, nil
+	total := n + bn + int(dataSize)
+	return int(dataSize), total, nil
 }
 
 func decodeStructBodySize(b []byte) (uint32, int) {
+	return rvarint.Uint32(b)
+}
+
+// private
+
+func decodeSize(b []byte) (uint32, int) {
 	return rvarint.Uint32(b)
 }

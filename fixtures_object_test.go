@@ -143,7 +143,7 @@ func (m *TestObject) Decode(b []byte) error {
 
 	// string/bytes:40-41
 	m.String = msg.String()
-	m.Bytes = msg.Bytes()
+	m.Bytes = msg.Bytes_()
 
 	// submessage
 	if p := msg.Submessage().Bytes(); p != nil {

@@ -1,9 +1,8 @@
 package spec
 
 type List[T any] struct {
-	meta listMeta
-	data []byte
-
+	meta   listMeta
+	bytes  []byte
 	decode func(b []byte) (T, int, error)
 }
 
@@ -13,11 +12,11 @@ func GetList[T any](b []byte, decode func([]byte) (T, int, error)) List[T] {
 	if err != nil {
 		return List[T]{}
 	}
-	data := b[len(b)-n:]
+	bytes := b[len(b)-n:]
 
 	l := List[T]{
 		meta:   meta,
-		data:   data,
+		bytes:  bytes,
 		decode: decode,
 	}
 	return l
@@ -29,11 +28,11 @@ func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (List[T], 
 	if err != nil {
 		return List[T]{}, n, err
 	}
-	data := b[len(b)-n:]
+	bytes := b[len(b)-n:]
 
 	l := List[T]{
 		meta:   meta,
-		data:   data,
+		bytes:  bytes,
 		decode: decode,
 	}
 	if err := l.Validate(); err != nil {
@@ -42,9 +41,9 @@ func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (List[T], 
 	return l, n, nil
 }
 
-// Data returns the exact list bytes.
-func (l List[T]) Data() []byte {
-	return l.data
+// Bytes returns the exact list bytes.
+func (l List[T]) Bytes() []byte {
+	return l.bytes
 }
 
 // Count returns the number of elements in the list.
@@ -58,11 +57,11 @@ func (l List[T]) Element(i int) (result T) {
 	switch {
 	case start < 0:
 		return
-	case end > int(l.meta.body):
+	case end > int(l.meta.data):
 		return
 	}
 
-	b := l.data[start:end]
+	b := l.bytes[start:end]
 	result, _, _ = l.decode(b)
 	return result
 }
@@ -73,10 +72,10 @@ func (l List[T]) ElementBytes(i int) []byte {
 	switch {
 	case start < 0:
 		return nil
-	case end > int(l.meta.body):
+	case end > int(l.meta.data):
 		return nil
 	}
-	return l.data[start:end]
+	return l.bytes[start:end]
 }
 
 // Validate recursively validates the list.

@@ -305,7 +305,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_table_size(t *testing.
 	assert.Contains(t, err.Error(), "invalid table size")
 }
 
-func TestDecodeListMeta__should_return_error_when_invalid_body_size(t *testing.T) {
+func TestDecodeListMeta__should_return_error_when_invalid_data_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = appendSize(b, 1000)
@@ -314,7 +314,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_body_size(t *testing.T
 	_, n, err := decodeListMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid body size")
+	assert.Contains(t, err.Error(), "invalid data size")
 }
 
 func TestDecodeListMeta__should_return_error_when_invalid_table(t *testing.T) {
@@ -325,7 +325,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_table(t *testing.T) {
 	}
 
 	b := buf.Bytes()
-	b = appendSize(b, 0)    // body size
+	b = appendSize(b, 0)    // data size
 	b = appendSize(b, 1000) // table size
 	b = append(b, byte(TypeList))
 
@@ -335,7 +335,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_table(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid table")
 }
 
-func TestDecodeListMeta__should_return_error_when_invalid_body(t *testing.T) {
+func TestDecodeListMeta__should_return_error_when_invalid_data(t *testing.T) {
 	buf := newBuffer(nil)
 	_, err := encodeListTable(buf, nil, true)
 	if err != nil {
@@ -343,14 +343,14 @@ func TestDecodeListMeta__should_return_error_when_invalid_body(t *testing.T) {
 	}
 
 	b := buf.Bytes()
-	b = appendSize(b, 1000) // body size
+	b = appendSize(b, 1000) // data size
 	b = appendSize(b, 0)    // table size
 	b = append(b, byte(TypeList))
 
 	_, n, err := decodeListMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid body")
+	assert.Contains(t, err.Error(), "invalid data")
 }
 
 // Message
@@ -408,7 +408,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table_size(t *testi
 	assert.Contains(t, err.Error(), "invalid table size")
 }
 
-func TestDecodeMessageMeta__should_return_error_when_invalid_body_size(t *testing.T) {
+func TestDecodeMessageMeta__should_return_error_when_invalid_data_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // varint overflow
 	b = appendSize(b, 1000)
@@ -417,7 +417,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_body_size(t *testin
 	_, n, err := decodeMessageMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid body size")
+	assert.Contains(t, err.Error(), "invalid data size")
 }
 
 func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T) {
@@ -428,7 +428,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T)
 	}
 
 	b := buf.Bytes()
-	b = appendSize(b, 0)    // body size
+	b = appendSize(b, 0)    // data size
 	b = appendSize(b, 1000) // table size
 	b = append(b, byte(TypeMessage))
 
@@ -438,7 +438,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T)
 	assert.Contains(t, err.Error(), "invalid table")
 }
 
-func TestDecodeMessageMeta__should_return_error_when_invalid_body(t *testing.T) {
+func TestDecodeMessageMeta__should_return_error_when_invalid_data(t *testing.T) {
 	buf := newBuffer(nil)
 
 	_, err := encodeMessageTable(buf, nil, true)
@@ -454,5 +454,5 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_body(t *testing.T) 
 	_, n, err := decodeMessageMeta(b)
 	assert.Equal(t, -1, n)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid body")
+	assert.Contains(t, err.Error(), "invalid data")
 }
