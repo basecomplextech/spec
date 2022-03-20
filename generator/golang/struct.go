@@ -32,7 +32,7 @@ func (w *writer) structDef(def *compiler.Definition) error {
 
 	for _, field := range def.Struct.Fields {
 		name := structFieldName(field)
-		typ := objectType(field.Type)
+		typ := entryType(field.Type)
 		tag := fmt.Sprintf("`json:\"%v\"`", field.Name)
 		w.linef("%v %v %v", name, typ, tag)
 	}

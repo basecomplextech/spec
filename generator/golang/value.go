@@ -122,7 +122,7 @@ func (w *writer) readerRead(typ *compiler.Type, reader string, i string) string 
 
 	case compiler.KindList:
 		elem := typ.Element
-		elemType := objectType(elem)
+		elemType := entryType(elem)
 
 		// begin
 		w.linef(`list, err := %v.DecodeList(%v)`, reader, i)

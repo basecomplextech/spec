@@ -1,45 +1,43 @@
 package spec
 
-// object
-
-type objectType byte
+type entryType byte
 
 const (
-	objectTypeUndefined objectType = iota
-	objectTypeList
-	objectTypeElement
-	objectTypeMessage
-	objectTypeField
-	objectTypeStruct
+	entryUndefined entryType = iota
+	entryList
+	entryElement
+	entryMessage
+	entryField
+	entryStruct
 )
 
-type objectEntry struct {
+type stackEntry struct {
 	start      int // start offset in data buffer
 	tableStart int // table offset in list/message stack
-	type_      objectType
+	type_      entryType
 }
 
-func (e objectEntry) tag() uint16 {
+func (e stackEntry) tag() uint16 {
 	return uint16(e.tableStart)
 }
 
-type objectStack struct {
-	stack []objectEntry
+type stack struct {
+	stack []stackEntry
 }
 
-func (s *objectStack) reset() {
+func (s *stack) reset() {
 	s.stack = s.stack[:0]
 }
 
-func (s *objectStack) len() int {
+func (s *stack) len() int {
 	return len(s.stack)
 }
 
 // peek returns the last object.
-func (s *objectStack) peek() (objectEntry, bool) {
+func (s *stack) peek() (stackEntry, bool) {
 	ln := len(s.stack)
 	if ln == 0 {
-		return objectEntry{}, false
+		return stackEntry{}, false
 	}
 
 	e := s.stack[ln-1]
@@ -47,10 +45,10 @@ func (s *objectStack) peek() (objectEntry, bool) {
 }
 
 // pop removes the top object from the stack and checks its type.
-func (s *objectStack) pop() (objectEntry, bool) {
+func (s *stack) pop() (stackEntry, bool) {
 	ln := len(s.stack)
 	if ln == 0 {
-		return objectEntry{}, false
+		return stackEntry{}, false
 	}
 
 	e := s.stack[ln-1]
@@ -60,50 +58,50 @@ func (s *objectStack) pop() (objectEntry, bool) {
 
 // push
 
-func (s *objectStack) pushList(start int, tableStart int) {
-	e := objectEntry{
-		type_:      objectTypeList,
+func (s *stack) pushList(start int, tableStart int) {
+	e := stackEntry{
+		type_:      entryList,
 		start:      start,
 		tableStart: tableStart,
 	}
 	s.stack = append(s.stack, e)
 }
 
-func (s *objectStack) pushElement(start int) {
-	e := objectEntry{
-		type_: objectTypeElement,
+func (s *stack) pushElement(start int) {
+	e := stackEntry{
+		type_: entryElement,
 		start: start,
 	}
 	s.stack = append(s.stack, e)
 }
 
-func (s *objectStack) pushMessage(start int, tableStart int) {
-	e := objectEntry{
-		type_:      objectTypeMessage,
+func (s *stack) pushMessage(start int, tableStart int) {
+	e := stackEntry{
+		type_:      entryMessage,
 		start:      start,
 		tableStart: tableStart,
 	}
 	s.stack = append(s.stack, e)
 }
 
-func (s *objectStack) pushField(start int, tag uint16) {
-	e := objectEntry{
-		type_:      objectTypeField,
+func (s *stack) pushField(start int, tag uint16) {
+	e := stackEntry{
+		type_:      entryField,
 		start:      start,
 		tableStart: int(tag),
 	}
 	s.stack = append(s.stack, e)
 }
 
-func (s *objectStack) pushStruct(start int) {
-	e := objectEntry{
-		type_: objectTypeStruct,
+func (s *stack) pushStruct(start int) {
+	e := stackEntry{
+		type_: entryStruct,
 		start: start,
 	}
 	s.stack = append(s.stack, e)
 }
 
-// listStack acts as a buffer for nested list elements.
+// listBuffer is an encoding buffer for nested list elements.
 //
 // Each list externally stores its start offset in the buffer, and provides the offset
 // when inserting new elements.
@@ -113,32 +111,32 @@ func (s *objectStack) pushStruct(start int) {
 //	| e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 |
 //	+-------------------+-------------------+-------------------+
 //
-type listStack struct {
+type listBuffer struct {
 	stack []listElement
 }
 
-func (s *listStack) reset() {
-	s.stack = s.stack[:0]
+func (b *listBuffer) reset() {
+	b.stack = b.stack[:0]
 }
 
 // offset returns the next list buffer offset.
-func (s *listStack) offset() int {
-	return len(s.stack)
+func (b *listBuffer) offset() int {
+	return len(b.stack)
 }
 
 // push appends a new element to the last list.
-func (s *listStack) push(elem listElement) {
-	s.stack = append(s.stack, elem)
+func (b *listBuffer) push(elem listElement) {
+	b.stack = append(b.stack, elem)
 }
 
 // pop pops a list table starting at offset.
-func (s *listStack) pop(offset int) []listElement {
-	table := s.stack[offset:]
-	s.stack = s.stack[:offset]
+func (b *listBuffer) pop(offset int) []listElement {
+	table := b.stack[offset:]
+	b.stack = b.stack[:offset]
 	return table
 }
 
-// messageStack acts as a buffer for nested message fields.
+// messageBuffer is an encoding buffer for nested message fields.
 //
 // Each message externally stores its start offset in the buffer, and provides the offset
 // when inserting new fields. Message fields are kept sorted by tags using the insertion sort.
@@ -148,26 +146,26 @@ func (s *listStack) pop(offset int) []listElement {
 //	| f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 |
 //	+-------------------+-------------------+-------------------+
 //
-type messageStack struct {
+type messageBuffer struct {
 	stack []messageField
 }
 
-func (s *messageStack) reset() {
-	s.stack = s.stack[:0]
+func (b *messageBuffer) reset() {
+	b.stack = b.stack[:0]
 }
 
 // offset returns the next message table buffer offset.
-func (s *messageStack) offset() int {
-	return len(s.stack)
+func (b *messageBuffer) offset() int {
+	return len(b.stack)
 }
 
 // insert inserts a new field into the last table starting at offset, keeps the table sorted.
-func (s *messageStack) insert(offset int, f messageField) {
+func (b *messageBuffer) insert(offset int, f messageField) {
 	// append new field
-	s.stack = append(s.stack, f)
+	b.stack = append(b.stack, f)
 
 	// get table
-	table := s.stack[offset:]
+	table := b.stack[offset:]
 
 	// walk table in reverse order
 	// move new field to its position
@@ -189,8 +187,8 @@ func (s *messageStack) insert(offset int, f messageField) {
 }
 
 // pop pops a message table starting at offset.
-func (s *messageStack) pop(offset int) []messageField {
-	table := s.stack[offset:]
-	s.stack = s.stack[:offset]
+func (b *messageBuffer) pop(offset int) []messageField {
+	table := b.stack[offset:]
+	b.stack = b.stack[:offset]
 	return table
 }

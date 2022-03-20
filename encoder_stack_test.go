@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// list list
+// list buffer
 
-func TestListStack_push__should_append_element_to_last_list(t *testing.T) {
+func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 	matrix := [][]listElement{
 		testListElementsN(1),
 		testListElementsN(10),
@@ -20,26 +20,26 @@ func TestListStack_push__should_append_element_to_last_list(t *testing.T) {
 		testListElementsN(3),
 	}
 
-	stack := listStack{}
+	buffer := listBuffer{}
 	offsets := []int{}
 
-	// build stack
+	// build buffer
 	for _, elements := range matrix {
-		offset := stack.offset()
+		offset := buffer.offset()
 		offsets = append(offsets, offset)
 
 		// push
 		for _, elem := range elements {
-			stack.push(elem)
+			buffer.push(elem)
 		}
 	}
 
-	// check stack
+	// check buffer
 	for i := len(offsets) - 1; i >= 0; i-- {
 		offset := offsets[i]
 
 		// pop table
-		ff := stack.pop(offset)
+		ff := buffer.pop(offset)
 		elements := matrix[i]
 
 		// check table
@@ -47,9 +47,9 @@ func TestListStack_push__should_append_element_to_last_list(t *testing.T) {
 	}
 }
 
-// message stack
+// message buffer
 
-func TestFieldStack_Insert__should_insert_field_into_table_ordered_by_tags(t *testing.T) {
+func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t *testing.T) {
 	matrix := [][]messageField{
 		testMessageFieldsN(1),
 		testMessageFieldsN(10),
@@ -60,12 +60,12 @@ func TestFieldStack_Insert__should_insert_field_into_table_ordered_by_tags(t *te
 		testMessageFieldsN(3),
 	}
 
-	stack := messageStack{}
+	buffer := messageBuffer{}
 	offsets := []int{}
 
-	// build stack
+	// build buffer
 	for _, fields := range matrix {
-		offset := stack.offset()
+		offset := buffer.offset()
 		offsets = append(offsets, offset)
 
 		// copy
@@ -79,16 +79,16 @@ func TestFieldStack_Insert__should_insert_field_into_table_ordered_by_tags(t *te
 
 		// insert
 		for _, f := range ff {
-			stack.insert(offset, f)
+			buffer.insert(offset, f)
 		}
 	}
 
-	// check stack
+	// check buffer
 	for i := len(offsets) - 1; i >= 0; i-- {
 		offset := offsets[i]
 
 		// pop table
-		ff := stack.pop(offset)
+		ff := buffer.pop(offset)
 		fields := matrix[i]
 
 		// check table

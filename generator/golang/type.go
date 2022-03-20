@@ -11,8 +11,8 @@ func dataType(typ *compiler.Type) string {
 	return _typeName(typ, true)
 }
 
-// objectType returns an object type name.
-func objectType(typ *compiler.Type) string {
+// entryType returns an object type name.
+func entryType(typ *compiler.Type) string {
 	return _typeName(typ, false)
 }
 
@@ -57,7 +57,7 @@ func _typeName(typ *compiler.Type, data bool) string {
 	// list
 
 	case compiler.KindList:
-		elem := objectType(typ.Element)
+		elem := entryType(typ.Element)
 		return "[]" + elem
 
 	// resolved

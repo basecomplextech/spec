@@ -38,7 +38,7 @@ func (w *writer) messageDef(def *compiler.Definition) error {
 
 	for _, field := range def.Message.Fields {
 		name := messageFieldName(field)
-		typ := objectType(field.Type)
+		typ := entryType(field.Type)
 		tag := fmt.Sprintf("`tag:\"%d\" json:\"%v\"`", field.Tag, field.Name)
 		w.linef("%v %v %v", name, typ, tag)
 	}
