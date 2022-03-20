@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/complexl/library/buffer"
 )
 
 func BenchmarkEncode_Small(b *testing.B) {
 	msg := newTestSmall()
-	buf := NewBufferSize(4096)
+	buf := buffer.NewSize(4096)
 
 	e := NewEncoder()
 	e.Init(buf)
@@ -46,7 +48,7 @@ func BenchmarkEncode_Small(b *testing.B) {
 
 func BenchmarkEncode_Large(b *testing.B) {
 	msg := newTestObject()
-	buf := NewBufferSize(4096)
+	buf := buffer.NewSize(4096)
 
 	e := NewEncoder()
 	e.Init(buf)
@@ -88,7 +90,7 @@ func BenchmarkEncode_Large(b *testing.B) {
 
 func BenchmarkEncodeObject(b *testing.B) {
 	msg := newTestObject()
-	buf := NewBufferSize(4096)
+	buf := buffer.NewSize(4096)
 
 	e := NewEncoder()
 	e.Init(buf)

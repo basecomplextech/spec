@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/complexl/library/buffer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,7 +61,7 @@ func TestListTable_count_big__should_return_number_of_elements(t *testing.T) {
 	big := true
 	elements := testListElementsSize(big)
 
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	size, err := encodeListTable(buf, elements, big)
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +79,7 @@ func TestListTable_count_smal__should_return_number_of_elements(t *testing.T) {
 	small := false
 	elements := testListElementsSize(small)
 
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	size, err := encodeListTable(buf, elements, small)
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +99,7 @@ func TestListTable_offset_big__should_return_start_end_offset_by_index(t *testin
 	big := true
 	elements := testListElementsSize(big)
 
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	size, err := encodeListTable(buf, elements, big)
 	if err != nil {
 		t.Fatal(err)
@@ -124,7 +125,7 @@ func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *test
 	big := true
 	elements := testListElementsSize(big)
 
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	size, err := encodeListTable(buf, elements, big)
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +151,7 @@ func TestListTable_offset_small__should_return_start_end_offset_by_index(t *test
 	big := false
 	elements := testListElementsSize(big)
 
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	size, err := encodeListTable(buf, elements, big)
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +177,7 @@ func TestListTable_offset_small__should_return_minus_one_when_out_of_range(t *te
 	big := false
 	elements := testListElementsSize(big)
 
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	size, err := encodeListTable(buf, elements, big)
 	if err != nil {
 		t.Fatal(err)

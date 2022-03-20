@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/complexl/library/buffer"
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
 	"github.com/complexl/spec/rvarint"
@@ -38,13 +39,13 @@ import (
 
 // Types
 
-func EncodeNil(b Buffer) int {
+func EncodeNil(b buffer.Buffer) int {
 	p := b.Grow(1)
 	p[0] = byte(TypeNil)
 	return 1
 }
 
-func EncodeBool(b Buffer, v bool) int {
+func EncodeBool(b buffer.Buffer, v bool) int {
 	p := b.Grow(1)
 	if v {
 		p[0] = byte(TypeTrue)
@@ -54,7 +55,7 @@ func EncodeBool(b Buffer, v bool) int {
 	return 1
 }
 
-func EncodeByte(b Buffer, v byte) int {
+func EncodeByte(b buffer.Buffer, v byte) int {
 	p := b.Grow(2)
 	p[0] = v
 	p[1] = byte(TypeByte)
@@ -63,7 +64,7 @@ func EncodeByte(b Buffer, v byte) int {
 
 // Int
 
-func EncodeInt32(b Buffer, v int32) int {
+func EncodeInt32(b buffer.Buffer, v int32) int {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutInt64(p[:], int64(v))
 	off := rvarint.MaxLen32 - n
@@ -75,7 +76,7 @@ func EncodeInt32(b Buffer, v int32) int {
 	return n + 1
 }
 
-func EncodeInt64(b Buffer, v int64) int {
+func EncodeInt64(b buffer.Buffer, v int64) int {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutInt64(p[:], v)
 	off := rvarint.MaxLen64 - n
@@ -89,7 +90,7 @@ func EncodeInt64(b Buffer, v int64) int {
 
 // Uint
 
-func EncodeUint32(b Buffer, v uint32) int {
+func EncodeUint32(b buffer.Buffer, v uint32) int {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(v))
 	off := rvarint.MaxLen32 - n
@@ -101,7 +102,7 @@ func EncodeUint32(b Buffer, v uint32) int {
 	return n + 1
 }
 
-func EncodeUint64(b Buffer, v uint64) int {
+func EncodeUint64(b buffer.Buffer, v uint64) int {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutUint64(p[:], v)
 	off := rvarint.MaxLen64 - n
@@ -115,14 +116,14 @@ func EncodeUint64(b Buffer, v uint64) int {
 
 // U128/U256
 
-func EncodeU128(b Buffer, v u128.U128) int {
+func EncodeU128(b buffer.Buffer, v u128.U128) int {
 	p := b.Grow(17)
 	copy(p, v[:])
 	p[16] = byte(TypeU128)
 	return 17
 }
 
-func EncodeU256(b Buffer, v u256.U256) int {
+func EncodeU256(b buffer.Buffer, v u256.U256) int {
 	p := b.Grow(33)
 	copy(p, v[:])
 	p[32] = byte(TypeU256)
@@ -131,14 +132,14 @@ func EncodeU256(b Buffer, v u256.U256) int {
 
 // Float
 
-func EncodeFloat32(b Buffer, v float32) int {
+func EncodeFloat32(b buffer.Buffer, v float32) int {
 	p := b.Grow(5)
 	binary.BigEndian.PutUint32(p, math.Float32bits(v))
 	p[4] = byte(TypeFloat32)
 	return 5
 }
 
-func EncodeFloat64(b Buffer, v float64) int {
+func EncodeFloat64(b buffer.Buffer, v float64) int {
 	p := b.Grow(9)
 	binary.BigEndian.PutUint64(p, math.Float64bits(v))
 	p[8] = byte(TypeFloat64)
@@ -147,7 +148,7 @@ func EncodeFloat64(b Buffer, v float64) int {
 
 // Bytes
 
-func EncodeBytes(b Buffer, v []byte) (int, error) {
+func EncodeBytes(b buffer.Buffer, v []byte) (int, error) {
 	size := len(v)
 	if size > MaxSize {
 		return 0, fmt.Errorf("encode: bytes too large, max size=%d, actual size=%d", MaxSize, size)
@@ -163,7 +164,7 @@ func EncodeBytes(b Buffer, v []byte) (int, error) {
 
 // String
 
-func EncodeString(b Buffer, s string) (int, error) {
+func EncodeString(b buffer.Buffer, s string) (int, error) {
 	size := len(s)
 	if size > MaxSize {
 		return 0, fmt.Errorf("encode: string too large, max size=%d, actual size=%d", MaxSize, size)
@@ -179,7 +180,7 @@ func EncodeString(b Buffer, s string) (int, error) {
 
 // list meta
 
-func encodeListMeta(b Buffer, bodySize int, table []listElement) (int, error) {
+func encodeListMeta(b buffer.Buffer, bodySize int, table []listElement) (int, error) {
 	if bodySize > MaxSize {
 		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
@@ -208,7 +209,7 @@ func encodeListMeta(b Buffer, bodySize int, table []listElement) (int, error) {
 	return n, nil
 }
 
-func encodeListTable(b Buffer, table []listElement, big bool) (int, error) {
+func encodeListTable(b buffer.Buffer, table []listElement, big bool) (int, error) {
 	// element size
 	var elemSize int
 	if big {
@@ -245,7 +246,7 @@ func encodeListTable(b Buffer, table []listElement, big bool) (int, error) {
 
 // message meta
 
-func encodeMessageMeta(b Buffer, bodySize int, table []messageField) (int, error) {
+func encodeMessageMeta(b buffer.Buffer, bodySize int, table []messageField) (int, error) {
 	if bodySize > MaxSize {
 		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
@@ -274,7 +275,7 @@ func encodeMessageMeta(b Buffer, bodySize int, table []messageField) (int, error
 	return n, nil
 }
 
-func encodeMessageTable(b Buffer, table []messageField, big bool) (int, error) {
+func encodeMessageTable(b buffer.Buffer, table []messageField, big bool) (int, error) {
 	// field size
 	var fieldSize int
 	if big {
@@ -313,7 +314,7 @@ func encodeMessageTable(b Buffer, table []messageField, big bool) (int, error) {
 
 // struct
 
-func encodeStruct(b Buffer, bodySize int) (int, error) {
+func encodeStruct(b buffer.Buffer, bodySize int) (int, error) {
 	if bodySize > MaxSize {
 		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
@@ -333,7 +334,7 @@ func appendSize(b []byte, size uint32) []byte {
 	return append(b, p[off:]...)
 }
 
-func encodeSize(b Buffer, size uint32) int {
+func encodeSize(b buffer.Buffer, size uint32) int {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n
@@ -343,7 +344,7 @@ func encodeSize(b Buffer, size uint32) int {
 	return n
 }
 
-func encodeSizeType(b Buffer, size uint32, type_ Type) int {
+func encodeSizeType(b buffer.Buffer, size uint32, type_ Type) int {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))
 	off := rvarint.MaxLen32 - n

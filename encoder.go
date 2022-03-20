@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/complexl/library/buffer"
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
 )
@@ -19,7 +20,7 @@ var encoderPool = &sync.Pool{
 
 // Encoder encodes values.
 type Encoder struct {
-	buf  Buffer
+	buf  buffer.Buffer
 	err  error      // encoding failed
 	data encodeData // last written data, must be consumed before writing next data
 
@@ -33,12 +34,12 @@ type Encoder struct {
 	_fields   [128]messageField
 }
 
-// NewEncoder returns a new encoder with a default buffer.
+// NewEncoder returns a new encoder with an empty buffer.
 //
 // Usually, it is better to use Encode(obj) and EncodeTo(obj, buf), than to construct
 // a new encoder directly. These methods internally use an encoder pool.
 func NewEncoder() *Encoder {
-	buf := make([]byte, 0, BufferSize)
+	buf := buffer.New(nil)
 	return newEncoder(buf)
 }
 
@@ -46,13 +47,14 @@ func NewEncoder() *Encoder {
 //
 // Usually, it is better to use Encode(obj) and EncodeTo(obj, buf), than to construct
 // a new encoder directly. These methods internally use an encoder pool.
-func NewEncoderBuffer(buf []byte) *Encoder {
+func NewEncoderBuffer(b []byte) *Encoder {
+	buf := buffer.New(b)
 	return newEncoder(buf)
 }
 
-func newEncoder(buf []byte) *Encoder {
+func newEncoder(buf buffer.Buffer) *Encoder {
 	e := &Encoder{
-		buf:  newBuffer(buf),
+		buf:  buf,
 		data: encodeData{},
 	}
 
@@ -63,9 +65,9 @@ func newEncoder(buf []byte) *Encoder {
 }
 
 // Init resets the encoder and sets its buffer.
-func (e *Encoder) Init(b Buffer) {
+func (e *Encoder) Init(buf buffer.Buffer) {
 	e.Reset()
-	e.buf = b
+	e.buf = buf
 }
 
 // Reset clears the encoder and nils buffer.

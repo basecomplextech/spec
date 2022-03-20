@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/complexl/library/buffer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,7 +61,7 @@ func TestDecodeBool__should_decode_bool_value(t *testing.T) {
 // DecodeByte
 
 func TestDecodeByte__should_decode_byte(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeByte(b, 1)
 
 	v, n, err := DecodeByte(b.Bytes())
@@ -73,7 +74,7 @@ func TestDecodeByte__should_decode_byte(t *testing.T) {
 }
 
 func TestDecodeByte__should_decode_byte_from_int32(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeInt32(b, 1)
 
 	v, n, err := DecodeByte(b.Bytes())
@@ -86,7 +87,7 @@ func TestDecodeByte__should_decode_byte_from_int32(t *testing.T) {
 }
 
 func TestDecodeByte__should_decode_byte_from_int64(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeInt64(b, 1)
 
 	v, n, err := DecodeByte(b.Bytes())
@@ -101,7 +102,7 @@ func TestDecodeByte__should_decode_byte_from_int64(t *testing.T) {
 // Int32
 
 func TestDecodeInt32__should_decode_int32(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeInt32(b, 1)
 
 	v, n, err := DecodeInt32(b.Bytes())
@@ -116,7 +117,7 @@ func TestDecodeInt32__should_decode_int32(t *testing.T) {
 // Int64
 
 func TestDecodeInt64__should_decode_int64(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeInt64(b, 1)
 
 	v, n, err := DecodeInt64(b.Bytes())
@@ -129,7 +130,7 @@ func TestDecodeInt64__should_decode_int64(t *testing.T) {
 }
 
 func TestDecodeInt64__should_decode_int64_from_byte(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeByte(b, 1)
 
 	v, n, err := DecodeInt64(b.Bytes())
@@ -142,7 +143,7 @@ func TestDecodeInt64__should_decode_int64_from_byte(t *testing.T) {
 }
 
 func TestDecodeInt64__should_decode_int64_from_int32(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeInt32(b, 1)
 
 	v, n, err := DecodeInt64(b.Bytes())
@@ -157,7 +158,7 @@ func TestDecodeInt64__should_decode_int64_from_int32(t *testing.T) {
 // Float32
 
 func TestDecodeFloat32__should_decode_float32(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeFloat32(b, math.MaxFloat32)
 
 	v, n, err := DecodeFloat32(b.Bytes())
@@ -170,7 +171,7 @@ func TestDecodeFloat32__should_decode_float32(t *testing.T) {
 }
 
 func TestDecodeFloat32__should_decode_float32_from_float64(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeFloat64(b, math.MaxFloat32)
 
 	v, n, err := DecodeFloat32(b.Bytes())
@@ -185,7 +186,7 @@ func TestDecodeFloat32__should_decode_float32_from_float64(t *testing.T) {
 // Float64
 
 func TestDecodeFloat64__should_decode_float64(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeFloat64(b, math.MaxFloat64)
 
 	v, n, err := DecodeFloat64(b.Bytes())
@@ -198,7 +199,7 @@ func TestDecodeFloat64__should_decode_float64(t *testing.T) {
 }
 
 func TestDecodeFloat64__should_decode_float64_from_float32(t *testing.T) {
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	EncodeFloat32(b, math.MaxFloat32)
 
 	v, n, err := DecodeFloat64(b.Bytes())
@@ -215,7 +216,7 @@ func TestDecodeFloat64__should_decode_float64_from_float32(t *testing.T) {
 func TestDecodeBytes__should_decode_bytes(t *testing.T) {
 	v := []byte("hello, world")
 
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	_, err := EncodeBytes(b, v)
 	if err != nil {
 		t.Fatal(err)
@@ -235,7 +236,7 @@ func TestDecodeBytes__should_decode_bytes(t *testing.T) {
 func TestDecodeString__should_decode_string(t *testing.T) {
 	v := "hello, world"
 
-	b := NewBuffer(nil)
+	b := buffer.New(nil)
 	_, err := EncodeString(b, v)
 	if err != nil {
 		t.Fatal(err)
@@ -266,7 +267,7 @@ func TestDecodeListTable__should_decode_list_table(t *testing.T) {
 	elements := testListElements()
 
 	for i := 0; i <= len(elements); i++ {
-		b := NewBuffer(nil)
+		b := buffer.New(nil)
 		ee0 := elements[i:]
 
 		size, err := encodeListTable(b, ee0, false)
@@ -318,7 +319,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_data_size(t *testing.T
 }
 
 func TestDecodeListMeta__should_return_error_when_invalid_table(t *testing.T) {
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	_, err := encodeListTable(buf, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -336,7 +337,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_table(t *testing.T) {
 }
 
 func TestDecodeListMeta__should_return_error_when_invalid_data(t *testing.T) {
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	_, err := encodeListTable(buf, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -369,7 +370,7 @@ func TestDecodeMessageTable__should_decode_message_table(t *testing.T) {
 	fields := testMessageFields()
 
 	for i := 0; i <= len(fields); i++ {
-		buf := newBuffer(nil)
+		buf := buffer.New(nil)
 		fields0 := fields[i:]
 
 		size, err := encodeMessageTable(buf, fields0, false)
@@ -421,7 +422,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_data_size(t *testin
 }
 
 func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T) {
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 	_, err := encodeMessageTable(buf, nil, true)
 	if err != nil {
 		t.Fatal(err)
@@ -439,7 +440,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T)
 }
 
 func TestDecodeMessageMeta__should_return_error_when_invalid_data(t *testing.T) {
-	buf := newBuffer(nil)
+	buf := buffer.New(nil)
 
 	_, err := encodeMessageTable(buf, nil, true)
 	if err != nil {

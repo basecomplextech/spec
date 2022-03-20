@@ -1,9 +1,13 @@
 package spec
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/complexl/library/buffer"
+)
 
 func BenchmarkFieldTable_field(b *testing.B) {
-	buf := NewBufferSize(4096)
+	buf := buffer.NewSize(4096)
 	fields := testMessageFieldsN(100)
 
 	size, err := encodeMessageTable(buf, fields, false)
@@ -30,7 +34,7 @@ func BenchmarkFieldTable_field(b *testing.B) {
 }
 
 func BenchmarkFieldTable_offset(b *testing.B) {
-	buf := NewBufferSize(4096)
+	buf := buffer.NewSize(4096)
 	fields := testMessageFieldsN(100)
 
 	size, err := encodeMessageTable(nil, fields, false)
