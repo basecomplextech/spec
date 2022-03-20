@@ -8,7 +8,43 @@ import (
 	"github.com/complexl/library/u256"
 )
 
-// Objects
+// Simple
+
+type TestSmall struct {
+	Field0 int64 `tag:"1"`
+	Field1 int64 `tag:"2"`
+	Field2 int64 `tag:"3"`
+	Field3 int64 `tag:"4"`
+}
+
+func newTestSmall() *TestSmall {
+	return &TestSmall{
+		Field0: 1,
+		Field1: 2,
+		Field2: 3,
+		Field3: 4,
+	}
+}
+
+func (m *TestSmall) Encode(e *Encoder) ([]byte, error) {
+	e.BeginMessage()
+
+	e.Int64(m.Field0)
+	e.Field(1)
+
+	e.Int64(m.Field1)
+	e.Field(2)
+
+	e.Int64(m.Field2)
+	e.Field(3)
+
+	e.Int64(m.Field3)
+	e.Field(4)
+
+	return e.End()
+}
+
+// Object
 
 type TestObject struct {
 	Bool bool `tag:"1"`

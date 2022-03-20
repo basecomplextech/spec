@@ -3,13 +3,16 @@ package spec
 import "testing"
 
 func BenchmarkFieldTable_field(b *testing.B) {
+	buf := NewBufferSize(4096)
 	fields := testMessageFieldsN(100)
-	data, size, err := encodeMessageTable(nil, fields, false)
+
+	size, err := encodeMessageTable(buf, fields, false)
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	table, err := decodeMessageTable(data, size, false)
+	data := buf.Bytes()
+	table, err := decodeMessageTable(data, uint32(size), false)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -27,13 +30,16 @@ func BenchmarkFieldTable_field(b *testing.B) {
 }
 
 func BenchmarkFieldTable_offset(b *testing.B) {
+	buf := NewBufferSize(4096)
 	fields := testMessageFieldsN(100)
-	data, size, err := encodeMessageTable(nil, fields, false)
+
+	size, err := encodeMessageTable(nil, fields, false)
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	table, err := decodeMessageTable(data, size, false)
+	data := buf.Bytes()
+	table, err := decodeMessageTable(data, uint32(size), false)
 	if err != nil {
 		b.Fatal(err)
 	}

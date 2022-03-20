@@ -7,10 +7,49 @@ import (
 	"time"
 )
 
-func BenchmarkEncode(b *testing.B) {
+func BenchmarkEncode_Small(b *testing.B) {
+	msg := newTestSmall()
+	buf := NewBufferSize(4096)
+
+	e := NewEncoder()
+	e.Init(buf)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+
+	var size int
+	for i := 0; i < b.N; i++ {
+		data, err := msg.Encode(e)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(data) == 0 {
+			b.Fatal()
+		}
+
+		e.Init(buf)
+		buf.Reset()
+
+		size = len(data)
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+	b.ReportMetric(float64(size), "size")
+	b.SetBytes(int64(size))
+}
+
+func BenchmarkEncode_Large(b *testing.B) {
 	msg := newTestObject()
-	buf := make([]byte, 0, 4096)
-	e := NewEncoderBuffer(buf)
+	buf := NewBufferSize(4096)
+
+	e := NewEncoder()
+	e.Init(buf)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -32,25 +71,27 @@ func BenchmarkEncode(b *testing.B) {
 			b.Fatal(len(data))
 		}
 
-		// b.Fatal(len(data))
-		e.Reset()
-		e.buf = buf[:0]
+		e.Init(buf)
+		buf.Reset()
 
 		size = len(data)
 	}
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
+	ops := float64(b.N) / sec
 
-	b.ReportMetric(rps, "rps")
+	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
+	b.SetBytes(int64(size))
 }
 
 func BenchmarkEncodeObject(b *testing.B) {
 	msg := newTestObject()
-	buf := make([]byte, 0, 4096)
-	e := NewEncoderBuffer(buf)
+	buf := NewBufferSize(4096)
+
+	e := NewEncoder()
+	e.Init(buf)
 
 	data, err := msg.Marshal()
 	if err != nil {
@@ -74,22 +115,49 @@ func BenchmarkEncodeObject(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		e.Reset()
-		e.buf = buf[:0]
+		buf.Reset()
+		e.Init(buf)
 	}
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
+	ops := float64(b.N) / sec
 
-	b.ReportMetric(rps, "rps")
+	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
 	b.ReportMetric(float64(compressed), "size-zlib")
 }
 
 // Standard JSON
 
-func BenchmarkJSON_Marshal(b *testing.B) {
+func BenchmarkJSON_Marshal_Small(b *testing.B) {
+	msg := newTestSmall()
+	data, err := json.Marshal(msg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		_, err := json.Marshal(msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+	b.ReportMetric(float64(len(data)), "size")
+	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
+}
+
+func BenchmarkJSON_Marshal_Large(b *testing.B) {
 	msg := newTestObject()
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -109,14 +177,14 @@ func BenchmarkJSON_Marshal(b *testing.B) {
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
+	ops := float64(b.N) / sec
 
-	b.ReportMetric(rps, "rps")
+	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(len(data)), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
 
-func BenchmarkJSON_Encode(b *testing.B) {
+func BenchmarkJSON_Encode_Large(b *testing.B) {
 	msg := newTestObject()
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -147,9 +215,9 @@ func BenchmarkJSON_Encode(b *testing.B) {
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
+	ops := float64(b.N) / sec
 
-	b.ReportMetric(rps, "rps")
+	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }

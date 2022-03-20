@@ -10,180 +10,181 @@ import (
 	"github.com/complexl/spec/rvarint"
 )
 
-// Encodable can write itself using a writer.
-type Encodable interface {
-	Encode(e *Encoder) error
-}
+// // Encodable can write itself using a writer.
+// type Encodable interface {
+// 	Encode(e *Encoder) error
+// }
 
-// Encode writes a writable.
-func Encode(v Encodable) ([]byte, error) {
-	return EncodeTo(v, nil)
-}
+// // Encode writes a writable.
+// func Encode(v Encodable) ([]byte, error) {
+// 	return EncodeTo(v, nil)
+// }
 
-// EncodeTo writes a writeable to a buffer or allocates a new one when the buffer is too small.
-func EncodeTo(v Encodable, buf []byte) ([]byte, error) {
-	e := encoderPool.Get().(*Encoder)
-	e.Init(buf)
+// TODO: Maybe remove at all
+// // EncodeTo writes a writeable to a buffer or allocates a new one when the buffer is too small.
+// func EncodeTo(v Encodable, buf []byte) ([]byte, error) {
+// 	e := encoderPool.Get().(*Encoder)
+// 	e.Init(buf)
 
-	defer encoderPool.Put(e)
-	defer e.Reset()
+// 	defer encoderPool.Put(e)
+// 	defer e.Reset()
 
-	if err := v.Encode(e); err != nil {
-		return nil, err
-	}
+// 	if err := v.Encode(e); err != nil {
+// 		return nil, err
+// 	}
 
-	return e.End()
-}
+// 	return e.End()
+// }
 
 // Types
 
-func EncodeNil(b []byte) []byte {
-	return append(b, byte(TypeNil))
+func EncodeNil(b Buffer) int {
+	p := b.Grow(1)
+	p[0] = byte(TypeNil)
+	return 1
 }
 
-func EncodeBool(b []byte, v bool) []byte {
+func EncodeBool(b Buffer, v bool) int {
+	p := b.Grow(1)
 	if v {
-		return append(b, byte(TypeTrue))
+		p[0] = byte(TypeTrue)
 	} else {
-		return append(b, byte(TypeFalse))
+		p[0] = byte(TypeFalse)
 	}
+	return 1
 }
 
-func EncodeByte(b []byte, v byte) []byte {
-	b = append(b, v)
-	b = append(b, byte(TypeByte))
-	return b
+func EncodeByte(b Buffer, v byte) int {
+	p := b.Grow(2)
+	p[0] = v
+	p[1] = byte(TypeByte)
+	return 2
 }
 
 // Int
 
-func EncodeInt32(b []byte, v int32) []byte {
+func EncodeInt32(b Buffer, v int32) int {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutInt64(p[:], int64(v))
 	off := rvarint.MaxLen32 - n
 
-	b = append(b, p[off:]...)
-	b = append(b, byte(TypeInt32))
-	return b
+	buf := b.Grow(n + 1)
+	copy(buf[:n], p[off:])
+	buf[n] = byte(TypeInt32)
+
+	return n + 1
 }
 
-func EncodeInt64(b []byte, v int64) []byte {
+func EncodeInt64(b Buffer, v int64) int {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutInt64(p[:], v)
 	off := rvarint.MaxLen64 - n
 
-	b = append(b, p[off:]...)
-	b = append(b, byte(TypeInt64))
-	return b
+	buf := b.Grow(n + 1)
+	copy(buf[:n], p[off:])
+	buf[n] = byte(TypeInt64)
+
+	return n + 1
 }
 
 // Uint
 
-func EncodeUint32(b []byte, v uint32) []byte {
+func EncodeUint32(b Buffer, v uint32) int {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(v))
 	off := rvarint.MaxLen32 - n
 
-	b = append(b, p[off:]...)
-	b = append(b, byte(TypeUint32))
-	return b
+	buf := b.Grow(n + 1)
+	copy(buf[:n], p[off:])
+	buf[n] = byte(TypeUint32)
+
+	return n + 1
 }
 
-func EncodeUint64(b []byte, v uint64) []byte {
+func EncodeUint64(b Buffer, v uint64) int {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutUint64(p[:], v)
 	off := rvarint.MaxLen64 - n
 
-	b = append(b, p[off:]...)
-	b = append(b, byte(TypeUint64))
-	return b
+	buf := b.Grow(n + 1)
+	copy(buf[:n], p[off:])
+	buf[n] = byte(TypeUint64)
+
+	return n + 1
 }
 
 // U128/U256
 
-func EncodeU128(b []byte, v u128.U128) []byte {
-	b = append(b, v[:]...)
-	b = append(b, byte(TypeU128))
-	return b
+func EncodeU128(b Buffer, v u128.U128) int {
+	p := b.Grow(17)
+	copy(p, v[:])
+	p[16] = byte(TypeU128)
+	return 17
 }
 
-func EncodeU256(b []byte, v u256.U256) []byte {
-	b = append(b, v[:]...)
-	b = append(b, byte(TypeU256))
-	return b
+func EncodeU256(b Buffer, v u256.U256) int {
+	p := b.Grow(33)
+	copy(p, v[:])
+	p[32] = byte(TypeU256)
+	return 33
 }
 
 // Float
 
-func EncodeFloat32(b []byte, v float32) []byte {
-	p := [4]byte{}
-	binary.BigEndian.PutUint32(p[:], math.Float32bits(v))
-
-	b = append(b, p[:]...)
-	b = append(b, byte(TypeFloat32))
-	return b
+func EncodeFloat32(b Buffer, v float32) int {
+	p := b.Grow(5)
+	binary.BigEndian.PutUint32(p, math.Float32bits(v))
+	p[4] = byte(TypeFloat32)
+	return 5
 }
 
-func EncodeFloat64(b []byte, v float64) []byte {
-	p := [8]byte{}
-	binary.BigEndian.PutUint64(p[:], math.Float64bits(v))
-
-	b = append(b, p[:]...)
-	b = append(b, byte(TypeFloat64))
-	return b
+func EncodeFloat64(b Buffer, v float64) int {
+	p := b.Grow(9)
+	binary.BigEndian.PutUint64(p, math.Float64bits(v))
+	p[8] = byte(TypeFloat64)
+	return 9
 }
 
 // Bytes
 
-func EncodeBytes(b []byte, v []byte) ([]byte, error) {
+func EncodeBytes(b Buffer, v []byte) (int, error) {
 	size := len(v)
 	if size > MaxSize {
-		return nil, fmt.Errorf("write: bytes too large, max size=%d, actual size=%d", MaxSize, size)
+		return 0, fmt.Errorf("encode: bytes too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
-	b = append(b, v...)
-	b = encodeBytesSize(b, uint32(size))
-	b = append(b, byte(TypeBytes))
-	return b, nil
-}
+	p := b.Grow(size)
+	copy(p, v)
+	n := size
 
-func encodeBytesSize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
+	n += encodeSizeType(b, uint32(size), TypeBytes)
+	return n, nil
 }
 
 // String
 
-func EncodeString(b []byte, s string) ([]byte, error) {
+func EncodeString(b Buffer, s string) (int, error) {
 	size := len(s)
 	if size > MaxSize {
-		return nil, fmt.Errorf("write: string too large, max size=%d, actual size=%d", MaxSize, size)
+		return 0, fmt.Errorf("encode: string too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
-	b = append(b, s...)
-	b = append(b, 0) // zero byte
-	b = encodeStringSize(b, uint32(size))
-	b = append(b, byte(TypeString))
-	return b, nil
-}
+	n := size + 1 // plus zero byte
+	p := b.Grow(n)
+	copy(p, s)
 
-func encodeStringSize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
+	n += encodeSizeType(b, uint32(size), TypeString)
+	return n, nil
 }
 
 // list meta
 
-func encodeListMeta(b []byte, bodySize int, table []listElement) ([]byte, error) {
+func encodeListMeta(b Buffer, bodySize int, table []listElement) (int, error) {
 	if bodySize > MaxSize {
-		return nil, fmt.Errorf("write: list too large, max size=%d, actual size=%d", MaxSize, bodySize)
+		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
 
-	// type
+	// get type
 	big := isBigList(table)
 	var type_ Type
 	if big {
@@ -192,25 +193,22 @@ func encodeListMeta(b []byte, bodySize int, table []listElement) ([]byte, error)
 		type_ = TypeList
 	}
 
-	// sizes
-	bsize := uint32(bodySize)
-	tsize := uint32(0)
-
 	// write table
-	var err error
-	b, tsize, err = encodeListTable(b, table, big)
+	tableSize, err := encodeListTable(b, table, big)
 	if err != nil {
-		return nil, err
+		return int(tableSize), err
 	}
+	n := tableSize
 
-	// write sizes and type
-	b = encodeListBodySize(b, bsize)
-	b = encodeListTableSize(b, tsize)
-	b = append(b, byte(type_))
-	return b, nil
+	// write body size
+	n += encodeSize(b, uint32(bodySize))
+
+	// write table size and type
+	n += encodeSizeType(b, uint32(tableSize), type_)
+	return n, nil
 }
 
-func encodeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, error) {
+func encodeListTable(b Buffer, table []listElement, big bool) (int, error) {
 	// element size
 	var elemSize int
 	if big {
@@ -222,14 +220,14 @@ func encodeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, e
 	// check table size
 	size := len(table) * elemSize
 	if size > MaxSize {
-		return nil, 0, fmt.Errorf("write: list table too large, max size=%d, actual size=%d", MaxSize, size)
+		return 0, fmt.Errorf("encode: list table too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
-	// alloc table
-	b, p := encodeGrow(b, size)
+	// write table
+	p := b.Grow(size)
 	off := 0
 
-	// write elements
+	// put elements
 	for _, elem := range table {
 		q := p[off : off+elemSize]
 
@@ -242,31 +240,17 @@ func encodeListTable(b []byte, table []listElement, big bool) ([]byte, uint32, e
 		off += elemSize
 	}
 
-	return b, uint32(size), nil
-}
-
-func encodeListTableSize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
-}
-
-func encodeListBodySize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
+	return size, nil
 }
 
 // message meta
 
-func encodeMessageMeta(b []byte, bodySize int, table []messageField) ([]byte, error) {
+func encodeMessageMeta(b Buffer, bodySize int, table []messageField) (int, error) {
 	if bodySize > MaxSize {
-		return nil, fmt.Errorf("write: message too large, max size=%d, actual size=%d", MaxSize, bodySize)
+		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
 
-	// type
+	// get type
 	big := isBigMessage(table)
 	var type_ Type
 	if big {
@@ -275,25 +259,22 @@ func encodeMessageMeta(b []byte, bodySize int, table []messageField) ([]byte, er
 		type_ = TypeMessage
 	}
 
-	// sizes
-	bsize := uint32(bodySize)
-	tsize := uint32(0)
-
 	// write table
-	var err error
-	b, tsize, err = encodeMessageTable(b, table, big)
+	tableSize, err := encodeMessageTable(b, table, big)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
+	n := tableSize
 
-	// write sizes and type
-	b = encodeMessageBodySize(b, bsize)
-	b = encodeMessageTableSize(b, tsize)
-	b = append(b, byte(type_))
-	return b, nil
+	// write body size
+	n += encodeSize(b, uint32(bodySize))
+
+	// write table size and type
+	n += encodeSizeType(b, uint32(tableSize), type_)
+	return n, nil
 }
 
-func encodeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint32, error) {
+func encodeMessageTable(b Buffer, table []messageField, big bool) (int, error) {
 	// field size
 	var fieldSize int
 	if big {
@@ -305,14 +286,14 @@ func encodeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint3
 	// check table size
 	size := len(table) * fieldSize
 	if size > MaxSize {
-		return nil, 0, fmt.Errorf("write: message table too large, max size=%d, actual size=%d", MaxSize, size)
+		return 0, fmt.Errorf("encode: message table too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
-	// alloc table
-	b, p := encodeGrow(b, size)
+	// write table
+	p := b.Grow(size)
 	off := 0
 
-	// write fields
+	// put fields
 	for _, field := range table {
 		q := p[off : off+fieldSize]
 
@@ -327,62 +308,41 @@ func encodeMessageTable(b []byte, table []messageField, big bool) ([]byte, uint3
 		off += fieldSize
 	}
 
-	return b, uint32(size), nil
-}
-
-func encodeMessageTableSize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
-}
-
-func encodeMessageBodySize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
+	return size, nil
 }
 
 // struct
 
-func encodeStruct(b []byte, bodySize int) ([]byte, error) {
+func encodeStruct(b Buffer, bodySize int) (int, error) {
 	if bodySize > MaxSize {
-		return nil, fmt.Errorf("write: struct too large, max size=%d, actual size=%d", MaxSize, bodySize)
+		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", MaxSize, bodySize)
 	}
 
-	bsize := uint32(bodySize)
-	b = encodeStructBodySize(b, bsize)
-	b = append(b, byte(TypeStruct))
-	return b, nil
-}
-
-func encodeStructBodySize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
+	// write size and type
+	n := encodeSizeType(b, uint32(bodySize), TypeStruct)
+	return n, nil
 }
 
 // private
 
-// encodeGrow grows a buffer by n bytes and returns a new buffer and an allocated slice.
-func encodeGrow(b []byte, n int) ([]byte, []byte) {
-	cp := cap(b)
-	ln := len(b)
+func encodeSize(b Buffer, size uint32) int {
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
 
-	// alloc
-	rem := cp - ln
-	if rem < n {
-		size := (cp * 2) + n
-		buf := make([]byte, ln, size)
-		copy(buf, b)
-		b = buf
-	}
+	buf := b.Grow(n)
+	copy(buf, p[off:])
+	return n
+}
 
-	// return
-	size := ln + n
-	b = b[:size]
-	p := b[ln:size]
-	return b, p
+func encodeSizeType(b Buffer, size uint32, type_ Type) int {
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
+
+	buf := b.Grow(n + 1)
+	copy(buf[:n], p[off:])
+	buf[n] = byte(type_)
+
+	return n + 1
 }

@@ -19,7 +19,7 @@ var encoderPool = &sync.Pool{
 
 // Encoder encodes values.
 type Encoder struct {
-	buf  []byte
+	buf  Buffer
 	err  error      // encoding failed
 	data encodeData // last written data, must be consumed before writing next data
 
@@ -52,7 +52,7 @@ func NewEncoderBuffer(buf []byte) *Encoder {
 
 func newEncoder(buf []byte) *Encoder {
 	e := &Encoder{
-		buf:  buf[:0],
+		buf:  newBuffer(buf),
 		data: encodeData{},
 	}
 
@@ -63,9 +63,9 @@ func newEncoder(buf []byte) *Encoder {
 }
 
 // Init resets the encoder and sets its buffer.
-func (e *Encoder) Init(b []byte) {
+func (e *Encoder) Init(b Buffer) {
 	e.Reset()
-	e.buf = b[:0]
+	e.buf = b
 }
 
 // Reset clears the encoder and nils buffer.
@@ -129,14 +129,11 @@ func (e *Encoder) Nil() error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeNil(e.buf)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeNil(e.buf)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) Bool(v bool) error {
@@ -144,14 +141,11 @@ func (e *Encoder) Bool(v bool) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeBool(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeBool(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) Byte(v byte) error {
@@ -159,14 +153,11 @@ func (e *Encoder) Byte(v byte) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeByte(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeByte(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) Int32(v int32) error {
@@ -174,14 +165,11 @@ func (e *Encoder) Int32(v int32) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeInt32(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeInt32(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) Int64(v int64) error {
@@ -189,14 +177,11 @@ func (e *Encoder) Int64(v int64) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeInt64(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeInt64(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) Uint32(v uint32) error {
@@ -204,14 +189,11 @@ func (e *Encoder) Uint32(v uint32) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeUint32(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeUint32(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) Uint64(v uint64) error {
@@ -219,14 +201,11 @@ func (e *Encoder) Uint64(v uint64) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeUint64(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeUint64(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 // U128/U256
@@ -236,14 +215,11 @@ func (e *Encoder) U128(v u128.U128) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeU128(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeU128(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) U256(v u256.U256) error {
@@ -251,14 +227,11 @@ func (e *Encoder) U256(v u256.U256) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeU256(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeU256(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 // Float
@@ -268,14 +241,11 @@ func (e *Encoder) Float32(v float32) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeFloat32(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeFloat32(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) Float64(v float64) error {
@@ -283,14 +253,11 @@ func (e *Encoder) Float64(v float64) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-	e.buf = EncodeFloat64(e.buf, v)
-	end := len(e.buf)
+	start := e.buf.Len()
+	EncodeFloat64(e.buf, v)
+	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 // Bytes/string
@@ -300,19 +267,13 @@ func (e *Encoder) Bytes(v []byte) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-
-	var err error
-	e.buf, err = EncodeBytes(e.buf, v)
-	if err != nil {
+	start := e.buf.Len()
+	if _, err := EncodeBytes(e.buf, v); err != nil {
 		return e.fail(err)
 	}
+	end := e.buf.Len()
 
-	end := len(e.buf)
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 func (e *Encoder) String(v string) error {
@@ -320,19 +281,13 @@ func (e *Encoder) String(v string) error {
 		return e.err
 	}
 
-	start := len(e.buf)
-
-	var err error
-	e.buf, err = EncodeString(e.buf, v)
-	if err != nil {
+	start := e.buf.Len()
+	if _, err := EncodeString(e.buf, v); err != nil {
 		return e.fail(err)
 	}
+	end := e.buf.Len()
 
-	end := len(e.buf)
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	return e.setData(start, end)
 }
 
 // List
@@ -343,7 +298,7 @@ func (e *Encoder) BeginList() error {
 	}
 
 	// push list
-	start := len(e.buf)
+	start := e.buf.Len()
 	tableStart := e.elements.offset()
 
 	e.objects.pushList(start, tableStart)
@@ -365,7 +320,7 @@ func (e *Encoder) BeginElement() error {
 	}
 
 	// push list element
-	start := len(e.buf)
+	start := e.buf.Len()
 	e.objects.pushElement(start)
 	return nil
 }
@@ -426,7 +381,8 @@ func (e *Encoder) endElement() ([]byte, error) {
 	e.elements.push(element)
 
 	// return data
-	b := e.buf[elem.start:data.end]
+	b := e.buf.Bytes()
+	b = b[elem.start:data.end]
 	return b, nil
 }
 
@@ -444,24 +400,25 @@ func (e *Encoder) endList() ([]byte, error) {
 		return nil, e.fail(errors.New("end list: not list encoder"))
 	}
 
-	bsize := len(e.buf) - list.start
+	bodySize := e.buf.Len() - list.start
 	table := e.elements.pop(list.tableStart)
 
 	// encode list
-	var err error
-	e.buf, err = encodeListMeta(e.buf, bsize, table)
-	if err != nil {
+	if _, err := encodeListMeta(e.buf, bodySize, table); err != nil {
 		return nil, e.fail(err)
 	}
 
 	// push data entry
 	start := list.start
-	end := len(e.buf)
+	end := e.buf.Len()
 	if err := e.setData(start, end); err != nil {
-		return nil, e.fail(err)
+		return nil, err
 	}
 
-	return e.buf[start:end], nil
+	// return data
+	b := e.buf.Bytes()
+	b = b[start:end]
+	return b, nil
 }
 
 // Message
@@ -472,7 +429,7 @@ func (e *Encoder) BeginMessage() error {
 	}
 
 	// push message
-	start := len(e.buf)
+	start := e.buf.Len()
 	tableStart := e.fields.offset()
 
 	e.objects.pushMessage(start, tableStart)
@@ -494,7 +451,7 @@ func (e *Encoder) BeginField(tag uint16) error {
 	}
 
 	// push field
-	start := len(e.buf)
+	start := e.buf.Len()
 	e.objects.pushField(start, tag)
 	return nil
 }
@@ -560,7 +517,8 @@ func (e *Encoder) endField() ([]byte, error) {
 	e.fields.insert(message.tableStart, f)
 
 	// return data
-	b := e.buf[field.start:data.end]
+	b := e.buf.Bytes()
+	b = b[field.start:data.end]
 	return b, nil
 }
 
@@ -578,25 +536,24 @@ func (e *Encoder) endMessage() ([]byte, error) {
 		return nil, e.fail(errors.New("end message: not message encoder"))
 	}
 
-	bsize := len(e.buf) - message.start
+	bsize := e.buf.Len() - message.start
 	table := e.fields.pop(message.tableStart)
 
 	// encode message
-	var err error
-	e.buf, err = encodeMessageMeta(e.buf, bsize, table)
-	if err != nil {
+	if _, err := encodeMessageMeta(e.buf, bsize, table); err != nil {
 		return nil, e.fail(err)
 	}
 
 	// push data
 	start := message.start
-	end := len(e.buf)
+	end := e.buf.Len()
 	if err := e.setData(start, end); err != nil {
-		return nil, e.fail(err)
+		return nil, err
 	}
 
 	// return data
-	b := e.buf[start:end]
+	b := e.buf.Bytes()
+	b = b[start:end]
 	return b, nil
 }
 
@@ -608,7 +565,7 @@ func (e *Encoder) BeginStruct() error {
 	}
 
 	// push struct
-	start := len(e.buf)
+	start := e.buf.Len()
 	e.objects.pushStruct(start)
 	return nil
 }
@@ -646,22 +603,17 @@ func (e *Encoder) EndStruct() error {
 		return e.fail(errors.New("end struct: not struct encoder"))
 	}
 
-	bsize := len(e.buf) - obj.start
+	bsize := e.buf.Len() - obj.start
 
 	// encode struct
-	var err error
-	e.buf, err = encodeStruct(e.buf, bsize)
-	if err != nil {
+	if _, err := encodeStruct(e.buf, bsize); err != nil {
 		return e.fail(err)
 	}
 
 	// push data
 	start := obj.start
-	end := len(e.buf)
-	if err := e.setData(start, end); err != nil {
-		return e.fail(err)
-	}
-	return nil
+	end := e.buf.Len()
+	return e.setData(start, end)
 }
 
 // private
@@ -686,7 +638,8 @@ type encodeData struct {
 
 func (e *Encoder) setData(start, end int) error {
 	if e.data.start != 0 || e.data.end != 0 {
-		return errors.New("encode: cannot encode more data, element/field must be written first")
+		err := errors.New("encode: cannot encode more data, element/field must be written first")
+		return e.fail(err)
 	}
 
 	e.data = encodeData{

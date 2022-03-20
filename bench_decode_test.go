@@ -32,9 +32,9 @@ func BenchmarkDecode(b *testing.B) {
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
+	ops := float64(b.N) / sec
 
-	b.ReportMetric(rps, "rps")
+	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
 	b.ReportMetric(float64(compressed), "size-zlib")
 }
@@ -62,9 +62,9 @@ func BenchmarkDecodeObject(b *testing.B) {
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
+	ops := float64(b.N) / sec
 
-	b.ReportMetric(rps, "rps")
+	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
 	b.ReportMetric(float64(compressed), "size-zlib")
 }
@@ -93,9 +93,9 @@ func BenchmarkJSON_Unmarshal(b *testing.B) {
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
-	rps := float64(b.N) / sec
+	ops := float64(b.N) / sec
 
-	b.ReportMetric(rps, "rps")
+	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(len(data)), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
