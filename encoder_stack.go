@@ -176,6 +176,7 @@ func (s *messageStack) insert(offset int, f messageField) {
 		left := table[i-1]
 		right := table[i]
 
+		// TODO: Replace previous field with the same tag?
 		if left.tag < right.tag {
 			// sorted
 			break

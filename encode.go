@@ -325,6 +325,14 @@ func encodeStruct(b Buffer, bodySize int) (int, error) {
 
 // private
 
+// appendSize appends size as rvarint, for tests.
+func appendSize(b []byte, size uint32) []byte {
+	p := [rvarint.MaxLen32]byte{}
+	n := rvarint.PutUint64(p[:], uint64(size))
+	off := rvarint.MaxLen32 - n
+	return append(b, p[off:]...)
+}
+
 func encodeSize(b Buffer, size uint32) int {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(size))

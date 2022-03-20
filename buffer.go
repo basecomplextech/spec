@@ -4,15 +4,15 @@ type Buffer interface {
 	// Len returns the number of bytes in the buffer; b.Len() == len(b.Bytes()).
 	Len() int
 
-	// Bytes returns a slice of with written bytes.
-	// The slice is valid for use only until the next buffer modification.
+	// Bytes returns a slice of with the written bytes.
+	// The slice is valid for use only until the next buffer mutation.
 	Bytes() []byte
 
 	// Mutation
 
 	// Alloc grows an internal buffer `capacity` and returns an n-byte slice.
-	// This slice is intended to be appended to and passed to an immediately succeeding
-	// Write call. The slice is only valid until the next write operation on b.
+	// The slice is intended to be passed to an immediately succeeding Write call.
+	// The slice is only valid until the next buffer mutation.
 	//
 	// Usage:
 	//
@@ -23,8 +23,7 @@ type Buffer interface {
 	// Alloc(n int) []byte
 
 	// Grow grows and internal buffer `length` and returns an n-byte slice.
-	// This slice can be should be used directly. The slice is only valid until
-	// the next write operation on b.
+	// The slice be should be used directly is only valid until the next buffer mutation.
 	//
 	// Usage:
 	//
@@ -71,8 +70,7 @@ func (b *buffer) Len() int {
 	return len(b.buf)
 }
 
-// Bytes returns a slice of with written bytes.
-// The slice is valid for use only until the next buffer modification.
+// Bytes returns a slice of with the written bytes.
 func (b *buffer) Bytes() []byte {
 	return b.buf
 }
