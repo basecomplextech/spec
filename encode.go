@@ -6,9 +6,9 @@ import (
 	"math"
 
 	"github.com/complexl/library/buffer"
+	"github.com/complexl/library/rvarint"
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
-	"github.com/complexl/spec/rvarint"
 )
 
 func EncodeNil(b buffer.Buffer) int {
