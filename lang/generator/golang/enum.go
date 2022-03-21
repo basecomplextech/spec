@@ -1,7 +1,6 @@
 package golang
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/complexl/spec/lang/compiler"
@@ -14,10 +13,13 @@ func (w *writer) enum(def *compiler.Definition) error {
 	if err := w.enumValues(def); err != nil {
 		return err
 	}
-	if err := w.readEnum(def); err != nil {
+	if err := w.getEnum(def); err != nil {
 		return err
 	}
-	if err := w.enumWrite(def); err != nil {
+	if err := w.decodeEnum(def); err != nil {
+		return err
+	}
+	if err := w.encodeEnum(def); err != nil {
 		return err
 	}
 	if err := w.enumString(def); err != nil {
@@ -48,23 +50,33 @@ func (w *writer) enumValues(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) readEnum(def *compiler.Definition) error {
+func (w *writer) getEnum(def *compiler.Definition) error {
 	name := def.Name
-	w.linef(`func Read%v(b []byte) (%v, error) {`, name, name)
-	w.linef(`r := spec.NewReader(b)`)
-	w.linef(`v, _, err := r.ReadInt32()`)
-	w.linef(`if err != nil {
-		return 0, err
-	}`)
-	w.linef(`return %v(v), nil`, name)
+	w.linef(`func Get%v(b []byte) %v {`, name, name)
+	w.linef(`v, _, _ := spec.DecodeInt32(b)`)
+	w.linef(`return %v(v)`, name)
 	w.linef(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) enumWrite(def *compiler.Definition) error {
-	w.linef(`func (e %v) Write(w *spec.Encoder) error {`, def.Name)
-	w.linef(`return w.Int32(int32(e))`)
+func (w *writer) decodeEnum(def *compiler.Definition) error {
+	name := def.Name
+	w.linef(`func Decode%v(b []byte) (result %v, size int, err error) {`, name, name)
+	w.linef(`v, size, err := spec.DecodeInt32(b)`)
+	w.linef(`if err != nil {
+		return
+	}`)
+	w.linef(`result = %v(v)`, name)
+	w.line(`return`)
+	w.linef(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) encodeEnum(def *compiler.Definition) error {
+	w.linef(`func Encode%v(e *spec.Encoder, v %v) error {`, def.Name, def.Name)
+	w.linef(`return e.Int32(int32(v))`)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -90,11 +102,4 @@ func (w *writer) enumString(def *compiler.Definition) error {
 func enumValueName(val *compiler.EnumValue) string {
 	name := toUpperCamelCase(val.Name)
 	return val.Enum.Def.Name + name
-}
-
-func enumReadFunc(typ *compiler.Type) string {
-	if typ.Import == nil {
-		return fmt.Sprintf("Read%v", typ.Name)
-	}
-	return fmt.Sprintf("%v.Read%v", typ.ImportName, typ.Name)
 }

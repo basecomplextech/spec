@@ -33,7 +33,7 @@ func EncodeTestMessage(e *Encoder) (result TestMessageEncoder, err error) {
 	return
 }
 
-func (m TestMessage) Bytes() []byte    { return m.msg.Bytes() }
+func (m TestMessage) RawBytes() []byte { return m.msg.Raw() }
 func (m TestMessage) Bool() bool       { return m.msg.Bool(1) }
 func (m TestMessage) Byte() byte       { return m.msg.Byte(2) }
 func (m TestMessage) Int32() int32     { return m.msg.Int32(10) }
@@ -45,7 +45,7 @@ func (m TestMessage) U256() u256.U256  { return m.msg.U256(23) }
 func (m TestMessage) Float32() float32 { return m.msg.Float32(30) }
 func (m TestMessage) Float64() float64 { return m.msg.Float64(31) }
 func (m TestMessage) String() string   { return m.msg.String(40) }
-func (m TestMessage) Bytes_() []byte   { return m.msg.ByteSlice(41) }
+func (m TestMessage) Bytes() []byte    { return m.msg.Bytes(41) }
 
 func (m TestMessage) Submessage() TestSubmessage {
 	b := m.msg.Field(50)
@@ -68,9 +68,8 @@ func (m TestMessage) Strings() List[string] {
 }
 
 func (m TestMessage) Struct() TestStruct {
-	data := m.msg.Field(60)
-	v, _, _ := DecodeTestStruct(data)
-	return v
+	b := m.msg.Field(60)
+	return GetTestStruct(b)
 }
 
 // TestMessageEncoder
@@ -196,9 +195,9 @@ func EncodeTestSubmessage(e *Encoder) (result TestSubmessageEncoder, err error) 
 	return
 }
 
-func (m TestSubmessage) Bytes() []byte { return m.msg.Bytes() }
-func (m TestSubmessage) Int32() int32  { return m.msg.Int32(1) }
-func (m TestSubmessage) Int64() int64  { return m.msg.Int64(2) }
+func (m TestSubmessage) RawBytes() []byte { return m.msg.Raw() }
+func (m TestSubmessage) Int32() int32     { return m.msg.Int32(1) }
+func (m TestSubmessage) Int64() int64     { return m.msg.Int64(2) }
 
 // TestSubmessageEncoder
 
@@ -290,6 +289,11 @@ func (e TestElementEncoder) Int64(v int64) error {
 type TestStruct struct {
 	X int64
 	Y int64
+}
+
+func GetTestStruct(b []byte) (result TestStruct) {
+	result, _, _ = DecodeTestStruct(b)
+	return result
 }
 
 func DecodeTestStruct(b []byte) (result TestStruct, total int, err error) {

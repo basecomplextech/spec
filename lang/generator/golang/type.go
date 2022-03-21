@@ -6,34 +6,18 @@ import (
 	"github.com/complexl/spec/lang/compiler"
 )
 
-// dataType returns a data type name.
-func dataType(typ *compiler.Type) string {
-	return _typeName(typ, true)
-}
-
-// entryType returns an object type name.
-func entryType(typ *compiler.Type) string {
-	return _typeName(typ, false)
-}
-
-func _typeName(typ *compiler.Type, data bool) string {
+// typeName returns a type name.
+func typeName(typ *compiler.Type) string {
 	switch typ.Kind {
 	case compiler.KindBool:
 		return "bool"
+	case compiler.KindByte:
+		return "byte"
 
-	case compiler.KindInt8:
-		return "int8"
-	case compiler.KindInt16:
-		return "int16"
 	case compiler.KindInt32:
 		return "int32"
 	case compiler.KindInt64:
 		return "int64"
-
-	case compiler.KindUint8:
-		return "uint8"
-	case compiler.KindUint16:
-		return "uint16"
 	case compiler.KindUint32:
 		return "uint32"
 	case compiler.KindUint64:
@@ -54,36 +38,13 @@ func _typeName(typ *compiler.Type, data bool) string {
 	case compiler.KindString:
 		return "string"
 
-	// list
-
 	case compiler.KindList:
-		elem := entryType(typ.Element)
-		return "[]" + elem
+		elem := typeName(typ.Element)
+		return fmt.Sprintf("spec.List[%v]", elem)
 
-	// resolved
-
-	case compiler.KindEnum:
-		if typ.Import != nil {
-			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
-		}
-		return typ.Name
-
-	case compiler.KindMessage:
-		if data {
-			if typ.Import != nil {
-				return fmt.Sprintf("%v.%vData", typ.ImportName, typ.Name)
-			} else {
-				return fmt.Sprintf("%vData", typ.Name)
-			}
-		} else {
-			if typ.Import != nil {
-				return fmt.Sprintf("*%v.%v", typ.ImportName, typ.Name)
-			} else {
-				return fmt.Sprintf("*%v", typ.Name)
-			}
-		}
-
-	case compiler.KindStruct:
+	case compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
 		}
@@ -91,4 +52,72 @@ func _typeName(typ *compiler.Type, data bool) string {
 	}
 
 	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
+}
+
+func typeGetFunc(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindList:
+		elem := typeName(typ.Element)
+		return "spec.List[]" + elem
+
+	case compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Get%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Get%v", typ.Name)
+	}
+	return ""
+}
+
+func typeDecodeFunc(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindBool:
+		return "spec.DecodeBool"
+	case compiler.KindByte:
+		return "spec.DecodeByte"
+
+	case compiler.KindInt32:
+		return "spec.DecodeInt32"
+	case compiler.KindInt64:
+		return "spec.DecodeInt64"
+	case compiler.KindUint32:
+		return "spec.DecodeUint32"
+	case compiler.KindUint64:
+		return "spec.DecodeUint64"
+
+	case compiler.KindU128:
+		return "spec.DecodeU128"
+	case compiler.KindU256:
+		return "spec.DecodeU256"
+
+	case compiler.KindFloat32:
+		return "spec.DecodeFloat32"
+	case compiler.KindFloat64:
+		return "spec.DecodeFloat64"
+
+	case compiler.KindBytes:
+		return "spec.DecodeBytes"
+	case compiler.KindString:
+		return "spec.DecodeString"
+
+	case compiler.KindList:
+		elem := typeName(typ.Element)
+		return fmt.Sprintf("spec.DecodeList[%v]", elem)
+
+	case compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Decode%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Decode%v", typ.Name)
+	}
+
+	return ""
 }

@@ -10,16 +10,13 @@ func (w *writer) struct_(def *compiler.Definition) error {
 	if err := w.structDef(def); err != nil {
 		return err
 	}
-	if err := w.readStruct(def); err != nil {
+	if err := w.getStruct(def); err != nil {
 		return err
 	}
-	if err := w.structMarshal(def); err != nil {
+	if err := w.decodeStruct(def); err != nil {
 		return err
 	}
-	if err := w.structUnmarshal(def); err != nil {
-		return err
-	}
-	if err := w.structWrite(def); err != nil {
+	if err := w.encodeStruct(def); err != nil {
 		return err
 	}
 	return nil
@@ -32,9 +29,9 @@ func (w *writer) structDef(def *compiler.Definition) error {
 
 	for _, field := range def.Struct.Fields {
 		name := structFieldName(field)
-		typ := entryType(field.Type)
-		tag := fmt.Sprintf("`json:\"%v\"`", field.Name)
-		w.linef("%v %v %v", name, typ, tag)
+		typ := typeName(field.Type)
+		goTag := fmt.Sprintf("`json:\"%v\"`", field.Name)
+		w.linef("%v %v %v", name, typ, goTag)
 	}
 
 	w.line("}")
@@ -42,197 +39,108 @@ func (w *writer) structDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) readStruct(def *compiler.Definition) error {
-	w.linef(`func Read%v(b []byte) (str %v, err error) {`, def.Name, def.Name)
-	w.line(`if len(b) == 0 {
-		return
-	}`)
-	w.line(`err = str.Unmarshal(b)`)
+func (w *writer) getStruct(def *compiler.Definition) error {
+	w.linef(`func Get%v(b []byte) (result %v) {`, def.Name, def.Name)
+	w.linef(`result, _, _ = Decode%v(b)`, def.Name)
 	w.line(`return`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) structMarshal(def *compiler.Definition) error {
-	w.linef(`func (s %v) Marshal() ([]byte, error) {`, def.Name)
-	w.line(`return spec.Write(s)
+func (w *writer) decodeStruct(def *compiler.Definition) error {
+	w.linef(`func Decode%v(b []byte) (result %v, size int, err error) {`, def.Name, def.Name)
+	w.line(`dataSize, size, err := spec.DecodeStruct(b)`)
+	w.line(`if err != nil {
+		return
 	}`)
 	w.line()
 
-	w.linef(`func (s %v) MarshalTo(b []byte) ([]byte, error) {`, def.Name)
-	w.line(`return spec.WriteTo(s, b)
-	}`)
-	w.line()
-	return nil
-}
-
-func (w *writer) structUnmarshal(def *compiler.Definition) error {
-	w.linef(`func (s *%v) Unmarshal(b []byte) error {`, def.Name)
-	w.linef(`r, err := spec.ReadStruct(b)
-	switch {
-	case err != nil:
-		return err
-	case len(r) == 0:
-		return nil
-	}`)
+	w.line(`b = b[len(b)-size:]
+	n := size - dataSize
+	off := len(b)
+	`)
 	w.line()
 
-	// unmarshal fields in reverse
+	w.line(`// decode in reverse order`)
+	w.line()
+
 	fields := def.Struct.Fields
 	for i := len(fields) - 1; i >= 0; i-- {
 		field := fields[i]
-		if err := w.structUnmarshalField(field); err != nil {
-			return err
-		}
+		fieldName := structFieldName(field)
+		decodeName := typeDecodeFunc(field.Type)
+
+		w.line(`off -= n`)
+		w.linef(`result.%v, n, err = %v(b[:off])`, fieldName, decodeName)
+		w.line(`if err != nil {
+			return
+		}`)
+		w.line()
 	}
 
-	w.line(`return nil`)
+	w.line(`return`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) structUnmarshalField(field *compiler.StructField) error {
-	name := structFieldName(field)
-	typ := field.Type
-	kind := typ.Kind
-
-	switch kind {
-	case compiler.KindBool:
-		w.linef(`s.%v, r, err = r.ReadBool()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-
-	case compiler.KindInt8:
-		w.linef(`s.%v, r, err = r.ReadByte()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindInt16:
-		w.linef(`s.%v, r, err = r.ReadInt16()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindInt32:
-		w.linef(`s.%v, r, err = r.ReadInt32()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindInt64:
-		w.linef(`s.%v, r, err = r.ReadInt64()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-
-	case compiler.KindUint8:
-		w.linef(`s.%v, r, err = r.ReadUint8()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindUint16:
-		w.linef(`s.%v, r, err = r.ReadUint16()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindUint32:
-		w.linef(`s.%v, r, err = r.ReadUint32()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindUint64:
-		w.linef(`s.%v, r, err = r.ReadUint64()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-
-	case compiler.KindU128:
-		w.linef(`s.%v, r, err = r.ReadU128()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindU256:
-		w.linef(`s.%v, r, err = r.ReadU256()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-
-	case compiler.KindFloat32:
-		w.linef(`s.%v, r, err = r.ReadFloat32()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindFloat64:
-		w.linef(`s.%v, r, err = r.ReadFloat64()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-
-	case compiler.KindBytes:
-		w.linef(`s.%v, r, err = r.ReadBytes()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-	case compiler.KindString:
-		w.linef(`s.%v, r, err = r.ReadString()`, name)
-		w.linef(`if err != nil {
-			return err
-		}`)
-
-	case compiler.KindStruct:
-		read := structReadFunc(typ)
-
-		w.linef(`{`)
-		w.linef(`data, r, err := r.Read()`)
-		w.linef(`if err != nil {
-			return err
-		}`)
-
-		w.linef(`s.%v, err = %v(data)`, name, read)
-		w.linef(`if err != nil {
-			return err
-		}`)
-		w.linef(`}`)
-	}
-
-	return nil
-}
-
-func (w *writer) structWrite(def *compiler.Definition) error {
-	w.linef(`func (s %v) Write(w *spec.Encoder) error {`, def.Name)
-	w.linef(`if err := w.BeginStruct(); err != nil {
-		return err
+func (w *writer) encodeStruct(def *compiler.Definition) error {
+	w.linef(`func Encode%v(e *spec.Encoder, s %v) ([]byte, error) {`, def.Name, def.Name)
+	w.linef(`if err := e.BeginStruct(); err != nil {
+		return nil, err
 	}`)
 	w.line()
 
 	for _, field := range def.Struct.Fields {
-		name := structFieldName(field)
-		typ := field.Type
-		val := fmt.Sprintf("s.%v", name)
+		fieldName := structFieldName(field)
+		kind := field.Type.Kind
 
-		w.writerWrite(typ, val)
-		w.linef(`w.StructField()`)
+		switch kind {
+		case compiler.KindBool:
+			w.linef(`e.Bool(s.%v)`, fieldName)
+		case compiler.KindByte:
+			w.linef(`e.Byte(s.%v)`, fieldName)
+
+		case compiler.KindInt32:
+			w.linef(`e.Int32(s.%v)`, fieldName)
+		case compiler.KindInt64:
+			w.linef(`e.Int64(s.%v)`, fieldName)
+		case compiler.KindUint32:
+			w.linef(`e.Uint32(s.%v)`, fieldName)
+		case compiler.KindUint64:
+			w.linef(`e.Uint64(s.%v)`, fieldName)
+
+		case compiler.KindU128:
+			w.linef(`e.U128(s.%v)`, fieldName)
+		case compiler.KindU256:
+			w.linef(`e.U256(s.%v)`, fieldName)
+
+		case compiler.KindFloat32:
+			w.linef(`e.Float32(s.%v)`, fieldName)
+		case compiler.KindFloat64:
+			w.linef(`e.Float64(s.%v)`, fieldName)
+
+		case compiler.KindBytes:
+			w.linef(`e.Bytes(s.%v)`, fieldName)
+		case compiler.KindString:
+			w.linef(`e.String(s.%v)`, fieldName)
+
+		case compiler.KindStruct:
+			decodeFunc := typeDecodeFunc(field.Type)
+			w.linef(`%v(e, s.%v)`, decodeFunc, fieldName)
+		}
+
+		w.linef(`e.StructField()`)
 		w.line()
 	}
 
 	// end
-	w.line(`return w.EndStruct()`)
+	w.line(`return e.End()`)
 	w.line(`}`)
 	return nil
 }
 
 func structFieldName(field *compiler.StructField) string {
 	return toUpperCamelCase(field.Name)
-}
-
-func structReadFunc(typ *compiler.Type) string {
-	if typ.Kind != compiler.KindStruct {
-		panic(fmt.Sprintf("must be struct, got=%v", typ.Kind))
-	}
-
-	if typ.Import == nil {
-		return fmt.Sprintf("Read%v", typ.Name)
-	}
-	return fmt.Sprintf("%v.Read%v", typ.ImportName, typ.Name)
 }

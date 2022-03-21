@@ -42,8 +42,8 @@ func DecodeMessage(b []byte) (Message, int, error) {
 	return m, n, nil
 }
 
-// Bytes returns the exact message bytes.
-func (m Message) Bytes() []byte {
+// Raw returns the exact message bytes.
+func (m Message) Raw() []byte {
 	return m.bytes
 }
 
@@ -234,7 +234,7 @@ func (m Message) Float64(tag uint16) float64 {
 	return v
 }
 
-func (m Message) ByteSlice(tag uint16) []byte {
+func (m Message) Bytes(tag uint16) []byte {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
