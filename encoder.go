@@ -10,7 +10,7 @@ import (
 	"github.com/complexl/library/u256"
 )
 
-const BufferSize = 4096
+type Buffer = buffer.Buffer
 
 var encoderPool = &sync.Pool{
 	New: func() interface{} {
@@ -47,8 +47,7 @@ func NewEncoder() *Encoder {
 //
 // Usually, it is better to use Encode(obj) and EncodeTo(obj, buf), than to construct
 // a new encoder directly. These methods internally use an encoder pool.
-func NewEncoderBuffer(b []byte) *Encoder {
-	buf := buffer.New(b)
+func NewEncoderBuffer(buf buffer.Buffer) *Encoder {
 	return newEncoder(buf)
 }
 
@@ -106,11 +105,6 @@ func (e *Encoder) End() (result []byte, err error) {
 			return nil, err
 		}
 
-	case entryStruct:
-		result, err = e.endStruct()
-		if err != nil {
-			return nil, err
-		}
 	default:
 		return nil, e.fail(errors.New("end: not nested encoder"))
 	}
@@ -565,70 +559,20 @@ func (e *Encoder) endMessage() ([]byte, error) {
 	return b, nil
 }
 
-// Struct
+// Value
 
-func (e *Encoder) BeginStruct() error {
+func EncodeValue[T any](e *Encoder, v T, encode EncodeFunc[T]) error {
 	if e.err != nil {
 		return e.err
 	}
 
-	// push struct
 	start := e.buf.Len()
-	e.stack.pushStruct(start)
-	return nil
-}
-
-func (e *Encoder) StructField() error {
-	if e.err != nil {
-		return e.err
+	if _, err := encode(e.buf, v); err != nil {
+		return e.fail(err)
 	}
-
-	// check struct
-	entry, ok := e.stack.peek()
-	switch {
-	case !ok:
-		return e.fail(errors.New("field: cannot encode struct field, not struct"))
-	case entry.type_ != entryStruct:
-		return e.fail(errors.New("field: cannot encode struct field, not struct"))
-	}
-
-	// just consume data
-	e.popData()
-	return nil
-}
-
-func (e *Encoder) endStruct() ([]byte, error) {
-	if e.err != nil {
-		return nil, e.err
-	}
-
-	// pop struct
-	entry, ok := e.stack.pop()
-	switch {
-	case !ok:
-		return nil, e.fail(errors.New("end struct: not struct encoder"))
-	case entry.type_ != entryStruct:
-		return nil, e.fail(errors.New("end struct: not struct encoder"))
-	}
-
-	dataSize := e.buf.Len() - entry.start
-
-	// encode struct
-	if _, err := encodeStruct(e.buf, dataSize); err != nil {
-		return nil, e.fail(err)
-	}
-
-	// push data
-	start := entry.start
 	end := e.buf.Len()
-	if err := e.setData(start, end); err != nil {
-		return nil, err
-	}
 
-	// return data
-	b := e.buf.Bytes()
-	b = b[start:end]
-	return b, nil
+	return e.setData(start, end)
 }
 
 // private

@@ -10,6 +10,8 @@ type Message struct {
 	bytes []byte
 }
 
+type MessageEncoderFunc[T any] func(e *Encoder) (T, error)
+
 // GetMessage decodes and returns a message without recursive validation, or an empty message on error.
 func GetMessage(b []byte) Message {
 	meta, n, err := decodeMessageMeta(b)

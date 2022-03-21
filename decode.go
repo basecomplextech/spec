@@ -211,7 +211,9 @@ func DecodeU128(b []byte) (u128.U128, int, error) {
 	case t == TypeNil:
 		return u128.U128{}, n, nil
 	case t != TypeU128:
-		return u128.U128{}, -1, fmt.Errorf("decode u128: unexpected type, expected=%d, actual=%d", TypeU128, t)
+		return u128.U128{}, -1, fmt.Errorf(
+			"decode u128: unexpected type, expected=%v:%d, actual=%v:%d",
+			TypeU128, TypeU128, t, t)
 	}
 
 	end := len(b) - n
@@ -238,7 +240,9 @@ func DecodeU256(b []byte) (u256.U256, int, error) {
 	case t == TypeNil:
 		return u256.U256{}, -1, nil
 	case t != TypeU256:
-		return u256.U256{}, -1, fmt.Errorf("decode u256: unexpected type, expected=%d, actual=%d", TypeU256, t)
+		return u256.U256{}, -1, fmt.Errorf(
+			"decode u256: unexpected type, expected=%v:%d, actual=%v:%d",
+			TypeU256, TypeU256, t, t)
 	}
 
 	end := len(b) - n
@@ -328,7 +332,9 @@ func DecodeBytes(b []byte) ([]byte, int, error) {
 	case t == TypeNil:
 		return nil, n, nil
 	case t != TypeBytes:
-		return nil, -1, fmt.Errorf("decode bytes: unexpected type, expected=%d, actual=%d", TypeBytes, t)
+		return nil, -1, fmt.Errorf(
+			"decode bytes: unexpected type, expected=%v:%d, actual=%v:%d",
+			TypeBytes, TypeBytes, t, t)
 	}
 
 	// bytes size
@@ -371,7 +377,9 @@ func DecodeString(b []byte) (string, int, error) {
 	case t == TypeNil:
 		return "", n, nil
 	case t != TypeString:
-		return "", -1, fmt.Errorf("decode string: unexpected type, expected=%d, actual=%d", TypeString, t)
+		return "", -1, fmt.Errorf(
+			"decode string: unexpected type, expected=%v:%d, actual=%v:%d",
+			TypeString, TypeString, t, t)
 	}
 
 	// string size
@@ -420,7 +428,9 @@ func DecodeStruct(b []byte) (dataSize int, n int, err error) {
 	// check type
 	switch t {
 	default:
-		return 0, -1, fmt.Errorf("decode struct: unexpected type, expected=%d, actual=%d", TypeStruct, t)
+		return 0, -1, fmt.Errorf(
+			"decode struct: unexpected type, expected=%v:%d, actual=%v:%d",
+			TypeStruct, TypeStruct, t, t)
 	case TypeNil:
 		return 0, 0, nil
 	case TypeStruct:
@@ -460,7 +470,9 @@ func decodeListMeta(b []byte) (listMeta, int, error) {
 	// check type
 	switch t {
 	default:
-		return meta, -1, fmt.Errorf("decode list: unexpected type, expected=%d, actual=%d", TypeList, t)
+		return meta, -1, fmt.Errorf(
+			"decode list: unexpected type, expected=%v:%d, actual=%v:%d",
+			TypeList, TypeList, t, t)
 	case TypeNil:
 		return meta, n, nil
 	case TypeList, TypeListBig:
@@ -549,7 +561,9 @@ func decodeMessageMeta(b []byte) (messageMeta, int, error) {
 	// check type
 	switch t {
 	default:
-		return meta, -1, fmt.Errorf("decode message: unexpected type, expected=%d, actual=%d", TypeMessage, t)
+		return meta, -1, fmt.Errorf(
+			"decode message: unexpected type, expected=%v:%d, actual=%v:%d",
+			TypeMessage, TypeMessage, t, t)
 	case TypeNil:
 		return meta, 0, nil
 	case TypeMessage, TypeMessageBig:

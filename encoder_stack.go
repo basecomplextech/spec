@@ -8,7 +8,6 @@ const (
 	entryElement
 	entryMessage
 	entryField
-	entryStruct
 )
 
 type stackEntry struct {
@@ -89,14 +88,6 @@ func (s *stack) pushField(start int, tag uint16) {
 		type_:      entryField,
 		start:      start,
 		tableStart: int(tag),
-	}
-	s.stack = append(s.stack, e)
-}
-
-func (s *stack) pushStruct(start int) {
-	e := stackEntry{
-		type_: entryStruct,
-		start: start,
 	}
 	s.stack = append(s.stack, e)
 }

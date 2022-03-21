@@ -96,60 +96,66 @@ func (l List[T]) Validate() error {
 
 // Encoder
 
-// ListEncoder encodes a list.
-type ListEncoder[W any] struct {
-	e    *Encoder
-	next func(*Encoder) (W, error)
-}
-
-// EncodeList begins and returns a new list encoder.
-func EncodeList[W any](e *Encoder, next func(*Encoder) (W, error)) (result ListEncoder[W], err error) {
-	if err = e.BeginList(); err != nil {
-		return
-	}
-
-	result = ListEncoder[W]{e: e, next: next}
-	return
-}
-
-// End ends the list.
-func (e ListEncoder[W]) End() ([]byte, error) {
-	return e.e.End()
-}
-
-// Next returns the next element encoder.
-func (e ListEncoder[W]) Next() (result W, err error) {
-	if err = e.e.BeginElement(); err != nil {
-		return
-	}
-	return e.next(e.e)
-}
-
-// ValuesEncoder encodes a list of primitive values.
-type ValuesEncoder[T any] struct {
+// ListEncoder encodes a list of values.
+type ListEncoder[T any] struct {
 	e      *Encoder
-	encode func(el T) error
+	encode EncodeFunc[T]
 }
 
-// EncodeValues begins and returns a new list encoder for primitive values.
-func EncodeValues[T any](e *Encoder, encode func(T) error) (result ValuesEncoder[T], err error) {
+// EncodeList begins and returns a new value list encoder.
+func EncodeList[T any](e *Encoder, encode EncodeFunc[T]) (
+	result ListEncoder[T], err error,
+) {
 	if err = e.BeginList(); err != nil {
 		return
 	}
 
-	result = ValuesEncoder[T]{e: e, encode: encode}
+	result = ListEncoder[T]{e: e, encode: encode}
 	return
 }
 
 // End ends the list.
-func (e ValuesEncoder[T]) End() ([]byte, error) {
+func (e ListEncoder[T]) End() ([]byte, error) {
 	return e.e.End()
 }
 
 // Next encodes the next element.
-func (e ValuesEncoder[T]) Next(el T) error {
-	if err := e.encode(el); err != nil {
+func (e ListEncoder[T]) Next(value T) error {
+	if err := EncodeValue(e.e, value, e.encode); err != nil {
 		return err
 	}
 	return e.e.Element()
+}
+
+// Message encoder
+
+// MessageListEncoder encodes a list of messages.
+type MessageListEncoder[T any] struct {
+	e    *Encoder
+	next MessageEncoderFunc[T]
+}
+
+// EncodeMessageList begins and returns a new message list encoder.
+func EncodeMessageList[T any](e *Encoder, next MessageEncoderFunc[T]) (
+	result MessageListEncoder[T], err error,
+) {
+	if err = e.BeginList(); err != nil {
+		return
+	}
+
+	result = MessageListEncoder[T]{e: e, next: next}
+	return
+}
+
+// End ends the list.
+func (e MessageListEncoder[T]) End() ([]byte, error) {
+	return e.e.End()
+}
+
+// Next returns the next element encoder.
+func (e MessageListEncoder[T]) Next() (result T, err error) {
+	if err = e.e.BeginElement(); err != nil {
+		return
+	}
+	return e.next(e.e)
 }

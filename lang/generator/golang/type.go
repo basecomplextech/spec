@@ -8,7 +8,9 @@ import (
 
 // typeName returns a type name.
 func typeName(typ *compiler.Type) string {
-	switch typ.Kind {
+	kind := typ.Kind
+
+	switch kind {
 	case compiler.KindBool:
 		return "bool"
 	case compiler.KindByte:
@@ -117,6 +119,83 @@ func typeDecodeFunc(typ *compiler.Type) string {
 			return fmt.Sprintf("%v.Decode%v", typ.ImportName, typ.Name)
 		}
 		return fmt.Sprintf("Decode%v", typ.Name)
+	}
+
+	return ""
+}
+
+func typeEncoder(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindList:
+		elem := typ.Element
+		if elem.Kind == compiler.KindMessage {
+			encoder := typeEncoder(elem)
+			return fmt.Sprintf("spec.MessageListEncoder[%v]", encoder)
+		}
+
+		elemName := typeName(elem)
+		return fmt.Sprintf("spec.ListEncoder[%v]", elemName)
+
+	case compiler.KindMessage:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.%vEncoder", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("%vEncoder", typ.Name)
+	}
+
+	return ""
+}
+
+func typeEncodeFunc(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindBool:
+		return "spec.EncodeBool"
+	case compiler.KindByte:
+		return "spec.EncodeByte"
+
+	case compiler.KindInt32:
+		return "spec.EncodeInt32"
+	case compiler.KindInt64:
+		return "spec.EncodeInt64"
+	case compiler.KindUint32:
+		return "spec.EncodeUint32"
+	case compiler.KindUint64:
+		return "spec.EncodeUint64"
+
+	case compiler.KindU128:
+		return "spec.EncodeU128"
+	case compiler.KindU256:
+		return "spec.EncodeU256"
+
+	case compiler.KindFloat32:
+		return "spec.EncodeFloat32"
+	case compiler.KindFloat64:
+		return "spec.EncodeFloat64"
+
+	case compiler.KindBytes:
+		return "spec.EncodeBytes"
+	case compiler.KindString:
+		return "spec.EncodeString"
+
+	case compiler.KindList:
+		elem := typ.Element
+		if elem.Kind == compiler.KindMessage {
+			return fmt.Sprintf("spec.EncodeMessageList")
+		}
+
+		return fmt.Sprintf("spec.EncodeList")
+
+	case compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Encode%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Encode%v", typ.Name)
 	}
 
 	return ""

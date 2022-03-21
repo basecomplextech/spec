@@ -285,7 +285,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 		}
 	}
 
-	if _, err := e.Struct(m.Struct); err != nil {
+	if err := e.Struct(m.Struct); err != nil {
 		return err
 	}
 	return nil

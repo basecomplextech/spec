@@ -27,7 +27,7 @@ message Message {
     field_bytes   bytes     51;
     field_struct  Struct    52;
 
-    msg         Node            60;
+    node         Node           60;
     value       Struct          61;
     imported    pkg2.Submessage 62;
 

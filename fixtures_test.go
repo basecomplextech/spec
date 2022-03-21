@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"github.com/complexl/library/buffer"
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
 )
@@ -142,29 +143,29 @@ func (e TestMessageEncoder) Bytes(v []byte) error {
 	return e.e.Field(41)
 }
 
-func (e TestMessageEncoder) Submessage() (result TestSubmessageEncoder, err error) {
+func (e TestMessageEncoder) Submessage() (TestSubmessageEncoder, error) {
 	e.e.BeginField(50)
 	return EncodeTestSubmessage(e.e)
 }
 
-func (e TestMessageEncoder) List() (result ValuesEncoder[int64], err error) {
+func (e TestMessageEncoder) List() (ListEncoder[int64], error) {
 	e.e.BeginField(51)
-	return EncodeValues(e.e, e.e.Int64)
+	return EncodeList(e.e, EncodeInt64)
 }
 
-func (e TestMessageEncoder) Messages() (result ListEncoder[TestElementEncoder], err error) {
+func (e TestMessageEncoder) Messages() (MessageListEncoder[TestElementEncoder], error) {
 	e.e.BeginField(52)
-	return EncodeList(e.e, EncodeTestElement)
+	return EncodeMessageList(e.e, EncodeTestElement)
 }
 
-func (e TestMessageEncoder) Strings() (result ValuesEncoder[string], err error) {
+func (e TestMessageEncoder) Strings() (ListEncoder[string], error) {
 	e.e.BeginField(53)
-	return EncodeValues(e.e, e.e.String)
+	return EncodeList(e.e, EncodeString)
 }
 
-func (e TestMessageEncoder) Struct(v TestStruct) ([]byte, error) {
-	e.e.BeginField(60)
-	return EncodeTestStruct(e.e, v)
+func (e TestMessageEncoder) Struct(v TestStruct) error {
+	EncodeValue(e.e, v, EncodeTestStruct)
+	return e.e.Field(60)
 }
 
 // TestSubmessage
@@ -323,16 +324,25 @@ func DecodeTestStruct(b []byte) (result TestStruct, total int, err error) {
 	return
 }
 
-func EncodeTestStruct(e *Encoder, s TestStruct) ([]byte, error) {
-	if err := e.BeginStruct(); err != nil {
-		return nil, err
+func EncodeTestStruct(b buffer.Buffer, s TestStruct) (int, error) {
+	var dataSize, n int
+	var err error
+
+	n, err = EncodeInt64(b, s.X)
+	if err != nil {
+		return 0, err
 	}
+	dataSize += n
 
-	e.Int64(s.X)
-	e.StructField()
+	n, err = EncodeInt64(b, s.Y)
+	if err != nil {
+		return 0, err
+	}
+	dataSize += n
 
-	e.Int64(s.Y)
-	e.StructField()
-
-	return e.End()
+	n, err = EncodeStruct(b, dataSize)
+	if err != nil {
+		return 0, err
+	}
+	return dataSize + n, nil
 }

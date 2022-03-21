@@ -86,58 +86,30 @@ func (w *writer) decodeStruct(def *compiler.Definition) error {
 }
 
 func (w *writer) encodeStruct(def *compiler.Definition) error {
-	w.linef(`func Encode%v(e *spec.Encoder, s %v) ([]byte, error) {`, def.Name, def.Name)
-	w.linef(`if err := e.BeginStruct(); err != nil {
-		return nil, err
-	}`)
+	w.linef(`func Encode%v(b spec.Buffer, s %v) (int, error) {`, def.Name, def.Name)
+	w.line(`var dataSize, n int`)
+	w.line(`var err error`)
 	w.line()
 
 	for _, field := range def.Struct.Fields {
 		fieldName := structFieldName(field)
-		kind := field.Type.Kind
+		encodeFunc := typeEncodeFunc(field.Type)
 
-		switch kind {
-		case compiler.KindBool:
-			w.linef(`e.Bool(s.%v)`, fieldName)
-		case compiler.KindByte:
-			w.linef(`e.Byte(s.%v)`, fieldName)
-
-		case compiler.KindInt32:
-			w.linef(`e.Int32(s.%v)`, fieldName)
-		case compiler.KindInt64:
-			w.linef(`e.Int64(s.%v)`, fieldName)
-		case compiler.KindUint32:
-			w.linef(`e.Uint32(s.%v)`, fieldName)
-		case compiler.KindUint64:
-			w.linef(`e.Uint64(s.%v)`, fieldName)
-
-		case compiler.KindU128:
-			w.linef(`e.U128(s.%v)`, fieldName)
-		case compiler.KindU256:
-			w.linef(`e.U256(s.%v)`, fieldName)
-
-		case compiler.KindFloat32:
-			w.linef(`e.Float32(s.%v)`, fieldName)
-		case compiler.KindFloat64:
-			w.linef(`e.Float64(s.%v)`, fieldName)
-
-		case compiler.KindBytes:
-			w.linef(`e.Bytes(s.%v)`, fieldName)
-		case compiler.KindString:
-			w.linef(`e.String(s.%v)`, fieldName)
-
-		case compiler.KindStruct:
-			decodeFunc := typeDecodeFunc(field.Type)
-			w.linef(`%v(e, s.%v)`, decodeFunc, fieldName)
-		}
-
-		w.linef(`e.StructField()`)
+		w.linef(`n, err = %v(b, s.%v)`, encodeFunc, fieldName)
+		w.line(`if err != nil {
+			return 0, err
+		}`)
+		w.line(`dataSize += n`)
 		w.line()
 	}
 
-	// end
-	w.line(`return e.End()`)
+	w.line(`n, err = spec.EncodeStruct(b, dataSize)`)
+	w.line(`if err != nil {
+			return 0, err
+		}`)
+	w.line(`return dataSize + n, nil`)
 	w.line(`}`)
+	w.line()
 	return nil
 }
 

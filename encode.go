@@ -11,32 +11,34 @@ import (
 	"github.com/complexl/library/u256"
 )
 
-func EncodeNil(b buffer.Buffer) int {
+type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)
+
+func EncodeNil(b buffer.Buffer) (int, error) {
 	p := b.Grow(1)
 	p[0] = byte(TypeNil)
-	return 1
+	return 1, nil
 }
 
-func EncodeBool(b buffer.Buffer, v bool) int {
+func EncodeBool(b buffer.Buffer, v bool) (int, error) {
 	p := b.Grow(1)
 	if v {
 		p[0] = byte(TypeTrue)
 	} else {
 		p[0] = byte(TypeFalse)
 	}
-	return 1
+	return 1, nil
 }
 
-func EncodeByte(b buffer.Buffer, v byte) int {
+func EncodeByte(b buffer.Buffer, v byte) (int, error) {
 	p := b.Grow(2)
 	p[0] = v
 	p[1] = byte(TypeByte)
-	return 2
+	return 2, nil
 }
 
 // Int
 
-func EncodeInt32(b buffer.Buffer, v int32) int {
+func EncodeInt32(b buffer.Buffer, v int32) (int, error) {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutInt64(p[:], int64(v))
 	off := rvarint.MaxLen32 - n
@@ -45,10 +47,10 @@ func EncodeInt32(b buffer.Buffer, v int32) int {
 	copy(buf[:n], p[off:])
 	buf[n] = byte(TypeInt32)
 
-	return n + 1
+	return n + 1, nil
 }
 
-func EncodeInt64(b buffer.Buffer, v int64) int {
+func EncodeInt64(b buffer.Buffer, v int64) (int, error) {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutInt64(p[:], v)
 	off := rvarint.MaxLen64 - n
@@ -57,12 +59,12 @@ func EncodeInt64(b buffer.Buffer, v int64) int {
 	copy(buf[:n], p[off:])
 	buf[n] = byte(TypeInt64)
 
-	return n + 1
+	return n + 1, nil
 }
 
 // Uint
 
-func EncodeUint32(b buffer.Buffer, v uint32) int {
+func EncodeUint32(b buffer.Buffer, v uint32) (int, error) {
 	p := [rvarint.MaxLen32]byte{}
 	n := rvarint.PutUint64(p[:], uint64(v))
 	off := rvarint.MaxLen32 - n
@@ -71,10 +73,10 @@ func EncodeUint32(b buffer.Buffer, v uint32) int {
 	copy(buf[:n], p[off:])
 	buf[n] = byte(TypeUint32)
 
-	return n + 1
+	return n + 1, nil
 }
 
-func EncodeUint64(b buffer.Buffer, v uint64) int {
+func EncodeUint64(b buffer.Buffer, v uint64) (int, error) {
 	p := [rvarint.MaxLen64]byte{}
 	n := rvarint.PutUint64(p[:], v)
 	off := rvarint.MaxLen64 - n
@@ -83,39 +85,39 @@ func EncodeUint64(b buffer.Buffer, v uint64) int {
 	copy(buf[:n], p[off:])
 	buf[n] = byte(TypeUint64)
 
-	return n + 1
+	return n + 1, nil
 }
 
 // U128/U256
 
-func EncodeU128(b buffer.Buffer, v u128.U128) int {
+func EncodeU128(b buffer.Buffer, v u128.U128) (int, error) {
 	p := b.Grow(17)
 	copy(p, v[:])
 	p[16] = byte(TypeU128)
-	return 17
+	return 17, nil
 }
 
-func EncodeU256(b buffer.Buffer, v u256.U256) int {
+func EncodeU256(b buffer.Buffer, v u256.U256) (int, error) {
 	p := b.Grow(33)
 	copy(p, v[:])
 	p[32] = byte(TypeU256)
-	return 33
+	return 33, nil
 }
 
 // Float
 
-func EncodeFloat32(b buffer.Buffer, v float32) int {
+func EncodeFloat32(b buffer.Buffer, v float32) (int, error) {
 	p := b.Grow(5)
 	binary.BigEndian.PutUint32(p, math.Float32bits(v))
 	p[4] = byte(TypeFloat32)
-	return 5
+	return 5, nil
 }
 
-func EncodeFloat64(b buffer.Buffer, v float64) int {
+func EncodeFloat64(b buffer.Buffer, v float64) (int, error) {
 	p := b.Grow(9)
 	binary.BigEndian.PutUint64(p, math.Float64bits(v))
 	p[8] = byte(TypeFloat64)
-	return 9
+	return 9, nil
 }
 
 // Bytes
@@ -147,6 +149,18 @@ func EncodeString(b buffer.Buffer, s string) (int, error) {
 	copy(p, s)
 
 	n += encodeSizeType(b, uint32(size), TypeString)
+	return n, nil
+}
+
+// Struct
+
+func EncodeStruct(b buffer.Buffer, dataSize int) (int, error) {
+	if dataSize > MaxSize {
+		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", MaxSize, dataSize)
+	}
+
+	// write size and type
+	n := encodeSizeType(b, uint32(dataSize), TypeStruct)
 	return n, nil
 }
 
@@ -282,18 +296,6 @@ func encodeMessageTable(b buffer.Buffer, table []messageField, big bool) (int, e
 	}
 
 	return size, nil
-}
-
-// struct
-
-func encodeStruct(b buffer.Buffer, dataSize int) (int, error) {
-	if dataSize > MaxSize {
-		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", MaxSize, dataSize)
-	}
-
-	// write size and type
-	n := encodeSizeType(b, uint32(dataSize), TypeStruct)
-	return n, nil
 }
 
 // private
