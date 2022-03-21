@@ -7,7 +7,7 @@ import (
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
 	"github.com/complexl/spec"
-	"github.com/complexl/spec/testgen/golang/sub/pkg3"
+	"github.com/complexl/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
 )
 
