@@ -94,14 +94,10 @@ const (
 	// Builtin
 
 	KindBool
+	KindByte
 
-	KindInt8
-	KindInt16
 	KindInt32
 	KindInt64
-
-	KindUint8
-	KindUint16
 	KindUint32
 	KindUint64
 
@@ -125,20 +121,13 @@ func getKind(type_ string) Kind {
 	switch type_ {
 	case "bool":
 		return KindBool
+	case "byte":
+		return KindByte
 
-	case "int8":
-		return KindInt8
-	case "int16":
-		return KindInt16
 	case "int32":
 		return KindInt32
 	case "int64":
 		return KindInt64
-
-	case "uint8":
-		return KindUint8
-	case "uint16":
-		return KindUint16
 	case "uint32":
 		return KindUint32
 	case "uint64":
