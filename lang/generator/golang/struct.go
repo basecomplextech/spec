@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/complexl/spec/compiler"
+	"github.com/complexl/spec/lang/compiler"
 )
 
 func (w *writer) struct_(def *compiler.Definition) error {

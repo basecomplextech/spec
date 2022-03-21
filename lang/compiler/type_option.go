@@ -1,6 +1,6 @@
 package compiler
 
-import "github.com/complexl/spec/parser"
+import "github.com/complexl/spec/lang/parser"
 
 type Option struct {
 	Name  string

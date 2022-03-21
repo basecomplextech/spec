@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/complexl/spec/parser"
+	"github.com/complexl/spec/lang/parser"
 )
 
 type Compiler interface {
@@ -64,11 +64,13 @@ func (c *compiler) Compile(dir string) (*Package, error) {
 		return nil, err
 	}
 
-	// compute id from directory
-	// when current dir
+	// compute id from directory when empty
 	id := dir
 	if id == "" || id == "." {
-		id = filepath.Base(dir)
+		id, err = getCurrentDirectoryName()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c.compilePackage(id, path)
@@ -231,4 +233,21 @@ func (c *compiler) _resolveType(file *File, type_ *Type) error {
 		}
 	}
 	return nil
+}
+
+// private
+
+func getCurrentDirectoryName() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	dir, err = filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+
+	dir = filepath.Base(dir)
+	return dir, nil
 }

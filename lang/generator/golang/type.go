@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/complexl/spec/compiler"
+	"github.com/complexl/spec/lang/compiler"
 )
 
 // dataType returns a data type name.

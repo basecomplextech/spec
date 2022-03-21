@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complexl/spec/parser"
+	"github.com/complexl/spec/lang/parser"
 )
 
 type Enum struct {

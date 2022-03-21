@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/complexl/spec/compiler"
+	"github.com/complexl/spec/lang/compiler"
 )
 
 // dataGet returns a statement which accesses a data field, i.e. msgData.Int32(17).

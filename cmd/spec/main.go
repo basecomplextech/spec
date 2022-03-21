@@ -2,37 +2,38 @@ package main
 
 import (
 	"log"
+	"strings"
 
-	"github.com/complexl/spec/compiler"
-	"github.com/complexl/spec/generator"
+	"github.com/complexl/spec/lang"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	var importPath []string
+
 	generateGo := &cobra.Command{
-		Use:   "go [-i import_paths] input_dir output_dir",
+		Use:   "generate-go [-i import-paths] [src-dir] [dst-dir]",
 		Short: "Generates a Go package",
 		Long:  `Generates a Go package`,
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.MaximumNArgs(2),
 		Run: func(_ *cobra.Command, args []string) {
-			inputPath := args[0]
-			outputPath := args[1]
+			srcPath := ""
+			dstPath := ""
 
-			compiler, err := compiler.New(compiler.Options{
-				ImportPath: importPath,
-			})
-			if err != nil {
-				log.Fatal(err)
+			switch len(args) {
+			case 0:
+				srcPath = "."
+			case 1:
+				srcPath = strings.TrimSpace(args[0])
+			case 2:
+				srcPath = strings.TrimSpace(args[0])
+				dstPath = strings.TrimSpace(args[1])
+			default:
+				log.Fatal("Invalid src/dir paths")
 			}
 
-			pkg, err := compiler.Compile(inputPath)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			gen := generator.New()
-			if err := gen.Golang(pkg, outputPath); err != nil {
+			spec := lang.New()
+			if err := spec.GenerateGo(srcPath, dstPath, importPath); err != nil {
 				log.Fatal(err)
 			}
 		},

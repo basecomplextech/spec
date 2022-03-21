@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/complexl/spec/parser"
+	"github.com/complexl/spec/lang/parser"
 )
 
 type Kind int

@@ -6,7 +6,7 @@ import (
 	"go/format"
 	"strings"
 
-	"github.com/complexl/spec/compiler"
+	"github.com/complexl/spec/lang/compiler"
 )
 
 const (

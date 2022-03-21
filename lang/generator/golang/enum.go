@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/complexl/spec/compiler"
+	"github.com/complexl/spec/lang/compiler"
 )
 
 func (w *writer) enum(def *compiler.Definition) error {

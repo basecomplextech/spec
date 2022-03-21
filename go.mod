@@ -3,7 +3,7 @@ module github.com/complexl/spec
 go 1.18
 
 require (
-	github.com/complexl/library v0.0.0-20220320162806-0b67c14b649a
+	github.com/complexl/library v0.0.0-20220321083459-b2366319394c
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 )
