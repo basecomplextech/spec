@@ -132,11 +132,11 @@ func (e ListEncoder[T]) Next(value T) error {
 // MessageListEncoder encodes a list of messages.
 type MessageListEncoder[T any] struct {
 	e    *Encoder
-	next MessageEncoderFunc[T]
+	next func(e *Encoder) (T, error)
 }
 
 // EncodeMessageList begins and returns a new message list encoder.
-func EncodeMessageList[T any](e *Encoder, next MessageEncoderFunc[T]) (
+func EncodeMessageList[T any](e *Encoder, next func(e *Encoder) (T, error)) (
 	result MessageListEncoder[T], err error,
 ) {
 	if err = e.BeginList(); err != nil {

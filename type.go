@@ -11,7 +11,7 @@ const (
 )
 
 // Type specifies a value type.
-type Type uint8
+type Type byte
 
 const (
 	TypeNil   Type = 00

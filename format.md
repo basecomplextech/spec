@@ -132,36 +132,33 @@ Format:
 type byte
 
 const {
-    typeNil   = 0x00
-    typeTrue  = 0x01
-    typeFalse = 0x02
-    
-    typeInt8  = 0x10
-    typeInt16 = 0x11
-    typeInt32 = 0x12
-    typeInt64 = 0x13
-    
-    typeUint8  = 0x20  // byte
-    typeUint16 = 0x21
-    typeUint32 = 0x22
-    typeUint64 = 0x23
+    typeNil   type = 00
+	typeTrue  type = 01
+	typeFalse type = 02
+	typeByte  type = 03
 
-    typeU128 = 0x24
-    typeU256 = 0x25
-    
-    typeFloat32 = 0x30
-    typeFloat64 = 0x31
-    
-    typeBytes  = 0x40
-    typeString = 0x41
+	typeInt32 type = 10
+	typeInt64 type = 11
 
-    typeList    = 0x50
-	typeListBig = 0x51
+	typeUint32 type = 20
+	typeUint64 type = 21
 
-    typeMessage    = 0x60
-	typeMessageBig = 0x61
+	typeU128 type = 30
+	typeU256 type = 31
 
-    typeStruct = 0x70
+	typeFloat32 type = 40
+	typeFloat64 type = 41
+
+	typeBytes  type = 50
+	typeString type = 51
+
+	typeList    type = 60
+	typeListBig type = 61
+
+	typeMessage    type = 70
+	typeMessageBig type = 71
+
+	typeStruct = 80
 }
 
 // value holds any value, it is a union of a value body and a type.
@@ -196,22 +193,22 @@ value struct {
         }
 
         list {
-            body      []byte    // element values by offsets
+            data      []byte    // element values by offsets
             table     listTable // element offsets by indexes
-            bodySize  varint
+            dataSize  varint
             tableSize varint
         }
         
         message {
-            body       []byte       // field values by offsets
+            data       []byte       // field values by offsets
             table      messageTable // field offsets ordered by tags
-            bodySize   varint
+            dataSize   varint
             tableSize  varint
         }
 
         struct {
-            body       []byte       // field values
-            bodySize   varint
+            data       []byte       // field values
+            dataSize   varint
         }
     }
 
@@ -242,9 +239,9 @@ messageTable union {
 
 
 # 3. Implementation
-## 3.0 Readers
-Compiler generates type readers which wrap buffers. Readers are passed by value as slices in Go.
-Readers are lazy and do not read anything until required.
+## 3.0 Decoders
+Compiler generates type decoders which wrap buffers. Decoders are passed by value as slices in Go.
+Decoders are lazy and do not read anything until required.
 
 ```spec
 type Block struct {
@@ -269,7 +266,7 @@ type BlockHead struct {
 ```
 
 ```go
-func readBlock(buffer []byte) {
+func decodeBlock(buffer []byte) {
     // get block reader
     block := blockchain.NewBlockReader(buffer)
     id := block.ID()
@@ -289,14 +286,13 @@ func readBlock(buffer []byte) {
 }
 ```
 
-## 3.1 Writers
-Compiler generates type writers which wrap buffers. Writers are passed by value as slices in Go.
-Internally, write buffers hold a table buffer and a data buffer.
+## 3.1 Encoders
+Compiler generates type encoders which wrap buffers. Encoders are passed by value as slices in Go.
 
 ```go
 func writeBlock(prev blockchain.Block, buffer spec.WriteBuffer) ([]byte, error) {
     // get block writer
-    block := blockchain.NewBlockWriter(buffer)
+    block := blockchain.EncodeBlock(buffer)
     block.ID(id)
 
     // write head
