@@ -85,7 +85,7 @@ func (m Message) Validate() error {
 		if len(data) == 0 {
 			continue
 		}
-		if _, _, err := ReadValue(data); err != nil {
+		if _, _, err := DecodeValue(data); err != nil {
 			return err
 		}
 	}

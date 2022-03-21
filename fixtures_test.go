@@ -8,59 +8,68 @@ import (
 // TestMessage
 
 type TestMessage struct {
-	m Message
+	msg Message
 }
 
 func GetTestMessage(b []byte) TestMessage {
-	m := GetMessage(b)
-	return TestMessage{m}
+	msg := GetMessage(b)
+	return TestMessage{msg}
 }
 
-func DecodeTestMessage(b []byte) (TestMessage, int, error) {
-	m, n, err := DecodeMessage(b)
+func DecodeTestMessage(b []byte) (result TestMessage, n int, err error) {
+	msg, n, err := DecodeMessage(b)
 	if err != nil {
-		return TestMessage{}, n, err
+		return
 	}
-	return TestMessage{m}, n, nil
+	result = TestMessage{msg}
+	return
 }
 
-func (m TestMessage) Bytes() []byte    { return m.m.Bytes() }
-func (m TestMessage) Bool() bool       { return m.m.Bool(1) }
-func (m TestMessage) Byte() byte       { return m.m.Byte(2) }
-func (m TestMessage) Int32() int32     { return m.m.Int32(10) }
-func (m TestMessage) Int64() int64     { return m.m.Int64(11) }
-func (m TestMessage) Uint32() uint32   { return m.m.Uint32(20) }
-func (m TestMessage) Uint64() uint64   { return m.m.Uint64(21) }
-func (m TestMessage) U128() u128.U128  { return m.m.U128(22) }
-func (m TestMessage) U256() u256.U256  { return m.m.U256(23) }
-func (m TestMessage) Float32() float32 { return m.m.Float32(30) }
-func (m TestMessage) Float64() float64 { return m.m.Float64(31) }
-func (m TestMessage) String() string   { return m.m.String(40) }
-func (m TestMessage) Bytes_() []byte   { return m.m.ByteSlice(41) }
+func EncodeTestMessage(e *Encoder) (result TestMessageEncoder, err error) {
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	result = TestMessageEncoder{e}
+	return
+}
+
+func (m TestMessage) Bytes() []byte    { return m.msg.Bytes() }
+func (m TestMessage) Bool() bool       { return m.msg.Bool(1) }
+func (m TestMessage) Byte() byte       { return m.msg.Byte(2) }
+func (m TestMessage) Int32() int32     { return m.msg.Int32(10) }
+func (m TestMessage) Int64() int64     { return m.msg.Int64(11) }
+func (m TestMessage) Uint32() uint32   { return m.msg.Uint32(20) }
+func (m TestMessage) Uint64() uint64   { return m.msg.Uint64(21) }
+func (m TestMessage) U128() u128.U128  { return m.msg.U128(22) }
+func (m TestMessage) U256() u256.U256  { return m.msg.U256(23) }
+func (m TestMessage) Float32() float32 { return m.msg.Float32(30) }
+func (m TestMessage) Float64() float64 { return m.msg.Float64(31) }
+func (m TestMessage) String() string   { return m.msg.String(40) }
+func (m TestMessage) Bytes_() []byte   { return m.msg.ByteSlice(41) }
 
 func (m TestMessage) Submessage() TestSubmessage {
-	b := m.m.Field(50)
+	b := m.msg.Field(50)
 	return GetTestSubmessage(b)
 }
 
 func (m TestMessage) List() List[int64] {
-	b := m.m.Field(51)
+	b := m.msg.Field(51)
 	return GetList(b, DecodeInt64)
 }
 
 func (m TestMessage) Messages() List[TestElement] {
-	b := m.m.Field(52)
+	b := m.msg.Field(52)
 	return GetList(b, DecodeTestElement)
 }
 
 func (m TestMessage) Strings() List[string] {
-	b := m.m.Field(53)
+	b := m.msg.Field(53)
 	return GetList(b, DecodeString)
 }
 
 func (m TestMessage) Struct() TestStruct {
-	data := m.m.Field(60)
-	v, _ := DecodeTestStruct(data)
+	data := m.msg.Field(60)
+	v, _, _ := DecodeTestStruct(data)
 	return v
 }
 
@@ -68,11 +77,6 @@ func (m TestMessage) Struct() TestStruct {
 
 type TestMessageEncoder struct {
 	e *Encoder
-}
-
-func BeginTestMessage(e *Encoder) TestMessageEncoder {
-	e.BeginMessage()
-	return TestMessageEncoder{e}
 }
 
 func (e TestMessageEncoder) End() ([]byte, error) {
@@ -139,65 +143,67 @@ func (e TestMessageEncoder) Bytes(v []byte) error {
 	return e.e.Field(41)
 }
 
-func (e TestMessageEncoder) Submessage() TestSubmessageEncoder {
+func (e TestMessageEncoder) Submessage() (result TestSubmessageEncoder, err error) {
 	e.e.BeginField(50)
-	return BeginSubmessage(e.e)
+	return EncodeTestSubmessage(e.e)
 }
 
-func (e TestMessageEncoder) List() ListValueEncoder[int64] {
+func (e TestMessageEncoder) List() (result ValuesEncoder[int64], err error) {
 	e.e.BeginField(51)
-	return BeginValueList(e.e, e.e.Int64)
+	return EncodeValues(e.e, e.e.Int64)
 }
 
-func (e TestMessageEncoder) Messages() ListEncoder[TestElementEncoder] {
+func (e TestMessageEncoder) Messages() (result ListEncoder[TestElementEncoder], err error) {
 	e.e.BeginField(52)
-
-	return BeginList(e.e, BeginTestSubmessage)
+	return EncodeList(e.e, EncodeTestElement)
 }
 
-func (e TestMessageEncoder) Strings() ListValueEncoder[string] {
+func (e TestMessageEncoder) Strings() (result ValuesEncoder[string], err error) {
 	e.e.BeginField(53)
-	return BeginValueList(e.e, e.e.String)
+	return EncodeValues(e.e, e.e.String)
 }
 
-func (e TestMessageEncoder) Struct(v TestStruct) error {
-	// return e.e.Field(60)
-	return nil
+func (e TestMessageEncoder) Struct(v TestStruct) ([]byte, error) {
+	e.e.BeginField(60)
+	return EncodeTestStruct(e.e, v)
 }
 
 // TestSubmessage
 
 type TestSubmessage struct {
-	m Message
+	msg Message
 }
 
 func GetTestSubmessage(b []byte) TestSubmessage {
-	m := GetMessage(b)
-	return TestSubmessage{m}
+	msg := GetMessage(b)
+	return TestSubmessage{msg}
 }
 
-func DecodeTestSubmessage(b []byte) (TestSubmessage, int, error) {
-	m, n, err := DecodeMessage(b)
+func DecodeTestSubmessage(b []byte) (result TestSubmessage, n int, err error) {
+	msg, n, err := DecodeMessage(b)
 	if err != nil {
-		return TestSubmessage{}, n, err
+		return
 	}
-	return TestSubmessage{m}, n, nil
+	result = TestSubmessage{msg}
+	return
 }
 
-func (m TestSubmessage) Bytes() []byte { return m.m.Bytes() }
-func (m TestSubmessage) Int32() int32  { return m.m.Int32(1) }
-func (m TestSubmessage) Int64() int64  { return m.m.Int64(2) }
+func EncodeTestSubmessage(e *Encoder) (result TestSubmessageEncoder, err error) {
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	result = TestSubmessageEncoder{e}
+	return
+}
+
+func (m TestSubmessage) Bytes() []byte { return m.msg.Bytes() }
+func (m TestSubmessage) Int32() int32  { return m.msg.Int32(1) }
+func (m TestSubmessage) Int64() int64  { return m.msg.Int64(2) }
 
 // TestSubmessageEncoder
 
 type TestSubmessageEncoder struct {
 	e *Encoder
-}
-
-func BeginSubmessage(e *Encoder) TestSubmessageEncoder {
-	e.BeginMessage()
-
-	return TestSubmessageEncoder{e}
 }
 
 func (e TestSubmessageEncoder) End() ([]byte, error) {
@@ -217,43 +223,47 @@ func (e TestSubmessageEncoder) Int64(v int64) error {
 // TestElement
 
 type TestElement struct {
-	m Message
+	msg Message
 }
 
 func GetTestElement(b []byte) TestElement {
-	m := GetMessage(b)
-	return TestElement{m}
+	msg := GetMessage(b)
+	return TestElement{msg}
 }
 
-func DecodeTestElement(b []byte) (TestElement, int, error) {
-	m, n, err := DecodeMessage(b)
+func DecodeTestElement(b []byte) (result TestElement, n int, err error) {
+	msg, n, err := DecodeMessage(b)
 	if err != nil {
-		return TestElement{}, n, err
+		return
 	}
-	return TestElement{m}, n, nil
+	result = TestElement{msg}
+	return
+}
+
+func EncodeTestElement(e *Encoder) (result TestElementEncoder, err error) {
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	result = TestElementEncoder{e}
+	return
 }
 
 func (m TestElement) Byte() byte {
-	return m.m.Byte(1)
+	return m.msg.Byte(1)
 }
 
 func (m TestElement) Int32() int32 {
-	return m.m.Int32(2)
+	return m.msg.Int32(2)
 }
 
 func (m TestElement) Int64() int64 {
-	return m.m.Int64(3)
+	return m.msg.Int64(3)
 }
 
 // TestElementEncoder
 
 type TestElementEncoder struct {
 	e *Encoder
-}
-
-func BeginTestSubmessage(e *Encoder) TestElementEncoder {
-	e.BeginMessage()
-	return TestElementEncoder{e}
 }
 
 func (e TestElementEncoder) End() ([]byte, error) {
@@ -282,38 +292,36 @@ type TestStruct struct {
 	Y int64
 }
 
-func DecodeTestStruct(b []byte) (TestStruct, error) {
-	s := TestStruct{}
-	err := s.Unmarshal(b)
-	return s, err
+func DecodeTestStruct(b []byte) (result TestStruct, total int, err error) {
+	dataSize, size, err := DecodeStruct(b)
+	if err != nil {
+		return
+	}
+
+	b = b[len(b)-size:]
+	n := size - dataSize
+	off := len(b)
+
+	// decode in reverse order
+
+	off -= n
+	result.Y, n, err = DecodeInt64(b[:off])
+	if err != nil {
+		return
+	}
+
+	off -= n
+	result.X, n, err = DecodeInt64(b[:off])
+	if err != nil {
+		return
+	}
+
+	return
 }
 
-func (s *TestStruct) Unmarshal(b []byte) error {
-	return nil
-
-	// TODO: Uncomment
-	// r, err := ReadStruct(b)
-	// switch {
-	// case err != nil:
-	// 	return err
-	// case len(r) == 0:
-	// 	return nil
-	// }
-
-	// s.Y, r, err = r.DecodeInt64()
-	// if err != nil {
-	// 	return err
-	// }
-	// s.X, r, err = r.DecodeInt64()
-	// if err != nil {
-	// 	return err
-	// }
-	// return nil
-}
-
-func (s TestStruct) Write(e *Encoder) error {
+func EncodeTestStruct(e *Encoder, s TestStruct) ([]byte, error) {
 	if err := e.BeginStruct(); err != nil {
-		return err
+		return nil, err
 	}
 
 	e.Int64(s.X)
@@ -322,5 +330,5 @@ func (s TestStruct) Write(e *Encoder) error {
 	e.Int64(s.Y)
 	e.StructField()
 
-	return e.EndStruct()
+	return e.End()
 }

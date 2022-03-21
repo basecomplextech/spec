@@ -87,7 +87,7 @@ func (l List[T]) Validate() error {
 		if len(data) == 0 {
 			continue
 		}
-		if _, _, err := ReadValue(data); err != nil {
+		if _, _, err := DecodeValue(data); err != nil {
 			return err
 		}
 	}
@@ -99,17 +99,17 @@ func (l List[T]) Validate() error {
 // ListEncoder encodes a list.
 type ListEncoder[W any] struct {
 	e    *Encoder
-	next func(*Encoder) W
+	next func(*Encoder) (W, error)
 }
 
-// BeginList begins and returns a new list encoder.
-func BeginList[W any](e *Encoder, next func(*Encoder) W) ListEncoder[W] {
-	e.BeginList()
-
-	return ListEncoder[W]{
-		e:    e,
-		next: next,
+// EncodeList begins and returns a new list encoder.
+func EncodeList[W any](e *Encoder, next func(*Encoder) (W, error)) (result ListEncoder[W], err error) {
+	if err = e.BeginList(); err != nil {
+		return
 	}
+
+	result = ListEncoder[W]{e: e, next: next}
+	return
 }
 
 // End ends the list.
@@ -118,37 +118,38 @@ func (e ListEncoder[W]) End() ([]byte, error) {
 }
 
 // Next returns the next element encoder.
-func (e ListEncoder[W]) Next() W {
-	e.e.BeginElement()
-
+func (e ListEncoder[W]) Next() (result W, err error) {
+	if err = e.e.BeginElement(); err != nil {
+		return
+	}
 	return e.next(e.e)
 }
 
-// Value encoder
-
-// ListValueEncoder encodes a list of primitive values.
-type ListValueEncoder[T any] struct {
+// ValuesEncoder encodes a list of primitive values.
+type ValuesEncoder[T any] struct {
 	e      *Encoder
 	encode func(el T) error
 }
 
-// BeginValueList begins and returns a new list encoder for primitive values.
-func BeginValueList[T any](e *Encoder, encode func(T) error) ListValueEncoder[T] {
-	e.BeginList()
-
-	return ListValueEncoder[T]{
-		e:      e,
-		encode: encode,
+// EncodeValues begins and returns a new list encoder for primitive values.
+func EncodeValues[T any](e *Encoder, encode func(T) error) (result ValuesEncoder[T], err error) {
+	if err = e.BeginList(); err != nil {
+		return
 	}
+
+	result = ValuesEncoder[T]{e: e, encode: encode}
+	return
 }
 
 // End ends the list.
-func (e ListValueEncoder[T]) End() ([]byte, error) {
+func (e ValuesEncoder[T]) End() ([]byte, error) {
 	return e.e.End()
 }
 
 // Next encodes the next element.
-func (e ListValueEncoder[T]) Next(el T) error {
-	e.encode(el)
+func (e ValuesEncoder[T]) Next(el T) error {
+	if err := e.encode(el); err != nil {
+		return err
+	}
 	return e.e.Element()
 }

@@ -404,6 +404,45 @@ func decodeStringData(b []byte, size uint32) (string, error) {
 	return s, nil
 }
 
+// Struct
+
+func DecodeStruct(b []byte) (dataSize int, n int, err error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
+	// decode type
+	t, n := decodeType(b)
+	if n < 0 {
+		return 0, -1, errors.New("decode struct: invalid type")
+	}
+
+	// check type
+	switch t {
+	default:
+		return 0, -1, fmt.Errorf("decode struct: unexpected type, expected=%d, actual=%d", TypeStruct, t)
+	case TypeNil:
+		return 0, 0, nil
+	case TypeStruct:
+	}
+
+	// data size
+	off := len(b) - n
+	size, dn := decodeStructBodySize(b[:off])
+	if dn < 0 {
+		return 0, -1, errors.New("decode struct: invalid data size")
+	}
+	dataSize = int(size)
+
+	// done
+	total := n + dn + int(dataSize)
+	return int(size), total, nil
+}
+
+func decodeStructBodySize(b []byte) (uint32, int) {
+	return rvarint.Uint32(b)
+}
+
 // list meta
 
 func decodeListMeta(b []byte) (listMeta, int, error) {
@@ -588,44 +627,6 @@ func decodeMessageTable(b []byte, size uint32, big bool) (messageTable, error) {
 	p := b[off:]
 	v := messageTable(p)
 	return v, nil
-}
-
-// struct
-
-func decodeStruct(b []byte) (bodySize int, n int, err error) {
-	if len(b) == 0 {
-		return 0, 0, nil
-	}
-
-	// decode type
-	t, n := decodeType(b)
-	if n < 0 {
-		return 0, -1, errors.New("decode struct: invalid type")
-	}
-
-	// check type
-	switch t {
-	default:
-		return 0, -1, fmt.Errorf("decode struct: unexpected type, expected=%d, actual=%d", TypeStruct, t)
-	case TypeNil:
-		return 0, 0, nil
-	case TypeStruct:
-	}
-
-	// body size
-	off := len(b) - n
-	dataSize, bn := decodeStructBodySize(b[:off])
-	if bn < 0 {
-		return 0, -1, errors.New("decode struct: invalid body size")
-	}
-
-	// done
-	total := n + bn + int(dataSize)
-	return int(dataSize), total, nil
-}
-
-func decodeStructBodySize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
 }
 
 // private

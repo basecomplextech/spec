@@ -10,8 +10,8 @@ import (
 // Value is a raw value.
 type Value []byte
 
-// NewValue reads and returns a value or zero on an error.
-func NewValue(b []byte) Value {
+// GetValue decodes and returns a value without recursive validation, or an empty value on error.
+func GetValue(b []byte) Value {
 	t, _, err := DecodeType(b)
 	if err != nil {
 		return Value{}
@@ -22,8 +22,8 @@ func NewValue(b []byte) Value {
 	return Value(b)
 }
 
-// ReadValue reads, recursively validates and returns a value.
-func ReadValue(b []byte) (Value, int, error) {
+// DecodeValue decodes, recursively validates and returns a value.
+func DecodeValue(b []byte) (Value, int, error) {
 	t, n, err := DecodeType(b)
 	if err != nil {
 		return Value{}, n, err
@@ -156,14 +156,13 @@ func (v Value) validate() error {
 		_, _, err = DecodeString(v)
 
 	case TypeList, TypeListBig:
-		_, _, err = DecodeList(v, ReadValue)
+		_, _, err = DecodeList(v, DecodeValue)
 
 	case TypeMessage, TypeMessageBig:
 		_, _, err = DecodeMessage(v)
 
-		// TODO: Uncomment
-		// case TypeStruct:
-		// 	_, err = ReadStruct(v)
+	case TypeStruct:
+		_, _, err = DecodeStruct(v)
 	}
 	return err
 }

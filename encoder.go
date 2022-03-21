@@ -105,6 +105,12 @@ func (e *Encoder) End() (result []byte, err error) {
 		if err != nil {
 			return nil, err
 		}
+
+	case entryStruct:
+		result, err = e.endStruct()
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, e.fail(errors.New("end: not nested encoder"))
 	}
@@ -538,11 +544,11 @@ func (e *Encoder) endMessage() ([]byte, error) {
 		return nil, e.fail(errors.New("end message: not message encoder"))
 	}
 
-	bsize := e.buf.Len() - message.start
+	dataSize := e.buf.Len() - message.start
 	table := e.fields.pop(message.tableStart)
 
 	// encode message
-	if _, err := encodeMessageMeta(e.buf, bsize, table); err != nil {
+	if _, err := encodeMessageMeta(e.buf, dataSize, table); err != nil {
 		return nil, e.fail(err)
 	}
 
@@ -581,9 +587,9 @@ func (e *Encoder) StructField() error {
 	entry, ok := e.stack.peek()
 	switch {
 	case !ok:
-		return e.fail(errors.New("field: cannot encode struct field, not struct encoder"))
+		return e.fail(errors.New("field: cannot encode struct field, not struct"))
 	case entry.type_ != entryStruct:
-		return e.fail(errors.New("field: cannot encode struct field, not struct encoder"))
+		return e.fail(errors.New("field: cannot encode struct field, not struct"))
 	}
 
 	// just consume data
@@ -591,31 +597,38 @@ func (e *Encoder) StructField() error {
 	return nil
 }
 
-func (e *Encoder) EndStruct() error {
+func (e *Encoder) endStruct() ([]byte, error) {
 	if e.err != nil {
-		return e.err
+		return nil, e.err
 	}
 
 	// pop struct
 	entry, ok := e.stack.pop()
 	switch {
 	case !ok:
-		return e.fail(errors.New("end struct: not struct encoder"))
+		return nil, e.fail(errors.New("end struct: not struct encoder"))
 	case entry.type_ != entryStruct:
-		return e.fail(errors.New("end struct: not struct encoder"))
+		return nil, e.fail(errors.New("end struct: not struct encoder"))
 	}
 
-	bsize := e.buf.Len() - entry.start
+	dataSize := e.buf.Len() - entry.start
 
 	// encode struct
-	if _, err := encodeStruct(e.buf, bsize); err != nil {
-		return e.fail(err)
+	if _, err := encodeStruct(e.buf, dataSize); err != nil {
+		return nil, e.fail(err)
 	}
 
 	// push data
 	start := entry.start
 	end := e.buf.Len()
-	return e.setData(start, end)
+	if err := e.setData(start, end); err != nil {
+		return nil, err
+	}
+
+	// return data
+	b := e.buf.Bytes()
+	b = b[start:end]
+	return b, nil
 }
 
 // private

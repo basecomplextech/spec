@@ -70,7 +70,7 @@ type TestObject struct {
 	Messages   []*TestObjectElement `tag:"52"`
 	Strings    []string             `tag:"53"`
 
-	// Struct TestStruct `tag:"60"`
+	Struct TestStruct `tag:"60"`
 }
 
 func newTestObject() *TestObject {
@@ -111,10 +111,10 @@ func newTestObject() *TestObject {
 		Messages: messages,
 		Strings:  strings,
 
-		// Struct: TestStruct{
-		// 	X: 100,
-		// 	Y: 200,
-		// },
+		Struct: TestStruct{
+			X: 100,
+			Y: 200,
+		},
 	}
 }
 
@@ -197,13 +197,7 @@ func (m *TestObject) Decode(b []byte) error {
 	}
 
 	// struct:60
-	// TODO: Uncomment
-	// {
-	// 	data := msg.Field(60)
-	// 	if err := m.Struct.Unmarshal(data); err != nil {
-	// 		return err
-	// 	}
-	// }
+	m.Struct = msg.Struct()
 	return nil
 }
 
@@ -227,7 +221,10 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	e.Bytes(m.Bytes)
 
 	if m.Submessage != nil {
-		sub := e.Submessage()
+		sub, err := e.Submessage()
+		if err != nil {
+			return err
+		}
 		if err := m.Submessage.Encode(sub); err != nil {
 			return err
 		}
@@ -237,7 +234,10 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	}
 
 	if len(m.List) > 0 {
-		list := e.List()
+		list, err := e.List()
+		if err != nil {
+			return err
+		}
 		for _, value := range m.List {
 			if err := list.Next(value); err != nil {
 				return err
@@ -249,9 +249,15 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	}
 
 	if len(m.Messages) > 0 {
-		list := e.Messages()
+		list, err := e.Messages()
+		if err != nil {
+			return err
+		}
 		for _, msg := range m.Messages {
-			next := list.Next()
+			next, err := list.Next()
+			if err != nil {
+				return err
+			}
 			if err := msg.Encode(next); err != nil {
 				return err
 			}
@@ -265,7 +271,10 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	}
 
 	if len(m.Strings) > 0 {
-		list := e.Strings()
+		list, err := e.Strings()
+		if err != nil {
+			return err
+		}
 		for _, v := range m.Strings {
 			if err := list.Next(v); err != nil {
 				return err
@@ -276,16 +285,18 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 		}
 	}
 
-	// struct:60
-	// TODO: Uncomment
-	// m.Struct.Write(b)
-	// e.Field(60)
+	if _, err := e.Struct(m.Struct); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (m *TestObject) Marshal() ([]byte, error) {
 	e := NewEncoder()
-	me := BeginTestMessage(e)
+	me, err := EncodeTestMessage(e)
+	if err != nil {
+		return nil, err
+	}
 	if err := m.Encode(me); err != nil {
 		return nil, err
 	}

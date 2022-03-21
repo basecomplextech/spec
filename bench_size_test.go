@@ -11,7 +11,10 @@ func _BenchmarkSizeDistribution(b *testing.B) {
 	msg := newTestObject()
 
 	e := NewEncoder()
-	me := BeginTestMessage(e)
+	me, err := EncodeTestMessage(e)
+	if err != nil {
+		b.Fatal(err)
+	}
 	if err := msg.Encode(me); err != nil {
 		b.Fatal(err)
 	}
@@ -179,7 +182,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tsize)
 
 		// read list
-		list, _, err := DecodeList(b, ReadValue)
+		list, _, err := DecodeList(b, DecodeValue)
 		if err != nil {
 			return err
 		}

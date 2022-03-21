@@ -11,34 +11,6 @@ import (
 	"github.com/complexl/spec/rvarint"
 )
 
-// // Encodable can write itself using a writer.
-// type Encodable interface {
-// 	Encode(e *Encoder) error
-// }
-
-// // Encode writes a writable.
-// func Encode(v Encodable) ([]byte, error) {
-// 	return EncodeTo(v, nil)
-// }
-
-// TODO: Maybe remove at all
-// // EncodeTo writes a writeable to a buffer or allocates a new one when the buffer is too small.
-// func EncodeTo(v Encodable, buf []byte) ([]byte, error) {
-// 	e := encoderPool.Get().(*Encoder)
-// 	e.Init(buf)
-
-// 	defer encoderPool.Put(e)
-// 	defer e.Reset()
-
-// 	if err := v.Encode(e); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return e.End()
-// }
-
-// Types
-
 func EncodeNil(b buffer.Buffer) int {
 	p := b.Grow(1)
 	p[0] = byte(TypeNil)
@@ -180,9 +152,9 @@ func EncodeString(b buffer.Buffer, s string) (int, error) {
 
 // list meta
 
-func encodeListMeta(b buffer.Buffer, bodySize int, table []listElement) (int, error) {
-	if bodySize > MaxSize {
-		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", MaxSize, bodySize)
+func encodeListMeta(b buffer.Buffer, dataSize int, table []listElement) (int, error) {
+	if dataSize > MaxSize {
+		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
 	// get type
@@ -201,8 +173,8 @@ func encodeListMeta(b buffer.Buffer, bodySize int, table []listElement) (int, er
 	}
 	n := tableSize
 
-	// write body size
-	n += encodeSize(b, uint32(bodySize))
+	// write data size
+	n += encodeSize(b, uint32(dataSize))
 
 	// write table size and type
 	n += encodeSizeType(b, uint32(tableSize), type_)
@@ -246,9 +218,9 @@ func encodeListTable(b buffer.Buffer, table []listElement, big bool) (int, error
 
 // message meta
 
-func encodeMessageMeta(b buffer.Buffer, bodySize int, table []messageField) (int, error) {
-	if bodySize > MaxSize {
-		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", MaxSize, bodySize)
+func encodeMessageMeta(b buffer.Buffer, dataSize int, table []messageField) (int, error) {
+	if dataSize > MaxSize {
+		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
 	// get type
@@ -267,8 +239,8 @@ func encodeMessageMeta(b buffer.Buffer, bodySize int, table []messageField) (int
 	}
 	n := tableSize
 
-	// write body size
-	n += encodeSize(b, uint32(bodySize))
+	// write data size
+	n += encodeSize(b, uint32(dataSize))
 
 	// write table size and type
 	n += encodeSizeType(b, uint32(tableSize), type_)
@@ -314,13 +286,13 @@ func encodeMessageTable(b buffer.Buffer, table []messageField, big bool) (int, e
 
 // struct
 
-func encodeStruct(b buffer.Buffer, bodySize int) (int, error) {
-	if bodySize > MaxSize {
-		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", MaxSize, bodySize)
+func encodeStruct(b buffer.Buffer, dataSize int) (int, error) {
+	if dataSize > MaxSize {
+		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
 	// write size and type
-	n := encodeSizeType(b, uint32(bodySize), TypeStruct)
+	n := encodeSizeType(b, uint32(dataSize), TypeStruct)
 	return n, nil
 }
 

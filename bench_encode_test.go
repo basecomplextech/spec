@@ -60,7 +60,10 @@ func BenchmarkEncode_Large(b *testing.B) {
 
 	var size int
 	for i := 0; i < b.N; i++ {
-		me := BeginTestMessage(e)
+		me, err := EncodeTestMessage(e)
+		if err != nil {
+			b.Fatal(err)
+		}
 		if err := msg.Encode(me); err != nil {
 			b.Fatal(err)
 		}
@@ -109,7 +112,10 @@ func BenchmarkEncodeObject(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		me := BeginTestMessage(e)
+		me, err := EncodeTestMessage(e)
+		if err != nil {
+			b.Fatal(err)
+		}
 		if err := msg.Encode(me); err != nil {
 			b.Fatal(err)
 		}
