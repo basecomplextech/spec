@@ -75,8 +75,8 @@ func (w *writer) decodeEnum(def *compiler.Definition) error {
 }
 
 func (w *writer) encodeEnum(def *compiler.Definition) error {
-	w.linef(`func Encode%v(e *spec.Encoder, v %v) error {`, def.Name, def.Name)
-	w.linef(`return e.Int32(int32(v))`)
+	w.linef(`func Encode%v(b spec.Buffer, v %v) (int, error) {`, def.Name, def.Name)
+	w.linef(`return spec.EncodeInt32(b, int32(v))`)
 	w.linef(`}`)
 	w.line()
 	return nil

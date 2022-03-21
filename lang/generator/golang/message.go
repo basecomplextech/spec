@@ -254,7 +254,7 @@ func (w *writer) messageEncoderField(def *compiler.Definition, field *compiler.M
 		encodeFunc := typeEncodeFunc(field.Type)
 
 		w.linef(`func (e %vEncoder) %v(v %v) error {`, def.Name, fieldName, typeName)
-		w.linef(`%v(e.e, v)`, encodeFunc)
+		w.linef(`spec.EncodeValue(e.e, v, %v)`, encodeFunc)
 		w.linef(`return e.e.Field(%d)`, tag)
 		w.linef(`}`)
 		w.line()
