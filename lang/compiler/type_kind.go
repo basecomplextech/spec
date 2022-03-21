@@ -15,14 +15,10 @@ const (
 	// Builtin
 
 	KindBool
+	KindByte
 
-	KindInt8
-	KindInt16
 	KindInt32
 	KindInt64
-
-	KindUint8
-	KindUint16
 	KindUint32
 	KindUint64
 
@@ -35,17 +31,17 @@ const (
 	KindBytes
 	KindString
 
-	// list
+	// List
 
 	KindList
 
-	// resolved
+	// Resolved
 
 	KindEnum
 	KindMessage
 	KindStruct
 
-	// pending
+	// Pending
 
 	KindReference
 )
@@ -54,20 +50,13 @@ func parseKind(pkind parser.Kind) (Kind, error) {
 	switch pkind {
 	case parser.KindBool:
 		return KindBool, nil
+	case parser.KindByte:
+		return KindByte, nil
 
-	case parser.KindInt8:
-		return KindInt8, nil
-	case parser.KindInt16:
-		return KindInt16, nil
 	case parser.KindInt32:
 		return KindInt32, nil
 	case parser.KindInt64:
 		return KindInt64, nil
-
-	case parser.KindUint8:
-		return KindUint8, nil
-	case parser.KindUint16:
-		return KindUint16, nil
 	case parser.KindUint32:
 		return KindUint32, nil
 	case parser.KindUint64:
@@ -102,20 +91,13 @@ func (k Kind) String() string {
 	switch k {
 	case KindBool:
 		return "bool"
+	case KindByte:
+		return "byte"
 
-	case KindInt8:
-		return "int8"
-	case KindInt16:
-		return "int16"
 	case KindInt32:
 		return "int32"
 	case KindInt64:
 		return "int64"
-
-	case KindUint8:
-		return "uint8"
-	case KindUint16:
-		return "uint16"
 	case KindUint32:
 		return "uint32"
 	case KindUint64:

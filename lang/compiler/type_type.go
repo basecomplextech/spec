@@ -8,14 +8,10 @@ import (
 
 var builtin = map[Kind]*Type{
 	KindBool: newBuiltinType(KindBool),
+	KindByte: newBuiltinType(KindByte),
 
-	KindInt8:  newBuiltinType(KindInt8),
-	KindInt16: newBuiltinType(KindInt16),
-	KindInt32: newBuiltinType(KindInt32),
-	KindInt64: newBuiltinType(KindInt64),
-
-	KindUint8:  newBuiltinType(KindUint8),
-	KindUint16: newBuiltinType(KindUint16),
+	KindInt32:  newBuiltinType(KindInt32),
+	KindInt64:  newBuiltinType(KindInt64),
 	KindUint32: newBuiltinType(KindUint32),
 	KindUint64: newBuiltinType(KindUint64),
 

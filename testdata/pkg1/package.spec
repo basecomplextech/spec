@@ -7,18 +7,15 @@ options (
 )
 
 message Message {
-    field_bool    bool      1;
-    field_enum    Enum      2;
+    field_bool  bool    1;
+    field_byte  byte    2;
+    field_enum  Enum    3;
 
-    field_int8    int8      10;
-    field_int16   int16     11;
-    field_int32   int32     12;
-    field_int64   int64     13;
+    field_int32   int32     10;
+    field_int64   int64     11;
 
-    field_uint8   uint8     20;
-    field_uint16  uint16    21;
-    field_uint32  uint32    22;
-    field_uint64  uint64    23;
+    field_uint32  uint32    20;
+    field_uint64  uint64    21;
 
     field_float32 float32   30;
     field_float64 float64   31;

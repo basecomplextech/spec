@@ -9,7 +9,7 @@ import (
 
 func testCompiler(t *testing.T) *compiler {
 	opts := Options{
-		ImportPath: []string{"../testdata"},
+		ImportPath: []string{"../../testdata"},
 	}
 	c, err := newCompiler(opts)
 	if err != nil {
@@ -23,13 +23,13 @@ func testCompiler(t *testing.T) *compiler {
 func TestCompiler__should_compile_package(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Equal(t, "pkg1", pkg.Name)
-	assert.Equal(t, "../testdata/pkg1", pkg.ID)
+	assert.Equal(t, "../../testdata/pkg1", pkg.ID)
 }
 
 // File
@@ -37,7 +37,7 @@ func TestCompiler__should_compile_package(t *testing.T) {
 func TestCompiler__should_compile_files(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestCompiler__should_compile_files(t *testing.T) {
 func TestCompiler__should_compile_imports(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestCompiler__should_compile_imports(t *testing.T) {
 func TestCompiler__should_resolve_imports(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestCompiler__should_resolve_imports(t *testing.T) {
 func TestCompiler__should_recursively_resolve_imports(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestCompiler__should_recursively_resolve_imports(t *testing.T) {
 func TestCompiler__should_compile_options(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestCompiler__should_compile_options(t *testing.T) {
 func TestCompiler__should_compile_file_definitions(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestCompiler__should_compile_file_definitions(t *testing.T) {
 func TestCompiler__should_compile_package_definitions(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +171,7 @@ func TestCompiler__should_compile_package_definitions(t *testing.T) {
 func TestCompiler__should_compile_enum(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestCompiler__should_compile_enum(t *testing.T) {
 func TestCompiler__should_compile_enum_values(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestCompiler__should_compile_enum_values(t *testing.T) {
 func TestCompiler__should_compile_enum_value_names(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +225,7 @@ func TestCompiler__should_compile_enum_value_names(t *testing.T) {
 func TestCompiler__should_compile_message(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,13 +233,13 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 25)
+	assert.Len(t, def.Message.Fields, 22)
 }
 
 func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,16 +248,16 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 25)
+	require.Len(t, def.Message.FieldNames, 22)
 	assert.Contains(t, msg.FieldNames, "field_bool")
 	assert.Contains(t, msg.FieldNames, "field_enum")
-	assert.Contains(t, msg.FieldNames, "field_int8")
+	assert.Contains(t, msg.FieldNames, "field_byte")
 }
 
 func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +266,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 25)
+	require.Len(t, def.Message.FieldTags, 22)
 	assert.Contains(t, msg.FieldTags, 1)
 	assert.Contains(t, msg.FieldTags, 2)
 	assert.Contains(t, msg.FieldTags, 10)
@@ -277,7 +277,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 func TestCompiler__should_compile_struct(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestCompiler__should_compile_struct(t *testing.T) {
 func TestCompiler__should_compile_struct_field_names(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestCompiler__should_compile_struct_field_names(t *testing.T) {
 func TestCompiler__should_compile_builtin_type(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -331,7 +331,7 @@ func TestCompiler__should_compile_builtin_type(t *testing.T) {
 func TestCompiler__should_compile_reference_type(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,7 +353,7 @@ func TestCompiler__should_compile_reference_type(t *testing.T) {
 func TestCompiler__should_compile_imported_type(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -376,7 +376,7 @@ func TestCompiler__should_compile_imported_type(t *testing.T) {
 func TestCompiler__should_compile_list_type(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -400,7 +400,7 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +426,7 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 	c := testCompiler(t)
 
-	pkg, err := c.Compile("../testdata/pkg1")
+	pkg, err := c.Compile("../../testdata/pkg1")
 	if err != nil {
 		t.Fatal(err)
 	}
