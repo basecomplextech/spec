@@ -54,6 +54,11 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	msg.FieldString("hello, world")
 	msg.FieldBytes([]byte("abc"))
 
+	msg.FieldStruct(Struct{
+		Key:   123,
+		Value: 456,
+	})
+
 	{
 		node, err := msg.Node()
 		if err != nil {

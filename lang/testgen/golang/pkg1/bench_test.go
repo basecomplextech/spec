@@ -60,3 +60,25 @@ func BenchmarkEncode(b *testing.B) {
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
 }
+
+func BenchmarkStructField(b *testing.B) {
+	msg := testMessage(b)
+	field := msg.msg.Field(52)
+	size := len(field)
+
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		msg.FieldStruct()
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+	b.ReportMetric(float64(size), "size")
+}
