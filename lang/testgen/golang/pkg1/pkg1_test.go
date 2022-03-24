@@ -32,7 +32,7 @@ func testMessage(t tests.T) Message {
 }
 
 func testEncode(t tests.T, e *spec.Encoder) Message {
-	msg, err := EncodeMessage(e)
+	msg, err := BuildMessageEncoder(e)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,22 +60,22 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	})
 
 	{
-		node, err := msg.Node()
+		node, err := msg.BuildNode()
 		if err != nil {
 			t.Fatal(err)
 		}
 		node.Value("a")
 
 		{
-			next, err := node.Next()
+			next, err := node.BuildNext()
 			if err != nil {
 				t.Fatal(err)
 			}
 			next.Value("b")
-			next.End()
+			next.Build()
 		}
 
-		node.End()
+		node.Build()
 	}
 
 	msg.Value(Struct{
@@ -84,13 +84,13 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	})
 
 	{
-		submsg, err := msg.Imported()
+		submsg, err := msg.BuildImported()
 		if err != nil {
 			t.Fatal(err)
 		}
 		submsg.Key("key")
 		submsg.Value(pkg3.Value{})
-		submsg.End()
+		submsg.Build()
 	}
 
 	{
@@ -101,7 +101,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		for _, x := range []int64{1, 2, 3} {
 			list.Next(x)
 		}
-		if _, err := list.End(); err != nil {
+		if _, err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -114,7 +114,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		for _, x := range []string{"a", "b", "c"} {
 			list.Next(x)
 		}
-		if _, err := list.End(); err != nil {
+		if _, err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -130,9 +130,9 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 				t.Fatal(err)
 			}
 			elem.Value(x)
-			elem.End()
+			elem.Build()
 		}
-		if _, err := list.End(); err != nil {
+		if _, err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -148,17 +148,16 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 				t.Fatal(err)
 			}
 			elem.Key(x)
-			elem.End()
+			elem.Build()
 		}
-		if _, err := list.End(); err != nil {
+		if _, err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	b, err := msg.End()
+	m, err := msg.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	return GetMessage(b)
+	return m
 }

@@ -40,16 +40,16 @@ func (w *writer) structDef(def *compiler.Definition) error {
 }
 
 func (w *writer) getStruct(def *compiler.Definition) error {
-	w.linef(`func Get%v(b []byte) (result %v) {`, def.Name, def.Name)
-	w.linef(`result, _, _ = Decode%v(b)`, def.Name)
-	w.line(`return`)
+	w.linef(`func Get%v(b []byte) %v {`, def.Name, def.Name)
+	w.linef(`s, _, _ := Decode%v(b)`, def.Name)
+	w.line(`return s`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
 func (w *writer) decodeStruct(def *compiler.Definition) error {
-	w.linef(`func Decode%v(b []byte) (result %v, size int, err error) {`, def.Name, def.Name)
+	w.linef(`func Decode%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
 	w.line(`dataSize, size, err := spec.DecodeStruct(b)`)
 	w.line(`if err != nil {
 		return
@@ -72,7 +72,7 @@ func (w *writer) decodeStruct(def *compiler.Definition) error {
 		decodeName := typeDecodeFunc(field.Type)
 
 		w.line(`off -= n`)
-		w.linef(`result.%v, n, err = %v(b[:off])`, fieldName, decodeName)
+		w.linef(`s.%v, n, err = %v(b[:off])`, fieldName, decodeName)
 		w.line(`if err != nil {
 			return
 		}`)
@@ -86,7 +86,7 @@ func (w *writer) decodeStruct(def *compiler.Definition) error {
 }
 
 func (w *writer) encodeStruct(def *compiler.Definition) error {
-	w.linef(`func Encode%v(b spec.Buffer, s %v) (int, error) {`, def.Name, def.Name)
+	w.linef(`func Encode%v(b buffer.Buffer, s %v) (int, error) {`, def.Name, def.Name)
 	w.line(`var dataSize, n int`)
 	w.line(`var err error`)
 	w.line()

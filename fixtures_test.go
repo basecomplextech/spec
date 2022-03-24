@@ -168,9 +168,9 @@ func (b TestMessageBuilder) List() (ListBuilder[int64], error) {
 	return BuildList(b.e, EncodeInt64)
 }
 
-func (b TestMessageBuilder) Messages() (MessageListBuilder[TestElementBuilder], error) {
+func (b TestMessageBuilder) Messages() (NestedListBuilder[TestElementBuilder], error) {
 	b.e.BeginField(52)
-	return BuildMessageList(b.e, BuildTestElementEncoder)
+	return BuildNestedList(b.e, BuildTestElementEncoder)
 }
 
 func (b TestMessageBuilder) Strings() (ListBuilder[string], error) {

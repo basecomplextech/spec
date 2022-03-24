@@ -125,31 +125,31 @@ func (b ListBuilder[T]) Next(value T) error {
 	return b.e.Element()
 }
 
-// MessageListBuilder builds a list of messages.
-type MessageListBuilder[T any] struct {
+// NestedListBuilder builds a list using nested element builder.
+type NestedListBuilder[T any] struct {
 	e    *Encoder
 	next func(e *Encoder) (T, error)
 }
 
-// BuildMessageList begins and returns a new message list builder.
-func BuildMessageList[T any](e *Encoder, next func(e *Encoder) (T, error)) (
-	_ MessageListBuilder[T], err error,
+// BuildNestedList begins and returns a new list.
+func BuildNestedList[T any](e *Encoder, next func(e *Encoder) (T, error)) (
+	_ NestedListBuilder[T], err error,
 ) {
 	if err = e.BeginList(); err != nil {
 		return
 	}
 
-	b := MessageListBuilder[T]{e: e, next: next}
+	b := NestedListBuilder[T]{e: e, next: next}
 	return b, nil
 }
 
 // Build ends and returns the list.
-func (b MessageListBuilder[T]) Build() ([]byte, error) {
+func (b NestedListBuilder[T]) Build() ([]byte, error) {
 	return b.e.End()
 }
 
-// Next returns the next message builder.
-func (b MessageListBuilder[T]) Next() (_ T, err error) {
+// Next returns the next element builder.
+func (b NestedListBuilder[T]) Next() (_ T, err error) {
 	if err = b.e.BeginElement(); err != nil {
 		return
 	}

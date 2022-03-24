@@ -124,30 +124,6 @@ func typeDecodeFunc(typ *compiler.Type) string {
 	return ""
 }
 
-func typeBuilder(typ *compiler.Type) string {
-	kind := typ.Kind
-
-	switch kind {
-	case compiler.KindList:
-		elem := typ.Element
-		if elem.Kind == compiler.KindMessage {
-			encoder := typeBuilder(elem)
-			return fmt.Sprintf("spec.MessageListBuilder[%v]", encoder)
-		}
-
-		elemName := typeName(elem)
-		return fmt.Sprintf("spec.ListBuilder[%v]", elemName)
-
-	case compiler.KindMessage:
-		if typ.Import != nil {
-			return fmt.Sprintf("%v.%vBuilder", typ.ImportName, typ.Name)
-		}
-		return fmt.Sprintf("%vBuilder", typ.Name)
-	}
-
-	return ""
-}
-
 func typeEncodeFunc(typ *compiler.Type) string {
 	kind := typ.Kind
 
@@ -181,14 +157,6 @@ func typeEncodeFunc(typ *compiler.Type) string {
 	case compiler.KindString:
 		return "spec.EncodeString"
 
-	case compiler.KindList:
-		elem := typ.Element
-		if elem.Kind == compiler.KindMessage {
-			return fmt.Sprintf("spec.BuildMessageList")
-		}
-
-		return fmt.Sprintf("spec.BuildList")
-
 	case compiler.KindEnum,
 		compiler.KindStruct:
 		if typ.Import != nil {
@@ -196,11 +164,42 @@ func typeEncodeFunc(typ *compiler.Type) string {
 		}
 		return fmt.Sprintf("Encode%v", typ.Name)
 
+	case compiler.KindList:
+		elem := typ.Element
+		if elem.Kind == compiler.KindMessage {
+			return fmt.Sprintf("spec.BuildNestedList")
+		}
+		return fmt.Sprintf("spec.BuildList")
+
 	case compiler.KindMessage:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Encode%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.Build%vEncoder", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Encode%v", typ.Name)
+		return fmt.Sprintf("Build%vEncoder", typ.Name)
+	}
+
+	return ""
+}
+
+func typeBuilder(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindList:
+		elem := typ.Element
+		if elem.Kind == compiler.KindMessage {
+			encoder := typeBuilder(elem)
+			return fmt.Sprintf("spec.NestedListBuilder[%v]", encoder)
+		}
+
+		elemName := typeName(elem)
+		return fmt.Sprintf("spec.ListBuilder[%v]", elemName)
+
+	case compiler.KindMessage:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.%vBuilder", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("%vBuilder", typ.Name)
 	}
 
 	return ""
