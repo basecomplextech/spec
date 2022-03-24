@@ -20,7 +20,7 @@ type Encoder struct {
 
 // NewEncoder returns a new encoder with an empty buffer.
 func NewEncoder() *Encoder {
-	buf := buffer.New(nil)
+	buf := buffer.New()
 	return newEncoder(buf)
 }
 
