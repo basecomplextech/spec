@@ -51,7 +51,7 @@ func (w *writer) getStruct(def *compiler.Definition) error {
 func (w *writer) decodeStruct(def *compiler.Definition) error {
 	w.linef(`func Decode%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
 	w.line(`dataSize, size, err := spec.DecodeStruct(b)`)
-	w.line(`if err != nil {
+	w.line(`if err != nil || size == 0 {
 		return
 	}`)
 	w.line()

@@ -64,7 +64,7 @@ func (w *writer) decodeEnum(def *compiler.Definition) error {
 	name := def.Name
 	w.linef(`func Decode%v(b []byte) (result %v, size int, err error) {`, name, name)
 	w.linef(`v, size, err := spec.DecodeInt32(b)`)
-	w.linef(`if err != nil {
+	w.linef(`if err != nil || size == 0 {
 		return
 	}`)
 	w.linef(`result = %v(v)`, name)

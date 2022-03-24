@@ -49,7 +49,7 @@ func (w *writer) getMessage(def *compiler.Definition) error {
 func (w *writer) decodeMessage(def *compiler.Definition) error {
 	w.linef(`func Decode%v(b []byte) (_ %v, size int, err error) {`, def.Name, def.Name)
 	w.linef(`msg, size, err := spec.DecodeMessage(b)`)
-	w.line(`if err != nil {
+	w.line(`if err != nil || size == 0 {
 		return
 	}`)
 	w.linef(`return %v{msg}, size, nil`, def.Name)
