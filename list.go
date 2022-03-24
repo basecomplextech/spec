@@ -94,68 +94,64 @@ func (l List[T]) Validate() error {
 	return nil
 }
 
-// Encoder
+// Builder
 
-// ListEncoder encodes a list of values.
-type ListEncoder[T any] struct {
+// ListBuilder builds a list of values.
+type ListBuilder[T any] struct {
 	e      *Encoder
 	encode EncodeFunc[T]
 }
 
-// EncodeList begins and returns a new value list encoder.
-func EncodeList[T any](e *Encoder, encode EncodeFunc[T]) (
-	result ListEncoder[T], err error,
-) {
+// BuildList begins and returns a new value list builder.
+func BuildList[T any](e *Encoder, encode EncodeFunc[T]) (_ ListBuilder[T], err error) {
 	if err = e.BeginList(); err != nil {
 		return
 	}
 
-	result = ListEncoder[T]{e: e, encode: encode}
-	return
+	b := ListBuilder[T]{e: e, encode: encode}
+	return b, nil
 }
 
-// End ends the list.
-func (e ListEncoder[T]) End() ([]byte, error) {
-	return e.e.End()
+// Build ends and returns the list.
+func (b ListBuilder[T]) Build() ([]byte, error) {
+	return b.e.End()
 }
 
 // Next encodes the next element.
-func (e ListEncoder[T]) Next(value T) error {
-	if err := EncodeValue(e.e, value, e.encode); err != nil {
+func (b ListBuilder[T]) Next(value T) error {
+	if err := EncodeValue(b.e, value, b.encode); err != nil {
 		return err
 	}
-	return e.e.Element()
+	return b.e.Element()
 }
 
-// Message encoder
-
-// MessageListEncoder encodes a list of messages.
-type MessageListEncoder[T any] struct {
+// MessageListBuilder builds a list of messages.
+type MessageListBuilder[T any] struct {
 	e    *Encoder
 	next func(e *Encoder) (T, error)
 }
 
-// EncodeMessageList begins and returns a new message list encoder.
-func EncodeMessageList[T any](e *Encoder, next func(e *Encoder) (T, error)) (
-	result MessageListEncoder[T], err error,
+// BuildMessageList begins and returns a new message list builder.
+func BuildMessageList[T any](e *Encoder, next func(e *Encoder) (T, error)) (
+	_ MessageListBuilder[T], err error,
 ) {
 	if err = e.BeginList(); err != nil {
 		return
 	}
 
-	result = MessageListEncoder[T]{e: e, next: next}
-	return
+	b := MessageListBuilder[T]{e: e, next: next}
+	return b, nil
 }
 
-// End ends the list.
-func (e MessageListEncoder[T]) End() ([]byte, error) {
-	return e.e.End()
+// Build ends and returns the list.
+func (b MessageListBuilder[T]) Build() ([]byte, error) {
+	return b.e.End()
 }
 
-// Next returns the next element encoder.
-func (e MessageListEncoder[T]) Next() (result T, err error) {
-	if err = e.e.BeginElement(); err != nil {
+// Next returns the next message builder.
+func (b MessageListBuilder[T]) Next() (_ T, err error) {
+	if err = b.e.BeginElement(); err != nil {
 		return
 	}
-	return e.next(e.e)
+	return b.next(b.e)
 }

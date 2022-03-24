@@ -132,11 +132,11 @@ func typeBuilder(typ *compiler.Type) string {
 		elem := typ.Element
 		if elem.Kind == compiler.KindMessage {
 			encoder := typeBuilder(elem)
-			return fmt.Sprintf("spec.MessageListEncoder[%v]", encoder)
+			return fmt.Sprintf("spec.MessageListBuilder[%v]", encoder)
 		}
 
 		elemName := typeName(elem)
-		return fmt.Sprintf("spec.ListEncoder[%v]", elemName)
+		return fmt.Sprintf("spec.ListBuilder[%v]", elemName)
 
 	case compiler.KindMessage:
 		if typ.Import != nil {
@@ -184,10 +184,10 @@ func typeEncodeFunc(typ *compiler.Type) string {
 	case compiler.KindList:
 		elem := typ.Element
 		if elem.Kind == compiler.KindMessage {
-			return fmt.Sprintf("spec.EncodeMessageList")
+			return fmt.Sprintf("spec.BuildMessageList")
 		}
 
-		return fmt.Sprintf("spec.EncodeList")
+		return fmt.Sprintf("spec.BuildList")
 
 	case compiler.KindEnum,
 		compiler.KindStruct:

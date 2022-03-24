@@ -243,7 +243,7 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 				return err
 			}
 		}
-		if _, err := list.End(); err != nil {
+		if _, err := list.Build(); err != nil {
 			return err
 		}
 	}
@@ -265,7 +265,7 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 				return err
 			}
 		}
-		if _, err := list.End(); err != nil {
+		if _, err := list.Build(); err != nil {
 			return err
 		}
 	}
@@ -280,7 +280,7 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 				return err
 			}
 		}
-		if _, err := list.End(); err != nil {
+		if _, err := list.Build(); err != nil {
 			return err
 		}
 	}

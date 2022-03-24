@@ -163,19 +163,19 @@ func (b TestMessageBuilder) Submessage() (TestSubmessageBuilder, error) {
 	return BuildTestSubmessageEncoder(b.e)
 }
 
-func (b TestMessageBuilder) List() (ListEncoder[int64], error) {
+func (b TestMessageBuilder) List() (ListBuilder[int64], error) {
 	b.e.BeginField(51)
-	return EncodeList(b.e, EncodeInt64)
+	return BuildList(b.e, EncodeInt64)
 }
 
-func (b TestMessageBuilder) Messages() (MessageListEncoder[TestElementBuilder], error) {
+func (b TestMessageBuilder) Messages() (MessageListBuilder[TestElementBuilder], error) {
 	b.e.BeginField(52)
-	return EncodeMessageList(b.e, BuildTestElementEncoder)
+	return BuildMessageList(b.e, BuildTestElementEncoder)
 }
 
-func (b TestMessageBuilder) Strings() (ListEncoder[string], error) {
+func (b TestMessageBuilder) Strings() (ListBuilder[string], error) {
 	b.e.BeginField(53)
-	return EncodeList(b.e, EncodeString)
+	return BuildList(b.e, EncodeString)
 }
 
 func (b TestMessageBuilder) Struct(v TestStruct) error {
