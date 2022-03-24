@@ -35,9 +35,6 @@ type Encoder struct {
 }
 
 // NewEncoder returns a new encoder with an empty buffer.
-//
-// Usually, it is better to use Encode(obj) and EncodeTo(obj, buf), than to construct
-// a new encoder directly. These methods internally use an encoder pool.
 func NewEncoder() *Encoder {
 	buf := buffer.New(nil)
 	return newEncoder(buf)
@@ -482,6 +479,21 @@ func (e *Encoder) Field(tag uint16) error {
 	}
 	e.fields.insert(message.tableStart, f)
 	return nil
+}
+
+func (e *Encoder) FieldBytes(tag uint16, data []byte) error {
+	if e.err != nil {
+		return e.err
+	}
+
+	start := e.buf.Len()
+	e.buf.Write(data)
+	end := e.buf.Len()
+
+	if err := e.setData(start, end); err != nil {
+		return err
+	}
+	return e.Field(tag)
 }
 
 func (e *Encoder) endField() ([]byte, error) {

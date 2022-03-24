@@ -10,15 +10,14 @@ import (
 func _BenchmarkSizeDistribution(b *testing.B) {
 	msg := newTestObject()
 
-	e := NewEncoder()
-	me, err := EncodeTestMessage(e)
+	builder, err := BuildTestMessage()
 	if err != nil {
 		b.Fatal(err)
 	}
-	if err := msg.Encode(me); err != nil {
+	if err := msg.Encode(builder); err != nil {
 		b.Fatal(err)
 	}
-	data, err := me.End()
+	data, err := builder.End()
 	if err != nil {
 		b.Fatal(err)
 	}

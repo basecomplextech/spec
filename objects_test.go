@@ -201,27 +201,27 @@ func (m *TestObject) Decode(b []byte) error {
 	return nil
 }
 
-func (m *TestObject) Encode(e TestMessageEncoder) error {
-	e.Bool(m.Bool)
-	e.Byte(m.Byte)
+func (m *TestObject) Encode(b TestMessageBuilder) error {
+	b.Bool(m.Bool)
+	b.Byte(m.Byte)
 
-	e.Int32(m.Int32)
-	e.Int64(m.Int64)
+	b.Int32(m.Int32)
+	b.Int64(m.Int64)
 
-	e.Uint32(m.Uint32)
-	e.Uint64(m.Uint64)
+	b.Uint32(m.Uint32)
+	b.Uint64(m.Uint64)
 
-	e.U128(m.U128)
-	e.U256(m.U256)
+	b.U128(m.U128)
+	b.U256(m.U256)
 
-	e.Float32(m.Float32)
-	e.Float64(m.Float64)
+	b.Float32(m.Float32)
+	b.Float64(m.Float64)
 
-	e.String(m.String)
-	e.Bytes(m.Bytes)
+	b.String(m.String)
+	b.Bytes(m.Bytes)
 
 	if m.Submessage != nil {
-		sub, err := e.Submessage()
+		sub, err := b.Submessage()
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	}
 
 	if len(m.List) > 0 {
-		list, err := e.List()
+		list, err := b.List()
 		if err != nil {
 			return err
 		}
@@ -249,7 +249,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	}
 
 	if len(m.Messages) > 0 {
-		list, err := e.Messages()
+		list, err := b.Messages()
 		if err != nil {
 			return err
 		}
@@ -271,7 +271,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 	}
 
 	if len(m.Strings) > 0 {
-		list, err := e.Strings()
+		list, err := b.Strings()
 		if err != nil {
 			return err
 		}
@@ -285,7 +285,7 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 		}
 	}
 
-	if err := e.Struct(m.Struct); err != nil {
+	if err := b.Struct(m.Struct); err != nil {
 		return err
 	}
 	return nil
@@ -293,14 +293,14 @@ func (m *TestObject) Encode(e TestMessageEncoder) error {
 
 func (m *TestObject) Marshal() ([]byte, error) {
 	e := NewEncoder()
-	me, err := EncodeTestMessage(e)
+	b, err := BuildTestMessageEncoder(e)
 	if err != nil {
 		return nil, err
 	}
-	if err := m.Encode(me); err != nil {
+	if err := m.Encode(b); err != nil {
 		return nil, err
 	}
-	return me.End()
+	return b.End()
 }
 
 // TestSubobject
@@ -328,9 +328,9 @@ func (m *TestSubobject) Decode(b []byte) error {
 	return nil
 }
 
-func (m *TestSubobject) Encode(e TestSubmessageEncoder) error {
-	e.Int32(m.Int32)
-	e.Int64(m.Int64)
+func (m *TestSubobject) Encode(b TestSubmessageBuilder) error {
+	b.Int32(m.Int32)
+	b.Int64(m.Int64)
 	return nil
 }
 
@@ -362,9 +362,9 @@ func (m *TestObjectElement) Decode(b []byte) error {
 	return nil
 }
 
-func (m TestObjectElement) Encode(e TestElementEncoder) error {
-	e.Byte(m.Byte)
-	e.Int32(m.Int32)
-	e.Int64(m.Int64)
+func (m TestObjectElement) Encode(b TestElementBuilder) error {
+	b.Byte(m.Byte)
+	b.Int32(m.Int32)
+	b.Int64(m.Int64)
 	return nil
 }

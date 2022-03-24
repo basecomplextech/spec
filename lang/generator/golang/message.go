@@ -14,7 +14,7 @@ func (w *writer) message(def *compiler.Definition) error {
 	if err := w.decodeMessage(def); err != nil {
 		return err
 	}
-	if err := w.encodeMessage(def); err != nil {
+	if err := w.buildMessage(def); err != nil {
 		return err
 	}
 	if err := w.messageFields(def); err != nil {
@@ -23,7 +23,7 @@ func (w *writer) message(def *compiler.Definition) error {
 	if err := w.messageRawBytes(def); err != nil {
 		return err
 	}
-	if err := w.messageEncoder(def); err != nil {
+	if err := w.messageBuilder(def); err != nil {
 		return err
 	}
 	return nil
@@ -61,12 +61,19 @@ func (w *writer) decodeMessage(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) encodeMessage(def *compiler.Definition) error {
-	w.linef(`func Encode%v(e *spec.Encoder) (result %vEncoder, err error) {`, def.Name, def.Name)
+func (w *writer) buildMessage(def *compiler.Definition) error {
+	w.linef(`func Build%v() %vBuilder {`, def.Name, def.Name)
+	w.linef(`e := spec.NewEncoder()`)
+	w.linef(`e.BeginMessage()`)
+	w.linef(`return %vBuilder{e}`, def.Name)
+	w.linef(`}`)
+	w.line()
+
+	w.linef(`func Encode%v(e *spec.Encoder) (result %vBuilder, err error) {`, def.Name, def.Name)
 	w.linef(`if err = e.BeginMessage(); err != nil {
 		return
 	}`)
-	w.linef(`result = %vEncoder{e}`, def.Name)
+	w.linef(`result = %vBuilder{e}`, def.Name)
 	w.linef(`return`)
 	w.linef(`}`)
 	w.line()
@@ -162,40 +169,49 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 
 // encoder
 
-func (w *writer) messageEncoder(def *compiler.Definition) error {
-	if err := w.messageEncoderDef(def); err != nil {
+func (w *writer) messageBuilder(def *compiler.Definition) error {
+	if err := w.messageBuilderDef(def); err != nil {
 		return err
 	}
-	if err := w.messageEncoderEnd(def); err != nil {
+	if err := w.messageBuilderFields(def); err != nil {
 		return err
 	}
-	if err := w.messageEncoderFields(def); err != nil {
+	if err := w.messageBuilderBuild(def); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *writer) messageEncoderDef(def *compiler.Definition) error {
-	w.linef(`// %vEncoder`, def.Name)
+func (w *writer) messageBuilderDef(def *compiler.Definition) error {
+	w.linef(`// %vBuilder`, def.Name)
 	w.line()
-	w.linef(`type %vEncoder struct {`, def.Name)
+	w.linef(`type %vBuilder struct {`, def.Name)
 	w.line(`e *spec.Encoder`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) messageEncoderEnd(def *compiler.Definition) error {
-	w.linef(`func (e %vEncoder) End() ([]byte, error) {`, def.Name)
-	w.linef(`return e.e.End()`)
+func (w *writer) messageBuilderBuild(def *compiler.Definition) error {
+	// w.linef(`func (e %vBuilder) End() ([]byte, error) {`, def.Name)
+	// w.linef(`return b.e.End()`)
+	// w.linef(`}`)
+	// w.line()
+
+	w.linef(`func (b %vBuilder) Build() (_ %v, err error) {`, def.Name, def.Name)
+	w.linef(`bytes, err := b.e.End()`)
+	w.linef(`if err != nil {
+		return
+	}`)
+	w.linef(`return Get%v(bytes), nil`, def.Name)
 	w.linef(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) messageEncoderFields(def *compiler.Definition) error {
+func (w *writer) messageBuilderFields(def *compiler.Definition) error {
 	for _, field := range def.Message.Fields {
-		if err := w.messageEncoderField(def, field); err != nil {
+		if err := w.messageBuilderField(def, field); err != nil {
 			return err
 		}
 	}
@@ -204,88 +220,93 @@ func (w *writer) messageEncoderFields(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageEncoderField(def *compiler.Definition, field *compiler.MessageField) error {
-	fieldName := messageFieldName(field)
-	typeName := typeName(field.Type)
+func (w *writer) messageBuilderField(def *compiler.Definition, field *compiler.MessageField) error {
+	fname := messageFieldName(field)
+	tname := typeName(field.Type)
 
 	tag := field.Tag
 	kind := field.Type.Kind
 
 	switch kind {
 	default:
-		w.linef(`func (e %vEncoder) %v(v %v) error {`, def.Name, fieldName, typeName)
+		w.linef(`func (b %vBuilder) %v(v %v) error {`, def.Name, fname, tname)
 
 		switch kind {
 		case compiler.KindBool:
-			w.line(`e.e.Bool(v)`)
+			w.line(`b.e.Bool(v)`)
 		case compiler.KindByte:
-			w.line(`e.e.Byte(v)`)
+			w.line(`b.e.Byte(v)`)
 
 		case compiler.KindInt32:
-			w.line(`e.e.Int32(v)`)
+			w.line(`b.e.Int32(v)`)
 		case compiler.KindInt64:
-			w.line(`e.e.Int64(v)`)
+			w.line(`b.e.Int64(v)`)
 		case compiler.KindUint32:
-			w.line(`e.e.Uint32(v)`)
+			w.line(`b.e.Uint32(v)`)
 		case compiler.KindUint64:
-			w.line(`e.e.Uint64(v)`)
+			w.line(`b.e.Uint64(v)`)
 
 		case compiler.KindU128:
-			w.line(`e.e.U128(v)`)
+			w.line(`b.e.U128(v)`)
 		case compiler.KindU256:
-			w.line(`e.e.U256(v)`)
+			w.line(`b.e.U256(v)`)
 
 		case compiler.KindFloat32:
-			w.line(`e.e.Float32(v)`)
+			w.line(`b.e.Float32(v)`)
 		case compiler.KindFloat64:
-			w.line(`e.e.Float64(v)`)
+			w.line(`b.e.Float64(v)`)
 
 		case compiler.KindBytes:
-			w.line(`e.e.Bytes(v)`)
+			w.line(`b.e.Bytes(v)`)
 		case compiler.KindString:
-			w.line(`e.e.String(v)`)
+			w.line(`b.e.String(v)`)
 		}
 
-		w.linef(`return e.e.Field(%d)`, tag)
+		w.linef(`return b.e.Field(%d)`, tag)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindEnum:
 		encodeFunc := typeEncodeFunc(field.Type)
 
-		w.linef(`func (e %vEncoder) %v(v %v) error {`, def.Name, fieldName, typeName)
-		w.linef(`spec.EncodeValue(e.e, v, %v)`, encodeFunc)
-		w.linef(`return e.e.Field(%d)`, tag)
+		w.linef(`func (b %vBuilder) %v(v %v) error {`, def.Name, fname, tname)
+		w.linef(`spec.EncodeValue(b.e, v, %v)`, encodeFunc)
+		w.linef(`return b.e.Field(%d)`, tag)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindStruct:
 		encodeFunc := typeEncodeFunc(field.Type)
 
-		w.linef(`func (e %vEncoder) %v(v %v) error {`, def.Name, fieldName, typeName)
-		w.linef(`spec.EncodeValue(e.e, v, %v)`, encodeFunc)
-		w.linef(`return e.e.Field(%d)`, tag)
+		w.linef(`func (b %vBuilder) %v(v %v) error {`, def.Name, fname, tname)
+		w.linef(`spec.EncodeValue(b.e, v, %v)`, encodeFunc)
+		w.linef(`return b.e.Field(%d)`, tag)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindList:
-		encoder := typeEncoder(field.Type)
+		encoder := typeBuilder(field.Type)
 		encodeFunc := typeEncodeFunc(field.Type)
 		encodeElemFunc := typeEncodeFunc(field.Type.Element)
 
-		w.linef(`func (e %vEncoder) %v() (%v, error) {`, def.Name, fieldName, encoder)
-		w.linef(`e.e.BeginField(%d)`, tag)
-		w.linef(`return %v(e.e, %v)`, encodeFunc, encodeElemFunc)
+		w.linef(`func (b %vBuilder) %v() (%v, error) {`, def.Name, fname, encoder)
+		w.linef(`b.e.BeginField(%d)`, tag)
+		w.linef(`return %v(b.e, %v)`, encodeFunc, encodeElemFunc)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindMessage:
-		encoder := typeEncoder(field.Type)
-		encodeFunc := typeEncodeFunc(field.Type)
+		tname := typeName(field.Type)
+		w.linef(`func (b %vBuilder) %v(v %v) error {`, def.Name, fname, tname)
+		w.linef(`return b.e.FieldBytes(%d, v.RawBytes())`, tag)
+		w.linef(`}`)
+		w.line()
 
-		w.linef(`func (e %vEncoder) %v() (%v, error) {`, def.Name, fieldName, encoder)
-		w.linef(`e.e.BeginField(%d)`, tag)
-		w.linef(`return %v(e.e)`, encodeFunc)
+		encoder := typeBuilder(field.Type)
+		encodeFunc := typeEncodeFunc(field.Type)
+		w.linef(`func (b %vBuilder) Build%v() (%v, error) {`, def.Name, fname, encoder)
+		w.linef(`b.e.BeginField(%d)`, tag)
+		w.linef(`return %v(b.e)`, encodeFunc)
 		w.linef(`}`)
 		w.line()
 	}

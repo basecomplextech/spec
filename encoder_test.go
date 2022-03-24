@@ -11,20 +11,20 @@ func TestEncoder__should_encode_message(t *testing.T) {
 	msg := newTestObject()
 
 	e := NewEncoder()
-	me, err := EncodeTestMessage(e)
+	b, err := BuildTestMessageEncoder(e)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := msg.Encode(me); err != nil {
+	if err := msg.Encode(b); err != nil {
 		t.Fatal(err)
 	}
-	b, err := e.End()
+	data, err := e.End()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	msg1 := &TestObject{}
-	if err := msg1.Decode(b); err != nil {
+	if err := msg1.Decode(data); err != nil {
 		t.Fatal(err)
 	}
 

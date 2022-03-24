@@ -17,20 +17,35 @@ func GetTestMessage(b []byte) TestMessage {
 	return TestMessage{msg}
 }
 
-func DecodeTestMessage(b []byte) (result TestMessage, n int, err error) {
-	msg, n, err := DecodeMessage(b)
+func DecodeTestMessage(b []byte) (_ TestMessage, size int, err error) {
+	msg, size, err := DecodeMessage(b)
 	if err != nil {
 		return
 	}
-	result = TestMessage{msg}
-	return
+	return TestMessage{msg}, size, nil
 }
 
-func EncodeTestMessage(e *Encoder) (result TestMessageEncoder, err error) {
+func BuildTestMessage() (_ TestMessageBuilder, err error) {
+	e := NewEncoder()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
-	result = TestMessageEncoder{e}
+	return TestMessageBuilder{e}, nil
+}
+
+func BuildTestMessageBuffer(b buffer.Buffer) (_ TestMessageBuilder, err error) {
+	e := NewEncoderBuffer(b)
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	return TestMessageBuilder{e}, nil
+}
+
+func BuildTestMessageEncoder(e *Encoder) (result TestMessageBuilder, err error) {
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	result = TestMessageBuilder{e}
 	return
 }
 
@@ -73,99 +88,99 @@ func (m TestMessage) Struct() TestStruct {
 	return GetTestStruct(b)
 }
 
-// TestMessageEncoder
+// TestMessageBuilder
 
-type TestMessageEncoder struct {
+type TestMessageBuilder struct {
 	e *Encoder
 }
 
-func (e TestMessageEncoder) End() ([]byte, error) {
-	return e.e.End()
+func (b TestMessageBuilder) End() ([]byte, error) {
+	return b.e.End()
 }
 
-func (e TestMessageEncoder) Bool(v bool) error {
-	e.e.Bool(v)
-	return e.e.Field(1)
+func (b TestMessageBuilder) Bool(v bool) error {
+	b.e.Bool(v)
+	return b.e.Field(1)
 }
 
-func (e TestMessageEncoder) Byte(v byte) error {
-	e.e.Byte(v)
-	return e.e.Field(2)
+func (b TestMessageBuilder) Byte(v byte) error {
+	b.e.Byte(v)
+	return b.e.Field(2)
 }
 
-func (e TestMessageEncoder) Int32(v int32) error {
-	e.e.Int32(v)
-	return e.e.Field(10)
+func (b TestMessageBuilder) Int32(v int32) error {
+	b.e.Int32(v)
+	return b.e.Field(10)
 }
 
-func (e TestMessageEncoder) Int64(v int64) error {
-	e.e.Int64(v)
-	return e.e.Field(11)
+func (b TestMessageBuilder) Int64(v int64) error {
+	b.e.Int64(v)
+	return b.e.Field(11)
 }
 
-func (e TestMessageEncoder) Uint32(v uint32) error {
-	e.e.Uint32(v)
-	return e.e.Field(20)
+func (b TestMessageBuilder) Uint32(v uint32) error {
+	b.e.Uint32(v)
+	return b.e.Field(20)
 }
 
-func (e TestMessageEncoder) Uint64(v uint64) error {
-	e.e.Uint64(v)
-	return e.e.Field(21)
+func (b TestMessageBuilder) Uint64(v uint64) error {
+	b.e.Uint64(v)
+	return b.e.Field(21)
 }
 
-func (e TestMessageEncoder) U128(v u128.U128) error {
-	e.e.U128(v)
-	return e.e.Field(22)
+func (b TestMessageBuilder) U128(v u128.U128) error {
+	b.e.U128(v)
+	return b.e.Field(22)
 }
 
-func (e TestMessageEncoder) U256(v u256.U256) error {
-	e.e.U256(v)
-	return e.e.Field(23)
+func (b TestMessageBuilder) U256(v u256.U256) error {
+	b.e.U256(v)
+	return b.e.Field(23)
 }
 
-func (e TestMessageEncoder) Float32(v float32) error {
-	e.e.Float32(v)
-	return e.e.Field(30)
+func (b TestMessageBuilder) Float32(v float32) error {
+	b.e.Float32(v)
+	return b.e.Field(30)
 }
 
-func (e TestMessageEncoder) Float64(v float64) error {
-	e.e.Float64(v)
-	return e.e.Field(31)
+func (b TestMessageBuilder) Float64(v float64) error {
+	b.e.Float64(v)
+	return b.e.Field(31)
 }
 
-func (e TestMessageEncoder) String(v string) error {
-	e.e.String(v)
-	return e.e.Field(40)
+func (b TestMessageBuilder) String(v string) error {
+	b.e.String(v)
+	return b.e.Field(40)
 }
 
-func (e TestMessageEncoder) Bytes(v []byte) error {
-	e.e.Bytes(v)
-	return e.e.Field(41)
+func (b TestMessageBuilder) Bytes(v []byte) error {
+	b.e.Bytes(v)
+	return b.e.Field(41)
 }
 
-func (e TestMessageEncoder) Submessage() (TestSubmessageEncoder, error) {
-	e.e.BeginField(50)
-	return EncodeTestSubmessage(e.e)
+func (b TestMessageBuilder) Submessage() (TestSubmessageBuilder, error) {
+	b.e.BeginField(50)
+	return BuildTestSubmessageEncoder(b.e)
 }
 
-func (e TestMessageEncoder) List() (ListEncoder[int64], error) {
-	e.e.BeginField(51)
-	return EncodeList(e.e, EncodeInt64)
+func (b TestMessageBuilder) List() (ListEncoder[int64], error) {
+	b.e.BeginField(51)
+	return EncodeList(b.e, EncodeInt64)
 }
 
-func (e TestMessageEncoder) Messages() (MessageListEncoder[TestElementEncoder], error) {
-	e.e.BeginField(52)
-	return EncodeMessageList(e.e, EncodeTestElement)
+func (b TestMessageBuilder) Messages() (MessageListEncoder[TestElementBuilder], error) {
+	b.e.BeginField(52)
+	return EncodeMessageList(b.e, BuildTestElementEncoder)
 }
 
-func (e TestMessageEncoder) Strings() (ListEncoder[string], error) {
-	e.e.BeginField(53)
-	return EncodeList(e.e, EncodeString)
+func (b TestMessageBuilder) Strings() (ListEncoder[string], error) {
+	b.e.BeginField(53)
+	return EncodeList(b.e, EncodeString)
 }
 
-func (e TestMessageEncoder) Struct(v TestStruct) error {
-	EncodeValue(e.e, v, EncodeTestStruct)
-	return e.e.Field(60)
+func (b TestMessageBuilder) Struct(v TestStruct) error {
+	EncodeValue(b.e, v, EncodeTestStruct)
+	return b.e.Field(60)
 }
 
 // TestSubmessage
@@ -179,45 +194,59 @@ func GetTestSubmessage(b []byte) TestSubmessage {
 	return TestSubmessage{msg}
 }
 
-func DecodeTestSubmessage(b []byte) (result TestSubmessage, n int, err error) {
-	msg, n, err := DecodeMessage(b)
+func DecodeTestSubmessage(b []byte) (_ TestSubmessage, size int, err error) {
+	msg, size, err := DecodeMessage(b)
 	if err != nil {
 		return
 	}
-	result = TestSubmessage{msg}
-	return
+	return TestSubmessage{msg}, size, nil
 }
 
-func EncodeTestSubmessage(e *Encoder) (result TestSubmessageEncoder, err error) {
+func BuildTestSubmessage() (_ TestSubmessageBuilder, err error) {
+	e := NewEncoder()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
-	result = TestSubmessageEncoder{e}
-	return
+	return TestSubmessageBuilder{e}, nil
+}
+
+func BuildTestSubmessageBuffer(b buffer.Buffer) (_ TestSubmessageBuilder, err error) {
+	e := NewEncoderBuffer(b)
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	return TestSubmessageBuilder{e}, nil
+}
+
+func BuildTestSubmessageEncoder(e *Encoder) (_ TestSubmessageBuilder, err error) {
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	return TestSubmessageBuilder{e}, nil
 }
 
 func (m TestSubmessage) RawBytes() []byte { return m.msg.Raw() }
 func (m TestSubmessage) Int32() int32     { return m.msg.Int32(1) }
 func (m TestSubmessage) Int64() int64     { return m.msg.Int64(2) }
 
-// TestSubmessageEncoder
+// TestSubmessageBuilder
 
-type TestSubmessageEncoder struct {
+type TestSubmessageBuilder struct {
 	e *Encoder
 }
 
-func (e TestSubmessageEncoder) End() ([]byte, error) {
-	return e.e.End()
+func (b TestSubmessageBuilder) End() ([]byte, error) {
+	return b.e.End()
 }
 
-func (e TestSubmessageEncoder) Int32(v int32) error {
-	e.e.Int32(v)
-	return e.e.Field(1)
+func (b TestSubmessageBuilder) Int32(v int32) error {
+	b.e.Int32(v)
+	return b.e.Field(1)
 }
 
-func (e TestSubmessageEncoder) Int64(v int64) error {
-	e.e.Int64(v)
-	return e.e.Field(2)
+func (b TestSubmessageBuilder) Int64(v int64) error {
+	b.e.Int64(v)
+	return b.e.Field(2)
 }
 
 // TestElement
@@ -231,21 +260,35 @@ func GetTestElement(b []byte) TestElement {
 	return TestElement{msg}
 }
 
-func DecodeTestElement(b []byte) (result TestElement, n int, err error) {
-	msg, n, err := DecodeMessage(b)
+func DecodeTestElement(b []byte) (_ TestElement, size int, err error) {
+	msg, size, err := DecodeMessage(b)
 	if err != nil {
 		return
 	}
-	result = TestElement{msg}
-	return
+	return TestElement{msg}, size, nil
 }
 
-func EncodeTestElement(e *Encoder) (result TestElementEncoder, err error) {
+func BuildTestElement() (_ TestElementBuilder, err error) {
+	e := NewEncoder()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
-	result = TestElementEncoder{e}
-	return
+	return TestElementBuilder{e}, nil
+}
+
+func BuildTestElementBuffer(b buffer.Buffer) (_ TestElementBuilder, err error) {
+	e := NewEncoderBuffer(b)
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	return TestElementBuilder{e}, nil
+}
+
+func BuildTestElementEncoder(e *Encoder) (_ TestElementBuilder, err error) {
+	if err = e.BeginMessage(); err != nil {
+		return
+	}
+	return TestElementBuilder{e}, nil
 }
 
 func (m TestElement) Byte() byte {
@@ -260,29 +303,29 @@ func (m TestElement) Int64() int64 {
 	return m.msg.Int64(3)
 }
 
-// TestElementEncoder
+// TestElementBuilder
 
-type TestElementEncoder struct {
+type TestElementBuilder struct {
 	e *Encoder
 }
 
-func (e TestElementEncoder) End() ([]byte, error) {
-	return e.e.End()
+func (b TestElementBuilder) End() ([]byte, error) {
+	return b.e.End()
 }
 
-func (e TestElementEncoder) Byte(v byte) error {
-	e.e.Byte(v)
-	return e.e.Field(1)
+func (b TestElementBuilder) Byte(v byte) error {
+	b.e.Byte(v)
+	return b.e.Field(1)
 }
 
-func (e TestElementEncoder) Int32(v int32) error {
-	e.e.Int32(v)
-	return e.e.Field(2)
+func (b TestElementBuilder) Int32(v int32) error {
+	b.e.Int32(v)
+	return b.e.Field(2)
 }
 
-func (e TestElementEncoder) Int64(v int64) error {
-	e.e.Int64(v)
-	return e.e.Field(3)
+func (b TestElementBuilder) Int64(v int64) error {
+	b.e.Int64(v)
+	return b.e.Field(3)
 }
 
 // TestStruct
