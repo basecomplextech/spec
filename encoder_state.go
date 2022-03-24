@@ -1,5 +1,67 @@
 package spec
 
+import (
+	"sync"
+
+	"github.com/complexl/library/buffer"
+)
+
+// encoderState is a big pooled struct which holds an encoding state.
+type encoderState struct {
+	buf  buffer.Buffer
+	data encodeData // last written data, must be consumed before writing next data
+
+	stack    stack
+	elements listBuffer    // buffer for list element tables
+	fields   messageBuffer // buffer for message field tables
+
+	// preallocated
+	_stack    [14]stackEntry
+	_elements [48]listElement
+	_fields   [48]messageField
+}
+
+func newEncoderState() *encoderState {
+	s := &encoderState{}
+	s.stack.stack = s._stack[:0]
+	s.elements.stack = s._elements[:0]
+	s.fields.stack = s._fields[:0]
+	return s
+}
+
+func (s *encoderState) init(b buffer.Buffer) {
+	s.reset()
+	s.buf = b
+}
+
+func (s *encoderState) reset() {
+	s.buf = nil
+	s.data = encodeData{}
+
+	s.stack.reset()
+	s.elements.reset()
+	s.fields.reset()
+}
+
+// state pool
+
+var encoderStatePool = &sync.Pool{
+	New: func() any {
+		return newEncoderState()
+	},
+}
+
+func getEncoderState() *encoderState {
+	return encoderStatePool.Get().(*encoderState)
+}
+
+func releaseEncoderState(s *encoderState) {
+	s.reset()
+	encoderStatePool.Put(s)
+}
+
+// stack
+
 type entryType byte
 
 const (

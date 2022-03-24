@@ -31,6 +31,19 @@ func TestEncoder__should_encode_message(t *testing.T) {
 	assert.Equal(t, msg, msg1)
 }
 
+func TestEncoder__should_close_on_end(t *testing.T) {
+	msg := newTestSmall()
+
+	e := NewEncoder()
+	_, err := msg.Encode(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, encoderClosed, e.err)
+	assert.Nil(t, e.encoderState)
+}
+
 // List
 
 func TestEncoder__should_encode_list(t *testing.T) {

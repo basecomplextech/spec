@@ -3,9 +3,17 @@ package spec
 import (
 	"math/rand"
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestEncoderState_Size__should_be_lte_1kb(t *testing.T) {
+	s := unsafe.Sizeof(encoderState{})
+	if s > 1024 {
+		t.Fatal(s)
+	}
+}
 
 // list buffer
 

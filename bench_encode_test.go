@@ -13,9 +13,6 @@ func BenchmarkEncode_Small(b *testing.B) {
 	msg := newTestSmall()
 	buf := buffer.NewSize(4096)
 
-	e := NewEncoder()
-	e.Init(buf)
-
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -23,6 +20,9 @@ func BenchmarkEncode_Small(b *testing.B) {
 
 	var size int
 	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		e := NewEncoderBuffer(buf)
+
 		data, err := msg.Encode(e)
 		if err != nil {
 			b.Fatal(err)
@@ -30,9 +30,6 @@ func BenchmarkEncode_Small(b *testing.B) {
 		if len(data) == 0 {
 			b.Fatal()
 		}
-
-		e.Init(buf)
-		buf.Reset()
 
 		size = len(data)
 	}
@@ -50,9 +47,6 @@ func BenchmarkEncode_Large(b *testing.B) {
 	msg := newTestObject()
 	buf := buffer.NewSize(4096)
 
-	e := NewEncoder()
-	e.Init(buf)
-
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -60,6 +54,9 @@ func BenchmarkEncode_Large(b *testing.B) {
 
 	var size int
 	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		e := NewEncoderBuffer(buf)
+
 		builder, err := BuildTestMessageEncoder(e)
 		if err != nil {
 			b.Fatal(err)
@@ -76,9 +73,6 @@ func BenchmarkEncode_Large(b *testing.B) {
 			b.Fatal(len(data))
 		}
 
-		e.Init(buf)
-		buf.Reset()
-
 		size = len(data)
 	}
 
@@ -94,9 +88,7 @@ func BenchmarkEncode_Large(b *testing.B) {
 func BenchmarkEncodeObject(b *testing.B) {
 	msg := newTestObject()
 	buf := buffer.NewSize(4096)
-
-	e := NewEncoder()
-	e.Init(buf)
+	e := NewEncoderBuffer(buf)
 
 	data, err := msg.Marshal()
 	if err != nil {
@@ -124,7 +116,7 @@ func BenchmarkEncodeObject(b *testing.B) {
 		}
 
 		buf.Reset()
-		e.Init(buf)
+		e.init(buf)
 	}
 
 	t1 := time.Now()

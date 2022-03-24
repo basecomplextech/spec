@@ -35,7 +35,6 @@ func BenchmarkDecode(b *testing.B) {
 
 func BenchmarkEncode(b *testing.B) {
 	buf := buffer.NewSize(1024)
-	e := spec.NewEncoderBuffer(buf)
 
 	msg := testMessage(b)
 	data := msg.RawBytes()
@@ -47,10 +46,9 @@ func BenchmarkEncode(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		testEncode(b, e)
-
 		buf.Reset()
-		e.Init(buf)
+		e := spec.NewEncoderBuffer(buf)
+		testEncode(b, e)
 	}
 
 	t1 := time.Now()

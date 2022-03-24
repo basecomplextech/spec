@@ -37,7 +37,7 @@ func BenchmarkFieldTable_offset(b *testing.B) {
 	buf := buffer.NewSize(4096)
 	fields := testMessageFieldsN(100)
 
-	size, err := encodeMessageTable(nil, fields, false)
+	size, err := encodeMessageTable(buf, fields, false)
 	if err != nil {
 		b.Fatal(err)
 	}

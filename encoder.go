@@ -3,35 +3,19 @@ package spec
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/complexl/library/buffer"
 	"github.com/complexl/library/u128"
 	"github.com/complexl/library/u256"
 )
 
-type Buffer = buffer.Buffer
+var encoderClosed = errors.New("operation on a closed encoder")
 
-var encoderPool = &sync.Pool{
-	New: func() interface{} {
-		return newEncoder(nil)
-	},
-}
-
-// Encoder encodes values.
+// Encoder encodes data.
+// It is not reusable, but small enough to have negligible effect on memory allocation.
 type Encoder struct {
-	buf  buffer.Buffer
-	err  error      // encoding failed
-	data encodeData // last written data, must be consumed before writing next data
-
-	stack    stack
-	elements listBuffer    // buffer for list element tables
-	fields   messageBuffer // buffer for message field tables
-
-	// preallocated
-	_stack    [16]stackEntry
-	_elements [128]listElement
-	_fields   [128]messageField
+	*encoderState
+	err error
 }
 
 // NewEncoder returns a new encoder with an empty buffer.
@@ -41,40 +25,44 @@ func NewEncoder() *Encoder {
 }
 
 // NewEncoderBuffer returns a new encoder with a buffer.
-//
-// Usually, it is better to use Encode(obj) and EncodeTo(obj, buf), than to construct
-// a new encoder directly. These methods internally use an encoder pool.
 func NewEncoderBuffer(buf buffer.Buffer) *Encoder {
 	return newEncoder(buf)
 }
 
 func newEncoder(buf buffer.Buffer) *Encoder {
-	e := &Encoder{
-		buf:  buf,
-		data: encodeData{},
+	s := getEncoderState()
+	s.init(buf)
+
+	return &Encoder{encoderState: s}
+}
+
+// close closes the encoder and releases its state.
+func (e *Encoder) close(err error) error {
+	if e.err != nil {
+		return e.err
 	}
 
-	e.stack.stack = e._stack[:0]
-	e.elements.stack = e._elements[:0]
-	e.fields.stack = e._fields[:0]
-	return e
+	if err != nil {
+		e.err = err
+	} else {
+		e.err = encoderClosed
+	}
+
+	s := e.encoderState
+	e.encoderState = nil
+
+	releaseEncoderState(s)
+	return err
 }
 
-// Init resets the encoder and sets its buffer.
-func (e *Encoder) Init(buf buffer.Buffer) {
-	e.Reset()
-	e.buf = buf
-}
-
-// Reset clears the encoder and nils buffer.
-func (e *Encoder) Reset() {
-	e.buf = nil
-	e.err = nil
-	e.data = encodeData{}
-
-	e.stack.reset()
-	e.elements.reset()
-	e.fields.reset()
+func (e *Encoder) closef(format string, args ...any) error {
+	var err error
+	if len(args) == 0 {
+		err = errors.New(format)
+	} else {
+		err = fmt.Errorf(format, args...)
+	}
+	return e.close(err)
 }
 
 // End ends a nested object and a parent field/element if present.
@@ -86,7 +74,7 @@ func (e *Encoder) End() (result []byte, err error) {
 	// end top object
 	entry, ok := e.stack.peek()
 	if !ok {
-		return nil, e.fail(fmt.Errorf("end: encode stack is empty"))
+		return nil, e.closef("end: encode stack is empty")
 	}
 
 	switch entry.type_ {
@@ -103,13 +91,13 @@ func (e *Encoder) End() (result []byte, err error) {
 		}
 
 	default:
-		return nil, e.fail(errors.New("end: not nested encoder"))
+		return nil, e.closef("end: not list or message")
 	}
 
 	// end parent field/element
 	entry, ok = e.stack.peek()
 	if !ok {
-		return result, nil
+		return result, e.close(nil)
 	}
 
 	switch entry.type_ {
@@ -268,7 +256,7 @@ func (e *Encoder) Bytes(v []byte) error {
 
 	start := e.buf.Len()
 	if _, err := EncodeBytes(e.buf, v); err != nil {
-		return e.fail(err)
+		return e.close(err)
 	}
 	end := e.buf.Len()
 
@@ -282,7 +270,7 @@ func (e *Encoder) String(v string) error {
 
 	start := e.buf.Len()
 	if _, err := EncodeString(e.buf, v); err != nil {
-		return e.fail(err)
+		return e.close(err)
 	}
 	end := e.buf.Len()
 
@@ -313,9 +301,9 @@ func (e *Encoder) BeginElement() error {
 	list, ok := e.stack.peek()
 	switch {
 	case !ok:
-		return e.fail(errors.New("begin element: cannot begin element, not list encoder"))
+		return e.closef("begin element: cannot begin element, parent not list")
 	case list.type_ != entryList:
-		return e.fail(errors.New("begin element: cannot begin element, not list encoder"))
+		return e.closef("begin element: cannot begin element, parent not list")
 	}
 
 	// push list element
@@ -333,9 +321,9 @@ func (e *Encoder) Element() error {
 	list, ok := e.stack.peek()
 	switch {
 	case !ok:
-		return e.fail(errors.New("element: cannot encode element, not list encoder"))
+		return e.closef("element: cannot encode element, parent not list")
 	case list.type_ != entryList:
-		return e.fail(errors.New("element: cannot encode element, not list encoder"))
+		return e.closef("element: cannot encode element, parent not list")
 	}
 
 	// pop data
@@ -357,18 +345,18 @@ func (e *Encoder) endElement() ([]byte, error) {
 	elem, ok := e.stack.pop()
 	switch {
 	case !ok:
-		return nil, e.fail(errors.New("end element: not an element"))
+		return nil, e.closef("end element: not element")
 	case elem.type_ != entryElement:
-		return nil, e.fail(errors.New("end element: not an element"))
+		return nil, e.closef("end element: not element")
 	}
 
 	// check list
 	list, ok := e.stack.peek()
 	switch {
 	case !ok:
-		return nil, e.fail(errors.New("end element: parent not a list"))
+		return nil, e.closef("end element: parent not list")
 	case list.type_ != entryList:
-		return nil, e.fail(errors.New("end element: parent not list encoder"))
+		return nil, e.closef("end element: parent not list")
 	}
 
 	// pop data
@@ -394,9 +382,9 @@ func (e *Encoder) endList() ([]byte, error) {
 	list, ok := e.stack.pop()
 	switch {
 	case !ok:
-		return nil, e.fail(errors.New("end list: not list encoder"))
+		return nil, e.closef("end list: not list")
 	case list.type_ != entryList:
-		return nil, e.fail(errors.New("end list: not list encoder"))
+		return nil, e.closef("end list: not list")
 	}
 
 	bodySize := e.buf.Len() - list.start
@@ -404,7 +392,7 @@ func (e *Encoder) endList() ([]byte, error) {
 
 	// encode list
 	if _, err := encodeListMeta(e.buf, bodySize, table); err != nil {
-		return nil, e.fail(err)
+		return nil, e.close(err)
 	}
 
 	// push data entry
@@ -444,9 +432,9 @@ func (e *Encoder) BeginField(tag uint16) error {
 	message, ok := e.stack.peek()
 	switch {
 	case !ok:
-		return e.fail(errors.New("begin field: cannot begin field, not message encoder"))
+		return e.closef("begin field: cannot begin field, parent not message")
 	case message.type_ != entryMessage:
-		return e.fail(errors.New("begin field: cannot begin field, not message encoder"))
+		return e.closef("begin field: cannot begin field, parent not message")
 	}
 
 	// push field
@@ -464,9 +452,9 @@ func (e *Encoder) Field(tag uint16) error {
 	message, ok := e.stack.peek()
 	switch {
 	case !ok:
-		return e.fail(errors.New("field: cannot encode field, not message encoder"))
+		return e.closef("field: cannot encode field, parent not message")
 	case message.type_ != entryMessage:
-		return e.fail(errors.New("field: cannot encode field, not message encoder"))
+		return e.closef("field: cannot encode field, parent not message")
 	}
 
 	// pop data
@@ -505,9 +493,9 @@ func (e *Encoder) endField() ([]byte, error) {
 	field, ok := e.stack.pop()
 	switch {
 	case !ok:
-		return nil, e.fail(errors.New("end field: not a field"))
+		return nil, e.closef("end field: not field")
 	case field.type_ != entryField:
-		return nil, e.fail(errors.New("end field: not a field"))
+		return nil, e.closef("end field: not field")
 	}
 	tag := field.tag()
 
@@ -515,9 +503,9 @@ func (e *Encoder) endField() ([]byte, error) {
 	message, ok := e.stack.peek()
 	switch {
 	case !ok:
-		return nil, e.fail(errors.New("field: cannot encode field, not message encoder"))
+		return nil, e.closef("field: cannot encode field, parent not message")
 	case message.type_ != entryMessage:
-		return nil, e.fail(errors.New("field: cannot encode field, not message encoder"))
+		return nil, e.closef("field: cannot encode field, parent not message")
 	}
 
 	// pop data
@@ -545,9 +533,9 @@ func (e *Encoder) endMessage() ([]byte, error) {
 	message, ok := e.stack.pop()
 	switch {
 	case !ok:
-		return nil, e.fail(errors.New("end message: not message encoder"))
+		return nil, e.closef("end message: parent not message")
 	case message.type_ != entryMessage:
-		return nil, e.fail(errors.New("end message: not message encoder"))
+		return nil, e.closef("end message: parent not message")
 	}
 
 	dataSize := e.buf.Len() - message.start
@@ -555,7 +543,7 @@ func (e *Encoder) endMessage() ([]byte, error) {
 
 	// encode message
 	if _, err := encodeMessageMeta(e.buf, dataSize, table); err != nil {
-		return nil, e.fail(err)
+		return nil, e.close(err)
 	}
 
 	// push data
@@ -580,22 +568,11 @@ func EncodeValue[T any](e *Encoder, v T, encode EncodeFunc[T]) error {
 
 	start := e.buf.Len()
 	if _, err := encode(e.buf, v); err != nil {
-		return e.fail(err)
+		return e.close(err)
 	}
 	end := e.buf.Len()
 
 	return e.setData(start, end)
-}
-
-// private
-
-func (e *Encoder) fail(err error) error {
-	if e.err != nil {
-		return err
-	}
-
-	e.err = err
-	return err
 }
 
 // data
@@ -610,8 +587,7 @@ type encodeData struct {
 // TODO: Rename into pushData and move to stack.
 func (e *Encoder) setData(start, end int) error {
 	if e.data.start != 0 || e.data.end != 0 {
-		err := errors.New("encode: cannot encode more data, element/field must be written first")
-		return e.fail(err)
+		return e.closef("encode: cannot encode more data, element/field must be written first")
 	}
 
 	e.data = encodeData{
