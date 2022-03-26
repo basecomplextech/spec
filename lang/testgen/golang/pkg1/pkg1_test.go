@@ -32,10 +32,7 @@ func testMessage(t tests.T) Message {
 }
 
 func testEncode(t tests.T, e *spec.Encoder) Message {
-	msg, err := BuildMessageEncoder(e)
-	if err != nil {
-		t.Fatal(err)
-	}
+	msg := BuildMessageEncoder(e)
 
 	msg.FieldBool(true)
 	msg.FieldEnum(EnumOne)
@@ -60,17 +57,10 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	})
 
 	{
-		node, err := msg.BuildNode()
-		if err != nil {
-			t.Fatal(err)
-		}
+		node := msg.Node()
 		node.Value("a")
-
 		{
-			next, err := node.BuildNext()
-			if err != nil {
-				t.Fatal(err)
-			}
+			next := node.Next()
 			next.Value("b")
 			next.Build()
 		}
@@ -84,73 +74,52 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	})
 
 	{
-		submsg, err := msg.BuildImported()
-		if err != nil {
-			t.Fatal(err)
-		}
+		submsg := msg.Imported()
 		submsg.Key("key")
 		submsg.Value(pkg3.Value{})
 		submsg.Build()
 	}
 
 	{
-		list, err := msg.ListInts()
-		if err != nil {
-			t.Fatal(err)
-		}
+		list := msg.ListInts()
 		for _, x := range []int64{1, 2, 3} {
 			list.Next(x)
 		}
-		if _, err := list.Build(); err != nil {
+		if err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	{
-		list, err := msg.ListStrings()
-		if err != nil {
-			t.Fatal(err)
-		}
+		list := msg.ListStrings()
 		for _, x := range []string{"a", "b", "c"} {
 			list.Next(x)
 		}
-		if _, err := list.Build(); err != nil {
+		if err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	{
-		list, err := msg.ListMessages()
-		if err != nil {
-			t.Fatal(err)
-		}
+		list := msg.ListMessages()
 		for _, x := range []string{"1", "2"} {
-			elem, err := list.Next()
-			if err != nil {
-				t.Fatal(err)
-			}
+			elem := list.Next()
 			elem.Value(x)
 			elem.Build()
 		}
-		if _, err := list.Build(); err != nil {
+		if err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	{
-		list, err := msg.ListImported()
-		if err != nil {
-			t.Fatal(err)
-		}
+		list := msg.ListImported()
 		for _, x := range []string{"a", "b"} {
-			elem, err := list.Next()
-			if err != nil {
-				t.Fatal(err)
-			}
+			elem := list.Next()
 			elem.Key(x)
 			elem.Build()
 		}
-		if _, err := list.Build(); err != nil {
+		if err := list.Build(); err != nil {
 			t.Fatal(err)
 		}
 	}

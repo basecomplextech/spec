@@ -78,6 +78,16 @@ func (l List[T]) ElementBytes(i int) []byte {
 	return l.bytes[start:end]
 }
 
+// Values converts a list into a slice.
+func (l List[T]) Values() []T {
+	result := make([]T, 0, l.meta.count())
+	for i := 0; i < l.meta.count(); i++ {
+		elem := l.Element(i)
+		result = append(result, elem)
+	}
+	return result
+}
+
 // Validate recursively validates the list.
 func (l List[T]) Validate() error {
 	n := l.Count()
@@ -103,18 +113,15 @@ type ListBuilder[T any] struct {
 }
 
 // BuildList begins and returns a new value list builder.
-func BuildList[T any](e *Encoder, encode EncodeFunc[T]) (_ ListBuilder[T], err error) {
-	if err = e.BeginList(); err != nil {
-		return
-	}
-
-	b := ListBuilder[T]{e: e, encode: encode}
-	return b, nil
+func BuildList[T any](e *Encoder, encode EncodeFunc[T]) (_ ListBuilder[T]) {
+	e.BeginList()
+	return ListBuilder[T]{e: e, encode: encode}
 }
 
 // Build ends and returns the list.
-func (b ListBuilder[T]) Build() ([]byte, error) {
-	return b.e.End()
+func (b ListBuilder[T]) Build() error {
+	_, err := b.e.End()
+	return err
 }
 
 // Next encodes the next element.
@@ -128,30 +135,28 @@ func (b ListBuilder[T]) Next(value T) error {
 // NestedListBuilder builds a list using nested element builder.
 type NestedListBuilder[T any] struct {
 	e    *Encoder
-	next func(e *Encoder) (T, error)
+	next func(e *Encoder) T
 }
 
 // BuildNestedList begins and returns a new list.
-func BuildNestedList[T any](e *Encoder, next func(e *Encoder) (T, error)) (
-	_ NestedListBuilder[T], err error,
-) {
-	if err = e.BeginList(); err != nil {
-		return
-	}
+func BuildNestedList[T any](e *Encoder, next func(e *Encoder) T) (_ NestedListBuilder[T]) {
+	e.BeginList()
+	return NestedListBuilder[T]{e: e, next: next}
+}
 
-	b := NestedListBuilder[T]{e: e, next: next}
-	return b, nil
+// Err returns the current build error.
+func (b NestedListBuilder[T]) Err() error {
+	return b.e.err
 }
 
 // Build ends and returns the list.
-func (b NestedListBuilder[T]) Build() ([]byte, error) {
-	return b.e.End()
+func (b NestedListBuilder[T]) Build() error {
+	_, err := b.e.End()
+	return err
 }
 
 // Next returns the next element builder.
-func (b NestedListBuilder[T]) Next() (_ T, err error) {
-	if err = b.e.BeginElement(); err != nil {
-		return
-	}
+func (b NestedListBuilder[T]) Next() (_ T) {
+	b.e.BeginElement()
 	return b.next(b.e)
 }

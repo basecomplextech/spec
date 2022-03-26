@@ -42,6 +42,25 @@ func DecodeMessage(b []byte) (Message, int, error) {
 	return m, n, nil
 }
 
+// Message returns a message clone.
+func (m Message) Clone() Message {
+	b := make([]byte, len(m.bytes))
+	copy(b, m.bytes)
+	return GetMessage(b)
+}
+
+// CloneTo clones a message into a byte slice.
+func (m Message) CloneTo(b []byte) Message {
+	ln := len(m.bytes)
+	if cap(b) < ln {
+		b = make([]byte, ln)
+	}
+	b = b[:ln]
+
+	copy(b, m.bytes)
+	return GetMessage(b)
+}
+
 // Raw returns the exact message bytes.
 func (m Message) Raw() []byte {
 	return m.bytes

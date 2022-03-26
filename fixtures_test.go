@@ -163,17 +163,17 @@ func (b TestMessageBuilder) Submessage() (TestSubmessageBuilder, error) {
 	return BuildTestSubmessageEncoder(b.e)
 }
 
-func (b TestMessageBuilder) List() (ListBuilder[int64], error) {
+func (b TestMessageBuilder) List() ListBuilder[int64] {
 	b.e.BeginField(51)
 	return BuildList(b.e, EncodeInt64)
 }
 
-func (b TestMessageBuilder) Messages() (NestedListBuilder[TestElementBuilder], error) {
+func (b TestMessageBuilder) Messages() NestedListBuilder[TestElementBuilder] {
 	b.e.BeginField(52)
 	return BuildNestedList(b.e, BuildTestElementEncoder)
 }
 
-func (b TestMessageBuilder) Strings() (ListBuilder[string], error) {
+func (b TestMessageBuilder) Strings() ListBuilder[string] {
 	b.e.BeginField(53)
 	return BuildList(b.e, EncodeString)
 }
@@ -284,11 +284,11 @@ func BuildTestElementBuffer(b buffer.Buffer) (_ TestElementBuilder, err error) {
 	return TestElementBuilder{e}, nil
 }
 
-func BuildTestElementEncoder(e *Encoder) (_ TestElementBuilder, err error) {
-	if err = e.BeginMessage(); err != nil {
+func BuildTestElementEncoder(e *Encoder) (_ TestElementBuilder) {
+	if err := e.BeginMessage(); err != nil {
 		return
 	}
-	return TestElementBuilder{e}, nil
+	return TestElementBuilder{e}
 }
 
 func (m TestElement) Byte() byte {
