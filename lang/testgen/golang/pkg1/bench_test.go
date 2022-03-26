@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/complexl/library/buffer"
-	"github.com/complexl/spec"
+	"github.com/baseblck/library/buffer"
+	"github.com/baseblck/spec"
 )
 
 func BenchmarkDecode(b *testing.B) {

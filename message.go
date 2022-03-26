@@ -1,8 +1,8 @@
 package spec
 
 import (
-	"github.com/complexl/library/u128"
-	"github.com/complexl/library/u256"
+	"github.com/baseblck/library/u128"
+	"github.com/baseblck/library/u256"
 )
 
 type Message struct {

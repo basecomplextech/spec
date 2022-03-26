@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complexl/spec/lang/parser"
+	"github.com/baseblck/spec/lang/parser"
 )
 
 var builtin = map[Kind]*Type{

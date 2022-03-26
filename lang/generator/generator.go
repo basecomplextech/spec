@@ -6,8 +6,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/complexl/spec/lang/compiler"
-	"github.com/complexl/spec/lang/generator/golang"
+	"github.com/baseblck/spec/lang/compiler"
+	"github.com/baseblck/spec/lang/generator/golang"
 )
 
 type Generator interface {

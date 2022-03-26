@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/complexl/library/buffer"
+	"github.com/baseblck/library/buffer"
 )
 
 func BenchmarkEncode_Small(b *testing.B) {

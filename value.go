@@ -3,8 +3,8 @@ package spec
 import (
 	"fmt"
 
-	"github.com/complexl/library/u128"
-	"github.com/complexl/library/u256"
+	"github.com/baseblck/library/u128"
+	"github.com/baseblck/library/u256"
 )
 
 // Value is a raw value.

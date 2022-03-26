@@ -3,7 +3,7 @@ package spec
 import (
 	"testing"
 
-	"github.com/complexl/library/buffer"
+	"github.com/baseblck/library/buffer"
 )
 
 func BenchmarkFieldTable_field(b *testing.B) {

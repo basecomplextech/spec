@@ -3,7 +3,7 @@ package spec
 import (
 	"sync"
 
-	"github.com/complexl/library/buffer"
+	"github.com/baseblck/library/buffer"
 )
 
 // encoderState is a big pooled struct which holds an encoding state.

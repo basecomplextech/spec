@@ -1,7 +1,7 @@
 package golang
 
 import (
-	"github.com/complexl/spec/lang/compiler"
+	"github.com/baseblck/spec/lang/compiler"
 )
 
 func (w *writer) message(def *compiler.Definition) error {

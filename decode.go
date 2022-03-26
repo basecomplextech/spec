@@ -7,9 +7,9 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/complexl/library/rvarint"
-	"github.com/complexl/library/u128"
-	"github.com/complexl/library/u256"
+	"github.com/baseblck/library/rvarint"
+	"github.com/baseblck/library/u128"
+	"github.com/baseblck/library/u256"
 )
 
 func DecodeType(b []byte) (Type, int, error) {

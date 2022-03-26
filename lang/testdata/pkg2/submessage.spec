@@ -3,7 +3,7 @@ import (
 )
 
 options (
-    go_package="github.com/complexl/spec/lang/testgen/golang/pkg2"
+    go_package="github.com/baseblck/spec/lang/testgen/golang/pkg2"
 )
 
 message Submessage {

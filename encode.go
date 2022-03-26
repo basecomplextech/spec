@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/complexl/library/buffer"
-	"github.com/complexl/library/rvarint"
-	"github.com/complexl/library/u128"
-	"github.com/complexl/library/u256"
+	"github.com/baseblck/library/buffer"
+	"github.com/baseblck/library/rvarint"
+	"github.com/baseblck/library/u128"
+	"github.com/baseblck/library/u256"
 )
 
 type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)

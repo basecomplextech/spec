@@ -3,7 +3,7 @@ package golang
 import (
 	"strings"
 
-	"github.com/complexl/spec/lang/compiler"
+	"github.com/baseblck/spec/lang/compiler"
 )
 
 func (w *writer) enum(def *compiler.Definition) error {
