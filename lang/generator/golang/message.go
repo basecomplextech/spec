@@ -59,9 +59,19 @@ func (w *writer) decodeMessage(def *compiler.Definition) error {
 }
 
 func (w *writer) messageRaw(def *compiler.Definition) error {
+	w.linef(`func (m %v) IsEmpty() bool {`, def.Name)
+	w.linef(`return m.msg.IsEmpty()`)
+	w.linef(`}`)
+	w.line()
+
 	w.linef(`func (m %v) Clone() %v {`, def.Name, def.Name)
 	w.linef(`msg1 := m.msg.Clone()`)
 	w.linef(`return %v{msg1}`, def.Name)
+	w.linef(`}`)
+	w.line()
+
+	w.linef(`func (m %v) Unwrap() spec.Message {`, def.Name)
+	w.linef(`return m.msg`)
 	w.linef(`}`)
 	w.line()
 
@@ -209,6 +219,11 @@ func (w *writer) messageBuilderBuild(def *compiler.Definition) error {
 		return
 	}`)
 	w.linef(`return Get%v(bytes), nil`, def.Name)
+	w.linef(`}`)
+	w.line()
+
+	w.linef(`func (b %vBuilder) Unwrap() *spec.Encoder {`, def.Name)
+	w.linef(`return b.e`)
 	w.linef(`}`)
 	w.line()
 	return nil

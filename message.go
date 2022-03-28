@@ -66,6 +66,11 @@ func (m Message) Raw() []byte {
 	return m.bytes
 }
 
+// IsEmpty returns true if the message is backed byte an empty byte slice or has no fields.
+func (m Message) IsEmpty() bool {
+	return len(m.bytes) == 0 || m.meta.count() == 0
+}
+
 // Count returns the number of fields in the message.
 func (m Message) Count() int {
 	return m.meta.count()
@@ -93,6 +98,15 @@ func (m Message) FieldByIndex(i int) []byte {
 		return nil
 	}
 	return m.bytes[:end]
+}
+
+// TagByIndex returns a field tag by index or false.
+func (m Message) TagByIndex(i int) (uint16, bool) {
+	field, ok := m.meta.field(i)
+	if !ok {
+		return 0, false
+	}
+	return field.tag, true
 }
 
 // Validate recursively validates the message.

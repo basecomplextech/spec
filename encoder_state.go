@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/baseblck/library/buffer"
@@ -177,6 +178,12 @@ func (b *listBuffer) offset() int {
 	return len(b.stack)
 }
 
+// len returns the number of elements in the last list.
+func (b *listBuffer) len(offset int) int {
+	table := b.stack[offset:]
+	return len(table)
+}
+
 // push appends a new element to the last list.
 func (b *listBuffer) push(elem listElement) {
 	b.stack = append(b.stack, elem)
@@ -244,4 +251,17 @@ func (b *messageBuffer) pop(offset int) []messageField {
 	table := b.stack[offset:]
 	b.stack = b.stack[:offset]
 	return table
+}
+
+func (b *messageBuffer) hasField(offset int, tag uint16) bool {
+	table := b.stack[offset:]
+
+	n := sort.Search(len(table), func(i int) bool {
+		return table[i].tag == tag
+	})
+	if n >= len(table) {
+		return false
+	}
+
+	return table[n].tag == tag
 }

@@ -336,6 +336,24 @@ func (e *Encoder) Element() error {
 	return nil
 }
 
+func (e *Encoder) ListLen() int {
+	if e.err != nil {
+		return 0
+	}
+
+	// check list
+	list, ok := e.stack.peek()
+	switch {
+	case !ok:
+		return 0
+	case list.type_ != entryList:
+		return 0
+	}
+
+	start := list.start
+	return e.elements.len(start)
+}
+
 func (e *Encoder) endElement() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
@@ -482,6 +500,25 @@ func (e *Encoder) FieldBytes(tag uint16, data []byte) error {
 		return err
 	}
 	return e.Field(tag)
+}
+
+func (e *Encoder) HasField(tag uint16) bool {
+	if e.err != nil {
+		return false
+	}
+
+	// peek message
+	message, ok := e.stack.peek()
+	switch {
+	case !ok:
+		return false
+	case message.type_ != entryMessage:
+		return false
+	}
+
+	// check field table
+	start := message.start
+	return e.fields.hasField(start, tag)
 }
 
 func (e *Encoder) endField() ([]byte, error) {

@@ -118,6 +118,11 @@ func BuildList[T any](e *Encoder, encode EncodeFunc[T]) (_ ListBuilder[T]) {
 	return ListBuilder[T]{e: e, encode: encode}
 }
 
+// Len returns the number of elements in the builder.
+func (b ListBuilder[T]) Len() int {
+	return b.e.ListLen()
+}
+
 // Build ends and returns the list.
 func (b ListBuilder[T]) Build() error {
 	_, err := b.e.End()
@@ -147,6 +152,11 @@ func BuildNestedList[T any](e *Encoder, next func(e *Encoder) T) (_ NestedListBu
 // Err returns the current build error.
 func (b NestedListBuilder[T]) Err() error {
 	return b.e.err
+}
+
+// Len returns the number of elements in the builder.
+func (b NestedListBuilder[T]) Len() int {
+	return b.e.ListLen()
 }
 
 // Build ends and returns the list.
