@@ -106,79 +106,101 @@ func computeSizeDistribution(b []byte) (*sizeDistrib, *sizeDistribPercent, error
 }
 
 func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
-	t, n := decodeType(b)
+	typ, n := decodeType(b)
 	if n < 0 {
 		return fmt.Errorf("invalid type")
 	}
 	d.types += n
 
-	switch t {
+	switch typ {
 	case TypeNil, TypeTrue, TypeFalse:
 		return nil
 
 	case TypeByte, TypeInt32, TypeInt64:
-		_, vn := decodeInt64(b)
-		d.values += vn - n
+		_, m := decodeInt64(b)
+		d.values += m - n
 
 	case TypeUint32, TypeUint64:
-		_, vn := decodeInt64(b)
-		d.values += vn - n
+		_, m := decodeInt64(b)
+		d.values += m - n
 
 	case TypeFloat32, TypeFloat64:
-		_, vn := decodeFloat64(b)
-		d.values += vn - n
+		_, m := decodeFloat64(b)
+		d.values += m - n
 
 	case TypeU128:
-		_, vn, err := DecodeU128(b)
+		_, m, err := DecodeU128(b)
 		if err != nil {
 			return err
 		}
-		d.values += vn - n
+		d.values += m - n
 
 	case TypeU256:
-		_, vn, err := DecodeU256(b)
+		_, m, err := DecodeU256(b)
 		if err != nil {
 			return err
 		}
-		d.values += vn - n
+		d.values += m - n
 
 	case TypeBytes:
 		off := len(b) - 1
-		size, sn := decodeSize(b[:off])
-		if sn < 0 {
+		size, m := decodeSize(b[:off], false)
+		if m < 0 {
 			return fmt.Errorf("invalid bytes size")
 		}
 
-		d.sizes += sn
+		d.sizes += m
+		d.bytes += int(size)
+
+	case TypeBytesBig:
+		off := len(b) - 1
+		size, m := decodeSize(b[:off], true)
+		if m < 0 {
+			return fmt.Errorf("invalid bytes size")
+		}
+
+		d.sizes += m
 		d.bytes += int(size)
 
 	case TypeString:
 		off := len(b) - 1
-		size, sn := decodeSize(b[:off])
+		size, m := decodeSize(b[:off], false)
 		if n < 0 {
 			return fmt.Errorf("invalid string size")
 		}
 
-		d.sizes += sn
+		d.sizes += m
 		d.strings += int(size)
 
-	case TypeList, TypeListBig:
-		// read table size
+	case TypeBigString:
 		off := len(b) - 1
-		tsize, tn := decodeSize(b[:off])
-		if tn < 0 {
+		size, m := decodeSize(b[:off], true)
+		if n < 0 {
+			return fmt.Errorf("invalid string size")
+		}
+
+		d.sizes += m
+		d.strings += int(size)
+
+	case TypeList, TypeBigList:
+		off := len(b) - 1
+		big := typ == TypeBigList
+
+		// read table size
+		tableSize, m := decodeSize(b[:off], big)
+		if m < 0 {
 			return fmt.Errorf("invalid list table size")
 		}
+		off -= m
+		d.sizes += m
+		d.tables += int(tableSize)
 
 		// read data size
-		off -= tn
-		_, dn := decodeSize(b[:off])
-		if dn < 0 {
+		_, m = decodeSize(b[:off], big)
+		if m < 0 {
 			return fmt.Errorf("invalid list data size")
 		}
-
-		d.sizes += tn + dn
-		d.tables += int(tsize)
+		d.sizes += m
 
 		// read list
 		list, _, err := DecodeList(b, DecodeValue)
@@ -194,23 +216,25 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 			}
 		}
 
-	case TypeMessage, TypeMessageBig:
-		// read table size
+	case TypeMessage, TypeBigMessage:
 		off := len(b) - 1
-		tsize, tn := decodeMessageTableSize(b[:off])
-		if tn < 0 {
+		big := typ == TypeBigMessage
+
+		// read table size
+		tableSize, m := decodeSize(b[:off], big)
+		if m < 0 {
 			return fmt.Errorf("invalid message table size")
 		}
+		off -= m
+		d.sizes += m
+		d.tables += int(tableSize)
 
 		// read data size
-		off -= tn
-		_, dn := decodeMessageBodySize(b[:off])
-		if dn < 0 {
+		_, m = decodeSize(b[:off], big)
+		if m < 0 {
 			return fmt.Errorf("invalid message data size")
 		}
-
-		d.sizes += tn + dn
-		d.tables += int(tsize)
+		d.sizes += m
 
 		// read message meta
 		msg, _, err := DecodeMessage(b)
@@ -227,7 +251,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		}
 
 	default:
-		return fmt.Errorf("unsupported type %d", t)
+		return fmt.Errorf("unsupported type %d", typ)
 	}
 
 	return nil

@@ -132,7 +132,13 @@ func EncodeBytes(b buffer.Buffer, v []byte) (int, error) {
 	copy(p, v)
 	n := size
 
-	n += encodeSizeType(b, uint32(size), TypeBytes)
+	big := size >= math.MaxUint16
+	type_ := TypeBytes
+	if big {
+		type_ = TypeBytesBig
+	}
+
+	n += encodeSizeType(b, big, uint32(size), type_)
 	return n, nil
 }
 
@@ -148,7 +154,13 @@ func EncodeString(b buffer.Buffer, s string) (int, error) {
 	p := b.Grow(n)
 	copy(p, s)
 
-	n += encodeSizeType(b, uint32(size), TypeString)
+	big := size >= math.MaxUint16
+	type_ := TypeString
+	if big {
+		type_ = TypeBigString
+	}
+
+	n += encodeSizeType(b, big, uint32(size), type_)
 	return n, nil
 }
 
@@ -159,8 +171,13 @@ func EncodeStruct(b buffer.Buffer, dataSize int) (int, error) {
 		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
-	// write size and type
-	n := encodeSizeType(b, uint32(dataSize), TypeStruct)
+	big := dataSize >= math.MaxUint16
+	type_ := TypeStruct
+	if big {
+		type_ = TypeBigStruct
+	}
+
+	n := encodeSizeType(b, big, uint32(dataSize), type_)
 	return n, nil
 }
 
@@ -171,13 +188,11 @@ func encodeListMeta(b buffer.Buffer, dataSize int, table []listElement) (int, er
 		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
-	// get type
+	// type
 	big := isBigList(table)
-	var type_ Type
+	type_ := TypeList
 	if big {
-		type_ = TypeListBig
-	} else {
-		type_ = TypeList
+		type_ = TypeBigList
 	}
 
 	// write table
@@ -188,20 +203,18 @@ func encodeListMeta(b buffer.Buffer, dataSize int, table []listElement) (int, er
 	n := tableSize
 
 	// write data size
-	n += encodeSize(b, uint32(dataSize))
+	n += encodeSize(b, big, uint32(dataSize))
 
 	// write table size and type
-	n += encodeSizeType(b, uint32(tableSize), type_)
+	n += encodeSizeType(b, big, uint32(tableSize), type_)
 	return n, nil
 }
 
 func encodeListTable(b buffer.Buffer, table []listElement, big bool) (int, error) {
 	// element size
-	var elemSize int
+	elemSize := listElementSmallSize
 	if big {
 		elemSize = listElementBigSize
-	} else {
-		elemSize = listElementSmallSize
 	}
 
 	// check table size
@@ -237,13 +250,11 @@ func encodeMessageMeta(b buffer.Buffer, dataSize int, table []messageField) (int
 		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
-	// get type
+	// type
 	big := isBigMessage(table)
-	var type_ Type
+	type_ := TypeMessage
 	if big {
-		type_ = TypeMessageBig
-	} else {
-		type_ = TypeMessage
+		type_ = TypeBigMessage
 	}
 
 	// write table
@@ -254,10 +265,10 @@ func encodeMessageMeta(b buffer.Buffer, dataSize int, table []messageField) (int
 	n := tableSize
 
 	// write data size
-	n += encodeSize(b, uint32(dataSize))
+	n += encodeSize(b, big, uint32(dataSize))
 
 	// write table size and type
-	n += encodeSizeType(b, uint32(tableSize), type_)
+	n += encodeSizeType(b, big, uint32(tableSize), type_)
 	return n, nil
 }
 
@@ -301,31 +312,52 @@ func encodeMessageTable(b buffer.Buffer, table []messageField, big bool) (int, e
 // private
 
 // appendSize appends size as rvarint, for tests.
-func appendSize(b []byte, size uint32) []byte {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
-	return append(b, p[off:]...)
+func appendSize(b []byte, big bool, size uint32) []byte {
+	if big {
+		p := [4]byte{}
+		binary.BigEndian.PutUint32(p[:], size)
+		return append(b, p[:]...)
+	}
+
+	if size >= math.MaxUint16 {
+		panic("size too big")
+	}
+
+	p := [2]byte{}
+	binary.BigEndian.PutUint16(p[:], uint16(size))
+	return append(b, p[:]...)
 }
 
-func encodeSize(b buffer.Buffer, size uint32) int {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
+func encodeSize(b buffer.Buffer, big bool, size uint32) int {
+	if big {
+		buf := b.Grow(4)
+		binary.BigEndian.PutUint32(buf, size)
+		return 4
+	}
 
-	buf := b.Grow(n)
-	copy(buf, p[off:])
-	return n
+	if size >= math.MaxUint16 {
+		panic("size too big")
+	}
+
+	buf := b.Grow(2)
+	binary.BigEndian.PutUint16(buf, uint16(size))
+	return 2
 }
 
-func encodeSizeType(b buffer.Buffer, size uint32, type_ Type) int {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(size))
-	off := rvarint.MaxLen32 - n
+func encodeSizeType(b buffer.Buffer, big bool, size uint32, type_ Type) int {
+	if big {
+		buf := b.Grow(5)
+		binary.BigEndian.PutUint32(buf, size)
+		buf[4] = byte(type_)
+		return 5
+	}
 
-	buf := b.Grow(n + 1)
-	copy(buf[:n], p[off:])
-	buf[n] = byte(type_)
+	if size >= math.MaxUint16 {
+		panic("size too big")
+	}
 
-	return n + 1
+	buf := b.Grow(3)
+	binary.BigEndian.PutUint16(buf, uint16(size))
+	buf[2] = byte(type_)
+	return 3
 }

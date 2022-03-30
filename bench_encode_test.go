@@ -46,6 +46,7 @@ func BenchmarkEncode_Small(b *testing.B) {
 func BenchmarkEncode_Large(b *testing.B) {
 	msg := newTestObject()
 	buf := buffer.NewSize(4096)
+	e := NewEncoderBuffer(buf)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -55,7 +56,7 @@ func BenchmarkEncode_Large(b *testing.B) {
 	var size int
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
-		e := NewEncoderBuffer(buf)
+		e.Reset(buf)
 
 		builder, err := BuildTestMessageEncoder(e)
 		if err != nil {

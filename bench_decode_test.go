@@ -69,6 +69,39 @@ func BenchmarkDecodeObject(b *testing.B) {
 	b.ReportMetric(float64(compressed), "size-zlib")
 }
 
+// GetMessage
+
+func BenchmarkGetMessage(b *testing.B) {
+	msg := newTestObject()
+	data, err := msg.Marshal()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	size := len(data)
+	compressed := compressedSize(data)
+
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+	for i := 0; i < b.N; i++ {
+		msg := GetTestMessage(data)
+		if len(msg.msg.bytes) == 0 {
+			b.Fatal()
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressed), "size-zlib")
+}
+
 // Standard JSON
 
 func BenchmarkJSON_Unmarshal(b *testing.B) {

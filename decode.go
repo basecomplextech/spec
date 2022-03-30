@@ -13,11 +13,13 @@ import (
 )
 
 func DecodeType(b []byte) (Type, int, error) {
-	t, n := decodeType(b)
+	v, n := decodeType(b)
 	if n < 0 {
-		return 0, -1, fmt.Errorf("decode type: invalid data")
+		return 0, 0, fmt.Errorf("decode type: invalid data")
 	}
-	return t, n, nil
+
+	size := n
+	return Type(v), size, nil
 }
 
 func decodeType(b []byte) (Type, int) {
@@ -32,27 +34,31 @@ func decodeType(b []byte) (Type, int) {
 // Byte
 
 func DecodeByte(b []byte) (byte, int, error) {
-	v, n := decodeInt64(b)
+	v, ok := decodeInt64(b)
 	switch {
-	case n < 0:
-		return 0, -1, errors.New("decode byte: invalid data")
+	case ok < 0:
+		return 0, 0, errors.New("decode byte: invalid data")
 	case v < math.MinInt8:
-		return 0, -1, errors.New("decode byte: overflow, value too small")
+		return 0, 0, errors.New("decode byte: overflow, value too small")
 	case v > math.MaxInt8:
-		return 0, -1, errors.New("decode byte: overflow, value too large")
+		return 0, 0, errors.New("decode byte: overflow, value too large")
 	}
-	return byte(v), n, nil
+
+	size := ok
+	return byte(v), size, nil
 }
 
 // Bool
 
 func DecodeBool(b []byte) (bool, int, error) {
-	t, n := decodeType(b)
+	typ, n := decodeType(b)
 	if n < 0 {
-		return false, -1, errors.New("decode bool: invalid data")
+		return false, 0, errors.New("decode bool: invalid data")
 	}
-	v := t == TypeTrue
-	return v, n, nil
+
+	v := typ == TypeTrue
+	size := n
+	return v, size, nil
 }
 
 // Int
@@ -61,40 +67,45 @@ func DecodeInt32(b []byte) (int32, int, error) {
 	v, n := decodeInt64(b)
 	switch {
 	case n < 0:
-		return 0, -1, errors.New("decode int32: invalid data")
+		return 0, 0, errors.New("decode int32: invalid data")
 	case v < math.MinInt32:
-		return 0, -1, errors.New("decode int32: overflow, value too small")
+		return 0, 0, errors.New("decode int32: overflow, value too small")
 	case v > math.MaxInt32:
-		return 0, -1, errors.New("decode int32: overflow, value too large")
+		return 0, 0, errors.New("decode int32: overflow, value too large")
 	}
-	return int32(v), n, nil
+
+	size := n
+	return int32(v), size, nil
 }
 
 func DecodeInt64(b []byte) (int64, int, error) {
 	v, n := decodeInt64(b)
 	if n < 0 {
-		return 0, n, errors.New("decode int32: invalid data")
+		return 0, 0, errors.New("decode int32: invalid data")
 	}
-	return v, n, nil
+
+	size := n
+	return v, size, nil
 }
 
 // decodeInt64 reads and returns any int as int64 and the number of decode bytes n, or -1 on error.
 func decodeInt64(b []byte) (int64, int) {
 	// type
-	t, n := decodeType(b)
-	switch {
-	case n < 0:
+	typ, n := decodeType(b)
+	if n < 0 {
 		return 0, -1
-	case t == TypeNil:
-		return 0, n
 	}
-	off := len(b) - n
-	b = b[:off]
+
+	end := len(b) - n
 
 	// read, cast int
-	switch t {
+	switch typ {
+	case TypeNil:
+		return 0, n
+
 	case TypeTrue:
 		return 1, n
+
 	case TypeFalse:
 		return 0, n
 
@@ -102,28 +113,28 @@ func decodeInt64(b []byte) (int64, int) {
 		if len(b) < 1 {
 			return 0, -1
 		}
-		v := b[len(b)-1]
-		return int64(v), n + 1
 
-	case TypeInt32,
-		TypeInt64:
-		v, vn := rvarint.Int64(b)
-		if vn < 0 {
+		v := b[end-1]
+		n += 1
+		return int64(v), n
+
+	case TypeInt32, TypeInt64:
+		v, m := rvarint.Int64(b[:end])
+		if m < 0 {
 			return 0, -1
 		}
 
-		total := n + vn
-		return v, total
+		n += m
+		return v, n
 
-	case TypeUint32,
-		TypeUint64:
-		v, vn := rvarint.Uint64(b)
-		if vn < 0 {
+	case TypeUint32, TypeUint64:
+		v, m := rvarint.Uint64(b[:end])
+		if m < 0 {
 			return 0, -1
 		}
 
-		total := n + vn
-		return int64(v), total
+		n += m
+		return int64(v), n
 	}
 
 	return 0, -1
@@ -135,38 +146,42 @@ func DecodeUint32(b []byte) (uint32, int, error) {
 	v, n := decodeUint64(b)
 	switch {
 	case n < 0:
-		return 0, -1, errors.New("decode uint32: invalid data")
+		return 0, 0, errors.New("decode uint32: invalid data")
 	case v > math.MaxUint32:
-		return 0, -1, errors.New("decode uint32: overflow, value too large")
+		return 0, 0, errors.New("decode uint32: overflow, value too large")
 	}
-	return uint32(v), n, nil
+
+	size := n
+	return uint32(v), size, nil
 }
 
 func DecodeUint64(b []byte) (uint64, int, error) {
 	v, n := decodeUint64(b)
 	if n < 0 {
-		return 0, n, fmt.Errorf("decode uint64: invalid data")
+		return 0, 0, fmt.Errorf("decode uint64: invalid data")
 	}
-	return v, n, nil
+
+	size := n
+	return v, size, nil
 }
 
 // decodeUint64 reads and returns any int as uint64 and the number of decode bytes n, or -n on error.
 func decodeUint64(b []byte) (uint64, int) {
 	// type
-	t, n := decodeType(b)
-	switch {
-	case n < 0:
+	typ, n := decodeType(b)
+	if n < 0 {
 		return 0, -1
-	case t == TypeNil:
-		return 0, n
 	}
-	off := len(b) - n
-	b = b[:off]
 
-	// read, cast uint
-	switch t {
+	end := len(b) - n
+
+	switch typ {
+	case TypeNil:
+		return 0, n
+
 	case TypeTrue:
 		return 1, n
+
 	case TypeFalse:
 		return 0, n
 
@@ -174,28 +189,28 @@ func decodeUint64(b []byte) (uint64, int) {
 		if len(b) < 1 {
 			return 0, -1
 		}
-		v := b[len(b)-1]
-		return uint64(v), n + 1
 
-	case TypeInt32,
-		TypeInt64:
-		v, vn := rvarint.Int64(b)
-		if vn < 0 {
+		v := b[end-1]
+		n += 1
+		return uint64(v), n
+
+	case TypeInt32, TypeInt64:
+		v, m := rvarint.Int64(b[:end])
+		if m < 0 {
 			return 0, -1
 		}
 
-		total := n + vn
-		return uint64(v), total
+		n += m
+		return uint64(v), n
 
-	case TypeUint32,
-		TypeUint64:
-		v, vn := rvarint.Uint64(b)
-		if vn < 0 {
+	case TypeUint32, TypeUint64:
+		v, m := rvarint.Uint64(b[:end])
+		if m < 0 {
 			return 0, -1
 		}
 
-		total := n + vn
-		return v, total
+		n += m
+		return v, n
 	}
 
 	return 0, -1
@@ -203,62 +218,70 @@ func decodeUint64(b []byte) (uint64, int) {
 
 // U128/U256
 
-func DecodeU128(b []byte) (u128.U128, int, error) {
-	t, n := decodeType(b)
+func DecodeU128(b []byte) (_ u128.U128, size int, err error) {
+	typ, n := decodeType(b)
+	if n < 0 {
+		err = errors.New("decode u128: invalid data")
+		return
+	}
+
 	switch {
-	case n < 0:
-		return u128.U128{}, -1, errors.New("decode u128: invalid data")
-	case t == TypeNil:
-		return u128.U128{}, n, nil
-	case t != TypeU128:
-		return u128.U128{}, -1, fmt.Errorf(
-			"decode u128: unexpected type, expected=%v:%d, actual=%v:%d",
-			TypeU128, TypeU128, t, t)
+	case typ == TypeNil:
+		return
+	case typ != TypeU128:
+		err = fmt.Errorf("decode u128: invalid type, type=%v:%d", typ, typ)
+		return
 	}
 
+	size = n
+	start := len(b) - (n + 16)
 	end := len(b) - n
-	start := end - 16
+
 	if start < 0 {
-		return u128.U128{}, -1, errors.New("decode u128: invalid data")
+		err = errors.New("decode u128: invalid data")
+		return
 	}
 
-	p := b[start:end]
-	v, err := u128.Parse(p)
+	v, err := u128.Parse(b[start:end])
 	if err != nil {
-		return u128.U128{}, -1, err
+		return
 	}
 
-	total := n + 16
-	return v, total, nil
+	size += 16
+	return v, size, nil
 }
 
-func DecodeU256(b []byte) (u256.U256, int, error) {
-	t, n := decodeType(b)
+func DecodeU256(b []byte) (_ u256.U256, size int, err error) {
+	typ, n := decodeType(b)
+	if n < 0 {
+		err = errors.New("decode u256: invalid data")
+		return
+	}
+
 	switch {
-	case n < 0:
-		return u256.U256{}, -1, errors.New("decode u256: invalid data")
-	case t == TypeNil:
-		return u256.U256{}, -1, nil
-	case t != TypeU256:
-		return u256.U256{}, -1, fmt.Errorf(
-			"decode u256: unexpected type, expected=%v:%d, actual=%v:%d",
-			TypeU256, TypeU256, t, t)
+	case typ == TypeNil:
+		return
+	case typ != TypeU256:
+		err = fmt.Errorf("decode u256: invalid type, type=%v:%d", typ, typ)
+		return
 	}
 
+	size = n
+	start := len(b) - (n + 32)
 	end := len(b) - n
-	start := end - 32
+
 	if start < 0 {
-		return u256.U256{}, -1, fmt.Errorf("decode u256: invalid data")
+		err = fmt.Errorf("decode u256: invalid data")
+		return
 	}
 
-	p := b[start:end]
-	v, err := u256.Parse(p)
+	v, err := u256.Parse(b[start:end])
 	if err != nil {
-		return u256.U256{}, -1, err
+		return
 	}
 
-	total := n + 32
-	return v, total, err
+	size += 32
+	return v, size, nil
 }
 
 // Float
@@ -267,13 +290,15 @@ func DecodeFloat32(b []byte) (float32, int, error) {
 	v, n := decodeFloat64(b)
 	switch {
 	case n < 0:
-		return 0, -1, errors.New("decode float32: invalid data")
+		return 0, 0, errors.New("decode float32: invalid data")
 	case v < math.SmallestNonzeroFloat32:
-		return 0, -1, errors.New("decode float32: overflow, value too small")
+		return 0, 0, errors.New("decode float32: overflow, value too small")
 	case v > math.MaxFloat64:
-		return 0, -1, errors.New("decode float32: overflow, value too large")
+		return 0, 0, errors.New("decode float32: overflow, value too large")
 	}
-	return float32(v), n, nil
+
+	size := n
+	return float32(v), size, nil
 }
 
 func DecodeFloat64(b []byte) (float64, int, error) {
@@ -281,41 +306,41 @@ func DecodeFloat64(b []byte) (float64, int, error) {
 	if n < 0 {
 		return 0, n, errors.New("decode float64: invalid data")
 	}
-	return v, n, nil
+
+	size := n
+	return v, size, nil
 }
 
 // decodeFloat64 reads and returns any float as float64 and the number of decode bytes n, or -n on error.
 func decodeFloat64(b []byte) (float64, int) {
-	// type
 	t, n := decodeType(b)
-	switch {
-	case n < 0:
-		return 0, n
-	case t == TypeNil:
+	if n < 0 {
 		return 0, n
 	}
 
-	// read, cast float
 	switch t {
+	case TypeNil:
+		return 0, n
+
 	case TypeFloat32:
-		off := len(b) - 5
-		if off < 0 {
+		start := len(b) - 5
+		if start < 0 {
 			return 0, -1
 		}
 
-		v := binary.BigEndian.Uint32(b[off:])
-		v1 := math.Float32frombits(v)
-		return float64(v1), 5
+		v := binary.BigEndian.Uint32(b[start:])
+		f := math.Float32frombits(v)
+		return float64(f), 5
 
 	case TypeFloat64:
-		off := len(b) - 9
-		if off < 0 {
+		start := len(b) - 9
+		if start < 0 {
 			return 0, -1
 		}
 
-		v := binary.BigEndian.Uint64(b[off:])
-		v1 := math.Float64frombits(v)
-		return v1, 9
+		v := binary.BigEndian.Uint64(b[start:])
+		f := math.Float64frombits(v)
+		return f, 9
 	}
 
 	return 0, -1
@@ -323,328 +348,361 @@ func decodeFloat64(b []byte) (float64, int) {
 
 // Bytes
 
-func DecodeBytes(b []byte) ([]byte, int, error) {
+func DecodeBytes(b []byte) (_ []byte, size int, err error) {
 	// type
-	t, n := decodeType(b)
-	switch {
-	case n < 0:
-		return nil, -1, errors.New("decode bytes: invalid data")
-	case t == TypeNil:
-		return nil, n, nil
-	case t != TypeBytes:
-		return nil, -1, fmt.Errorf(
-			"decode bytes: unexpected type, expected=%v:%d, actual=%v:%d",
-			TypeBytes, TypeBytes, t, t)
+	typ, n := decodeType(b)
+	if n < 0 {
+		err = errors.New("decode bytes: invalid data")
+		return
 	}
 
-	// bytes size
-	off := len(b) - n
-	size, sn := decodeSize(b[:off])
-	if sn < 0 {
-		return nil, -1, errors.New("decode bytes: invalid size")
+	switch typ {
+	default:
+		err = fmt.Errorf("decode bytes: invalid type, type=%v:%d", typ, typ)
+		return
+	case TypeNil:
+		return
+	case TypeBytes, TypeBytesBig:
 	}
 
-	// bytes data
-	off -= sn
-	data, err := decodeBytesData(b[:off], size)
+	size = n
+	end := len(b) - size
+	big := typ == TypeBytesBig
+
+	// data size
+	dataSize, n := decodeSize(b[:end], big)
+	if n < 0 {
+		err = errors.New("decode bytes: invalid data size")
+		return
+	}
+	size += n
+	end -= n
+
+	// data
+	data, err := decodeBytesData(b[:end], dataSize)
 	if err != nil {
-		return nil, -1, err
+		return nil, 0, err
 	}
 
-	total := n + sn + int(size)
-	return data, total, nil
+	size += int(dataSize)
+	return data, size, nil
 }
 
 func decodeBytesData(b []byte, size uint32) ([]byte, error) {
-	end := len(b)
-	start := end - int(size)
-	if start < 0 {
-		return nil, fmt.Errorf("decode bytes: invalid data, expected size=%d, actual size=%d", size, len(b))
+	off := len(b) - int(size)
+	if off < 0 {
+		return nil, errors.New("decode bytes: invalid data size")
 	}
-
-	v := b[start:end]
-	return v, nil
+	return b[off:], nil
 }
 
 // String
 
-func DecodeString(b []byte) (string, int, error) {
+func DecodeString(b []byte) (_ string, size int, err error) {
 	// type
-	t, n := decodeType(b)
-	switch {
-	case n < 0:
-		return "", -1, errors.New("decode string: invalid data")
-	case t == TypeNil:
-		return "", n, nil
-	case t != TypeString:
-		return "", -1, fmt.Errorf(
-			"decode string: unexpected type, expected=%v:%d, actual=%v:%d",
-			TypeString, TypeString, t, t)
+	typ, n := decodeType(b)
+	if n < 0 {
+		err = errors.New("decode string: invalid data")
+		return
 	}
 
-	// string size
-	off := len(b) - n
-	size, sn := decodeSize(b[:off])
-	if sn < 0 {
-		return "", -1, fmt.Errorf("decode string: invalid size")
+	switch typ {
+	default:
+		err = fmt.Errorf("decode string: invalid type, type=%v:%d", typ, typ)
+		return
+	case TypeNil:
+		return
+	case TypeString, TypeBigString:
 	}
 
-	// string data
-	off -= (sn + 1) // zero byte
-	data, err := decodeStringData(b[:off], size)
+	size = n
+	end := len(b) - size
+	big := typ == TypeBigString
+
+	// size
+	dataSize, n := decodeSize(b[:end], big)
+	if n < 0 {
+		err = fmt.Errorf("decode string: invalid data size")
+		return
+	}
+	size += n + 1
+	end -= (n + 1) // zero byte
+
+	// data
+	data, err := decodeStringData(b[:end], dataSize)
 	if err != nil {
-		return "", -1, err
+		return
 	}
 
-	total := n + sn + 1 + int(size)
-	return data, total, err
+	size += int(dataSize)
+	return data, size, nil
 }
 
 func decodeStringData(b []byte, size uint32) (string, error) {
-	end := len(b)
-	start := end - int(size)
-	if start < 0 {
-		return "", fmt.Errorf("decode string: invalid data, expected size=%d, actual size=%d", size, len(b))
+	off := len(b) - int(size)
+	if off < 0 {
+		return "", errors.New("decode string: invalid data size")
 	}
 
-	p := b[start:end]
+	p := b[off:]
 	s := *(*string)(unsafe.Pointer(&p))
 	return s, nil
 }
 
 // Struct
 
-func DecodeStruct(b []byte) (dataSize int, n int, err error) {
+func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 	if len(b) == 0 {
 		return 0, 0, nil
 	}
 
 	// decode type
-	t, n := decodeType(b)
+	typ, n := decodeType(b)
 	if n < 0 {
-		return 0, -1, errors.New("decode struct: invalid type")
+		err = errors.New("decode struct: invalid type")
+		return
 	}
 
 	// check type
-	switch t {
+	switch typ {
 	default:
-		return 0, -1, fmt.Errorf(
-			"decode struct: unexpected type, expected=%v:%d, actual=%v:%d",
-			TypeStruct, TypeStruct, t, t)
+		err = fmt.Errorf("decode struct: invalid type, type=%v:%d", typ, typ)
+		return
 	case TypeNil:
-		return 0, 0, nil
-	case TypeStruct:
+		return
+	case TypeStruct, TypeBigStruct:
 	}
+
+	size = n
+	end := len(b) - size
+	big := typ == TypeBigStruct
 
 	// data size
-	off := len(b) - n
-	size, dn := decodeStructBodySize(b[:off])
-	if dn < 0 {
-		return 0, -1, errors.New("decode struct: invalid data size")
+	dsize, n := decodeSize(b[:end], big)
+	if n < 0 {
+		err = errors.New("decode struct: invalid data size")
+		return
 	}
-	dataSize = int(size)
+	size += n + int(dsize)
 
-	// done
-	total := n + dn + int(dataSize)
-	return int(size), total, nil
-}
-
-func decodeStructBodySize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
+	return int(dsize), size, nil
 }
 
 // list meta
 
-func decodeListMeta(b []byte) (listMeta, int, error) {
-	meta := listMeta{}
+func decodeListMeta(b []byte) (_ listMeta, size int, err error) {
 	if len(b) == 0 {
-		return meta, 0, nil
+		return
 	}
 
 	// decode type
-	t, n := decodeType(b)
+	typ, n := decodeType(b)
 	if n < 0 {
-		return meta, -1, errors.New("decode list: invalid data")
+		n = 0
+		err = errors.New("decode list: invalid data")
+		return
 	}
 
 	// check type
-	switch t {
+	switch typ {
 	default:
-		return meta, -1, fmt.Errorf(
-			"decode list: unexpected type, expected=%v:%d, actual=%v:%d",
-			TypeList, TypeList, t, t)
+		err = fmt.Errorf("decode list: invalid type, type=%v:%d", typ, typ)
+		return
 	case TypeNil:
-		return meta, n, nil
-	case TypeList, TypeListBig:
+		return
+	case TypeList, TypeBigList:
 	}
-	big := t == TypeListBig
+
+	// start
+	size = n
+	end := len(b) - n
+	big := typ == TypeBigList
 
 	// table size
-	off := len(b) - 1
-	tsize, tn := decodeSize(b[:off])
-	if tn < 0 {
-		return meta, -1, errors.New("decode list: invalid table size")
+	tableSize, n := decodeSize(b[:end], big)
+	if n < 0 {
+		err = errors.New("decode list: invalid table size")
+		return
 	}
+	end -= n
+	size += n
 
 	// data size
-	off -= int(tn)
-	dataSize, dn := decodeSize(b[:off])
-	if dn < 0 {
-		return meta, -1, errors.New("decode list: invalid data size")
+	dataSize, n := decodeSize(b[:end], big)
+	if n < 0 {
+		err = errors.New("decode list: invalid data size")
+		return
 	}
+	end -= n
+	size += n
 
 	// table
-	off -= int(dn)
-	table, err := decodeListTable(b[:off], tsize, big)
+	table, err := decodeListTable(b[:end], tableSize, big)
 	if err != nil {
-		return meta, -1, err
+		return
 	}
+	end -= int(tableSize) + int(dataSize)
+	size += int(tableSize)
 
 	// data
-	off -= int(tsize)
-	off -= int(dataSize)
-	if off < 0 {
-		return meta, -1, errors.New("decode list: invalid data")
+	if end < 0 {
+		err = errors.New("decode list: invalid data")
+		return
 	}
+	size += int(dataSize)
 
 	// done
-	meta = listMeta{
+	meta := listMeta{
 		table: table,
 		data:  dataSize,
 		big:   big,
 	}
-
-	total := n + tn + dn + int(tsize) + int(dataSize)
-	return meta, total, nil
+	return meta, size, nil
 }
 
-func decodeListTable(b []byte, size uint32, big bool) (listTable, error) {
+func decodeListTable(b []byte, size uint32, big bool) (_ listTable, err error) {
 	// element size
-	var elemSize uint32
+	elemSize := listElementSmallSize
 	if big {
 		elemSize = listElementBigSize
-	} else {
-		elemSize = listElementSmallSize
 	}
 
 	// check offset
-	off := len(b) - int(size)
-	if off < 0 {
-		return nil, errors.New("decode list: invalid table, array too small")
+	start := len(b) - int(size)
+	if start < 0 {
+		err = errors.New("decode list: invalid table")
+		return
 	}
 
 	// check divisible
-	if size%elemSize != 0 {
-		return nil, fmt.Errorf("decode list: invalid table, size not divisible by %d, size=%d",
-			elemSize, size)
+	if size%uint32(elemSize) != 0 {
+		err = errors.New("decode list: invalid table")
+		return
 	}
 
-	p := b[off:]
+	p := b[start:]
 	v := listTable(p)
 	return v, nil
 }
 
 // message meta
 
-func decodeMessageMeta(b []byte) (messageMeta, int, error) {
-	meta := messageMeta{}
+func decodeMessageMeta(b []byte) (_ messageMeta, size int, err error) {
 	if len(b) == 0 {
-		return meta, 0, nil
+		return
 	}
 
 	// decode type
-	t, n := decodeType(b)
+	typ, n := decodeType(b)
 	if n < 0 {
-		return meta, -1, errors.New("decode message: invalid type")
+		err = errors.New("decode message: invalid type")
+		return
 	}
 
 	// check type
-	switch t {
+	switch typ {
 	default:
-		return meta, -1, fmt.Errorf(
-			"decode message: unexpected type, expected=%v:%d, actual=%v:%d",
-			TypeMessage, TypeMessage, t, t)
+		err = fmt.Errorf("decode message: invalid type, type=%v:%d", typ, typ)
+		return
 	case TypeNil:
-		return meta, 0, nil
-	case TypeMessage, TypeMessageBig:
+		return
+	case TypeMessage, TypeBigMessage:
 	}
-	big := t == TypeMessageBig
+
+	// start
+	size = n
+	end := len(b) - size
+	big := typ == TypeBigMessage
 
 	// table size
-	off := len(b) - n
-	tsize, tn := decodeMessageTableSize(b[:off])
-	if tn < 0 {
-		return meta, -1, errors.New("decode message: invalid table size")
+	tableSize, m := decodeSize(b[:end], big)
+	if m < 0 {
+		err = errors.New("decode message: invalid table size")
+		return
 	}
+	end -= m
+	size += m
 
 	// data size
-	off -= int(tn)
-	dataSize, dn := decodeMessageBodySize(b[:off])
-	if dn < 0 {
-		return meta, -1, fmt.Errorf("decode message: invalid data size")
+	dataSize, m := decodeSize(b[:end], big)
+	if m < 0 {
+		err = fmt.Errorf("decode message: invalid data size")
+		return
 	}
+	end -= m
+	size += m
 
 	// table
-	off -= int(dn)
-	table, err := decodeMessageTable(b[:off], tsize, big)
+	table, err := decodeMessageTable(b[:end], tableSize, big)
 	if err != nil {
-		return meta, -1, err
+		return
 	}
+	end -= int(tableSize) + int(dataSize)
+	size += int(tableSize)
 
 	// data
-	off -= int(tsize)
-	off -= int(dataSize)
-	if off < 0 {
-		return meta, -1, errors.New("decode message: invalid data")
+	if end < 0 {
+		err = errors.New("decode message: invalid data")
+		return
 	}
+	size += int(dataSize)
 
 	// done
-	meta = messageMeta{
+	meta := messageMeta{
 		table: table,
 		data:  dataSize,
 		big:   big,
 	}
-
-	total := n + tn + dn + int(tsize) + int(dataSize)
-	return meta, total, nil
+	return meta, size, nil
 }
 
-func decodeMessageTableSize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
-}
-
-func decodeMessageBodySize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
-}
-
-func decodeMessageTable(b []byte, size uint32, big bool) (messageTable, error) {
+func decodeMessageTable(b []byte, size uint32, big bool) (_ messageTable, err error) {
 	// field size
-	var fieldSize uint32
+	fieldSize := messageFieldSmallSize
 	if big {
 		fieldSize = messageFieldBigSize
-	} else {
-		fieldSize = messageFieldSmallSize
 	}
 
 	// check offset
-	off := len(b) - int(size)
-	if off < 0 {
-		return nil, errors.New("decode message: invalid table, array too small")
+	start := len(b) - int(size)
+	if start < 0 {
+		err = errors.New("decode message: invalid table")
+		return
 	}
 
 	// check divisible
-	if size%fieldSize != 0 {
-		return nil, fmt.Errorf("decode message: invalid table, size not divisible by %d, size=%d",
-			fieldSize, size)
+	if size%uint32(fieldSize) != 0 {
+		err = errors.New("decode message: invalid table")
+		return
 	}
 
-	p := b[off:]
+	p := b[start:]
 	v := messageTable(p)
 	return v, nil
 }
 
 // private
 
-func decodeSize(b []byte) (uint32, int) {
-	return rvarint.Uint32(b)
+func decodeSize(b []byte, big bool) (uint32, int) {
+	if len(b) < 0 {
+		return 0, -1
+	}
+
+	if big {
+		start := len(b) - 4
+		if start < 0 {
+			return 0, -1
+		}
+
+		size := binary.BigEndian.Uint32(b[start:])
+		return size, 4
+	}
+
+	start := len(b) - 2
+	if start < 0 {
+		return 0, -1
+	}
+
+	size := binary.BigEndian.Uint16(b[start:])
+	return uint32(size), 2
 }

@@ -155,10 +155,10 @@ func (v Value) validate() error {
 	case TypeString:
 		_, _, err = DecodeString(v)
 
-	case TypeList, TypeListBig:
+	case TypeList, TypeBigList:
 		_, _, err = DecodeList(v, DecodeValue)
 
-	case TypeMessage, TypeMessageBig:
+	case TypeMessage, TypeBigMessage:
 		_, _, err = DecodeMessage(v)
 
 	case TypeStruct:

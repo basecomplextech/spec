@@ -65,6 +65,20 @@ func (e *Encoder) closef(format string, args ...any) error {
 	return e.close(err)
 }
 
+// Reset resets the encoder state with the buffer.
+func (e *Encoder) Reset(buf buffer.Buffer) {
+	e.close(nil)
+	e.err = nil
+
+	if buf == nil {
+		buf = buffer.New()
+	}
+
+	s := getEncoderState()
+	s.init(buf)
+	e.encoderState = s
+}
+
 // End ends a nested object and a parent field/element if present.
 func (e *Encoder) End() (result []byte, err error) {
 	if e.err != nil {
