@@ -14,7 +14,8 @@ const (
 type Type byte
 
 const (
-	TypeNil   Type = 00
+	TypeUndefined Type = 0
+
 	TypeTrue  Type = 01
 	TypeFalse Type = 02
 	TypeByte  Type = 03
@@ -46,7 +47,6 @@ const (
 func checkType(t Type) error {
 	switch t {
 	case
-		TypeNil,
 		TypeTrue,
 		TypeFalse,
 		TypeByte,
@@ -81,8 +81,6 @@ func checkType(t Type) error {
 
 func (t Type) String() string {
 	switch t {
-	case TypeNil:
-		return "nil"
 	case TypeTrue:
 		return "true"
 	case TypeFalse:

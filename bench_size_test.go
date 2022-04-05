@@ -113,7 +113,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	d.types += n
 
 	switch typ {
-	case TypeNil, TypeTrue, TypeFalse:
+	case TypeTrue, TypeFalse:
 		return nil
 
 	case TypeByte:

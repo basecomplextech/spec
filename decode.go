@@ -24,7 +24,7 @@ func DecodeType(b []byte) (Type, int, error) {
 
 func decodeType(b []byte) (Type, int) {
 	if len(b) == 0 {
-		return TypeNil, 0
+		return TypeUndefined, 0
 	}
 
 	v := b[len(b)-1]
@@ -186,11 +186,7 @@ func DecodeU128(b []byte) (_ u128.U128, size int, err error) {
 		err = errors.New("decode u128: invalid data")
 		return
 	}
-
-	switch {
-	case typ == TypeNil:
-		return
-	case typ != TypeU128:
+	if typ != TypeU128 {
 		err = fmt.Errorf("decode u128: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -219,11 +215,7 @@ func DecodeU256(b []byte) (_ u256.U256, size int, err error) {
 		err = errors.New("decode u256: invalid data")
 		return
 	}
-
-	switch {
-	case typ == TypeNil:
-		return
-	case typ != TypeU256:
+	if typ != TypeU256 {
 		err = fmt.Errorf("decode u256: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -281,9 +273,6 @@ func decodeFloat64(b []byte) (float64, int) {
 	}
 
 	switch t {
-	case TypeNil:
-		return 0, n
-
 	case TypeFloat32:
 		start := len(b) - 5
 		if start < 0 {
@@ -317,14 +306,9 @@ func DecodeBytes(b []byte) (_ []byte, size int, err error) {
 		err = errors.New("decode bytes: invalid data")
 		return
 	}
-
-	switch typ {
-	default:
+	if typ != TypeBytes {
 		err = fmt.Errorf("decode bytes: invalid type, type=%v:%d", typ, typ)
 		return
-	case TypeNil:
-		return
-	case TypeBytes:
 	}
 
 	size = n
@@ -366,14 +350,9 @@ func DecodeString(b []byte) (_ string, size int, err error) {
 		err = errors.New("decode string: invalid data")
 		return
 	}
-
-	switch typ {
-	default:
+	if typ != TypeString {
 		err = fmt.Errorf("decode string: invalid type, type=%v:%d", typ, typ)
 		return
-	case TypeNil:
-		return
-	case TypeString:
 	}
 
 	size = n
@@ -422,15 +401,9 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 		err = errors.New("decode struct: invalid type")
 		return
 	}
-
-	// check type
-	switch typ {
-	default:
+	if typ != TypeStruct {
 		err = fmt.Errorf("decode struct: invalid type, type=%v:%d", typ, typ)
 		return
-	case TypeNil:
-		return
-	case TypeStruct:
 	}
 
 	size = n
@@ -461,15 +434,9 @@ func decodeListMeta(b []byte) (_ listMeta, size int, err error) {
 		err = errors.New("decode list: invalid data")
 		return
 	}
-
-	// check type
-	switch typ {
-	default:
+	if typ != TypeList && typ != TypeBigList {
 		err = fmt.Errorf("decode list: invalid type, type=%v:%d", typ, typ)
 		return
-	case TypeNil:
-		return
-	case TypeList, TypeBigList:
 	}
 
 	// start
@@ -557,15 +524,9 @@ func decodeMessageMeta(b []byte) (_ messageMeta, size int, err error) {
 		err = errors.New("decode message: invalid type")
 		return
 	}
-
-	// check type
-	switch typ {
-	default:
+	if typ != TypeMessage && typ != TypeBigMessage {
 		err = fmt.Errorf("decode message: invalid type, type=%v:%d", typ, typ)
 		return
-	case TypeNil:
-		return
-	case TypeMessage, TypeBigMessage:
 	}
 
 	// start

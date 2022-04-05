@@ -13,12 +13,6 @@ import (
 
 type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)
 
-func EncodeNil(b buffer.Buffer) (int, error) {
-	p := b.Grow(1)
-	p[0] = byte(TypeNil)
-	return 1, nil
-}
-
 func EncodeBool(b buffer.Buffer, v bool) (int, error) {
 	p := b.Grow(1)
 	if v {

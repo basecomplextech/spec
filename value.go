@@ -31,7 +31,7 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 		err = fmt.Errorf("unsupported type %d", t)
 		return
 
-	case TypeNil, TypeTrue, TypeFalse:
+	case TypeTrue, TypeFalse:
 		// pass
 
 	case TypeByte:

@@ -24,7 +24,7 @@ func TestDecodeType__should_return_type(t *testing.T) {
 	assert.Equal(t, v, TypeString)
 }
 
-func TestDecodeType__should_return_nil_when_empty(t *testing.T) {
+func TestDecodeType__should_return_undefined_when_empty(t *testing.T) {
 	b := []byte{}
 
 	v, n, err := DecodeType(b)
@@ -32,8 +32,8 @@ func TestDecodeType__should_return_nil_when_empty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, n, len(b))
-	assert.Equal(t, v, TypeNil)
+	assert.Zero(t, n)
+	assert.Equal(t, v, TypeUndefined)
 }
 
 // DecodeBool

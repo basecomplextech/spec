@@ -125,18 +125,6 @@ func (e *Encoder) End() (result []byte, err error) {
 
 // Primitive
 
-func (e *Encoder) Nil() error {
-	if e.err != nil {
-		return e.err
-	}
-
-	start := e.buf.Len()
-	EncodeNil(e.buf)
-	end := e.buf.Len()
-
-	return e.setData(start, end)
-}
-
 func (e *Encoder) Bool(v bool) error {
 	if e.err != nil {
 		return e.err
