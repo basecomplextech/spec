@@ -116,12 +116,39 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	case TypeNil, TypeTrue, TypeFalse:
 		return nil
 
-	case TypeByte, TypeInt32, TypeInt64:
-		_, m := decodeInt64(b)
+	case TypeByte:
+		_, m, err := DecodeByte(b)
+		if err != nil {
+			return err
+		}
 		d.values += m - n
 
-	case TypeUint32, TypeUint64:
-		_, m := decodeInt64(b)
+	case TypeInt32:
+		_, m, err := DecodeInt32(b)
+		if err != nil {
+			return err
+		}
+		d.values += m - n
+
+	case TypeInt64:
+		_, m, err := DecodeInt64(b)
+		if err != nil {
+			return err
+		}
+		d.values += m - n
+
+	case TypeUint32:
+		_, m, err := DecodeUint32(b)
+		if err != nil {
+			return err
+		}
+		d.values += m - n
+
+	case TypeUint64:
+		_, m, err := DecodeUint64(b)
+		if err != nil {
+			return err
+		}
 		d.values += m - n
 
 	case TypeFloat32, TypeFloat64:

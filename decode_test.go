@@ -73,32 +73,6 @@ func TestDecodeByte__should_decode_byte(t *testing.T) {
 	assert.Equal(t, byte(1), v)
 }
 
-func TestDecodeByte__should_decode_byte_from_int32(t *testing.T) {
-	b := buffer.New()
-	EncodeInt32(b, 1)
-
-	v, n, err := DecodeByte(b.Bytes())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, n, b.Len())
-	assert.Equal(t, byte(1), v)
-}
-
-func TestDecodeByte__should_decode_byte_from_int64(t *testing.T) {
-	b := buffer.New()
-	EncodeInt64(b, 1)
-
-	v, n, err := DecodeByte(b.Bytes())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, n, b.Len())
-	assert.Equal(t, byte(1), v)
-}
-
 // Int32
 
 func TestDecodeInt32__should_decode_int32(t *testing.T) {
@@ -119,19 +93,6 @@ func TestDecodeInt32__should_decode_int32(t *testing.T) {
 func TestDecodeInt64__should_decode_int64(t *testing.T) {
 	b := buffer.New()
 	EncodeInt64(b, 1)
-
-	v, n, err := DecodeInt64(b.Bytes())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, n, b.Len())
-	assert.Equal(t, int64(1), v)
-}
-
-func TestDecodeInt64__should_decode_int64_from_byte(t *testing.T) {
-	b := buffer.New()
-	EncodeByte(b, 1)
 
 	v, n, err := DecodeInt64(b.Bytes())
 	if err != nil {
