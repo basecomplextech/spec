@@ -31,11 +31,8 @@ const (
 	TypeFloat32 Type = 40
 	TypeFloat64 Type = 41
 
-	TypeBytes    Type = 50
-	TypeBytesBig Type = 51
-
-	TypeString    Type = 60
-	TypeBigString Type = 61
+	TypeBytes  Type = 50
+	TypeString Type = 60
 
 	TypeList    Type = 70
 	TypeBigList Type = 71
@@ -43,8 +40,7 @@ const (
 	TypeMessage    Type = 80
 	TypeBigMessage Type = 81
 
-	TypeStruct    Type = 90
-	TypeBigStruct Type = 91
+	TypeStruct Type = 90
 )
 
 func checkType(t Type) error {
@@ -68,10 +64,7 @@ func checkType(t Type) error {
 		TypeFloat64,
 
 		TypeBytes,
-		TypeBytesBig,
-
 		TypeString,
-		TypeBigString,
 
 		TypeList,
 		TypeBigList,
@@ -79,8 +72,7 @@ func checkType(t Type) error {
 		TypeMessage,
 		TypeBigMessage,
 
-		TypeStruct,
-		TypeBigStruct:
+		TypeStruct:
 		return nil
 	}
 
@@ -120,13 +112,8 @@ func (t Type) String() string {
 
 	case TypeBytes:
 		return "bytes"
-	case TypeBytesBig:
-		return "big_bytes"
-
 	case TypeString:
 		return "string"
-	case TypeBigString:
-		return "big_string"
 
 	case TypeList:
 		return "list"
@@ -140,8 +127,6 @@ func (t Type) String() string {
 
 	case TypeStruct:
 		return "struct"
-	case TypeBigStruct:
-		return "big_struct"
 	}
 
 	return strconv.Itoa(int(t))

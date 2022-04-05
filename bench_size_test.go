@@ -144,17 +144,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeBytes:
 		off := len(b) - 1
-		size, m := decodeSize(b[:off], false)
-		if m < 0 {
-			return fmt.Errorf("invalid bytes size")
-		}
-
-		d.sizes += m
-		d.bytes += int(size)
-
-	case TypeBytesBig:
-		off := len(b) - 1
-		size, m := decodeSize(b[:off], true)
+		size, m := decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid bytes size")
 		}
@@ -164,17 +154,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeString:
 		off := len(b) - 1
-		size, m := decodeSize(b[:off], false)
-		if n < 0 {
-			return fmt.Errorf("invalid string size")
-		}
-
-		d.sizes += m
-		d.strings += int(size)
-
-	case TypeBigString:
-		off := len(b) - 1
-		size, m := decodeSize(b[:off], true)
+		size, m := decodeSize(b[:off])
 		if n < 0 {
 			return fmt.Errorf("invalid string size")
 		}
@@ -184,10 +164,9 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeList, TypeBigList:
 		off := len(b) - 1
-		big := typ == TypeBigList
 
 		// read table size
-		tableSize, m := decodeSize(b[:off], big)
+		tableSize, m := decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid list table size")
 		}
@@ -196,7 +175,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tableSize)
 
 		// read data size
-		_, m = decodeSize(b[:off], big)
+		_, m = decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid list data size")
 		}
@@ -218,10 +197,9 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 	case TypeMessage, TypeBigMessage:
 		off := len(b) - 1
-		big := typ == TypeBigMessage
 
 		// read table size
-		tableSize, m := decodeSize(b[:off], big)
+		tableSize, m := decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid message table size")
 		}
@@ -230,7 +208,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.tables += int(tableSize)
 
 		// read data size
-		_, m = decodeSize(b[:off], big)
+		_, m = decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid message data size")
 		}

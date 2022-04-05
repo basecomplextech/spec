@@ -362,15 +362,14 @@ func DecodeBytes(b []byte) (_ []byte, size int, err error) {
 		return
 	case TypeNil:
 		return
-	case TypeBytes, TypeBytesBig:
+	case TypeBytes:
 	}
 
 	size = n
 	end := len(b) - size
-	big := typ == TypeBytesBig
 
 	// data size
-	dataSize, n := decodeSize(b[:end], big)
+	dataSize, n := decodeSize(b[:end])
 	if n < 0 {
 		err = errors.New("decode bytes: invalid data size")
 		return
@@ -412,15 +411,14 @@ func DecodeString(b []byte) (_ string, size int, err error) {
 		return
 	case TypeNil:
 		return
-	case TypeString, TypeBigString:
+	case TypeString:
 	}
 
 	size = n
 	end := len(b) - size
-	big := typ == TypeBigString
 
 	// size
-	dataSize, n := decodeSize(b[:end], big)
+	dataSize, n := decodeSize(b[:end])
 	if n < 0 {
 		err = fmt.Errorf("decode string: invalid data size")
 		return
@@ -470,15 +468,14 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 		return
 	case TypeNil:
 		return
-	case TypeStruct, TypeBigStruct:
+	case TypeStruct:
 	}
 
 	size = n
 	end := len(b) - size
-	big := typ == TypeBigStruct
 
 	// data size
-	dsize, n := decodeSize(b[:end], big)
+	dsize, n := decodeSize(b[:end])
 	if n < 0 {
 		err = errors.New("decode struct: invalid data size")
 		return
@@ -519,7 +516,7 @@ func decodeListMeta(b []byte) (_ listMeta, size int, err error) {
 	big := typ == TypeBigList
 
 	// table size
-	tableSize, n := decodeSize(b[:end], big)
+	tableSize, n := decodeSize(b[:end])
 	if n < 0 {
 		err = errors.New("decode list: invalid table size")
 		return
@@ -528,7 +525,7 @@ func decodeListMeta(b []byte) (_ listMeta, size int, err error) {
 	size += n
 
 	// data size
-	dataSize, n := decodeSize(b[:end], big)
+	dataSize, n := decodeSize(b[:end])
 	if n < 0 {
 		err = errors.New("decode list: invalid data size")
 		return
@@ -615,7 +612,7 @@ func decodeMessageMeta(b []byte) (_ messageMeta, size int, err error) {
 	big := typ == TypeBigMessage
 
 	// table size
-	tableSize, m := decodeSize(b[:end], big)
+	tableSize, m := decodeSize(b[:end])
 	if m < 0 {
 		err = errors.New("decode message: invalid table size")
 		return
@@ -624,7 +621,7 @@ func decodeMessageMeta(b []byte) (_ messageMeta, size int, err error) {
 	size += m
 
 	// data size
-	dataSize, m := decodeSize(b[:end], big)
+	dataSize, m := decodeSize(b[:end])
 	if m < 0 {
 		err = fmt.Errorf("decode message: invalid data size")
 		return
@@ -683,26 +680,6 @@ func decodeMessageTable(b []byte, size uint32, big bool) (_ messageTable, err er
 
 // private
 
-func decodeSize(b []byte, big bool) (uint32, int) {
-	if len(b) < 0 {
-		return 0, -1
-	}
-
-	if big {
-		start := len(b) - 4
-		if start < 0 {
-			return 0, -1
-		}
-
-		size := binary.BigEndian.Uint32(b[start:])
-		return size, 4
-	}
-
-	start := len(b) - 2
-	if start < 0 {
-		return 0, -1
-	}
-
-	size := binary.BigEndian.Uint16(b[start:])
-	return uint32(size), 2
+func decodeSize(b []byte) (uint32, int) {
+	return compactint.ReverseUint32(b)
 }
