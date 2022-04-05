@@ -7,7 +7,7 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/baseblck/library/rvarint"
+	"github.com/baseblck/library/encoding/compactint"
 	"github.com/baseblck/library/u128"
 	"github.com/baseblck/library/u256"
 )
@@ -38,9 +38,9 @@ func DecodeByte(b []byte) (byte, int, error) {
 	switch {
 	case ok < 0:
 		return 0, 0, errors.New("decode byte: invalid data")
-	case v < math.MinInt8:
+	case v < 0:
 		return 0, 0, errors.New("decode byte: overflow, value too small")
-	case v > math.MaxInt8:
+	case v > math.MaxUint8:
 		return 0, 0, errors.New("decode byte: overflow, value too large")
 	}
 
@@ -119,7 +119,7 @@ func decodeInt64(b []byte) (int64, int) {
 		return int64(v), n
 
 	case TypeInt32, TypeInt64:
-		v, m := rvarint.Int64(b[:end])
+		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, -1
 		}
@@ -128,7 +128,7 @@ func decodeInt64(b []byte) (int64, int) {
 		return v, n
 
 	case TypeUint32, TypeUint64:
-		v, m := rvarint.Uint64(b[:end])
+		v, m := compactint.ReverseUint64(b[:end])
 		if m < 0 {
 			return 0, -1
 		}
@@ -195,7 +195,7 @@ func decodeUint64(b []byte) (uint64, int) {
 		return uint64(v), n
 
 	case TypeInt32, TypeInt64:
-		v, m := rvarint.Int64(b[:end])
+		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, -1
 		}
@@ -204,7 +204,7 @@ func decodeUint64(b []byte) (uint64, int) {
 		return uint64(v), n
 
 	case TypeUint32, TypeUint64:
-		v, m := rvarint.Uint64(b[:end])
+		v, m := compactint.ReverseUint64(b[:end])
 		if m < 0 {
 			return 0, -1
 		}

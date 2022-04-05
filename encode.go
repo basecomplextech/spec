@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/baseblck/library/buffer"
-	"github.com/baseblck/library/rvarint"
+	"github.com/baseblck/library/encoding/compactint"
 	"github.com/baseblck/library/u128"
 	"github.com/baseblck/library/u256"
 )
@@ -39,9 +39,9 @@ func EncodeByte(b buffer.Buffer, v byte) (int, error) {
 // Int
 
 func EncodeInt32(b buffer.Buffer, v int32) (int, error) {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutInt64(p[:], int64(v))
-	off := rvarint.MaxLen32 - n
+	p := [compactint.MaxLen32]byte{}
+	n := compactint.PutReverseInt32(p[:], v)
+	off := compactint.MaxLen32 - n
 
 	buf := b.Grow(n + 1)
 	copy(buf[:n], p[off:])
@@ -51,9 +51,9 @@ func EncodeInt32(b buffer.Buffer, v int32) (int, error) {
 }
 
 func EncodeInt64(b buffer.Buffer, v int64) (int, error) {
-	p := [rvarint.MaxLen64]byte{}
-	n := rvarint.PutInt64(p[:], v)
-	off := rvarint.MaxLen64 - n
+	p := [compactint.MaxLen64]byte{}
+	n := compactint.PutReverseInt64(p[:], v)
+	off := compactint.MaxLen64 - n
 
 	buf := b.Grow(n + 1)
 	copy(buf[:n], p[off:])
@@ -65,9 +65,9 @@ func EncodeInt64(b buffer.Buffer, v int64) (int, error) {
 // Uint
 
 func EncodeUint32(b buffer.Buffer, v uint32) (int, error) {
-	p := [rvarint.MaxLen32]byte{}
-	n := rvarint.PutUint64(p[:], uint64(v))
-	off := rvarint.MaxLen32 - n
+	p := [compactint.MaxLen32]byte{}
+	n := compactint.PutReverseUint32(p[:], v)
+	off := compactint.MaxLen32 - n
 
 	buf := b.Grow(n + 1)
 	copy(buf[:n], p[off:])
@@ -77,9 +77,9 @@ func EncodeUint32(b buffer.Buffer, v uint32) (int, error) {
 }
 
 func EncodeUint64(b buffer.Buffer, v uint64) (int, error) {
-	p := [rvarint.MaxLen64]byte{}
-	n := rvarint.PutUint64(p[:], v)
-	off := rvarint.MaxLen64 - n
+	p := [compactint.MaxLen64]byte{}
+	n := compactint.PutReverseUint64(p[:], v)
+	off := compactint.MaxLen64 - n
 
 	buf := b.Grow(n + 1)
 	copy(buf[:n], p[off:])
