@@ -86,49 +86,6 @@ func BenchmarkEncode_Large(b *testing.B) {
 	b.SetBytes(int64(size))
 }
 
-func BenchmarkEncodeObject(b *testing.B) {
-	msg := newTestObject()
-	buf := buffer.NewSize(4096)
-	e := NewEncoderBuffer(buf)
-
-	data, err := msg.Marshal()
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	size := len(data)
-	compressed := compressedSize(data)
-
-	b.SetBytes(int64(size))
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	t0 := time.Now()
-	for i := 0; i < b.N; i++ {
-		builder, err := BuildTestMessageEncoder(e)
-		if err != nil {
-			b.Fatal(err)
-		}
-		if err := msg.Encode(builder); err != nil {
-			b.Fatal(err)
-		}
-		if _, err := e.End(); err != nil {
-			b.Fatal(err)
-		}
-
-		buf.Reset()
-		e.init(buf)
-	}
-
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
-	ops := float64(b.N) / sec
-
-	b.ReportMetric(ops, "ops")
-	b.ReportMetric(float64(size), "size")
-	b.ReportMetric(float64(compressed), "size-zlib")
-}
-
 // Standard JSON
 
 func BenchmarkJSON_Marshal_Small(b *testing.B) {

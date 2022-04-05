@@ -44,6 +44,11 @@ func (m *TestSmall) Encode(e *Encoder) ([]byte, error) {
 	return e.End()
 }
 
+func (m *TestSmall) Marshal() ([]byte, error) {
+	e := NewEncoder()
+	return m.Encode(e)
+}
+
 // Object
 
 type TestObject struct {

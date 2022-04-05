@@ -25,21 +25,29 @@ func GetMessage(b []byte) Message {
 }
 
 // DecodeMessage decodes, recursively vaildates and returns a message.
-func DecodeMessage(b []byte) (Message, int, error) {
-	meta, n, err := decodeMessageMeta(b)
+func DecodeMessage(b []byte) (_ Message, size int, err error) {
+	meta, size, err := decodeMessageMeta(b)
 	if err != nil {
-		return Message{}, n, err
+		return
 	}
-	bytes := b[len(b)-n:]
+	bytes := b[len(b)-size:]
 
 	m := Message{
 		meta:  meta,
 		bytes: bytes,
 	}
-	if err := m.Validate(); err != nil {
-		return Message{}, n, err
+
+	ln := m.Count()
+	for i := 0; i < ln; i++ {
+		field := m.FieldByIndex(i)
+		if len(field) == 0 {
+			continue
+		}
+		if _, _, err = DecodeValue(field); err != nil {
+			return
+		}
 	}
-	return m, n, nil
+	return m, size, nil
 }
 
 // Message returns a message clone.
@@ -107,22 +115,6 @@ func (m Message) TagByIndex(i int) (uint16, bool) {
 		return 0, false
 	}
 	return field.tag, true
-}
-
-// Validate recursively validates the message.
-func (m Message) Validate() error {
-	n := m.Count()
-
-	for i := 0; i < n; i++ {
-		data := m.FieldByIndex(i)
-		if len(data) == 0 {
-			continue
-		}
-		if _, _, err := DecodeValue(data); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Direct access

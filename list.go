@@ -23,22 +23,30 @@ func GetList[T any](b []byte, decode func([]byte) (T, int, error)) List[T] {
 }
 
 // DecodeList decodes, recursively validates and returns a list.
-func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (List[T], int, error) {
-	meta, n, err := decodeListMeta(b)
+func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (_ List[T], size int, err error) {
+	meta, size, err := decodeListMeta(b)
 	if err != nil {
-		return List[T]{}, n, err
+		return
 	}
-	bytes := b[len(b)-n:]
+	bytes := b[len(b)-size:]
 
 	l := List[T]{
 		meta:   meta,
 		bytes:  bytes,
 		decode: decode,
 	}
-	if err := l.Validate(); err != nil {
-		return List[T]{}, n, err
+
+	ln := l.Count()
+	for i := 0; i < ln; i++ {
+		elem := l.ElementBytes(i)
+		if len(elem) == 0 {
+			continue
+		}
+		if _, _, err = decode(elem); err != nil {
+			return
+		}
 	}
-	return l, n, nil
+	return l, size, nil
 }
 
 // Bytes returns the exact list bytes.
@@ -86,22 +94,6 @@ func (l List[T]) Values() []T {
 		result = append(result, elem)
 	}
 	return result
-}
-
-// Validate recursively validates the list.
-func (l List[T]) Validate() error {
-	n := l.Count()
-
-	for i := 0; i < n; i++ {
-		data := l.ElementBytes(i)
-		if len(data) == 0 {
-			continue
-		}
-		if _, _, err := DecodeValue(data); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Builder

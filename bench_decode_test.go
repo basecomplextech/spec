@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func BenchmarkDecode(b *testing.B) {
+func BenchmarkDecode_Large(b *testing.B) {
 	msg := newTestObject()
 	data, err := msg.Marshal()
 	if err != nil {
@@ -26,36 +26,6 @@ func BenchmarkDecode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _, err := DecodeTestMessage(data)
 		if err != nil {
-			b.Fatal(err)
-		}
-	}
-
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
-	ops := float64(b.N) / sec
-
-	b.ReportMetric(ops, "ops")
-	b.ReportMetric(float64(size), "size")
-	b.ReportMetric(float64(compressed), "size-zlib")
-}
-
-func BenchmarkDecodeObject(b *testing.B) {
-	msg := newTestObject()
-	data, err := msg.Marshal()
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	size := len(data)
-	compressed := compressedSize(data)
-
-	b.SetBytes(int64(size))
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	t0 := time.Now()
-	for i := 0; i < b.N; i++ {
-		if err := msg.Decode(data); err != nil {
 			b.Fatal(err)
 		}
 	}
