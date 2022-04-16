@@ -59,19 +59,19 @@ func TestMessage_Getters__should_access_fields(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, byte(1), m.Byte(1))
+	assert.Equal(t, byte(1), m.GetByte(1))
 
-	assert.Equal(t, int32(1), m.Int32(3))
-	assert.Equal(t, int64(1), m.Int64(4))
+	assert.Equal(t, int32(1), m.GetInt32(3))
+	assert.Equal(t, int64(1), m.GetInt64(4))
 
-	assert.Equal(t, uint32(1), m.Uint32(12))
-	assert.Equal(t, uint64(1), m.Uint64(13))
+	assert.Equal(t, uint32(1), m.GetUint32(12))
+	assert.Equal(t, uint64(1), m.GetUint64(13))
 
-	assert.Equal(t, float32(1), m.Float32(20))
-	assert.Equal(t, float64(1), m.Float64(21))
+	assert.Equal(t, float32(1), m.GetFloat32(20))
+	assert.Equal(t, float64(1), m.GetFloat64(21))
 
-	assert.Equal(t, "hello, world", m.String(30))
-	assert.Equal(t, []byte("hello, world"), m.Bytes(31))
+	assert.Equal(t, "hello, world", m.GetString(30))
+	assert.Equal(t, []byte("hello, world"), m.GetBytes(31))
 
-	assert.Equal(t, 1, m.Message(50).Count())
+	assert.Equal(t, 1, m.GetMessage(50).Count())
 }

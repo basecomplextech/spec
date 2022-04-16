@@ -69,8 +69,8 @@ func (m Message) CloneTo(b []byte) Message {
 	return GetMessage(b)
 }
 
-// Raw returns the exact message bytes.
-func (m Message) Raw() []byte {
+// Bytes returns the exact message bytes.
+func (m Message) Bytes() []byte {
 	return m.bytes
 }
 
@@ -108,6 +108,12 @@ func (m Message) FieldByIndex(i int) []byte {
 	return m.bytes[:end]
 }
 
+// HasField returns true if the message contains a field.
+func (m Message) HasField(tag uint16) bool {
+	end := m.meta.offset(tag)
+	return end >= 0 && end <= int(m.meta.data)
+}
+
 // TagByIndex returns a field tag by index or false.
 func (m Message) TagByIndex(i int) (uint16, bool) {
 	field, ok := m.meta.field(i)
@@ -119,7 +125,7 @@ func (m Message) TagByIndex(i int) (uint16, bool) {
 
 // Direct access
 
-func (m Message) Bool(tag uint16) bool {
+func (m Message) GetBool(tag uint16) bool {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -133,7 +139,7 @@ func (m Message) Bool(tag uint16) bool {
 	return v
 }
 
-func (m Message) Byte(tag uint16) byte {
+func (m Message) GetByte(tag uint16) byte {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -147,7 +153,7 @@ func (m Message) Byte(tag uint16) byte {
 	return v
 }
 
-func (m Message) Int32(tag uint16) int32 {
+func (m Message) GetInt32(tag uint16) int32 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -161,7 +167,7 @@ func (m Message) Int32(tag uint16) int32 {
 	return v
 }
 
-func (m Message) Int64(tag uint16) int64 {
+func (m Message) GetInt64(tag uint16) int64 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -175,7 +181,7 @@ func (m Message) Int64(tag uint16) int64 {
 	return v
 }
 
-func (m Message) Uint32(tag uint16) uint32 {
+func (m Message) GetUint32(tag uint16) uint32 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -189,7 +195,7 @@ func (m Message) Uint32(tag uint16) uint32 {
 	return v
 }
 
-func (m Message) Uint64(tag uint16) uint64 {
+func (m Message) GetUint64(tag uint16) uint64 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -203,7 +209,7 @@ func (m Message) Uint64(tag uint16) uint64 {
 	return v
 }
 
-func (m Message) U128(tag uint16) u128.U128 {
+func (m Message) GetU128(tag uint16) u128.U128 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -217,7 +223,7 @@ func (m Message) U128(tag uint16) u128.U128 {
 	return v
 }
 
-func (m Message) U256(tag uint16) u256.U256 {
+func (m Message) GetU256(tag uint16) u256.U256 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -231,7 +237,7 @@ func (m Message) U256(tag uint16) u256.U256 {
 	return v
 }
 
-func (m Message) Float32(tag uint16) float32 {
+func (m Message) GetFloat32(tag uint16) float32 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -245,7 +251,7 @@ func (m Message) Float32(tag uint16) float32 {
 	return v
 }
 
-func (m Message) Float64(tag uint16) float64 {
+func (m Message) GetFloat64(tag uint16) float64 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -259,7 +265,7 @@ func (m Message) Float64(tag uint16) float64 {
 	return v
 }
 
-func (m Message) Bytes(tag uint16) []byte {
+func (m Message) GetBytes(tag uint16) []byte {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -273,7 +279,7 @@ func (m Message) Bytes(tag uint16) []byte {
 	return v
 }
 
-func (m Message) String(tag uint16) string {
+func (m Message) GetString(tag uint16) string {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
@@ -287,7 +293,7 @@ func (m Message) String(tag uint16) string {
 	return v
 }
 
-func (m Message) Message(tag uint16) Message {
+func (m Message) GetMessage(tag uint16) Message {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:

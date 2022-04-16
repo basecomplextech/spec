@@ -14,10 +14,10 @@ func (w *writer) message(def *compiler.Definition) error {
 	if err := w.decodeMessage(def); err != nil {
 		return err
 	}
-	if err := w.messageFields(def); err != nil {
+	if err := w.messageMethods(def); err != nil {
 		return err
 	}
-	if err := w.messageRaw(def); err != nil {
+	if err := w.messageFields(def); err != nil {
 		return err
 	}
 
@@ -58,25 +58,20 @@ func (w *writer) decodeMessage(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageRaw(def *compiler.Definition) error {
-	w.linef(`func (m %v) IsEmpty() bool {`, def.Name)
-	w.linef(`return m.msg.IsEmpty()`)
-	w.linef(`}`)
-	w.line()
-
+func (w *writer) messageMethods(def *compiler.Definition) error {
 	w.linef(`func (m %v) Clone() %v {`, def.Name, def.Name)
 	w.linef(`msg1 := m.msg.Clone()`)
 	w.linef(`return %v{msg1}`, def.Name)
 	w.linef(`}`)
 	w.line()
 
-	w.linef(`func (m %v) Unwrap() spec.Message {`, def.Name)
-	w.linef(`return m.msg`)
+	w.linef(`func (m %v) IsEmpty() bool {`, def.Name)
+	w.linef(`return m.msg.IsEmpty()`)
 	w.linef(`}`)
 	w.line()
 
-	w.linef(`func (m %v) RawBytes() []byte {`, def.Name)
-	w.linef(`return m.msg.Raw()`)
+	w.linef(`func (m %v) Unwrap() spec.Message {`, def.Name)
+	w.linef(`return m.msg`)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -85,6 +80,9 @@ func (w *writer) messageRaw(def *compiler.Definition) error {
 func (w *writer) messageFields(def *compiler.Definition) error {
 	for _, field := range def.Message.Fields {
 		if err := w.messageField(def, field); err != nil {
+			return err
+		}
+		if err := w.messageHasField(def, field); err != nil {
 			return err
 		}
 	}
@@ -106,33 +104,33 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 
 		switch kind {
 		case compiler.KindBool:
-			w.linef(`return m.msg.Bool(%d)`, tag)
+			w.linef(`return m.msg.GetBool(%d)`, tag)
 		case compiler.KindByte:
-			w.linef(`return m.msg.Byte(%d)`, tag)
+			w.linef(`return m.msg.GetByte(%d)`, tag)
 
 		case compiler.KindInt32:
-			w.linef(`return m.msg.Int32(%d)`, tag)
+			w.linef(`return m.msg.GetInt32(%d)`, tag)
 		case compiler.KindInt64:
-			w.linef(`return m.msg.Int64(%d)`, tag)
+			w.linef(`return m.msg.GetInt64(%d)`, tag)
 		case compiler.KindUint32:
-			w.linef(`return m.msg.Uint32(%d)`, tag)
+			w.linef(`return m.msg.GetUint32(%d)`, tag)
 		case compiler.KindUint64:
-			w.linef(`return m.msg.Uint64(%d)`, tag)
+			w.linef(`return m.msg.GetUint64(%d)`, tag)
 
 		case compiler.KindU128:
-			w.linef(`return m.msg.U128(%d)`, tag)
+			w.linef(`return m.msg.GetU128(%d)`, tag)
 		case compiler.KindU256:
-			w.linef(`return m.msg.U256(%d)`, tag)
+			w.linef(`return m.msg.GetU256(%d)`, tag)
 
 		case compiler.KindFloat32:
-			w.linef(`return m.msg.Float32(%d)`, tag)
+			w.linef(`return m.msg.GetFloat32(%d)`, tag)
 		case compiler.KindFloat64:
-			w.linef(`return m.msg.Float64(%d)`, tag)
+			w.linef(`return m.msg.GetFloat64(%d)`, tag)
 
 		case compiler.KindBytes:
-			w.linef(`return m.msg.Bytes(%d)`, tag)
+			w.linef(`return m.msg.GetBytes(%d)`, tag)
 		case compiler.KindString:
-			w.linef(`return m.msg.String(%d)`, tag)
+			w.linef(`return m.msg.GetString(%d)`, tag)
 		}
 
 		w.linef(`}`)
@@ -158,6 +156,17 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		w.linef(`}`)
 		w.line()
 	}
+	return nil
+}
+
+func (w *writer) messageHasField(def *compiler.Definition, field *compiler.MessageField) error {
+	fieldName := messageFieldName(field)
+	tag := field.Tag
+
+	w.linef(`func (m %v) Has%v() bool {`, def.Name, fieldName)
+	w.linef(`return m.msg.HasField(%d)`, tag)
+	w.linef(`}`)
+	w.line()
 	return nil
 }
 
@@ -326,7 +335,7 @@ func (w *writer) messageBuilderField(def *compiler.Definition, field *compiler.M
 
 		tname := typeName(field.Type)
 		w.linef(`func (b %vBuilder) Copy%v(v %v) error {`, def.Name, fname, tname)
-		w.linef(`return b.e.FieldBytes(%d, v.RawBytes())`, tag)
+		w.linef(`return b.e.FieldBytes(%d, v.Unwrap().Bytes())`, tag)
 		w.linef(`}`)
 		w.line()
 	}

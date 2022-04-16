@@ -10,7 +10,7 @@ import (
 
 func BenchmarkDecode(b *testing.B) {
 	msg := testMessage(b)
-	data := msg.RawBytes()
+	data := msg.Unwrap().Bytes()
 	size := len(data)
 
 	b.SetBytes(int64(size))
@@ -37,7 +37,7 @@ func BenchmarkEncode(b *testing.B) {
 	buf := buffer.NewSize(1024)
 
 	msg := testMessage(b)
-	data := msg.RawBytes()
+	data := msg.Unwrap().Bytes()
 	size := len(data)
 
 	b.SetBytes(int64(size))

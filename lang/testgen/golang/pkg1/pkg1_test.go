@@ -13,7 +13,7 @@ import (
 
 func TestMessage_Decode(t *testing.T) {
 	m := testMessage(t)
-	b := m.RawBytes()
+	b := m.Unwrap().Bytes()
 
 	m1, n, err := DecodeMessage(b)
 	if err != nil {

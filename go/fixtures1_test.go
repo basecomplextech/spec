@@ -151,7 +151,7 @@ func (m *TestObject) Decode(b []byte) error {
 	m.Bytes = msg.Bytes()
 
 	// submessage
-	if p := msg.Submessage().RawBytes(); p != nil {
+	if p := msg.Submessage().Unwrap().Bytes(); p != nil {
 		sub := &TestSubobject{}
 		if err := sub.Decode(p); err != nil {
 			return err
@@ -347,9 +347,9 @@ func (m *TestObjectElement) Decode(b []byte) error {
 		return err
 	}
 
-	m.Byte = msg.Byte(1)
-	m.Int32 = msg.Int32(2)
-	m.Int64 = msg.Int64(3)
+	m.Byte = msg.GetByte(1)
+	m.Int32 = msg.GetInt32(2)
+	m.Int64 = msg.GetInt64(3)
 	return nil
 }
 

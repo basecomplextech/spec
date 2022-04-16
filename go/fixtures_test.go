@@ -49,19 +49,19 @@ func BuildTestMessageEncoder(e *Encoder) (result TestMessageBuilder, err error) 
 	return
 }
 
-func (m TestMessage) RawBytes() []byte { return m.msg.Raw() }
-func (m TestMessage) Bool() bool       { return m.msg.Bool(1) }
-func (m TestMessage) Byte() byte       { return m.msg.Byte(2) }
-func (m TestMessage) Int32() int32     { return m.msg.Int32(10) }
-func (m TestMessage) Int64() int64     { return m.msg.Int64(11) }
-func (m TestMessage) Uint32() uint32   { return m.msg.Uint32(20) }
-func (m TestMessage) Uint64() uint64   { return m.msg.Uint64(21) }
-func (m TestMessage) U128() u128.U128  { return m.msg.U128(22) }
-func (m TestMessage) U256() u256.U256  { return m.msg.U256(23) }
-func (m TestMessage) Float32() float32 { return m.msg.Float32(30) }
-func (m TestMessage) Float64() float64 { return m.msg.Float64(31) }
-func (m TestMessage) String() string   { return m.msg.String(40) }
-func (m TestMessage) Bytes() []byte    { return m.msg.Bytes(41) }
+func (m TestMessage) Bool() bool       { return m.msg.GetBool(1) }
+func (m TestMessage) Byte() byte       { return m.msg.GetByte(2) }
+func (m TestMessage) Int32() int32     { return m.msg.GetInt32(10) }
+func (m TestMessage) Int64() int64     { return m.msg.GetInt64(11) }
+func (m TestMessage) Uint32() uint32   { return m.msg.GetUint32(20) }
+func (m TestMessage) Uint64() uint64   { return m.msg.GetUint64(21) }
+func (m TestMessage) U128() u128.U128  { return m.msg.GetU128(22) }
+func (m TestMessage) U256() u256.U256  { return m.msg.GetU256(23) }
+func (m TestMessage) Float32() float32 { return m.msg.GetFloat32(30) }
+func (m TestMessage) Float64() float64 { return m.msg.GetFloat64(31) }
+func (m TestMessage) String() string   { return m.msg.GetString(40) }
+func (m TestMessage) Bytes() []byte    { return m.msg.GetBytes(41) }
+func (m TestMessage) Unwrap() Message  { return m.msg }
 
 func (m TestMessage) Submessage() TestSubmessage {
 	b := m.msg.Field(50)
@@ -225,9 +225,9 @@ func BuildTestSubmessageEncoder(e *Encoder) (_ TestSubmessageBuilder, err error)
 	return TestSubmessageBuilder{e}, nil
 }
 
-func (m TestSubmessage) RawBytes() []byte { return m.msg.Raw() }
-func (m TestSubmessage) Int32() int32     { return m.msg.Int32(1) }
-func (m TestSubmessage) Int64() int64     { return m.msg.Int64(2) }
+func (m TestSubmessage) Int32() int32    { return m.msg.GetInt32(1) }
+func (m TestSubmessage) Int64() int64    { return m.msg.GetInt64(2) }
+func (m TestSubmessage) Unwrap() Message { return m.msg }
 
 // TestSubmessageBuilder
 
@@ -292,15 +292,15 @@ func BuildTestElementEncoder(e *Encoder) (_ TestElementBuilder) {
 }
 
 func (m TestElement) Byte() byte {
-	return m.msg.Byte(1)
+	return m.msg.GetByte(1)
 }
 
 func (m TestElement) Int32() int32 {
-	return m.msg.Int32(2)
+	return m.msg.GetInt32(2)
 }
 
 func (m TestElement) Int64() int64 {
-	return m.msg.Int64(3)
+	return m.msg.GetInt64(3)
 }
 
 // TestElementBuilder
