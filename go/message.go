@@ -37,7 +37,7 @@ func DecodeMessage(b []byte) (_ Message, size int, err error) {
 		bytes: bytes,
 	}
 
-	ln := m.Count()
+	ln := m.Len()
 	for i := 0; i < ln; i++ {
 		field := m.FieldByIndex(i)
 		if len(field) == 0 {
@@ -69,6 +69,11 @@ func (m Message) CloneTo(b []byte) Message {
 	return GetMessage(b)
 }
 
+// Len returns the number of fields in the message.
+func (m Message) Len() int {
+	return m.meta.count()
+}
+
 // Bytes returns the exact message bytes.
 func (m Message) Bytes() []byte {
 	return m.bytes
@@ -77,11 +82,6 @@ func (m Message) Bytes() []byte {
 // IsEmpty returns true if the message is backed byte an empty byte slice or has no fields.
 func (m Message) IsEmpty() bool {
 	return len(m.bytes) == 0 || m.meta.count() == 0
-}
-
-// Count returns the number of fields in the message.
-func (m Message) Count() int {
-	return m.meta.count()
 }
 
 // Field returns field data by a tag or nil.

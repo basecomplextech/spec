@@ -69,9 +69,9 @@ func TestEncoder__should_encode_list(t *testing.T) {
 		t.Fatal(err)
 	}
 	items1 := []int64{
-		list.Element(0),
-		list.Element(1),
-		list.Element(2),
+		list.Get(0),
+		list.Get(1),
+		list.Get(2),
 	}
 
 	assert.Equal(t, []int64{1, 2, 3}, items1)

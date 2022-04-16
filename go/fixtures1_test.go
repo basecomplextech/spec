@@ -163,10 +163,10 @@ func (m *TestObject) Decode(b []byte) error {
 	// list:51
 	{
 		list := msg.List()
-		m.List = make([]int64, 0, list.Count())
+		m.List = make([]int64, 0, list.Len())
 
-		for i := 0; i < list.Count(); i++ {
-			el := list.Element(i)
+		for i := 0; i < list.Len(); i++ {
+			el := list.Get(i)
 			m.List = append(m.List, el)
 		}
 	}
@@ -174,10 +174,10 @@ func (m *TestObject) Decode(b []byte) error {
 	// messages:52
 	{
 		list := msg.Messages()
-		m.Messages = make([]*TestObjectElement, 0, list.Count())
+		m.Messages = make([]*TestObjectElement, 0, list.Len())
 
-		for i := 0; i < list.Count(); i++ {
-			data := list.ElementBytes(i)
+		for i := 0; i < list.Len(); i++ {
+			data := list.GetBytes(i)
 			if len(data) == 0 {
 				continue
 			}
@@ -193,10 +193,10 @@ func (m *TestObject) Decode(b []byte) error {
 	// strings:53
 	{
 		list := msg.Strings()
-		m.Strings = make([]string, 0, list.Count())
+		m.Strings = make([]string, 0, list.Len())
 
-		for i := 0; i < list.Count(); i++ {
-			s := list.Element(i)
+		for i := 0; i < list.Len(); i++ {
+			s := list.Get(i)
 			m.Strings = append(m.Strings, s)
 		}
 	}

@@ -39,7 +39,7 @@ func testListElementsSizeN(big bool, n int) []listElement {
 
 // isBigList
 
-func TestIsBigList__should_return_true_when_count_greater_than_uint8(t *testing.T) {
+func TestIsBigList__should_return_true_when_len_greater_than_uint8(t *testing.T) {
 	smallTable := testListElementsN(math.MaxUint8)
 	bigTable := testListElementsN(math.MaxUint8 + 1)
 
@@ -55,9 +55,9 @@ func TestIsBigList__should_return_true_when_offset_greater_than_uint16(t *testin
 	assert.True(t, isBigList(bigTable))
 }
 
-// count
+// len
 
-func TestListTable_count_big__should_return_number_of_elements(t *testing.T) {
+func TestListTable_len_big__should_return_number_of_elements(t *testing.T) {
 	big := true
 	elements := testListElementsSize(big)
 
@@ -71,11 +71,11 @@ func TestListTable_count_big__should_return_number_of_elements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	n := table.count(big)
+	n := table.len(big)
 	assert.Equal(t, len(elements), n)
 }
 
-func TestListTable_count_smal__should_return_number_of_elements(t *testing.T) {
+func TestListTable_len_smal__should_return_number_of_elements(t *testing.T) {
 	small := false
 	elements := testListElementsSize(small)
 
@@ -89,7 +89,7 @@ func TestListTable_count_smal__should_return_number_of_elements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	n := table.count(small)
+	n := table.len(small)
 	assert.Equal(t, len(elements), n)
 }
 
@@ -139,7 +139,7 @@ func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *test
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 
-	n := table.count(big)
+	n := table.len(big)
 	start, end = table.offset_big(n)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
@@ -191,7 +191,7 @@ func TestListTable_offset_small__should_return_minus_one_when_out_of_range(t *te
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)
 
-	n := table.count(big)
+	n := table.len(big)
 	start, end = table.offset_small(n)
 	assert.Equal(t, -1, start)
 	assert.Equal(t, -1, end)

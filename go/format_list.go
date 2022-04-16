@@ -17,9 +17,9 @@ type listMeta struct {
 	big  bool   // small/big table format
 }
 
-// count returns the number of elements in the table.
-func (m listMeta) count() int {
-	return m.table.count(m.big)
+// len returns the number of elements in the table.
+func (m listMeta) len() int {
+	return m.table.len(m.big)
 }
 
 // offset returns an element start/end by an index or -1/-1.
@@ -57,7 +57,7 @@ func isBigList(table []listElement) bool {
 		return false
 	}
 
-	// count > uint8
+	// len > uint8
 	if ln > math.MaxUint8 {
 		return true
 	}
@@ -67,8 +67,8 @@ func isBigList(table []listElement) bool {
 	return last.offset > math.MaxUint16
 }
 
-// count returns the number of elements in the table.
-func (t listTable) count(big bool) int {
+// len returns the number of elements in the table.
+func (t listTable) len(big bool) int {
 	var size int
 	if big {
 		size = listElementBigSize
@@ -80,7 +80,7 @@ func (t listTable) count(big bool) int {
 
 // elements parses the table and returns a slice of elements
 func (t listTable) elements(big bool) []listElement {
-	n := t.count(big)
+	n := t.len(big)
 
 	result := make([]listElement, 0, n)
 	for i := 0; i < n; i++ {

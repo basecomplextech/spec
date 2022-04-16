@@ -1,5 +1,7 @@
 package spec
 
+import "fmt"
+
 type List[T any] struct {
 	meta   listMeta
 	bytes  []byte
@@ -36,9 +38,9 @@ func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (_ List[T]
 		decode: decode,
 	}
 
-	ln := l.Count()
+	ln := l.Len()
 	for i := 0; i < ln; i++ {
-		elem := l.ElementBytes(i)
+		elem := l.GetBytes(i)
 		if len(elem) == 0 {
 			continue
 		}
@@ -49,24 +51,21 @@ func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (_ List[T]
 	return l, size, nil
 }
 
+// Len returns the number of elements in the list.
+func (l List[T]) Len() int {
+	return l.meta.len()
+}
+
 // Bytes returns the exact list bytes.
 func (l List[T]) Bytes() []byte {
 	return l.bytes
 }
 
-// Count returns the number of elements in the list.
-func (l List[T]) Count() int {
-	return l.meta.count()
-}
-
-// ElementBytes returns an element or zero.
-func (l List[T]) Element(i int) (result T) {
+// Get returns an element by index or panics on out of range.
+func (l List[T]) Get(i int) (result T) {
 	start, end := l.meta.offset(i)
-	switch {
-	case start < 0:
-		return
-	case end > int(l.meta.data):
-		return
+	if start < 0 || end > int(l.meta.data) {
+		panic(fmt.Sprintf("index out out range: %d", i))
 	}
 
 	b := l.bytes[start:end]
@@ -74,23 +73,21 @@ func (l List[T]) Element(i int) (result T) {
 	return result
 }
 
-// ElementBytes returns element data or nil.
-func (l List[T]) ElementBytes(i int) []byte {
+// GetBytes returns raw element bytes or panics on out of range.
+func (l List[T]) GetBytes(i int) []byte {
 	start, end := l.meta.offset(i)
-	switch {
-	case start < 0:
-		return nil
-	case end > int(l.meta.data):
-		return nil
+	if start < 0 || end > int(l.meta.data) {
+		panic(fmt.Sprintf("index out out range: %d", i))
 	}
+
 	return l.bytes[start:end]
 }
 
 // Values converts a list into a slice.
 func (l List[T]) Values() []T {
-	result := make([]T, 0, l.meta.count())
-	for i := 0; i < l.meta.count(); i++ {
-		elem := l.Element(i)
+	result := make([]T, 0, l.meta.len())
+	for i := 0; i < l.meta.len(); i++ {
+		elem := l.Get(i)
 		result = append(result, elem)
 	}
 	return result

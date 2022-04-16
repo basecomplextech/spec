@@ -215,8 +215,8 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		}
 
 		// read elements
-		for i := 0; i < list.Count(); i++ {
-			elem := list.ElementBytes(i)
+		for i := 0; i < list.Len(); i++ {
+			elem := list.GetBytes(i)
 			if err := _computeSizeDistribution(elem, d); err != nil {
 				return err
 			}
@@ -248,7 +248,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		}
 
 		// read fields
-		for i := 0; i < msg.Count(); i++ {
+		for i := 0; i < msg.Len(); i++ {
 			field := msg.FieldByIndex(i)
 			if err := _computeSizeDistribution(field, d); err != nil {
 				return err
