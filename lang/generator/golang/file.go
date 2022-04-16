@@ -62,7 +62,7 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`"github.com/baseblck/library/buffer"`)
 	w.line(`"github.com/baseblck/library/u128"`)
 	w.line(`"github.com/baseblck/library/u256"`)
-	w.line(`"github.com/baseblck/spec"`)
+	w.line(`spec "github.com/baseblck/spec/go"`)
 
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)
@@ -73,7 +73,7 @@ func (w *writer) file(file *compiler.File) error {
 
 	// empty values for imports
 	w.line(`var (`)
-	w.line(`_ *buffer.Buffer = (*buffer.Buffer)(nil)`)
+	w.line(`_ buffer.Buffer = (buffer.Buffer)(nil)`)
 	w.line(`_ u128.U128 = u128.U128{}`)
 	w.line(`_ u256.U256 = u256.U256{}`)
 	w.line(`)`)

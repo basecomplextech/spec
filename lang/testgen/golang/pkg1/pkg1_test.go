@@ -6,7 +6,7 @@ import (
 	"github.com/baseblck/library/tests"
 	"github.com/baseblck/library/u128"
 	"github.com/baseblck/library/u256"
-	"github.com/baseblck/spec"
+	spec "github.com/baseblck/spec/go"
 	"github.com/baseblck/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
 )
