@@ -62,10 +62,10 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		{
 			next := node.Next()
 			next.Value("b")
-			next.Build()
+			next.End()
 		}
 
-		node.Build()
+		node.End()
 	}
 
 	msg.Value(Struct{
@@ -77,7 +77,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		submsg := msg.Imported()
 		submsg.Key("key")
 		submsg.Value(pkg3.Value{})
-		submsg.Build()
+		submsg.End()
 	}
 
 	{
@@ -85,7 +85,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		for _, x := range []int64{1, 2, 3} {
 			list.Next(x)
 		}
-		if err := list.Build(); err != nil {
+		if err := list.End(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -95,7 +95,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		for _, x := range []string{"a", "b", "c"} {
 			list.Next(x)
 		}
-		if err := list.Build(); err != nil {
+		if err := list.End(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -105,9 +105,9 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		for _, x := range []string{"1", "2"} {
 			elem := list.Next()
 			elem.Value(x)
-			elem.Build()
+			elem.End()
 		}
-		if err := list.Build(); err != nil {
+		if err := list.End(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -117,9 +117,9 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 		for _, x := range []string{"a", "b"} {
 			elem := list.Next()
 			elem.Key(x)
-			elem.Build()
+			elem.End()
 		}
-		if err := list.Build(); err != nil {
+		if err := list.End(); err != nil {
 			t.Fatal(err)
 		}
 	}

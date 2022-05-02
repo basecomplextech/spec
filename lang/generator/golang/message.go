@@ -222,6 +222,12 @@ func (w *writer) buildMessage(def *compiler.Definition) error {
 }
 
 func (w *writer) messageBuilderBuild(def *compiler.Definition) error {
+	w.linef(`func (b %vBuilder) End() error {`, def.Name)
+	w.linef(`_, err := b.e.End()`)
+	w.linef(`return err`)
+	w.linef(`}`)
+	w.line()
+
 	w.linef(`func (b %vBuilder) Build() (_ %v, err error) {`, def.Name, def.Name)
 	w.linef(`bytes, err := b.e.End()`)
 	w.linef(`if err != nil {

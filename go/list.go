@@ -112,18 +112,18 @@ func (b ListBuilder[T]) Len() int {
 	return b.e.ListLen()
 }
 
-// Build ends and returns the list.
-func (b ListBuilder[T]) Build() error {
-	_, err := b.e.End()
-	return err
-}
-
 // Next encodes the next element.
 func (b ListBuilder[T]) Next(value T) error {
 	if err := EncodeValue(b.e, value, b.encode); err != nil {
 		return err
 	}
 	return b.e.Element()
+}
+
+// End ends the list.
+func (b ListBuilder[T]) End() error {
+	_, err := b.e.End()
+	return err
 }
 
 // NestedListBuilder builds a list using nested element builder.
@@ -148,14 +148,14 @@ func (b NestedListBuilder[T]) Len() int {
 	return b.e.ListLen()
 }
 
-// Build ends and returns the list.
-func (b NestedListBuilder[T]) Build() error {
-	_, err := b.e.End()
-	return err
-}
-
 // Next returns the next element builder.
 func (b NestedListBuilder[T]) Next() (_ T) {
 	b.e.BeginElement()
 	return b.next(b.e)
+}
+
+// End ends the list.
+func (b NestedListBuilder[T]) End() error {
+	_, err := b.e.End()
+	return err
 }
