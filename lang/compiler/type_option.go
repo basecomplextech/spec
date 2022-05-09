@@ -1,6 +1,6 @@
 package compiler
 
-import "github.com/baseblck/spec/lang/parser"
+import "github.com/sideblock/spec/lang/parser"
 
 type Option struct {
 	Name  string

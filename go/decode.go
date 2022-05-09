@@ -7,9 +7,9 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/baseblck/library/encoding/compactint"
-	"github.com/baseblck/library/u128"
-	"github.com/baseblck/library/u256"
+	"github.com/sideblock/library/encoding/compactint"
+	"github.com/sideblock/library/u128"
+	"github.com/sideblock/library/u256"
 )
 
 func DecodeType(b []byte) (Type, int, error) {

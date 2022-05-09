@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/baseblck/spec/lang"
+	"github.com/sideblock/spec/lang"
 	"github.com/spf13/cobra"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/baseblck/spec/lang/parser"
+	"github.com/sideblock/spec/lang/parser"
 )
 
 type Kind int

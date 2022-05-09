@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/baseblck/library/buffer"
-	"github.com/baseblck/library/encoding/compactint"
-	"github.com/baseblck/library/u128"
-	"github.com/baseblck/library/u256"
+	"github.com/sideblock/library/buffer"
+	"github.com/sideblock/library/encoding/compactint"
+	"github.com/sideblock/library/u128"
+	"github.com/sideblock/library/u256"
 )
 
 type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)

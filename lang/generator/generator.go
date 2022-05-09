@@ -6,8 +6,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/baseblck/spec/lang/compiler"
-	"github.com/baseblck/spec/lang/generator/golang"
+	"github.com/sideblock/spec/lang/compiler"
+	"github.com/sideblock/spec/lang/generator/golang"
 )
 
 type Generator interface {

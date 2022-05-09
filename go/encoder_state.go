@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/baseblck/library/buffer"
+	"github.com/sideblock/library/buffer"
 )
 
 // encoderState is a big pooled struct which holds an encoding state.

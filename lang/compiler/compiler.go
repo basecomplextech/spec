@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/baseblck/spec/lang/parser"
+	"github.com/sideblock/spec/lang/parser"
 )
 
 type Compiler interface {

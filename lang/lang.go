@@ -1,8 +1,8 @@
 package lang
 
 import (
-	"github.com/baseblck/spec/lang/compiler"
-	"github.com/baseblck/spec/lang/generator"
+	"github.com/sideblock/spec/lang/compiler"
+	"github.com/sideblock/spec/lang/generator"
 )
 
 type Spec struct{}

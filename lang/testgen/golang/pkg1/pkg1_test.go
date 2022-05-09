@@ -3,11 +3,11 @@ package pkg1
 import (
 	"testing"
 
-	"github.com/baseblck/library/tests"
-	"github.com/baseblck/library/u128"
-	"github.com/baseblck/library/u256"
-	spec "github.com/baseblck/spec/go"
-	"github.com/baseblck/spec/lang/testgen/golang/sub/pkg3"
+	"github.com/sideblock/library/tests"
+	"github.com/sideblock/library/u128"
+	"github.com/sideblock/library/u256"
+	spec "github.com/sideblock/spec/go"
+	"github.com/sideblock/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
 )
 

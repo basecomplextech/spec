@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/baseblck/library/buffer"
-	"github.com/baseblck/library/u128"
-	"github.com/baseblck/library/u256"
+	"github.com/sideblock/library/buffer"
+	"github.com/sideblock/library/u128"
+	"github.com/sideblock/library/u256"
 )
 
 var encoderClosed = errors.New("operation on a closed encoder")

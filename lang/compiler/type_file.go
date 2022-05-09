@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/baseblck/spec/lang/parser"
+	"github.com/sideblock/spec/lang/parser"
 )
 
 type File struct {

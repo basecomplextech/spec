@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/baseblck/spec/lang/parser"
+	"github.com/sideblock/spec/lang/parser"
 )
 
 type Enum struct {

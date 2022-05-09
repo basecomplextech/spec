@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/baseblck/library/buffer"
+	"github.com/sideblock/library/buffer"
 )
 
 func BenchmarkEncode_Small(b *testing.B) {

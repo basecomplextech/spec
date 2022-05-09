@@ -1,5 +1,5 @@
 options (
-    go_package="github.com/baseblck/spec/lang/testgen/golang/sub/pkg3"
+    go_package="github.com/sideblock/spec/lang/testgen/golang/sub/pkg3"
 )
 
 struct Value {

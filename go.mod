@@ -1,9 +1,9 @@
-module github.com/baseblck/spec
+module github.com/sideblock/spec
 
 go 1.18
 
 require (
-	github.com/baseblck/library v0.0.0-20220409111642-bdb17aa9ea2b
+	github.com/sideblock/library v0.0.0-20220409111642-bdb17aa9ea2b
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 )

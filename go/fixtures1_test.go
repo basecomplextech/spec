@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/baseblck/library/u128"
-	"github.com/baseblck/library/u256"
+	"github.com/sideblock/library/u128"
+	"github.com/sideblock/library/u256"
 )
 
 // Simple

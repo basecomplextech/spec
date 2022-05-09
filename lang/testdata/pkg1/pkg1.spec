@@ -3,7 +3,7 @@ import (
 )
 
 options (
-    go_package="github.com/baseblck/spec/lang/testgen/golang/pkg1"
+    go_package="github.com/sideblock/spec/lang/testgen/golang/pkg1"
 )
 
 message Message {
