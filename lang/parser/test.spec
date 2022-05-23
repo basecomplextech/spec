@@ -1,7 +1,7 @@
 import (
     "module1"
     "module2"
-    "github.com/test/library"
+    "github.com/test/basekit"
     pkg "github.com/test/package"
 )
 

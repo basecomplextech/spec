@@ -6,8 +6,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/sideblock/spec/lang/compiler"
-	"github.com/sideblock/spec/lang/generator/golang"
+	"github.com/epochtimeout/spec/lang/compiler"
+	"github.com/epochtimeout/spec/lang/generator/golang"
 )
 
 type Generator interface {

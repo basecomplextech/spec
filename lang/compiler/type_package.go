@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/sideblock/spec/lang/parser"
+	"github.com/epochtimeout/spec/lang/parser"
 )
 
 type PackageState string

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/sideblock/spec/lang/parser"
+	"github.com/epochtimeout/spec/lang/parser"
 )
 
 type Kind int

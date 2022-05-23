@@ -1,8 +1,8 @@
 package lang
 
 import (
-	"github.com/sideblock/spec/lang/compiler"
-	"github.com/sideblock/spec/lang/generator"
+	"github.com/epochtimeout/spec/lang/compiler"
+	"github.com/epochtimeout/spec/lang/generator"
 )
 
 type Spec struct{}

@@ -1,6 +1,6 @@
 package compiler
 
-import "github.com/sideblock/spec/lang/parser"
+import "github.com/epochtimeout/spec/lang/parser"
 
 type Option struct {
 	Name  string

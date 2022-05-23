@@ -6,7 +6,7 @@ import (
 	"go/format"
 	"strings"
 
-	"github.com/sideblock/spec/lang/compiler"
+	"github.com/epochtimeout/spec/lang/compiler"
 )
 
 const (
@@ -59,10 +59,10 @@ func (w *writer) file(file *compiler.File) error {
 
 	// imports
 	w.line("import (")
-	w.line(`"github.com/sideblock/library/buffer"`)
-	w.line(`"github.com/sideblock/library/u128"`)
-	w.line(`"github.com/sideblock/library/u256"`)
-	w.line(`spec "github.com/sideblock/spec/go"`)
+	w.line(`"github.com/epochtimeout/basekit/buffer"`)
+	w.line(`"github.com/epochtimeout/basekit/u128"`)
+	w.line(`"github.com/epochtimeout/basekit/u256"`)
+	w.line(`spec "github.com/epochtimeout/spec/go"`)
 
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)

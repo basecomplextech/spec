@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/sideblock/spec/lang/compiler"
+	"github.com/epochtimeout/spec/lang/compiler"
 )
 
 // typeName returns a type name.

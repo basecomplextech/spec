@@ -1,9 +1,9 @@
 package spec
 
 import (
-	"github.com/sideblock/library/buffer"
-	"github.com/sideblock/library/u128"
-	"github.com/sideblock/library/u256"
+	"github.com/epochtimeout/basekit/buffer"
+	"github.com/epochtimeout/basekit/u128"
+	"github.com/epochtimeout/basekit/u256"
 )
 
 // TestMessage

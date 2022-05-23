@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/sideblock/spec/lang/parser"
+	"github.com/epochtimeout/spec/lang/parser"
 )
 
 var builtin = map[Kind]*Type{

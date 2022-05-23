@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sideblock/library/buffer"
-	spec "github.com/sideblock/spec/go"
+	"github.com/epochtimeout/basekit/buffer"
+	spec "github.com/epochtimeout/spec/go"
 )
 
 func BenchmarkDecode(b *testing.B) {

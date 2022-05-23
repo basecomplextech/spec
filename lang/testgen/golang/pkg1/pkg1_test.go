@@ -3,11 +3,11 @@ package pkg1
 import (
 	"testing"
 
-	"github.com/sideblock/library/tests"
-	"github.com/sideblock/library/u128"
-	"github.com/sideblock/library/u256"
-	spec "github.com/sideblock/spec/go"
-	"github.com/sideblock/spec/lang/testgen/golang/sub/pkg3"
+	"github.com/epochtimeout/basekit/tests"
+	"github.com/epochtimeout/basekit/u128"
+	"github.com/epochtimeout/basekit/u256"
+	spec "github.com/epochtimeout/spec/go"
+	"github.com/epochtimeout/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
 )
 

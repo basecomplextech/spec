@@ -3,7 +3,7 @@ package spec
 import (
 	"testing"
 
-	"github.com/sideblock/library/buffer"
+	"github.com/epochtimeout/basekit/buffer"
 )
 
 func BenchmarkFieldTable_field(b *testing.B) {

@@ -1,9 +1,9 @@
-module github.com/sideblock/spec
+module github.com/epochtimeout/spec
 
 go 1.18
 
 require (
-	github.com/sideblock/library v0.0.0-20220509112333-47512bfaa374
+	github.com/epochtimeout/basekit v0.0.0-20220523085742-c96c56c19b57
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 )

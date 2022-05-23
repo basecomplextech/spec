@@ -1,7 +1,7 @@
 package golang
 
 import (
-	"github.com/sideblock/spec/lang/compiler"
+	"github.com/epochtimeout/spec/lang/compiler"
 )
 
 func (w *writer) message(def *compiler.Definition) error {

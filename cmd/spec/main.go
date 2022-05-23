@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/sideblock/spec/lang"
+	"github.com/epochtimeout/spec/lang"
 	"github.com/spf13/cobra"
 )
 

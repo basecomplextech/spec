@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sideblock/library/buffer"
+	"github.com/epochtimeout/basekit/buffer"
 )
 
 func BenchmarkEncode_Small(b *testing.B) {

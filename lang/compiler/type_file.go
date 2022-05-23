@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sideblock/spec/lang/parser"
+	"github.com/epochtimeout/spec/lang/parser"
 )
 
 type File struct {
