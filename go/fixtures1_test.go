@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/epochtimeout/basekit/u128"
-	"github.com/epochtimeout/basekit/u256"
+	"github.com/epochtimeout/basekit/library/u128"
+	"github.com/epochtimeout/basekit/library/u256"
 )
 
 // Simple

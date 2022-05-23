@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/epochtimeout/basekit/buffer"
+	"github.com/epochtimeout/basekit/system/buffer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

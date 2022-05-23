@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/epochtimeout/basekit/buffer"
+	"github.com/epochtimeout/basekit/system/buffer"
 	spec "github.com/epochtimeout/spec/go"
 )
 

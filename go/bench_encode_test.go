@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/epochtimeout/basekit/buffer"
+	"github.com/epochtimeout/basekit/system/buffer"
 )
 
 func BenchmarkEncode_Small(b *testing.B) {
