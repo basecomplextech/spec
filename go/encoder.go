@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/epochtimeout/basekit/buffer"
-	"github.com/epochtimeout/basekit/u128"
-	"github.com/epochtimeout/basekit/u256"
+	"github.com/epochtimeout/baselibrary/buffer"
+	"github.com/epochtimeout/baselibrary/u128"
+	"github.com/epochtimeout/baselibrary/u256"
 )
 
 var encoderClosed = errors.New("operation on a closed encoder")

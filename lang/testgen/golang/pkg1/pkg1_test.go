@@ -3,9 +3,9 @@ package pkg1
 import (
 	"testing"
 
-	"github.com/epochtimeout/basekit/tests"
-	"github.com/epochtimeout/basekit/u128"
-	"github.com/epochtimeout/basekit/u256"
+	"github.com/epochtimeout/baselibrary/tests"
+	"github.com/epochtimeout/baselibrary/u128"
+	"github.com/epochtimeout/baselibrary/u256"
 	spec "github.com/epochtimeout/spec/go"
 	"github.com/epochtimeout/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"

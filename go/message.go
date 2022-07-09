@@ -1,8 +1,8 @@
 package spec
 
 import (
-	"github.com/epochtimeout/basekit/u128"
-	"github.com/epochtimeout/basekit/u256"
+	"github.com/epochtimeout/baselibrary/u128"
+	"github.com/epochtimeout/baselibrary/u256"
 )
 
 type Message struct {
