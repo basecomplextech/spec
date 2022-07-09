@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/epochtimeout/basekit/system/buffer"
+	"github.com/epochtimeout/basekit/buffer"
 )
 
 // encoderState is a big pooled struct which holds an encoding state.

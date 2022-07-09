@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/epochtimeout/basekit/library/encoding/compactint"
-	"github.com/epochtimeout/basekit/library/u128"
-	"github.com/epochtimeout/basekit/library/u256"
-	"github.com/epochtimeout/basekit/system/buffer"
+	"github.com/epochtimeout/basekit/buffer"
+	"github.com/epochtimeout/basekit/encoding/compactint"
+	"github.com/epochtimeout/basekit/u128"
+	"github.com/epochtimeout/basekit/u256"
 )
 
 type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)

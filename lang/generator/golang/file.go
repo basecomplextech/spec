@@ -59,9 +59,9 @@ func (w *writer) file(file *compiler.File) error {
 
 	// imports
 	w.line("import (")
-	w.line(`"github.com/epochtimeout/basekit/system/buffer"`)
-	w.line(`"github.com/epochtimeout/basekit/library/u128"`)
-	w.line(`"github.com/epochtimeout/basekit/library/u256"`)
+	w.line(`"github.com/epochtimeout/basekit/buffer"`)
+	w.line(`"github.com/epochtimeout/basekit/u128"`)
+	w.line(`"github.com/epochtimeout/basekit/u256"`)
 	w.line(`spec "github.com/epochtimeout/spec/go"`)
 
 	for _, imp := range file.Imports {
