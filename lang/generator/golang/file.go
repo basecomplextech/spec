@@ -60,8 +60,8 @@ func (w *writer) file(file *compiler.File) error {
 	// imports
 	w.line("import (")
 	w.line(`"github.com/epochtimeout/baselibrary/buffer"`)
-	w.line(`"github.com/epochtimeout/baselibrary/u128"`)
-	w.line(`"github.com/epochtimeout/baselibrary/u256"`)
+	w.line(`"github.com/epochtimeout/baselibrary/bin128"`)
+	w.line(`"github.com/epochtimeout/baselibrary/bin256"`)
 	w.line(`spec "github.com/epochtimeout/spec/go"`)
 
 	for _, imp := range file.Imports {
@@ -74,8 +74,8 @@ func (w *writer) file(file *compiler.File) error {
 	// empty values for imports
 	w.line(`var (`)
 	w.line(`_ buffer.Buffer = (buffer.Buffer)(nil)`)
-	w.line(`_ u128.U128 = u128.U128{}`)
-	w.line(`_ u256.U256 = u256.U256{}`)
+	w.line(`_ bin128.B128 = bin128.B128{}`)
+	w.line(`_ bin256.B256 = bin256.B256{}`)
 	w.line(`)`)
 
 	// definitions

@@ -155,15 +155,15 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		_, m := decodeFloat64(b)
 		d.values += m - n
 
-	case TypeU128:
-		_, m, err := DecodeU128(b)
+	case TypeB128:
+		_, m, err := DecodeB128(b)
 		if err != nil {
 			return err
 		}
 		d.values += m - n
 
-	case TypeU256:
-		_, m, err := DecodeU256(b)
+	case TypeB256:
+		_, m, err := DecodeB256(b)
 		if err != nil {
 			return err
 		}

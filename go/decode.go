@@ -7,9 +7,9 @@ import (
 	"math"
 	"unsafe"
 
+	"github.com/epochtimeout/baselibrary/bin128"
+	"github.com/epochtimeout/baselibrary/bin256"
 	"github.com/epochtimeout/baselibrary/encoding/compactint"
-	"github.com/epochtimeout/baselibrary/u128"
-	"github.com/epochtimeout/baselibrary/u256"
 )
 
 func DecodeType(b []byte) (Type, int, error) {
@@ -178,16 +178,16 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 	return 0, 0, fmt.Errorf("decode uint64: invalid type, type=%v:%d", typ, typ)
 }
 
-// U128/U256
+// B128/B256
 
-func DecodeU128(b []byte) (_ u128.U128, size int, err error) {
+func DecodeB128(b []byte) (_ bin128.B128, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
-		err = errors.New("decode u128: invalid data")
+		err = errors.New("decode bin128: invalid data")
 		return
 	}
-	if typ != TypeU128 {
-		err = fmt.Errorf("decode u128: invalid type, type=%v:%d", typ, typ)
+	if typ != TypeB128 {
+		err = fmt.Errorf("decode bin128: invalid type, type=%v:%d", typ, typ)
 		return
 	}
 
@@ -196,11 +196,11 @@ func DecodeU128(b []byte) (_ u128.U128, size int, err error) {
 	end := len(b) - n
 
 	if start < 0 {
-		err = errors.New("decode u128: invalid data")
+		err = errors.New("decode bin128: invalid data")
 		return
 	}
 
-	v, err := u128.Parse(b[start:end])
+	v, err := bin128.Parse(b[start:end])
 	if err != nil {
 		return
 	}
@@ -209,14 +209,14 @@ func DecodeU128(b []byte) (_ u128.U128, size int, err error) {
 	return v, size, nil
 }
 
-func DecodeU256(b []byte) (_ u256.U256, size int, err error) {
+func DecodeB256(b []byte) (_ bin256.B256, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
-		err = errors.New("decode u256: invalid data")
+		err = errors.New("decode bin256: invalid data")
 		return
 	}
-	if typ != TypeU256 {
-		err = fmt.Errorf("decode u256: invalid type, type=%v:%d", typ, typ)
+	if typ != TypeB256 {
+		err = fmt.Errorf("decode bin256: invalid type, type=%v:%d", typ, typ)
 		return
 	}
 
@@ -225,11 +225,11 @@ func DecodeU256(b []byte) (_ u256.U256, size int, err error) {
 	end := len(b) - n
 
 	if start < 0 {
-		err = fmt.Errorf("decode u256: invalid data")
+		err = fmt.Errorf("decode bin256: invalid data")
 		return
 	}
 
-	v, err := u256.Parse(b[start:end])
+	v, err := bin256.Parse(b[start:end])
 	if err != nil {
 		return
 	}

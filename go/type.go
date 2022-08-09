@@ -26,8 +26,8 @@ const (
 	TypeUint32 Type = 20
 	TypeUint64 Type = 21
 
-	TypeU128 Type = 30
-	TypeU256 Type = 31
+	TypeB128 Type = 30
+	TypeB256 Type = 31
 
 	TypeFloat32 Type = 40
 	TypeFloat64 Type = 41
@@ -57,8 +57,8 @@ func checkType(t Type) error {
 		TypeUint32,
 		TypeUint64,
 
-		TypeU128,
-		TypeU256,
+		TypeB128,
+		TypeB256,
 
 		TypeFloat32,
 		TypeFloat64,
@@ -98,10 +98,10 @@ func (t Type) String() string {
 	case TypeUint64:
 		return "uint64"
 
-	case TypeU128:
-		return "u128"
-	case TypeU256:
-		return "u256"
+	case TypeB128:
+		return "bin128"
+	case TypeB256:
+		return "bin256"
 
 	case TypeFloat32:
 		return "float32"

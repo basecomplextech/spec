@@ -32,8 +32,8 @@ message TestMessage {
     field_float32 float32   30;
     field_float64 float64   31;
 
-    field_u128    u128      40;
-    field_u256    u256      41;
+    field_bin128    bin128      40;
+    field_bin256    bin256      41;
 
     field_string  string    50;
     field_bytes   bytes     51;
@@ -61,5 +61,5 @@ message TestNode {
 
 struct TestStruct {
     index   int64;
-    hash    u256;
+    hash    bin256;
 }

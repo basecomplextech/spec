@@ -3,9 +3,9 @@ package pkg1
 import (
 	"testing"
 
+	"github.com/epochtimeout/baselibrary/bin128"
+	"github.com/epochtimeout/baselibrary/bin256"
 	"github.com/epochtimeout/baselibrary/tests"
-	"github.com/epochtimeout/baselibrary/u128"
-	"github.com/epochtimeout/baselibrary/u256"
 	spec "github.com/epochtimeout/spec/go"
 	"github.com/epochtimeout/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
@@ -42,8 +42,8 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	msg.FieldUint32(3)
 	msg.FieldUint64(4)
 
-	msg.FieldU128(u128.FromInt64(1))
-	msg.FieldU256(u256.FromInt64(2))
+	msg.FieldBin128(bin128.FromInt64(1))
+	msg.FieldBin256(bin256.FromInt64(2))
 
 	msg.FieldFloat32(10.0)
 	msg.FieldFloat64(20.0)
