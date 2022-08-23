@@ -1,8 +1,7 @@
 package spec
 
 import (
-	"github.com/epochtimeout/baselibrary/bin128"
-	"github.com/epochtimeout/baselibrary/bin256"
+	"github.com/epochtimeout/baselibrary/bin"
 )
 
 type Message struct {
@@ -209,31 +208,31 @@ func (m Message) GetUint64(tag uint16) uint64 {
 	return v
 }
 
-func (m Message) GetB128(tag uint16) bin128.B128 {
+func (m Message) GetBin128(tag uint16) bin.Bin128 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
-		return bin128.B128{}
+		return bin.Bin128{}
 	case end > int(m.meta.data):
-		return bin128.B128{}
+		return bin.Bin128{}
 	}
 
 	b := m.bytes[:end]
-	v, _, _ := DecodeB128(b)
+	v, _, _ := DecodeBin128(b)
 	return v
 }
 
-func (m Message) GetB256(tag uint16) bin256.B256 {
+func (m Message) GetBin256(tag uint16) bin.Bin256 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
-		return bin256.B256{}
+		return bin.Bin256{}
 	case end > int(m.meta.data):
-		return bin256.B256{}
+		return bin.Bin256{}
 	}
 
 	b := m.bytes[:end]
-	v, _, _ := DecodeB256(b)
+	v, _, _ := DecodeBin256(b)
 	return v
 }
 

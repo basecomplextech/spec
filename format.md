@@ -143,8 +143,8 @@ const {
 	typeUint32 type = 20
 	typeUint64 type = 21
 
-	typeB128 type = 30
-	typeB256 type = 31
+	typeBin128 type = 30
+	typeBin256 type = 31
 
 	typeFloat32 type = 40
 	typeFloat64 type = 41

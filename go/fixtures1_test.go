@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/epochtimeout/baselibrary/bin128"
-	"github.com/epochtimeout/baselibrary/bin256"
+	"github.com/epochtimeout/baselibrary/bin"
 )
 
 // Simple
@@ -61,8 +60,8 @@ type TestObject struct {
 	Uint32 uint32 `tag:"20"`
 	Uint64 uint64 `tag:"21"`
 
-	B128 bin128.B128 `tag:"24"`
-	B256 bin256.B256 `tag:"25"`
+	Bin128 bin.Bin128 `tag:"24"`
+	Bin256 bin.Bin256 `tag:"25"`
 
 	Float32 float32 `tag:"30"`
 	Float64 float64 `tag:"31"`
@@ -139,8 +138,8 @@ func (m *TestObject) Decode(b []byte) error {
 	m.Uint64 = msg.Uint64()
 
 	// bin128/bin256:24-25
-	m.B128 = msg.B128()
-	m.B256 = msg.B256()
+	m.Bin128 = msg.Bin128()
+	m.Bin256 = msg.Bin256()
 
 	// float:30-31
 	m.Float32 = msg.Float32()
@@ -216,8 +215,8 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 	b.Uint32(m.Uint32)
 	b.Uint64(m.Uint64)
 
-	b.B128(m.B128)
-	b.B256(m.B256)
+	b.Bin128(m.Bin128)
+	b.Bin256(m.Bin256)
 
 	b.Float32(m.Float32)
 	b.Float64(m.Float64)

@@ -47,10 +47,10 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 	case TypeUint64:
 		_, n, err = DecodeUint64(b)
 
-	case TypeB128:
-		_, n, err = DecodeB128(b)
-	case TypeB256:
-		_, n, err = DecodeB256(b)
+	case TypeBin128:
+		_, n, err = DecodeBin128(b)
+	case TypeBin256:
+		_, n, err = DecodeBin256(b)
 
 	case TypeFloat32:
 		_, n, err = DecodeFloat32(b)

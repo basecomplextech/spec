@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/epochtimeout/baselibrary/bin128"
-	"github.com/epochtimeout/baselibrary/bin256"
+	"github.com/epochtimeout/baselibrary/bin"
 	"github.com/epochtimeout/baselibrary/buffer"
 )
 
@@ -197,27 +196,27 @@ func (e *Encoder) Uint64(v uint64) error {
 	return e.setData(start, end)
 }
 
-// B128/B256
+// Bin128/Bin256
 
-func (e *Encoder) B128(v bin128.B128) error {
+func (e *Encoder) Bin128(v bin.Bin128) error {
 	if e.err != nil {
 		return e.err
 	}
 
 	start := e.buf.Len()
-	EncodeB128(e.buf, v)
+	EncodeBin128(e.buf, v)
 	end := e.buf.Len()
 
 	return e.setData(start, end)
 }
 
-func (e *Encoder) B256(v bin256.B256) error {
+func (e *Encoder) Bin256(v bin.Bin256) error {
 	if e.err != nil {
 		return e.err
 	}
 
 	start := e.buf.Len()
-	EncodeB256(e.buf, v)
+	EncodeBin256(e.buf, v)
 	end := e.buf.Len()
 
 	return e.setData(start, end)

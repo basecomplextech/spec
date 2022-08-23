@@ -1,8 +1,7 @@
 package spec
 
 import (
-	"github.com/epochtimeout/baselibrary/bin128"
-	"github.com/epochtimeout/baselibrary/bin256"
+	"github.com/epochtimeout/baselibrary/bin"
 	"github.com/epochtimeout/baselibrary/buffer"
 )
 
@@ -49,19 +48,19 @@ func BuildTestMessageEncoder(e *Encoder) (result TestMessageBuilder, err error) 
 	return
 }
 
-func (m TestMessage) Bool() bool        { return m.msg.GetBool(1) }
-func (m TestMessage) Byte() byte        { return m.msg.GetByte(2) }
-func (m TestMessage) Int32() int32      { return m.msg.GetInt32(10) }
-func (m TestMessage) Int64() int64      { return m.msg.GetInt64(11) }
-func (m TestMessage) Uint32() uint32    { return m.msg.GetUint32(20) }
-func (m TestMessage) Uint64() uint64    { return m.msg.GetUint64(21) }
-func (m TestMessage) B128() bin128.B128 { return m.msg.GetB128(22) }
-func (m TestMessage) B256() bin256.B256 { return m.msg.GetB256(23) }
-func (m TestMessage) Float32() float32  { return m.msg.GetFloat32(30) }
-func (m TestMessage) Float64() float64  { return m.msg.GetFloat64(31) }
-func (m TestMessage) String() string    { return m.msg.GetString(40) }
-func (m TestMessage) Bytes() []byte     { return m.msg.GetBytes(41) }
-func (m TestMessage) Unwrap() Message   { return m.msg }
+func (m TestMessage) Bool() bool         { return m.msg.GetBool(1) }
+func (m TestMessage) Byte() byte         { return m.msg.GetByte(2) }
+func (m TestMessage) Int32() int32       { return m.msg.GetInt32(10) }
+func (m TestMessage) Int64() int64       { return m.msg.GetInt64(11) }
+func (m TestMessage) Uint32() uint32     { return m.msg.GetUint32(20) }
+func (m TestMessage) Uint64() uint64     { return m.msg.GetUint64(21) }
+func (m TestMessage) Bin128() bin.Bin128 { return m.msg.GetBin128(22) }
+func (m TestMessage) Bin256() bin.Bin256 { return m.msg.GetBin256(23) }
+func (m TestMessage) Float32() float32   { return m.msg.GetFloat32(30) }
+func (m TestMessage) Float64() float64   { return m.msg.GetFloat64(31) }
+func (m TestMessage) String() string     { return m.msg.GetString(40) }
+func (m TestMessage) Bytes() []byte      { return m.msg.GetBytes(41) }
+func (m TestMessage) Unwrap() Message    { return m.msg }
 
 func (m TestMessage) Submessage() TestSubmessage {
 	b := m.msg.Field(50)
@@ -128,13 +127,13 @@ func (b TestMessageBuilder) Uint64(v uint64) error {
 	return b.e.Field(21)
 }
 
-func (b TestMessageBuilder) B128(v bin128.B128) error {
-	b.e.B128(v)
+func (b TestMessageBuilder) Bin128(v bin.Bin128) error {
+	b.e.Bin128(v)
 	return b.e.Field(22)
 }
 
-func (b TestMessageBuilder) B256(v bin256.B256) error {
-	b.e.B256(v)
+func (b TestMessageBuilder) Bin256(v bin.Bin256) error {
+	b.e.Bin256(v)
 	return b.e.Field(23)
 }
 
