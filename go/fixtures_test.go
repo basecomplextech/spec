@@ -48,19 +48,19 @@ func BuildTestMessageEncoder(e *Encoder) (result TestMessageBuilder, err error) 
 	return
 }
 
-func (m TestMessage) Bool() bool         { return m.msg.GetBool(1) }
-func (m TestMessage) Byte() byte         { return m.msg.GetByte(2) }
-func (m TestMessage) Int32() int32       { return m.msg.GetInt32(10) }
-func (m TestMessage) Int64() int64       { return m.msg.GetInt64(11) }
-func (m TestMessage) Uint32() uint32     { return m.msg.GetUint32(20) }
-func (m TestMessage) Uint64() uint64     { return m.msg.GetUint64(21) }
+func (m TestMessage) Bool() bool           { return m.msg.GetBool(1) }
+func (m TestMessage) Byte() byte           { return m.msg.GetByte(2) }
+func (m TestMessage) Int32() int32         { return m.msg.GetInt32(10) }
+func (m TestMessage) Int64() int64         { return m.msg.GetInt64(11) }
+func (m TestMessage) Uint32() uint32       { return m.msg.GetUint32(20) }
+func (m TestMessage) Uint64() uint64       { return m.msg.GetUint64(21) }
 func (m TestMessage) Bin128() types.Bin128 { return m.msg.GetBin128(22) }
 func (m TestMessage) Bin256() types.Bin256 { return m.msg.GetBin256(23) }
-func (m TestMessage) Float32() float32   { return m.msg.GetFloat32(30) }
-func (m TestMessage) Float64() float64   { return m.msg.GetFloat64(31) }
-func (m TestMessage) String() string     { return m.msg.GetString(40) }
-func (m TestMessage) Bytes() []byte      { return m.msg.GetBytes(41) }
-func (m TestMessage) Unwrap() Message    { return m.msg }
+func (m TestMessage) Float32() float32     { return m.msg.GetFloat32(30) }
+func (m TestMessage) Float64() float64     { return m.msg.GetFloat64(31) }
+func (m TestMessage) String() string       { return m.msg.GetString(40) }
+func (m TestMessage) Bytes() []byte        { return m.msg.GetBytes(41) }
+func (m TestMessage) Unwrap() Message      { return m.msg }
 
 func (m TestMessage) Submessage() TestSubmessage {
 	b := m.msg.Field(50)
@@ -69,17 +69,17 @@ func (m TestMessage) Submessage() TestSubmessage {
 
 func (m TestMessage) List() List[int64] {
 	b := m.msg.Field(51)
-	return GetList(b, DecodeInt64)
+	return NewList(b, DecodeInt64)
 }
 
 func (m TestMessage) Messages() List[TestElement] {
 	b := m.msg.Field(52)
-	return GetList(b, DecodeTestElement)
+	return NewList(b, DecodeTestElement)
 }
 
 func (m TestMessage) Strings() List[string] {
 	b := m.msg.Field(53)
-	return GetList(b, DecodeString)
+	return NewList(b, DecodeString)
 }
 
 func (m TestMessage) Struct() TestStruct {
@@ -162,19 +162,19 @@ func (b TestMessageBuilder) Submessage() (TestSubmessageBuilder, error) {
 	return BuildTestSubmessageEncoder(b.e)
 }
 
-func (b TestMessageBuilder) List() ListBuilder[int64] {
+func (b TestMessageBuilder) List() ValueListBuilder[int64] {
 	b.e.BeginField(51)
-	return BuildList(b.e, EncodeInt64)
+	return NewValueListBuilder(b.e, EncodeInt64)
 }
 
-func (b TestMessageBuilder) Messages() NestedListBuilder[TestElementBuilder] {
+func (b TestMessageBuilder) Messages() ListBuilder[TestElementBuilder] {
 	b.e.BeginField(52)
-	return BuildNestedList(b.e, BuildTestElementEncoder)
+	return NewListBuilder(b.e, BuildTestElementEncoder)
 }
 
-func (b TestMessageBuilder) Strings() ListBuilder[string] {
+func (b TestMessageBuilder) Strings() ValueListBuilder[string] {
 	b.e.BeginField(53)
-	return BuildList(b.e, EncodeString)
+	return NewValueListBuilder(b.e, EncodeString)
 }
 
 func (b TestMessageBuilder) Struct(v TestStruct) error {

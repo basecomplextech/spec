@@ -8,8 +8,8 @@ type List[T any] struct {
 	decode func(b []byte) (T, int, error)
 }
 
-// GetList decodes and returns a list without recursive validation, or an empty list on error.
-func GetList[T any](b []byte, decode func([]byte) (T, int, error)) List[T] {
+// NewList decodes and returns a list without recursive validation, or an empty list on error.
+func NewList[T any](b []byte, decode func([]byte) (T, int, error)) List[T] {
 	meta, n, err := decodeListMeta(b)
 	if err != nil {
 		return List[T]{}
@@ -93,18 +93,18 @@ func (l List[T]) Values() []T {
 	return result
 }
 
-// Builder
+// List builder
 
-// ListBuilder builds a list of values.
-type ListBuilder[T any] struct {
-	e      *Encoder
-	encode EncodeFunc[T]
+// NewListBuilder begins and returns a new list.
+func NewListBuilder[T any](e *Encoder, next func(e *Encoder) T) (_ ListBuilder[T]) {
+	e.BeginList()
+	return ListBuilder[T]{e: e, next: next}
 }
 
-// BuildList begins and returns a new value list builder.
-func BuildList[T any](e *Encoder, encode EncodeFunc[T]) (_ ListBuilder[T]) {
-	e.BeginList()
-	return ListBuilder[T]{e: e, encode: encode}
+// Add adds and returns the next element.
+func (b ListBuilder[T]) Add() (_ T) {
+	b.e.BeginElement()
+	return b.next(b.e)
 }
 
 // Len returns the number of elements in the builder.
@@ -112,12 +112,9 @@ func (b ListBuilder[T]) Len() int {
 	return b.e.ListLen()
 }
 
-// Next encodes the next element.
-func (b ListBuilder[T]) Next(value T) error {
-	if err := EncodeValue(b.e, value, b.encode); err != nil {
-		return err
-	}
-	return b.e.Element()
+// Err returns the current build error.
+func (b ListBuilder[T]) Err() error {
+	return b.e.err
 }
 
 // End ends the list.
@@ -126,36 +123,41 @@ func (b ListBuilder[T]) End() error {
 	return err
 }
 
-// NestedListBuilder builds a list using nested element builder.
-type NestedListBuilder[T any] struct {
-	e    *Encoder
-	next func(e *Encoder) T
+// Value list builder
+
+// ValueListBuilder builds a list of values.
+type ValueListBuilder[T any] struct {
+	e      *Encoder
+	encode EncodeFunc[T]
 }
 
-// BuildNestedList begins and returns a new list.
-func BuildNestedList[T any](e *Encoder, next func(e *Encoder) T) (_ NestedListBuilder[T]) {
+// NewValueListBuilder begins and returns a new value list builder.
+func NewValueListBuilder[T any](e *Encoder, encode EncodeFunc[T]) (_ ValueListBuilder[T]) {
 	e.BeginList()
-	return NestedListBuilder[T]{e: e, next: next}
+	return ValueListBuilder[T]{e: e, encode: encode}
 }
 
-// Err returns the current build error.
-func (b NestedListBuilder[T]) Err() error {
-	return b.e.err
+// Add adds the next element.
+func (b ValueListBuilder[T]) Add(value T) error {
+	if err := EncodeValue(b.e, value, b.encode); err != nil {
+		return err
+	}
+	return b.e.Element()
 }
 
 // Len returns the number of elements in the builder.
-func (b NestedListBuilder[T]) Len() int {
+func (b ValueListBuilder[T]) Len() int {
 	return b.e.ListLen()
 }
 
-// Next returns the next element builder.
-func (b NestedListBuilder[T]) Next() (_ T) {
-	b.e.BeginElement()
-	return b.next(b.e)
-}
-
 // End ends the list.
-func (b NestedListBuilder[T]) End() error {
+func (b ValueListBuilder[T]) End() error {
 	_, err := b.e.End()
 	return err
+}
+
+// ListBuilder builds a list using nested element builder.
+type ListBuilder[T any] struct {
+	e    *Encoder
+	next func(e *Encoder) T
 }

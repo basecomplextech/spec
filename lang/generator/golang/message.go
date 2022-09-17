@@ -8,7 +8,7 @@ func (w *writer) message(def *compiler.Definition) error {
 	if err := w.messageDef(def); err != nil {
 		return err
 	}
-	if err := w.getMessage(def); err != nil {
+	if err := w.newMessage(def); err != nil {
 		return err
 	}
 	if err := w.decodeMessage(def); err != nil {
@@ -37,8 +37,8 @@ func (w *writer) messageDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) getMessage(def *compiler.Definition) error {
-	w.linef(`func Get%v(b []byte) %v {`, def.Name, def.Name)
+func (w *writer) newMessage(def *compiler.Definition) error {
+	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`msg := spec.GetMessage(b)`)
 	w.linef(`return %v{msg}`, def.Name)
 	w.linef(`}`)
@@ -141,18 +141,18 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 
 		w.linef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
 		w.linef(`b := m.msg.Field(%d)`, tag)
-		w.linef(`return spec.GetList(b, %v)`, decodeFunc)
+		w.linef(`return spec.NewList(b, %v)`, decodeFunc)
 		w.linef(`}`)
 		w.line()
 
 	case compiler.KindEnum,
 		compiler.KindMessage,
 		compiler.KindStruct:
-		getFunc := typeGetFunc(field.Type)
+		newFunc := typeNewFunc(field.Type)
 
 		w.linef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
 		w.linef(`b := m.msg.Field(%d)`, tag)
-		w.linef(`return %v(b)`, getFunc)
+		w.linef(`return %v(b)`, newFunc)
 		w.linef(`}`)
 		w.line()
 	}
@@ -176,7 +176,7 @@ func (w *writer) messageBuilder(def *compiler.Definition) error {
 	if err := w.messageBuilderDef(def); err != nil {
 		return err
 	}
-	if err := w.buildMessage(def); err != nil {
+	if err := w.newMessageBuilder(def); err != nil {
 		return err
 	}
 	if err := w.messageBuilderBuild(def); err != nil {
@@ -198,22 +198,22 @@ func (w *writer) messageBuilderDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) buildMessage(def *compiler.Definition) error {
-	w.linef(`func Build%v() %vBuilder {`, def.Name, def.Name)
+func (w *writer) newMessageBuilder(def *compiler.Definition) error {
+	w.linef(`func New%vBuilder() %vBuilder {`, def.Name, def.Name)
 	w.linef(`e := spec.NewEncoder()`)
 	w.linef(`e.BeginMessage()`)
 	w.linef(`return %vBuilder{e}`, def.Name)
 	w.linef(`}`)
 	w.line()
 
-	w.linef(`func Build%vBuffer(b buffer.Buffer) %vBuilder {`, def.Name, def.Name)
+	w.linef(`func New%vBuilderBuffer(b buffer.Buffer) %vBuilder {`, def.Name, def.Name)
 	w.linef(`e := spec.NewEncoderBuffer(b)`)
 	w.linef(`e.BeginMessage()`)
 	w.linef(`return %vBuilder{e}`, def.Name)
 	w.linef(`}`)
 	w.line()
 
-	w.linef(`func Build%vEncoder(e *spec.Encoder) %vBuilder {`, def.Name, def.Name)
+	w.linef(`func New%vBuilderEncoder(e *spec.Encoder) %vBuilder {`, def.Name, def.Name)
 	w.linef(`e.BeginMessage()`)
 	w.linef(`return %vBuilder{e}`, def.Name)
 	w.linef(`}`)
@@ -233,7 +233,7 @@ func (w *writer) messageBuilderBuild(def *compiler.Definition) error {
 	w.linef(`if err != nil {
 		return
 	}`)
-	w.linef(`return Get%v(bytes), nil`, def.Name)
+	w.linef(`return New%v(bytes), nil`, def.Name)
 	w.linef(`}`)
 	w.line()
 
@@ -332,10 +332,10 @@ func (w *writer) messageBuilderField(def *compiler.Definition, field *compiler.M
 
 	case compiler.KindMessage:
 		builder := typeBuilder(field.Type)
-		buildMessage := typeEncodeFunc(field.Type)
+		newMessageBuilder := typeEncodeFunc(field.Type)
 		w.linef(`func (b %vBuilder) %v() %v {`, def.Name, fname, builder)
 		w.linef(`b.e.BeginField(%d)`, tag)
-		w.linef(`return %v(b.e)`, buildMessage)
+		w.linef(`return %v(b.e)`, newMessageBuilder)
 		w.linef(`}`)
 		w.line()
 

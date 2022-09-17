@@ -240,7 +240,7 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 	if len(m.List) > 0 {
 		list := b.List()
 		for _, value := range m.List {
-			if err := list.Next(value); err != nil {
+			if err := list.Add(value); err != nil {
 				return err
 			}
 		}
@@ -252,7 +252,7 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 	if len(m.Messages) > 0 {
 		list := b.Messages()
 		for _, msg := range m.Messages {
-			next := list.Next()
+			next := list.Add()
 			if err := msg.Encode(next); err != nil {
 				return err
 			}
@@ -268,7 +268,7 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 	if len(m.Strings) > 0 {
 		list := b.Strings()
 		for _, v := range m.Strings {
-			list.Next(v)
+			list.Add(v)
 		}
 		if err := list.End(); err != nil {
 			return err

@@ -13,7 +13,7 @@ func (w *writer) enum(def *compiler.Definition) error {
 	if err := w.enumValues(def); err != nil {
 		return err
 	}
-	if err := w.getEnum(def); err != nil {
+	if err := w.newEnum(def); err != nil {
 		return err
 	}
 	if err := w.decodeEnum(def); err != nil {
@@ -50,9 +50,9 @@ func (w *writer) enumValues(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) getEnum(def *compiler.Definition) error {
+func (w *writer) newEnum(def *compiler.Definition) error {
 	name := def.Name
-	w.linef(`func Get%v(b []byte) %v {`, name, name)
+	w.linef(`func New%v(b []byte) %v {`, name, name)
 	w.linef(`v, _, _ := spec.DecodeInt32(b)`)
 	w.linef(`return %v(v)`, name)
 	w.linef(`}`)

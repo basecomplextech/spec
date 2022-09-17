@@ -31,7 +31,7 @@ func testMessage(t tests.T) Message {
 }
 
 func testEncode(t tests.T, e *spec.Encoder) Message {
-	msg := BuildMessageEncoder(e)
+	msg := NewMessageBuilderEncoder(e)
 
 	msg.FieldBool(true)
 	msg.FieldEnum(EnumOne)
@@ -82,7 +82,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	{
 		list := msg.ListInts()
 		for _, x := range []int64{1, 2, 3} {
-			list.Next(x)
+			list.Add(x)
 		}
 		if err := list.End(); err != nil {
 			t.Fatal(err)
@@ -92,7 +92,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	{
 		list := msg.ListStrings()
 		for _, x := range []string{"a", "b", "c"} {
-			list.Next(x)
+			list.Add(x)
 		}
 		if err := list.End(); err != nil {
 			t.Fatal(err)
@@ -102,7 +102,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	{
 		list := msg.ListMessages()
 		for _, x := range []string{"1", "2"} {
-			elem := list.Next()
+			elem := list.Add()
 			elem.Value(x)
 			elem.End()
 		}
@@ -114,7 +114,7 @@ func testEncode(t tests.T, e *spec.Encoder) Message {
 	{
 		list := msg.ListImported()
 		for _, x := range []string{"a", "b"} {
-			elem := list.Next()
+			elem := list.Add()
 			elem.Key(x)
 			elem.End()
 		}

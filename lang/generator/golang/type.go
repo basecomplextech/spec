@@ -56,7 +56,7 @@ func typeName(typ *compiler.Type) string {
 	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
 }
 
-func typeGetFunc(typ *compiler.Type) string {
+func typeNewFunc(typ *compiler.Type) string {
 	kind := typ.Kind
 
 	switch kind {
@@ -68,9 +68,9 @@ func typeGetFunc(typ *compiler.Type) string {
 		compiler.KindMessage,
 		compiler.KindStruct:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Get%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.New%v", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Get%v", typ.Name)
+		return fmt.Sprintf("New%v", typ.Name)
 	}
 	return ""
 }
@@ -167,15 +167,15 @@ func typeEncodeFunc(typ *compiler.Type) string {
 	case compiler.KindList:
 		elem := typ.Element
 		if elem.Kind == compiler.KindMessage {
-			return fmt.Sprintf("spec.BuildNestedList")
+			return fmt.Sprintf("spec.NewListBuilder")
 		}
-		return fmt.Sprintf("spec.BuildList")
+		return fmt.Sprintf("spec.NewValueListBuilder")
 
 	case compiler.KindMessage:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Build%vEncoder", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.New%vBuilderEncoder", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Build%vEncoder", typ.Name)
+		return fmt.Sprintf("New%vBuilderEncoder", typ.Name)
 	}
 
 	return ""
@@ -189,11 +189,11 @@ func typeBuilder(typ *compiler.Type) string {
 		elem := typ.Element
 		if elem.Kind == compiler.KindMessage {
 			encoder := typeBuilder(elem)
-			return fmt.Sprintf("spec.NestedListBuilder[%v]", encoder)
+			return fmt.Sprintf("spec.ListBuilder[%v]", encoder)
 		}
 
 		elemName := typeName(elem)
-		return fmt.Sprintf("spec.ListBuilder[%v]", elemName)
+		return fmt.Sprintf("spec.ValueListBuilder[%v]", elemName)
 
 	case compiler.KindMessage:
 		if typ.Import != nil {

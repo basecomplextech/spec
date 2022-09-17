@@ -10,7 +10,7 @@ func (w *writer) struct_(def *compiler.Definition) error {
 	if err := w.structDef(def); err != nil {
 		return err
 	}
-	if err := w.getStruct(def); err != nil {
+	if err := w.newStruct(def); err != nil {
 		return err
 	}
 	if err := w.decodeStruct(def); err != nil {
@@ -39,8 +39,8 @@ func (w *writer) structDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) getStruct(def *compiler.Definition) error {
-	w.linef(`func Get%v(b []byte) %v {`, def.Name, def.Name)
+func (w *writer) newStruct(def *compiler.Definition) error {
+	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`s, _, _ := Decode%v(b)`, def.Name)
 	w.line(`return s`)
 	w.line(`}`)
