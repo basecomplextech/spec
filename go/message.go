@@ -76,8 +76,8 @@ func (m Message) Bytes() []byte {
 	return m.bytes
 }
 
-// IsEmpty returns true if the message is backed byte an empty byte slice or has no fields.
-func (m Message) IsEmpty() bool {
+// Empty returns true if the message is backed byte an empty byte slice or has no fields.
+func (m Message) Empty() bool {
 	return len(m.bytes) == 0 || m.meta.count() == 0
 }
 
