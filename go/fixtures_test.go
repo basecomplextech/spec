@@ -1,8 +1,8 @@
 package spec
 
 import (
-	"github.com/epochtimeout/baselibrary/bin"
 	"github.com/epochtimeout/baselibrary/buffer"
+	"github.com/epochtimeout/baselibrary/types"
 )
 
 // TestMessage
@@ -54,8 +54,8 @@ func (m TestMessage) Int32() int32       { return m.msg.GetInt32(10) }
 func (m TestMessage) Int64() int64       { return m.msg.GetInt64(11) }
 func (m TestMessage) Uint32() uint32     { return m.msg.GetUint32(20) }
 func (m TestMessage) Uint64() uint64     { return m.msg.GetUint64(21) }
-func (m TestMessage) Bin128() bin.Bin128 { return m.msg.GetBin128(22) }
-func (m TestMessage) Bin256() bin.Bin256 { return m.msg.GetBin256(23) }
+func (m TestMessage) Bin128() types.Bin128 { return m.msg.GetBin128(22) }
+func (m TestMessage) Bin256() types.Bin256 { return m.msg.GetBin256(23) }
 func (m TestMessage) Float32() float32   { return m.msg.GetFloat32(30) }
 func (m TestMessage) Float64() float64   { return m.msg.GetFloat64(31) }
 func (m TestMessage) String() string     { return m.msg.GetString(40) }
@@ -127,12 +127,12 @@ func (b TestMessageBuilder) Uint64(v uint64) error {
 	return b.e.Field(21)
 }
 
-func (b TestMessageBuilder) Bin128(v bin.Bin128) error {
+func (b TestMessageBuilder) Bin128(v types.Bin128) error {
 	b.e.Bin128(v)
 	return b.e.Field(22)
 }
 
-func (b TestMessageBuilder) Bin256(v bin.Bin256) error {
+func (b TestMessageBuilder) Bin256(v types.Bin256) error {
 	b.e.Bin256(v)
 	return b.e.Field(23)
 }

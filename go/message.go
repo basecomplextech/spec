@@ -1,8 +1,6 @@
 package spec
 
-import (
-	"github.com/epochtimeout/baselibrary/bin"
-)
+import "github.com/epochtimeout/baselibrary/types"
 
 type Message struct {
 	meta  messageMeta
@@ -208,13 +206,13 @@ func (m Message) GetUint64(tag uint16) uint64 {
 	return v
 }
 
-func (m Message) GetBin128(tag uint16) bin.Bin128 {
+func (m Message) GetBin128(tag uint16) types.Bin128 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
-		return bin.Bin128{}
+		return types.Bin128{}
 	case end > int(m.meta.data):
-		return bin.Bin128{}
+		return types.Bin128{}
 	}
 
 	b := m.bytes[:end]
@@ -222,13 +220,13 @@ func (m Message) GetBin128(tag uint16) bin.Bin128 {
 	return v
 }
 
-func (m Message) GetBin256(tag uint16) bin.Bin256 {
+func (m Message) GetBin256(tag uint16) types.Bin256 {
 	end := m.meta.offset(tag)
 	switch {
 	case end < 0:
-		return bin.Bin256{}
+		return types.Bin256{}
 	case end > int(m.meta.data):
-		return bin.Bin256{}
+		return types.Bin256{}
 	}
 
 	b := m.bytes[:end]

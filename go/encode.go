@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/epochtimeout/baselibrary/bin"
 	"github.com/epochtimeout/baselibrary/buffer"
 	"github.com/epochtimeout/baselibrary/encoding/compactint"
+	"github.com/epochtimeout/baselibrary/types"
 )
 
 type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)
@@ -83,14 +83,14 @@ func EncodeUint64(b buffer.Buffer, v uint64) (int, error) {
 
 // Bin128/Bin256
 
-func EncodeBin128(b buffer.Buffer, v bin.Bin128) (int, error) {
+func EncodeBin128(b buffer.Buffer, v types.Bin128) (int, error) {
 	p := b.Grow(17)
 	copy(p, v[:])
 	p[16] = byte(TypeBin128)
 	return 17, nil
 }
 
-func EncodeBin256(b buffer.Buffer, v bin.Bin256) (int, error) {
+func EncodeBin256(b buffer.Buffer, v types.Bin256) (int, error) {
 	p := b.Grow(33)
 	copy(p, v[:])
 	p[32] = byte(TypeBin256)

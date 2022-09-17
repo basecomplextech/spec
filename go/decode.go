@@ -7,8 +7,8 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/epochtimeout/baselibrary/bin"
 	"github.com/epochtimeout/baselibrary/encoding/compactint"
+	"github.com/epochtimeout/baselibrary/types"
 )
 
 func DecodeType(b []byte) (Type, int, error) {
@@ -179,7 +179,7 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 
 // Bin128/Bin256
 
-func DecodeBin128(b []byte) (_ bin.Bin128, size int, err error) {
+func DecodeBin128(b []byte) (_ types.Bin128, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin128: invalid data")
@@ -199,7 +199,7 @@ func DecodeBin128(b []byte) (_ bin.Bin128, size int, err error) {
 		return
 	}
 
-	v, err := bin.Parse128(b[start:end])
+	v, err := types.ParseBin128(b[start:end])
 	if err != nil {
 		return
 	}
@@ -208,7 +208,7 @@ func DecodeBin128(b []byte) (_ bin.Bin128, size int, err error) {
 	return v, size, nil
 }
 
-func DecodeBin256(b []byte) (_ bin.Bin256, size int, err error) {
+func DecodeBin256(b []byte) (_ types.Bin256, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin256: invalid data")
@@ -228,7 +228,7 @@ func DecodeBin256(b []byte) (_ bin.Bin256, size int, err error) {
 		return
 	}
 
-	v, err := bin.Parse256(b[start:end])
+	v, err := types.ParseBin256(b[start:end])
 	if err != nil {
 		return
 	}

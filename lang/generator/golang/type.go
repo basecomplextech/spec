@@ -26,9 +26,9 @@ func typeName(typ *compiler.Type) string {
 		return "uint64"
 
 	case compiler.KindBin128:
-		return "bin.Bin128"
+		return "types.Bin128"
 	case compiler.KindBin256:
-		return "bin.Bin256"
+		return "types.Bin256"
 
 	case compiler.KindFloat32:
 		return "float32"

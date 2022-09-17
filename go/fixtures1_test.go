@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/epochtimeout/baselibrary/bin"
+	"github.com/epochtimeout/baselibrary/types"
 )
 
 // Simple
@@ -60,8 +60,8 @@ type TestObject struct {
 	Uint32 uint32 `tag:"20"`
 	Uint64 uint64 `tag:"21"`
 
-	Bin128 bin.Bin128 `tag:"24"`
-	Bin256 bin.Bin256 `tag:"25"`
+	Bin128 types.Bin128 `tag:"24"`
+	Bin256 types.Bin256 `tag:"25"`
 
 	Float32 float32 `tag:"30"`
 	Float64 float64 `tag:"31"`

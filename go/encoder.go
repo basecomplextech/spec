@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/epochtimeout/baselibrary/bin"
 	"github.com/epochtimeout/baselibrary/buffer"
+	"github.com/epochtimeout/baselibrary/types"
 )
 
 var encoderClosed = errors.New("operation on a closed encoder")
@@ -198,7 +198,7 @@ func (e *Encoder) Uint64(v uint64) error {
 
 // Bin128/Bin256
 
-func (e *Encoder) Bin128(v bin.Bin128) error {
+func (e *Encoder) Bin128(v types.Bin128) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -210,7 +210,7 @@ func (e *Encoder) Bin128(v bin.Bin128) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Bin256(v bin.Bin256) error {
+func (e *Encoder) Bin256(v types.Bin256) error {
 	if e.err != nil {
 		return e.err
 	}
