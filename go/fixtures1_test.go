@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/epochtimeout/baselibrary/types"
+	"github.com/complex1tech/baselibrary/types"
 )
 
 // Simple

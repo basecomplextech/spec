@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/epochtimeout/spec/lang/compiler"
+	"github.com/complex1tech/spec/lang/compiler"
 )
 
 // typeName returns a type name.

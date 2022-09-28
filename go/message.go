@@ -1,6 +1,6 @@
 package spec
 
-import "github.com/epochtimeout/baselibrary/types"
+import "github.com/complex1tech/baselibrary/types"
 
 type Message struct {
 	meta  messageMeta

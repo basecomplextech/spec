@@ -1,8 +1,8 @@
 package lang
 
 import (
-	"github.com/epochtimeout/spec/lang/compiler"
-	"github.com/epochtimeout/spec/lang/generator"
+	"github.com/complex1tech/spec/lang/compiler"
+	"github.com/complex1tech/spec/lang/generator"
 )
 
 type Spec struct{}

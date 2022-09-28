@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/epochtimeout/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/parser"
 )
 
 type Kind int

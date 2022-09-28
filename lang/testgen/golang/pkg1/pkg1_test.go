@@ -3,10 +3,10 @@ package pkg1
 import (
 	"testing"
 
-	"github.com/epochtimeout/baselibrary/tests"
-	"github.com/epochtimeout/baselibrary/types"
-	spec "github.com/epochtimeout/spec/go"
-	"github.com/epochtimeout/spec/lang/testgen/golang/sub/pkg3"
+	"github.com/complex1tech/baselibrary/tests"
+	"github.com/complex1tech/baselibrary/types"
+	spec "github.com/complex1tech/spec/go"
+	"github.com/complex1tech/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
 )
 

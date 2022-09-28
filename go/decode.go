@@ -7,8 +7,8 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/epochtimeout/baselibrary/encoding/compactint"
-	"github.com/epochtimeout/baselibrary/types"
+	"github.com/complex1tech/baselibrary/encoding/compactint"
+	"github.com/complex1tech/baselibrary/types"
 )
 
 func DecodeType(b []byte) (Type, int, error) {

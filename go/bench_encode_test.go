@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/epochtimeout/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/buffer"
 )
 
 func BenchmarkEncode_Small(b *testing.B) {

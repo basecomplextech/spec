@@ -3,7 +3,7 @@ package spec
 import (
 	"testing"
 
-	"github.com/epochtimeout/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/buffer"
 )
 
 func BenchmarkFieldTable_field(b *testing.B) {

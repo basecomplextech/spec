@@ -1,9 +1,9 @@
-module github.com/epochtimeout/spec
+module github.com/complex1tech/spec
 
 go 1.18
 
 require (
-	github.com/epochtimeout/baselibrary v0.0.0-20220709125527-983fd7799cd0
+	github.com/complex1tech/baselibrary v0.0.0-20220928082016-62e9599a3c82
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 )

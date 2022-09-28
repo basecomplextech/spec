@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/epochtimeout/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/parser"
 )
 
 type Struct struct {

@@ -3,7 +3,7 @@ package golang
 import (
 	"strings"
 
-	"github.com/epochtimeout/spec/lang/compiler"
+	"github.com/complex1tech/spec/lang/compiler"
 )
 
 func (w *writer) enum(def *compiler.Definition) error {

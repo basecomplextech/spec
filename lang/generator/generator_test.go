@@ -3,7 +3,7 @@ package generator
 import (
 	"testing"
 
-	"github.com/epochtimeout/spec/lang/compiler"
+	"github.com/complex1tech/spec/lang/compiler"
 )
 
 func TestGenerator_Golang__should_generate_go_package(t *testing.T) {

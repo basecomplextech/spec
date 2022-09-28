@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/epochtimeout/spec/lang/compiler"
+	"github.com/complex1tech/spec/lang/compiler"
 )
 
 func (w *writer) message(def *compiler.Definition) error {

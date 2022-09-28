@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/epochtimeout/baselibrary/buffer"
-	"github.com/epochtimeout/baselibrary/encoding/compactint"
-	"github.com/epochtimeout/baselibrary/types"
+	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/encoding/compactint"
+	"github.com/complex1tech/baselibrary/types"
 )
 
 type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)

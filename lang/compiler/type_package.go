@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/epochtimeout/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/parser"
 )
 
 type PackageState string

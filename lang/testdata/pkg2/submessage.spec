@@ -3,7 +3,7 @@ import (
 )
 
 options (
-    go_package="github.com/epochtimeout/spec/lang/testgen/golang/pkg2"
+    go_package="github.com/complex1tech/spec/lang/testgen/golang/pkg2"
 )
 
 message Submessage {

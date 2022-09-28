@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/epochtimeout/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/buffer"
 )
 
 // encoderState is a big pooled struct which holds an encoding state.
@@ -164,7 +164,6 @@ func (s *stack) pushField(start int, tag uint16) {
 //	+-------------------+-------------------+-------------------+
 //	| e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 |
 //	+-------------------+-------------------+-------------------+
-//
 type listBuffer struct {
 	stack []listElement
 }
@@ -205,7 +204,6 @@ func (b *listBuffer) pop(offset int) []listElement {
 //	+-------------------+-------------------+-------------------+
 //	| f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 |
 //	+-------------------+-------------------+-------------------+
-//
 type messageBuffer struct {
 	stack []messageField
 }

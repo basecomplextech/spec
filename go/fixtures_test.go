@@ -1,8 +1,8 @@
 package spec
 
 import (
-	"github.com/epochtimeout/baselibrary/buffer"
-	"github.com/epochtimeout/baselibrary/types"
+	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/types"
 )
 
 // TestMessage
