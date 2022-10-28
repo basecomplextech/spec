@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -170,6 +171,50 @@ func TestDecodeFloat64__should_decode_float64_from_float32(t *testing.T) {
 
 	assert.Equal(t, n, b.Len())
 	assert.Equal(t, float64(math.MaxFloat32), v)
+}
+
+// Bin64/128/256
+
+func TestDecodeBin64__should_decode_bin64(t *testing.T) {
+	b := buffer.New()
+	v := types.RandomBin64()
+	EncodeBin64(b, v)
+
+	v1, n, err := DecodeBin64(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, v, v1)
+}
+
+func TestDecodeBin128__should_decode_bin128(t *testing.T) {
+	b := buffer.New()
+	v := types.RandomBin128()
+	EncodeBin128(b, v)
+
+	v1, n, err := DecodeBin128(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, v, v1)
+}
+
+func TestDecodeBin256__should_decode_bin256(t *testing.T) {
+	b := buffer.New()
+	v := types.RandomBin256()
+	EncodeBin256(b, v)
+
+	v1, n, err := DecodeBin256(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, v, v1)
 }
 
 // Bytes

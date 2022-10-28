@@ -196,7 +196,19 @@ func (e *Encoder) Uint64(v uint64) error {
 	return e.setData(start, end)
 }
 
-// Bin128/Bin256
+// Bin64/128/256
+
+func (e *Encoder) Bin64(v types.Bin64) error {
+	if e.err != nil {
+		return e.err
+	}
+
+	start := e.buf.Len()
+	EncodeBin64(e.buf, v)
+	end := e.buf.Len()
+
+	return e.setData(start, end)
+}
 
 func (e *Encoder) Bin128(v types.Bin128) error {
 	if e.err != nil {

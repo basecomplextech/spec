@@ -81,7 +81,14 @@ func EncodeUint64(b buffer.Buffer, v uint64) (int, error) {
 	return n + 1, nil
 }
 
-// Bin128/Bin256
+// Bin64/128/256
+
+func EncodeBin64(b buffer.Buffer, v types.Bin64) (int, error) {
+	p := b.Grow(9)
+	copy(p, v[:])
+	p[8] = byte(TypeBin64)
+	return 9, nil
+}
 
 func EncodeBin128(b buffer.Buffer, v types.Bin128) (int, error) {
 	p := b.Grow(17)

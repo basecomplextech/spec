@@ -206,6 +206,20 @@ func (m Message) GetUint64(tag uint16) uint64 {
 	return v
 }
 
+func (m Message) GetBin64(tag uint16) types.Bin64 {
+	end := m.meta.offset(tag)
+	switch {
+	case end < 0:
+		return types.Bin64{}
+	case end > int(m.meta.data):
+		return types.Bin64{}
+	}
+
+	b := m.bytes[:end]
+	v, _, _ := DecodeBin64(b)
+	return v
+}
+
 func (m Message) GetBin128(tag uint16) types.Bin128 {
 	end := m.meta.offset(tag)
 	switch {

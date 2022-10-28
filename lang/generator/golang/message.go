@@ -96,6 +96,8 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		case compiler.KindUint64:
 			w.writef(`return m.msg.GetUint64(%d)`, tag)
 
+		case compiler.KindBin64:
+			w.writef(`return m.msg.GetBin64(%d)`, tag)
 		case compiler.KindBin128:
 			w.writef(`return m.msg.GetBin128(%d)`, tag)
 		case compiler.KindBin256:
@@ -288,6 +290,8 @@ func (w *writer) messageBuilderField(def *compiler.Definition, field *compiler.M
 		case compiler.KindUint64:
 			w.line(`b.e.Uint64(v)`)
 
+		case compiler.KindBin64:
+			w.line(`b.e.Bin64(v)`)
 		case compiler.KindBin128:
 			w.line(`b.e.Bin128(v)`)
 		case compiler.KindBin256:

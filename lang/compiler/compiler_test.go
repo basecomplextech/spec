@@ -233,7 +233,7 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 22)
+	assert.Len(t, def.Message.Fields, 23)
 }
 
 func TestCompiler__should_compile_message_field_names(t *testing.T) {
@@ -248,7 +248,7 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 22)
+	require.Len(t, def.Message.FieldNames, 23)
 	assert.Contains(t, msg.FieldNames, "field_bool")
 	assert.Contains(t, msg.FieldNames, "field_enum")
 	assert.Contains(t, msg.FieldNames, "field_byte")
@@ -266,7 +266,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 22)
+	require.Len(t, def.Message.FieldTags, 23)
 	assert.Contains(t, msg.FieldTags, 1)
 	assert.Contains(t, msg.FieldTags, 2)
 	assert.Contains(t, msg.FieldTags, 10)

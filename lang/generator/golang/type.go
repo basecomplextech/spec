@@ -25,6 +25,8 @@ func typeName(typ *compiler.Type) string {
 	case compiler.KindUint64:
 		return "uint64"
 
+	case compiler.KindBin64:
+		return "types.Bin64"
 	case compiler.KindBin128:
 		return "types.Bin128"
 	case compiler.KindBin256:
@@ -93,6 +95,8 @@ func typeDecodeFunc(typ *compiler.Type) string {
 	case compiler.KindUint64:
 		return "spec.DecodeUint64"
 
+	case compiler.KindBin64:
+		return "spec.DecodeBin64"
 	case compiler.KindBin128:
 		return "spec.DecodeBin128"
 	case compiler.KindBin256:
@@ -142,6 +146,8 @@ func typeEncodeFunc(typ *compiler.Type) string {
 	case compiler.KindUint64:
 		return "spec.EncodeUint64"
 
+	case compiler.KindBin64:
+		return "spec.EncodeBin64"
 	case compiler.KindBin128:
 		return "spec.EncodeBin128"
 	case compiler.KindBin256:

@@ -177,7 +177,36 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 	return 0, 0, fmt.Errorf("decode uint64: invalid type, type=%v:%d", typ, typ)
 }
 
-// Bin128/Bin256
+// Bin64/128/256
+
+func DecodeBin64(b []byte) (_ types.Bin64, size int, err error) {
+	typ, n := decodeType(b)
+	if n < 0 {
+		err = errors.New("decode bin64: invalid data")
+		return
+	}
+	if typ != TypeBin64 {
+		err = fmt.Errorf("decode bin64: invalid type, type=%v:%d", typ, typ)
+		return
+	}
+
+	size = n
+	start := len(b) - (n + 8)
+	end := len(b) - n
+
+	if start < 0 {
+		err = errors.New("decode bin64: invalid data")
+		return
+	}
+
+	v, err := types.ParseBin64(b[start:end])
+	if err != nil {
+		return
+	}
+
+	size += 8
+	return v, size, nil
+}
 
 func DecodeBin128(b []byte) (_ types.Bin128, size int, err error) {
 	typ, n := decodeType(b)

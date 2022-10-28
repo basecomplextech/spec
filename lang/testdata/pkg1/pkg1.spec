@@ -20,8 +20,9 @@ message Message {
     field_float32 float32   30;
     field_float64 float64   31;
 
-    field_bin128  bin128    40;
-    field_bin256  bin256    41;
+    field_bin64   bin64     40;
+    field_bin128  bin128    41;
+    field_bin256  bin256    42;
 
     field_string  string    50;
     field_bytes   bytes     51;

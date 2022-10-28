@@ -101,6 +101,7 @@ const (
 	KindUint32
 	KindUint64
 
+	KindBin64
 	KindBin128
 	KindBin256
 
@@ -133,6 +134,8 @@ func getKind(type_ string) Kind {
 	case "uint64":
 		return KindUint64
 
+	case "bin64":
+		return KindBin64
 	case "bin128":
 		return KindBin128
 	case "bin256":
