@@ -209,7 +209,7 @@ func BuildTestSubmessage() (_ TestSubmessageBuilder, err error) {
 	return TestSubmessageBuilder{e}, nil
 }
 
-func BuildTestSubmessageBuffer(b buffer.Buffer) (_ TestSubmessageBuilder, err error) {
+func BuildTestSubmessageStack(b buffer.Buffer) (_ TestSubmessageBuilder, err error) {
 	e := NewEncoderBuffer(b)
 	if err = e.BeginMessage(); err != nil {
 		return

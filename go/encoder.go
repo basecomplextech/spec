@@ -530,8 +530,8 @@ func (e *Encoder) HasField(tag uint16) bool {
 	}
 
 	// check field table
-	start := message.start
-	return e.fields.hasField(start, tag)
+	offset := message.tableStart
+	return e.fields.hasField(offset, tag)
 }
 
 func (e *Encoder) endField() ([]byte, error) {

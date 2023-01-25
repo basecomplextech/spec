@@ -13,8 +13,8 @@ type encoderState struct {
 	data encodeData // last written data, must be consumed before writing next data
 
 	stack    stack
-	elements listBuffer    // buffer for list element tables
-	fields   messageBuffer // buffer for message field tables
+	elements listStack    // buffer for list element tables
+	fields   messageStack // buffer for message field tables
 
 	// preallocated
 	_stack    [14]stackEntry
@@ -155,75 +155,76 @@ func (s *stack) pushField(start int, tag uint16) {
 	s.stack = append(s.stack, e)
 }
 
-// listBuffer is an encoding buffer for nested list elements.
+// listStack is a stack for encoding nested list tables.
 //
-// Each list externally stores its start offset in the buffer, and provides the offset
-// when inserting new elements.
+// Each list externally stores its table offset in the stack,
+// and provides it when inserting new elements.
 //
 //	        list0              sublist1            sublist2
 //	+-------------------+-------------------+-------------------+
 //	| e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 |
 //	+-------------------+-------------------+-------------------+
-type listBuffer struct {
+type listStack struct {
 	stack []listElement
 }
 
-func (b *listBuffer) reset() {
-	b.stack = b.stack[:0]
+func (s *listStack) reset() {
+	s.stack = s.stack[:0]
 }
 
-// offset returns the next list buffer offset.
-func (b *listBuffer) offset() int {
-	return len(b.stack)
+// offset returns the next list stack offset.
+func (s *listStack) offset() int {
+	return len(s.stack)
 }
 
 // len returns the number of elements in the last list.
-func (b *listBuffer) len(offset int) int {
-	table := b.stack[offset:]
+func (s *listStack) len(tableOffset int) int {
+	table := s.stack[tableOffset:]
 	return len(table)
 }
 
 // push appends a new element to the last list.
-func (b *listBuffer) push(elem listElement) {
-	b.stack = append(b.stack, elem)
+func (s *listStack) push(elem listElement) {
+	s.stack = append(s.stack, elem)
 }
 
 // pop pops a list table starting at offset.
-func (b *listBuffer) pop(offset int) []listElement {
-	table := b.stack[offset:]
-	b.stack = b.stack[:offset]
+func (s *listStack) pop(tableOffset int) []listElement {
+	table := s.stack[tableOffset:]
+	s.stack = s.stack[:tableOffset]
 	return table
 }
 
-// messageBuffer is an encoding buffer for nested message fields.
+// messageStack is a stack for encoding nested message tables.
 //
-// Each message externally stores its start offset in the buffer, and provides the offset
-// when inserting new fields. Message fields are kept sorted by tags using the insertion sort.
+// Each message externally stores its table offset in the stack,
+// and provides it when inserting new fields.
+// Fields are kept sorted by tags using the insertion sort.
 //
 //	       message0          submessage1         submessage2
 //	+-------------------+-------------------+-------------------+
 //	| f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 |
 //	+-------------------+-------------------+-------------------+
-type messageBuffer struct {
+type messageStack struct {
 	stack []messageField
 }
 
-func (b *messageBuffer) reset() {
-	b.stack = b.stack[:0]
+func (s *messageStack) reset() {
+	s.stack = s.stack[:0]
 }
 
-// offset returns the next message table buffer offset.
-func (b *messageBuffer) offset() int {
-	return len(b.stack)
+// offset returns the next message table stack offset.
+func (s *messageStack) offset() int {
+	return len(s.stack)
 }
 
 // insert inserts a new field into the last table starting at offset, keeps the table sorted.
-func (b *messageBuffer) insert(offset int, f messageField) {
+func (s *messageStack) insert(tableOffset int, f messageField) {
 	// append new field
-	b.stack = append(b.stack, f)
+	s.stack = append(s.stack, f)
 
 	// get table
-	table := b.stack[offset:]
+	table := s.stack[tableOffset:]
 
 	// walk table in reverse order
 	// move new field to its position
@@ -245,14 +246,14 @@ func (b *messageBuffer) insert(offset int, f messageField) {
 }
 
 // pop pops a message table starting at offset.
-func (b *messageBuffer) pop(offset int) []messageField {
-	table := b.stack[offset:]
-	b.stack = b.stack[:offset]
+func (s *messageStack) pop(tableOffset int) []messageField {
+	table := s.stack[tableOffset:]
+	s.stack = s.stack[:tableOffset]
 	return table
 }
 
-func (b *messageBuffer) hasField(offset int, tag uint16) bool {
-	table := b.stack[offset:]
+func (s *messageStack) hasField(tableOffset int, tag uint16) bool {
+	table := s.stack[tableOffset:]
 
 	n := sort.Search(len(table), func(i int) bool {
 		return table[i].tag == tag

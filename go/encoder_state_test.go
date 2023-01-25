@@ -28,7 +28,7 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 		testListElementsN(3),
 	}
 
-	buffer := listBuffer{}
+	buffer := listStack{}
 	offsets := []int{}
 
 	// build buffer
@@ -68,7 +68,7 @@ func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t 
 		testMessageFieldsN(3),
 	}
 
-	buffer := messageBuffer{}
+	buffer := messageStack{}
 	offsets := []int{}
 
 	// build buffer
