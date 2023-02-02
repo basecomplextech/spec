@@ -8,35 +8,35 @@ import (
 	"github.com/complex1tech/baselibrary/types"
 )
 
-var encoderClosed = errors.New("operation on a closed encoder")
+var writerClosed = errors.New("operation on a closed writer")
 
-// Encoder encodes data.
+// Writer writes spec elements.
 // It is not reusable, but small enough to have negligible effect on memory allocation.
-type Encoder struct {
-	*encoderState
+type Writer struct {
+	*writerState
 	err error
 }
 
-// NewEncoder returns a new encoder with an empty buffer.
-func NewEncoder() *Encoder {
+// NewWriter returns a new writer with an empty buffer.
+func NewWriter() *Writer {
 	buf := buffer.New()
-	return newEncoder(buf)
+	return newWriter(buf)
 }
 
-// NewEncoderBuffer returns a new encoder with a buffer.
-func NewEncoderBuffer(buf buffer.Buffer) *Encoder {
-	return newEncoder(buf)
+// NewWriterBuffer returns a new writer with a buffer.
+func NewWriterBuffer(buf buffer.Buffer) *Writer {
+	return newWriter(buf)
 }
 
-func newEncoder(buf buffer.Buffer) *Encoder {
-	s := getEncoderState()
+func newWriter(buf buffer.Buffer) *Writer {
+	s := getWriterState()
 	s.init(buf)
 
-	return &Encoder{encoderState: s}
+	return &Writer{writerState: s}
 }
 
-// close closes the encoder and releases its state.
-func (e *Encoder) close(err error) error {
+// close closes the writer and releases its state.
+func (e *Writer) close(err error) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -44,17 +44,17 @@ func (e *Encoder) close(err error) error {
 	if err != nil {
 		e.err = err
 	} else {
-		e.err = encoderClosed
+		e.err = writerClosed
 	}
 
-	s := e.encoderState
-	e.encoderState = nil
+	s := e.writerState
+	e.writerState = nil
 
-	releaseEncoderState(s)
+	releaseWriterState(s)
 	return err
 }
 
-func (e *Encoder) closef(format string, args ...any) error {
+func (e *Writer) closef(format string, args ...any) error {
 	var err error
 	if len(args) == 0 {
 		err = errors.New(format)
@@ -64,8 +64,8 @@ func (e *Encoder) closef(format string, args ...any) error {
 	return e.close(err)
 }
 
-// Reset resets the encoder state with the buffer.
-func (e *Encoder) Reset(buf buffer.Buffer) {
+// Reset resets the writer state with the buffer.
+func (e *Writer) Reset(buf buffer.Buffer) {
 	e.close(nil)
 	e.err = nil
 
@@ -73,13 +73,13 @@ func (e *Encoder) Reset(buf buffer.Buffer) {
 		buf = buffer.New()
 	}
 
-	s := getEncoderState()
+	s := getWriterState()
 	s.init(buf)
-	e.encoderState = s
+	e.writerState = s
 }
 
 // End ends a nested object and a parent field/element if present.
-func (e *Encoder) End() (result []byte, err error) {
+func (e *Writer) End() (result []byte, err error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -124,7 +124,7 @@ func (e *Encoder) End() (result []byte, err error) {
 
 // Primitive
 
-func (e *Encoder) Bool(v bool) error {
+func (e *Writer) Bool(v bool) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -136,7 +136,7 @@ func (e *Encoder) Bool(v bool) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Byte(v byte) error {
+func (e *Writer) Byte(v byte) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -148,7 +148,7 @@ func (e *Encoder) Byte(v byte) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Int32(v int32) error {
+func (e *Writer) Int32(v int32) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -160,7 +160,7 @@ func (e *Encoder) Int32(v int32) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Int64(v int64) error {
+func (e *Writer) Int64(v int64) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -172,7 +172,7 @@ func (e *Encoder) Int64(v int64) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Uint32(v uint32) error {
+func (e *Writer) Uint32(v uint32) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -184,7 +184,7 @@ func (e *Encoder) Uint32(v uint32) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Uint64(v uint64) error {
+func (e *Writer) Uint64(v uint64) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -198,7 +198,7 @@ func (e *Encoder) Uint64(v uint64) error {
 
 // Bin64/128/256
 
-func (e *Encoder) Bin64(v types.Bin64) error {
+func (e *Writer) Bin64(v types.Bin64) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -210,7 +210,7 @@ func (e *Encoder) Bin64(v types.Bin64) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Bin128(v types.Bin128) error {
+func (e *Writer) Bin128(v types.Bin128) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -222,7 +222,7 @@ func (e *Encoder) Bin128(v types.Bin128) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Bin256(v types.Bin256) error {
+func (e *Writer) Bin256(v types.Bin256) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -236,7 +236,7 @@ func (e *Encoder) Bin256(v types.Bin256) error {
 
 // Float
 
-func (e *Encoder) Float32(v float32) error {
+func (e *Writer) Float32(v float32) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -248,7 +248,7 @@ func (e *Encoder) Float32(v float32) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) Float64(v float64) error {
+func (e *Writer) Float64(v float64) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -262,7 +262,7 @@ func (e *Encoder) Float64(v float64) error {
 
 // Bytes/string
 
-func (e *Encoder) Bytes(v []byte) error {
+func (e *Writer) Bytes(v []byte) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -276,7 +276,7 @@ func (e *Encoder) Bytes(v []byte) error {
 	return e.setData(start, end)
 }
 
-func (e *Encoder) String(v string) error {
+func (e *Writer) String(v string) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -292,7 +292,7 @@ func (e *Encoder) String(v string) error {
 
 // List
 
-func (e *Encoder) BeginList() error {
+func (e *Writer) BeginList() error {
 	if e.err != nil {
 		return e.err
 	}
@@ -305,7 +305,7 @@ func (e *Encoder) BeginList() error {
 	return nil
 }
 
-func (e *Encoder) BeginElement() error {
+func (e *Writer) BeginElement() error {
 	if e.err != nil {
 		return e.err
 	}
@@ -325,7 +325,7 @@ func (e *Encoder) BeginElement() error {
 	return nil
 }
 
-func (e *Encoder) Element() error {
+func (e *Writer) Element() error {
 	if e.err != nil {
 		return e.err
 	}
@@ -349,7 +349,7 @@ func (e *Encoder) Element() error {
 	return nil
 }
 
-func (e *Encoder) ListLen() int {
+func (e *Writer) ListLen() int {
 	if e.err != nil {
 		return 0
 	}
@@ -367,7 +367,7 @@ func (e *Encoder) ListLen() int {
 	return e.elements.len(start)
 }
 
-func (e *Encoder) endElement() ([]byte, error) {
+func (e *Writer) endElement() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -404,7 +404,7 @@ func (e *Encoder) endElement() ([]byte, error) {
 	return b, nil
 }
 
-func (e *Encoder) endList() ([]byte, error) {
+func (e *Writer) endList() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -441,7 +441,7 @@ func (e *Encoder) endList() ([]byte, error) {
 
 // Message
 
-func (e *Encoder) BeginMessage() error {
+func (e *Writer) BeginMessage() error {
 	if e.err != nil {
 		return e.err
 	}
@@ -454,7 +454,7 @@ func (e *Encoder) BeginMessage() error {
 	return nil
 }
 
-func (e *Encoder) BeginField(tag uint16) error {
+func (e *Writer) BeginField(tag uint16) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -474,7 +474,7 @@ func (e *Encoder) BeginField(tag uint16) error {
 	return nil
 }
 
-func (e *Encoder) Field(tag uint16) error {
+func (e *Writer) Field(tag uint16) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -500,7 +500,7 @@ func (e *Encoder) Field(tag uint16) error {
 	return nil
 }
 
-func (e *Encoder) FieldBytes(tag uint16, data []byte) error {
+func (e *Writer) FieldBytes(tag uint16, data []byte) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -515,7 +515,7 @@ func (e *Encoder) FieldBytes(tag uint16, data []byte) error {
 	return e.Field(tag)
 }
 
-func (e *Encoder) HasField(tag uint16) bool {
+func (e *Writer) HasField(tag uint16) bool {
 	if e.err != nil {
 		return false
 	}
@@ -534,7 +534,7 @@ func (e *Encoder) HasField(tag uint16) bool {
 	return e.fields.hasField(offset, tag)
 }
 
-func (e *Encoder) endField() ([]byte, error) {
+func (e *Writer) endField() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -574,7 +574,7 @@ func (e *Encoder) endField() ([]byte, error) {
 	return b, nil
 }
 
-func (e *Encoder) endMessage() ([]byte, error) {
+func (e *Writer) endMessage() ([]byte, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
@@ -611,7 +611,7 @@ func (e *Encoder) endMessage() ([]byte, error) {
 
 // Value
 
-func EncodeValue[T any](e *Encoder, v T, encode EncodeFunc[T]) error {
+func EncodeValue[T any](e *Writer, v T, encode EncodeFunc[T]) error {
 	if e.err != nil {
 		return e.err
 	}
@@ -635,7 +635,7 @@ type encodeData struct {
 }
 
 // TODO: Rename into pushData and move to stack.
-func (e *Encoder) setData(start, end int) error {
+func (e *Writer) setData(start, end int) error {
 	if e.data.start != 0 || e.data.end != 0 {
 		return e.closef("encode: cannot encode more data, element/field must be written first")
 	}
@@ -647,7 +647,7 @@ func (e *Encoder) setData(start, end int) error {
 	return nil
 }
 
-func (e *Encoder) popData() encodeData {
+func (e *Writer) popData() encodeData {
 	d := e.data
 	e.data = encodeData{}
 	return d

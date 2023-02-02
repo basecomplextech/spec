@@ -7,8 +7,8 @@ import (
 	"github.com/complex1tech/baselibrary/buffer"
 )
 
-// encoderState is a big pooled struct which holds an encoding state.
-type encoderState struct {
+// writerState is a big pooled struct which holds an encoding state.
+type writerState struct {
 	buf  buffer.Buffer
 	data encodeData // last written data, must be consumed before writing next data
 
@@ -22,20 +22,20 @@ type encoderState struct {
 	_fields   [48]messageField
 }
 
-func newEncoderState() *encoderState {
-	s := &encoderState{}
+func newWriterState() *writerState {
+	s := &writerState{}
 	s.stack.stack = s._stack[:0]
 	s.elements.stack = s._elements[:0]
 	s.fields.stack = s._fields[:0]
 	return s
 }
 
-func (s *encoderState) init(b buffer.Buffer) {
+func (s *writerState) init(b buffer.Buffer) {
 	s.reset()
 	s.buf = b
 }
 
-func (s *encoderState) reset() {
+func (s *writerState) reset() {
 	s.buf = nil
 	s.data = encodeData{}
 
@@ -46,19 +46,19 @@ func (s *encoderState) reset() {
 
 // state pool
 
-var encoderStatePool = &sync.Pool{
+var writerStatePool = &sync.Pool{
 	New: func() any {
-		return newEncoderState()
+		return newWriterState()
 	},
 }
 
-func getEncoderState() *encoderState {
-	return encoderStatePool.Get().(*encoderState)
+func getWriterState() *writerState {
+	return writerStatePool.Get().(*writerState)
 }
 
-func releaseEncoderState(s *encoderState) {
+func releaseWriterState(s *writerState) {
 	s.reset()
-	encoderStatePool.Put(s)
+	writerStatePool.Put(s)
 }
 
 // stack

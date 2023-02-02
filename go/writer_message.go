@@ -7,22 +7,22 @@ import (
 
 // MessageWriter writes a message.
 type MessageWriter struct {
-	e *Encoder
+	e *Writer
 }
 
 // NewMessageWriter returns a new message writer.
 func NewMessageWriter() MessageWriter {
-	e := NewEncoder()
+	e := NewWriter()
 	return MessageWriter{e}
 }
 
 // NewMessageWriterBuffer returns a new message writer with the given buffer.
 func NewMessageWriterBuffer(buf buffer.Buffer) MessageWriter {
-	e := NewEncoderBuffer(buf)
+	e := NewWriterBuffer(buf)
 	return MessageWriter{e}
 }
 
-func newMessageWriter(e *Encoder) MessageWriter {
+func newMessageWriter(e *Writer) MessageWriter {
 	w := MessageWriter{e: e}
 	w.e.BeginMessage()
 	return w
@@ -46,11 +46,11 @@ func (w MessageWriter) End() error {
 
 // FieldWriter writes a message field.
 type FieldWriter struct {
-	e     *Encoder
+	e     *Writer
 	field uint16
 }
 
-func newFieldWriter(e *Encoder, field uint16) FieldWriter {
+func newFieldWriter(e *Writer, field uint16) FieldWriter {
 	return FieldWriter{
 		e:     e,
 		field: field,

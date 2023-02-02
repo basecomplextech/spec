@@ -7,7 +7,7 @@ import (
 )
 
 func testEncodeMessage(t *testing.T) []byte {
-	w := NewEncoder()
+	w := NewWriter()
 	w.BeginMessage()
 
 	w.Byte(1)

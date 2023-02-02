@@ -7,16 +7,16 @@ import (
 
 // ValueWriter writes a value.
 type ValueWriter struct {
-	e *Encoder
+	e *Writer
 }
 
 // NewValueWriterBuffer returns a new value writer with the given buffer.
 func NewValueWriterBuffer(buf buffer.Buffer) ValueWriter {
-	e := NewEncoderBuffer(buf)
+	e := NewWriterBuffer(buf)
 	return ValueWriter{e}
 }
 
-func newValueWriter(e *Encoder) ValueWriter {
+func newValueWriter(e *Writer) ValueWriter {
 	return ValueWriter{e: e}
 }
 

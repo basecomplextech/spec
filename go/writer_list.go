@@ -7,22 +7,22 @@ import (
 
 // ListWriter writes a list of elements.
 type ListWriter struct {
-	e *Encoder
+	e *Writer
 }
 
 // NewListWriter returns a new list writer.
 func NewListWriter() ListWriter {
-	e := NewEncoder()
+	e := NewWriter()
 	return ListWriter{e}
 }
 
 // NewListWriterBuffer returns a new list writer with the given buffer.
 func NewListWriterBuffer(buf buffer.Buffer) ListWriter {
-	e := NewEncoderBuffer(buf)
+	e := NewWriterBuffer(buf)
 	return ListWriter{e}
 }
 
-func newListWriter(e *Encoder) ListWriter {
+func newListWriter(e *Writer) ListWriter {
 	w := ListWriter{e: e}
 	w.e.BeginList()
 	return w

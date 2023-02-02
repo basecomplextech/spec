@@ -1,6 +1,6 @@
 package spec
 
-func (m *TestSmall) Write(e *Encoder) ([]byte, error) {
+func (m *TestSmall) Write(e *Writer) ([]byte, error) {
 	w := newMessageWriter(e)
 	w.Field(1).Int64(m.Field0)
 	w.Field(2).Int64(m.Field1)
@@ -9,7 +9,7 @@ func (m *TestSmall) Write(e *Encoder) ([]byte, error) {
 	return w.Build()
 }
 
-func (m *TestObject) Write(e *Encoder) ([]byte, error) {
+func (m *TestObject) Write(e *Writer) ([]byte, error) {
 	w := newMessageWriter(e)
 
 	w.Field(1).Bool(m.Bool)

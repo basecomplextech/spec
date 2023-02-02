@@ -25,7 +25,7 @@ func DecodeTestMessage(b []byte) (_ TestMessage, size int, err error) {
 }
 
 func BuildTestMessage() (_ TestMessageBuilder, err error) {
-	e := NewEncoder()
+	e := NewWriter()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -33,14 +33,14 @@ func BuildTestMessage() (_ TestMessageBuilder, err error) {
 }
 
 func BuildTestMessageBuffer(b buffer.Buffer) (_ TestMessageBuilder, err error) {
-	e := NewEncoderBuffer(b)
+	e := NewWriterBuffer(b)
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
 	return TestMessageBuilder{e}, nil
 }
 
-func BuildTestMessageEncoder(e *Encoder) (result TestMessageBuilder, err error) {
+func BuildTestMessageWriter(e *Writer) (result TestMessageBuilder, err error) {
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -90,7 +90,7 @@ func (m TestMessage) Struct() TestStruct {
 // TestMessageBuilder
 
 type TestMessageBuilder struct {
-	e *Encoder
+	e *Writer
 }
 
 func (b TestMessageBuilder) End() ([]byte, error) {
@@ -159,7 +159,7 @@ func (b TestMessageBuilder) Bytes(v []byte) error {
 
 func (b TestMessageBuilder) Submessage() (TestSubmessageBuilder, error) {
 	b.e.BeginField(50)
-	return BuildTestSubmessageEncoder(b.e)
+	return BuildTestSubmessageWriter(b.e)
 }
 
 func (b TestMessageBuilder) List() ValueListBuilder[int64] {
@@ -169,7 +169,7 @@ func (b TestMessageBuilder) List() ValueListBuilder[int64] {
 
 func (b TestMessageBuilder) Messages() ListBuilder[TestElementBuilder] {
 	b.e.BeginField(52)
-	return NewListBuilder(b.e, BuildTestElementEncoder)
+	return NewListBuilder(b.e, BuildTestElementWriter)
 }
 
 func (b TestMessageBuilder) Strings() ValueListBuilder[string] {
@@ -202,7 +202,7 @@ func DecodeTestSubmessage(b []byte) (_ TestSubmessage, size int, err error) {
 }
 
 func BuildTestSubmessage() (_ TestSubmessageBuilder, err error) {
-	e := NewEncoder()
+	e := NewWriter()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -210,14 +210,14 @@ func BuildTestSubmessage() (_ TestSubmessageBuilder, err error) {
 }
 
 func BuildTestSubmessageStack(b buffer.Buffer) (_ TestSubmessageBuilder, err error) {
-	e := NewEncoderBuffer(b)
+	e := NewWriterBuffer(b)
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
 	return TestSubmessageBuilder{e}, nil
 }
 
-func BuildTestSubmessageEncoder(e *Encoder) (_ TestSubmessageBuilder, err error) {
+func BuildTestSubmessageWriter(e *Writer) (_ TestSubmessageBuilder, err error) {
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -231,7 +231,7 @@ func (m TestSubmessage) Unwrap() Message { return m.msg }
 // TestSubmessageBuilder
 
 type TestSubmessageBuilder struct {
-	e *Encoder
+	e *Writer
 }
 
 func (b TestSubmessageBuilder) End() ([]byte, error) {
@@ -268,7 +268,7 @@ func DecodeTestElement(b []byte) (_ TestElement, size int, err error) {
 }
 
 func BuildTestElement() (_ TestElementBuilder, err error) {
-	e := NewEncoder()
+	e := NewWriter()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -276,14 +276,14 @@ func BuildTestElement() (_ TestElementBuilder, err error) {
 }
 
 func BuildTestElementBuffer(b buffer.Buffer) (_ TestElementBuilder, err error) {
-	e := NewEncoderBuffer(b)
+	e := NewWriterBuffer(b)
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
 	return TestElementBuilder{e}, nil
 }
 
-func BuildTestElementEncoder(e *Encoder) (_ TestElementBuilder) {
+func BuildTestElementWriter(e *Writer) (_ TestElementBuilder) {
 	if err := e.BeginMessage(); err != nil {
 		return
 	}
@@ -305,7 +305,7 @@ func (m TestElement) Int64() int64 {
 // TestElementBuilder
 
 type TestElementBuilder struct {
-	e *Encoder
+	e *Writer
 }
 
 func (b TestElementBuilder) End() ([]byte, error) {

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEncoderState_Size__should_be_lte_1kb(t *testing.T) {
-	s := unsafe.Sizeof(encoderState{})
+func TestWriterState_Size__should_be_lte_1kb(t *testing.T) {
+	s := unsafe.Sizeof(writerState{})
 	if s > 1024 {
 		t.Fatal(s)
 	}

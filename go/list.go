@@ -96,7 +96,7 @@ func (l List[T]) Values() []T {
 // List builder
 
 // NewListBuilder begins and returns a new list.
-func NewListBuilder[T any](e *Encoder, next func(e *Encoder) T) (_ ListBuilder[T]) {
+func NewListBuilder[T any](e *Writer, next func(e *Writer) T) (_ ListBuilder[T]) {
 	e.BeginList()
 	return ListBuilder[T]{e: e, next: next}
 }
@@ -127,12 +127,12 @@ func (b ListBuilder[T]) End() error {
 
 // ValueListBuilder builds a list of values.
 type ValueListBuilder[T any] struct {
-	e      *Encoder
+	e      *Writer
 	encode EncodeFunc[T]
 }
 
 // NewValueListBuilder begins and returns a new value list builder.
-func NewValueListBuilder[T any](e *Encoder, encode EncodeFunc[T]) (_ ValueListBuilder[T]) {
+func NewValueListBuilder[T any](e *Writer, encode EncodeFunc[T]) (_ ValueListBuilder[T]) {
 	e.BeginList()
 	return ValueListBuilder[T]{e: e, encode: encode}
 }
@@ -158,6 +158,6 @@ func (b ValueListBuilder[T]) End() error {
 
 // ListBuilder builds a list using nested element builder.
 type ListBuilder[T any] struct {
-	e    *Encoder
-	next func(e *Encoder) T
+	e    *Writer
+	next func(e *Writer) T
 }

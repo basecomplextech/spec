@@ -5,7 +5,7 @@ import (
 )
 
 func testEncodeList(t *testing.T) []byte {
-	w := NewEncoder()
+	w := NewWriter()
 	w.BeginList()
 
 	w.Int32(1)
