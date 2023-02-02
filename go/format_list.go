@@ -37,7 +37,6 @@ func (m listMeta) offset(i int) (int, int) {
 //	+----------------+----------------+----------------+
 //	|    off0(2/4)   |    off1(2/4)   |    off2(2/4)   |
 //	+----------------+----------------+----------------+
-//
 type listTable []byte
 
 // listElement specifies a value offset in a list byte array.
@@ -45,7 +44,6 @@ type listTable []byte
 //	+-------------------+
 //	|    offset(2/4)    |
 //	+-------------------+
-//
 type listElement struct {
 	offset uint32
 }

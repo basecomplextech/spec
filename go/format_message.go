@@ -52,19 +52,17 @@ func (m messageMeta) field(i int) (messageField, bool) {
 // messageTable is a serialized array of message fields ordered by tags.
 // the serialization format depends on whether the message is big or small, see isBigMessage().
 //
-//          field0                field1                field2
-//  +---------------------+---------------------+---------------------+
-// 	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
-//  +---------------------+---------------------+---------------------+
-//
+//	         field0                field1                field2
+//	+---------------------+---------------------+---------------------+
+//	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
+//	+---------------------+---------------------+---------------------+
 type messageTable []byte
 
 // messageField specifies a tag and a value offset in a message byte array.
 //
-//  +----------+-------------------+
-// 	| tag(1/2) |    offset(2/4)    |
-//  +----------+-------------------+
-//
+//	+----------+-------------------+
+//	| tag(1/2) |    offset(2/4)    |
+//	+----------+-------------------+
 type messageField struct {
 	tag    uint16
 	offset uint32

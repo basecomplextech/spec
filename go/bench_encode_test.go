@@ -86,6 +86,41 @@ func BenchmarkEncode_Large(b *testing.B) {
 	b.SetBytes(int64(size))
 }
 
+func BenchmarkWrite_Large(b *testing.B) {
+	msg := newTestObject()
+	buf := buffer.NewSize(4096)
+	e := NewEncoderBuffer(buf)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	t0 := time.Now()
+
+	var size int
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		e.Reset(buf)
+
+		data, err := msg.Write(e)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(data) < 100 {
+			b.Fatal(len(data))
+		}
+
+		size = len(data)
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+	b.ReportMetric(float64(size), "size")
+	b.SetBytes(int64(size))
+}
+
 // Standard JSON
 
 func BenchmarkJSON_Marshal_Small(b *testing.B) {
