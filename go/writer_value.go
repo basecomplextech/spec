@@ -20,6 +20,13 @@ func newValueWriter(e *Writer) ValueWriter {
 	return ValueWriter{e: e}
 }
 
+// Build end the value and returns its bytes.
+func (w ValueWriter) Build() ([]byte, error) {
+	return w.e.End()
+}
+
+// Values
+
 func (w ValueWriter) Bool(v bool) error {
 	return w.e.Bool(v)
 }

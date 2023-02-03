@@ -107,8 +107,8 @@ func (e *Writer) End() (result []byte, err error) {
 		return nil, e.closef("end: not list or message")
 	}
 
-	// end parent field/element
-	entry, ok = e.stack.peek()
+	// maybe end parent field/element
+	entry, ok = e.stack.peekSecondLast()
 	if !ok {
 		return result, e.close(nil)
 	}
@@ -133,7 +133,7 @@ func (e *Writer) Bool(v bool) error {
 	EncodeBool(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Byte(v byte) error {
@@ -145,7 +145,7 @@ func (e *Writer) Byte(v byte) error {
 	EncodeByte(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Int32(v int32) error {
@@ -157,7 +157,7 @@ func (e *Writer) Int32(v int32) error {
 	EncodeInt32(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Int64(v int64) error {
@@ -169,7 +169,7 @@ func (e *Writer) Int64(v int64) error {
 	EncodeInt64(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Uint32(v uint32) error {
@@ -181,7 +181,7 @@ func (e *Writer) Uint32(v uint32) error {
 	EncodeUint32(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Uint64(v uint64) error {
@@ -193,7 +193,7 @@ func (e *Writer) Uint64(v uint64) error {
 	EncodeUint64(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 // Bin64/128/256
@@ -207,7 +207,7 @@ func (e *Writer) Bin64(v types.Bin64) error {
 	EncodeBin64(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Bin128(v types.Bin128) error {
@@ -219,7 +219,7 @@ func (e *Writer) Bin128(v types.Bin128) error {
 	EncodeBin128(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Bin256(v types.Bin256) error {
@@ -231,7 +231,7 @@ func (e *Writer) Bin256(v types.Bin256) error {
 	EncodeBin256(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 // Float
@@ -245,7 +245,7 @@ func (e *Writer) Float32(v float32) error {
 	EncodeFloat32(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) Float64(v float64) error {
@@ -257,7 +257,7 @@ func (e *Writer) Float64(v float64) error {
 	EncodeFloat64(e.buf, v)
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 // Bytes/string
@@ -273,7 +273,7 @@ func (e *Writer) Bytes(v []byte) error {
 	}
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 func (e *Writer) String(v string) error {
@@ -287,7 +287,7 @@ func (e *Writer) String(v string) error {
 	}
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 // List
@@ -330,6 +330,12 @@ func (e *Writer) Element() error {
 		return e.err
 	}
 
+	// pop data
+	_, end, err := e.popData()
+	if err != nil {
+		return e.close(err)
+	}
+
 	// check list
 	list, ok := e.stack.peek()
 	switch {
@@ -339,11 +345,8 @@ func (e *Writer) Element() error {
 		return e.closef("element: cannot encode element, parent not list")
 	}
 
-	// pop data
-	data := e.popData()
-
 	// append element relative offset
-	offset := uint32(data.end - list.start)
+	offset := uint32(end - list.start)
 	element := listElement{offset: offset}
 	e.elements.push(element)
 	return nil
@@ -372,7 +375,13 @@ func (e *Writer) endElement() ([]byte, error) {
 		return nil, e.err
 	}
 
-	// check element
+	// pop data
+	_, end, err := e.popData()
+	if err != nil {
+		return nil, e.close(err)
+	}
+
+	// pop element
 	elem, ok := e.stack.pop()
 	switch {
 	case !ok:
@@ -390,17 +399,14 @@ func (e *Writer) endElement() ([]byte, error) {
 		return nil, e.closef("end element: parent not list")
 	}
 
-	// pop data
-	data := e.popData()
-
 	// append element relative offset
-	offset := uint32(data.end - list.start)
+	offset := uint32(end - list.start)
 	element := listElement{offset: offset}
 	e.elements.push(element)
 
 	// return data
 	b := e.buf.Bytes()
-	b = b[elem.start:data.end]
+	b = b[elem.start:end]
 	return b, nil
 }
 
@@ -429,7 +435,7 @@ func (e *Writer) endList() ([]byte, error) {
 	// push data entry
 	start := list.start
 	end := e.buf.Len()
-	if err := e.setData(start, end); err != nil {
+	if err := e.pushData(start, end); err != nil {
 		return nil, err
 	}
 
@@ -479,6 +485,12 @@ func (e *Writer) Field(tag uint16) error {
 		return e.err
 	}
 
+	// pop data
+	_, end, err := e.popData()
+	if err != nil {
+		return e.close(err)
+	}
+
 	// check message
 	message, ok := e.stack.peek()
 	switch {
@@ -488,13 +500,10 @@ func (e *Writer) Field(tag uint16) error {
 		return e.closef("field: cannot encode field, parent not message")
 	}
 
-	// pop data
-	data := e.popData()
-
 	// insert field tag and relative offset
 	f := messageField{
 		tag:    tag,
-		offset: uint32(data.end - message.start),
+		offset: uint32(end - message.start),
 	}
 	e.fields.insert(message.tableStart, f)
 	return nil
@@ -509,7 +518,7 @@ func (e *Writer) FieldBytes(tag uint16, data []byte) error {
 	e.buf.Write(data)
 	end := e.buf.Len()
 
-	if err := e.setData(start, end); err != nil {
+	if err := e.pushData(start, end); err != nil {
 		return err
 	}
 	return e.Field(tag)
@@ -539,7 +548,13 @@ func (e *Writer) endField() ([]byte, error) {
 		return nil, e.err
 	}
 
-	// check field
+	// pop data
+	_, end, err := e.popData()
+	if err != nil {
+		return nil, e.close(err)
+	}
+
+	// pop field
 	field, ok := e.stack.pop()
 	switch {
 	case !ok:
@@ -558,19 +573,16 @@ func (e *Writer) endField() ([]byte, error) {
 		return nil, e.closef("field: cannot encode field, parent not message")
 	}
 
-	// pop data
-	data := e.popData()
-
 	// insert field with tag and relative offset
 	f := messageField{
 		tag:    tag,
-		offset: uint32(data.end - message.start),
+		offset: uint32(end - message.start),
 	}
 	e.fields.insert(message.tableStart, f)
 
 	// return data
 	b := e.buf.Bytes()
-	b = b[field.start:data.end]
+	b = b[field.start:end]
 	return b, nil
 }
 
@@ -599,7 +611,7 @@ func (e *Writer) endMessage() ([]byte, error) {
 	// push data
 	start := message.start
 	end := e.buf.Len()
-	if err := e.setData(start, end); err != nil {
+	if err := e.pushData(start, end); err != nil {
 		return nil, err
 	}
 
@@ -622,33 +634,32 @@ func EncodeValue[T any](e *Writer, v T, encode EncodeFunc[T]) error {
 	}
 	end := e.buf.Len()
 
-	return e.setData(start, end)
+	return e.pushData(start, end)
 }
 
 // data
 
-// encodeData holds the last written data start/end.
-// there is no data stack because the data must be consumed immediatelly after it is written.
-type encodeData struct {
-	start int
-	end   int
-}
-
-// TODO: Rename into pushData and move to stack.
-func (e *Writer) setData(start, end int) error {
-	if e.data.start != 0 || e.data.end != 0 {
-		return e.closef("encode: cannot encode more data, element/field must be written first")
+func (e *Writer) pushData(start, end int) error {
+	entry, ok := e.stack.peek()
+	if ok {
+		if entry.type_ == entryData {
+			return e.closef("cannot push more data, element/field must be written first")
+		}
 	}
 
-	e.data = encodeData{
-		start: start,
-		end:   end,
-	}
+	e.stack.pushData(start, end)
 	return nil
 }
 
-func (e *Writer) popData() encodeData {
-	d := e.data
-	e.data = encodeData{}
-	return d
+func (e *Writer) popData() (start, end int, err error) {
+	entry, ok := e.stack.pop()
+	switch {
+	case !ok:
+		return 0, 0, e.closef("cannot pop data, no data")
+	case entry.type_ != entryData:
+		return 0, 0, e.closef("cannot pop data, not data, type=%v", entry.type_)
+	}
+
+	start, end = entry.start, entry.end()
+	return
 }

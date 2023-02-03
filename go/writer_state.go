@@ -9,8 +9,7 @@ import (
 
 // writerState is a big pooled struct which holds an encoding state.
 type writerState struct {
-	buf  buffer.Buffer
-	data encodeData // last written data, must be consumed before writing next data
+	buf buffer.Buffer
 
 	stack    stack
 	elements listStack    // buffer for list element tables
@@ -37,7 +36,6 @@ func (s *writerState) init(b buffer.Buffer) {
 
 func (s *writerState) reset() {
 	s.buf = nil
-	s.data = encodeData{}
 
 	s.stack.reset()
 	s.elements.reset()
@@ -67,6 +65,7 @@ type entryType byte
 
 const (
 	entryUndefined entryType = iota
+	entryData                // data holds the last written data start/end
 	entryList
 	entryElement
 	entryMessage
@@ -77,6 +76,10 @@ type stackEntry struct {
 	start      int // start offset in data buffer
 	tableStart int // table offset in list/message stack
 	type_      entryType
+}
+
+func (e stackEntry) end() int {
+	return e.tableStart
 }
 
 func (e stackEntry) tag() uint16 {
@@ -106,7 +109,18 @@ func (s *stack) peek() (stackEntry, bool) {
 	return e, true
 }
 
-// pop removes the top object from the stack and checks its type.
+// peekSecondLast returns the second last object.
+func (s *stack) peekSecondLast() (stackEntry, bool) {
+	ln := len(s.stack)
+	if ln < 2 {
+		return stackEntry{}, false
+	}
+
+	e := s.stack[ln-2]
+	return e, true
+}
+
+// pop removes the top object from the stack.
 func (s *stack) pop() (stackEntry, bool) {
 	ln := len(s.stack)
 	if ln == 0 {
@@ -119,6 +133,15 @@ func (s *stack) pop() (stackEntry, bool) {
 }
 
 // push
+
+func (s *stack) pushData(start, end int) {
+	e := stackEntry{
+		type_:      entryData,
+		start:      start,
+		tableStart: end, // end
+	}
+	s.stack = append(s.stack, e)
+}
 
 func (s *stack) pushList(start int, tableStart int) {
 	e := stackEntry{

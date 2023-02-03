@@ -28,7 +28,7 @@ func newListWriter(e *Writer) ListWriter {
 	return w
 }
 
-// Build ends the list and its bytes.
+// Build ends the list and returns its bytes.
 func (w ListWriter) Build() ([]byte, error) {
 	return w.e.End()
 }

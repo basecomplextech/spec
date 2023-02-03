@@ -55,7 +55,7 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, o0, o1)
 }
 
-func TestWriter__should_encode_message(t *testing.T) {
+func TestWriter__should_write_message(t *testing.T) {
 	msg := newTestObject()
 
 	e := NewWriter()
@@ -94,7 +94,7 @@ func TestWriter__should_close_on_end(t *testing.T) {
 
 // List
 
-func TestWriter__should_encode_list(t *testing.T) {
+func TestWriter__should_write_list(t *testing.T) {
 	e := NewWriter()
 	e.BeginList()
 
