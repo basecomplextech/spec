@@ -76,17 +76,6 @@ func (m *TestObject) Write(e *Writer) ([]byte, error) {
 		}
 	}
 
-	{
-		w.e.BeginField(60)
-		w1 := newValueWriter(w.e)
-		if _, err := m.Struct.Write(w1); err != nil {
-			return nil, err
-		}
-		if _, err := w.e.endField(); err != nil {
-			return nil, err
-		}
-	}
-
 	return w.Build()
 }
 
@@ -101,9 +90,4 @@ func (m *TestObjectElement) Write(w MessageWriter) ([]byte, error) {
 	w.Field(2).Int32(m.Int32)
 	w.Field(3).Int64(m.Int64)
 	return w.Build()
-}
-
-func (s TestStruct) Write(w ValueWriter) ([]byte, error) {
-	err := EncodeValue(w.e, s, EncodeTestStruct)
-	return nil, err
 }
