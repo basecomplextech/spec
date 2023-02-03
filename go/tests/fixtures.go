@@ -1,23 +1,26 @@
-package spec
+package tests
 
 import (
 	"github.com/complex1tech/baselibrary/buffer"
 	"github.com/complex1tech/baselibrary/types"
+	spec "github.com/complex1tech/spec/go"
+	"github.com/complex1tech/spec/go/encoding"
+	"github.com/complex1tech/spec/go/writer"
 )
 
 // TestMessage
 
 type TestMessage struct {
-	msg Message
+	msg spec.Message
 }
 
 func GetTestMessage(b []byte) TestMessage {
-	msg := GetMessage(b)
+	msg := spec.GetMessage(b)
 	return TestMessage{msg}
 }
 
 func DecodeTestMessage(b []byte) (_ TestMessage, size int, err error) {
-	msg, size, err := DecodeMessage(b)
+	msg, size, err := spec.DecodeMessage(b)
 	if err != nil {
 		return
 	}
@@ -25,7 +28,7 @@ func DecodeTestMessage(b []byte) (_ TestMessage, size int, err error) {
 }
 
 func BuildTestMessage() (_ TestMessageBuilder, err error) {
-	e := NewWriter()
+	e := spec.NewWriter()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -33,14 +36,14 @@ func BuildTestMessage() (_ TestMessageBuilder, err error) {
 }
 
 func BuildTestMessageBuffer(b buffer.Buffer) (_ TestMessageBuilder, err error) {
-	e := NewWriterBuffer(b)
+	e := spec.NewWriterBuffer(b)
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
 	return TestMessageBuilder{e}, nil
 }
 
-func BuildTestMessageWriter(e *Writer) (result TestMessageBuilder, err error) {
+func BuildTestMessageWriter(e *spec.Writer) (result TestMessageBuilder, err error) {
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -60,26 +63,26 @@ func (m TestMessage) Float32() float32     { return m.msg.GetFloat32(30) }
 func (m TestMessage) Float64() float64     { return m.msg.GetFloat64(31) }
 func (m TestMessage) String() string       { return m.msg.GetString(40) }
 func (m TestMessage) Bytes() []byte        { return m.msg.GetBytes(41) }
-func (m TestMessage) Unwrap() Message      { return m.msg }
+func (m TestMessage) Unwrap() spec.Message { return m.msg }
 
 func (m TestMessage) Submessage() TestSubmessage {
 	b := m.msg.Field(50)
 	return GetTestSubmessage(b)
 }
 
-func (m TestMessage) List() List[int64] {
+func (m TestMessage) List() spec.List[int64] {
 	b := m.msg.Field(51)
-	return NewList(b, DecodeInt64)
+	return spec.NewList(b, encoding.DecodeInt64)
 }
 
-func (m TestMessage) Messages() List[TestElement] {
+func (m TestMessage) Messages() spec.List[TestElement] {
 	b := m.msg.Field(52)
-	return NewList(b, DecodeTestElement)
+	return spec.NewList(b, DecodeTestElement)
 }
 
-func (m TestMessage) Strings() List[string] {
+func (m TestMessage) Strings() spec.List[string] {
 	b := m.msg.Field(53)
-	return NewList(b, DecodeString)
+	return spec.NewList(b, encoding.DecodeString)
 }
 
 func (m TestMessage) Struct() TestStruct {
@@ -90,7 +93,7 @@ func (m TestMessage) Struct() TestStruct {
 // TestMessageBuilder
 
 type TestMessageBuilder struct {
-	e *Writer
+	e *spec.Writer
 }
 
 func (b TestMessageBuilder) End() ([]byte, error) {
@@ -162,39 +165,39 @@ func (b TestMessageBuilder) Submessage() (TestSubmessageBuilder, error) {
 	return BuildTestSubmessageWriter(b.e)
 }
 
-func (b TestMessageBuilder) List() ValueListBuilder[int64] {
+func (b TestMessageBuilder) List() spec.ValueListBuilder[int64] {
 	b.e.BeginField(51)
-	return NewValueListBuilder(b.e, EncodeInt64)
+	return spec.NewValueListBuilder(b.e, encoding.EncodeInt64)
 }
 
-func (b TestMessageBuilder) Messages() ListBuilder[TestElementBuilder] {
+func (b TestMessageBuilder) Messages() spec.ListBuilder[TestElementBuilder] {
 	b.e.BeginField(52)
-	return NewListBuilder(b.e, BuildTestElementWriter)
+	return spec.NewListBuilder(b.e, BuildTestElementWriter)
 }
 
-func (b TestMessageBuilder) Strings() ValueListBuilder[string] {
+func (b TestMessageBuilder) Strings() spec.ValueListBuilder[string] {
 	b.e.BeginField(53)
-	return NewValueListBuilder(b.e, EncodeString)
+	return spec.NewValueListBuilder(b.e, encoding.EncodeString)
 }
 
 func (b TestMessageBuilder) Struct(v TestStruct) error {
-	EncodeValue(b.e, v, EncodeTestStruct)
+	writer.WriteValue(b.e, v, EncodeTestStruct)
 	return b.e.Field(60)
 }
 
 // TestSubmessage
 
 type TestSubmessage struct {
-	msg Message
+	msg spec.Message
 }
 
 func GetTestSubmessage(b []byte) TestSubmessage {
-	msg := GetMessage(b)
+	msg := spec.GetMessage(b)
 	return TestSubmessage{msg}
 }
 
 func DecodeTestSubmessage(b []byte) (_ TestSubmessage, size int, err error) {
-	msg, size, err := DecodeMessage(b)
+	msg, size, err := spec.DecodeMessage(b)
 	if err != nil {
 		return
 	}
@@ -202,7 +205,7 @@ func DecodeTestSubmessage(b []byte) (_ TestSubmessage, size int, err error) {
 }
 
 func BuildTestSubmessage() (_ TestSubmessageBuilder, err error) {
-	e := NewWriter()
+	e := spec.NewWriter()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -210,28 +213,28 @@ func BuildTestSubmessage() (_ TestSubmessageBuilder, err error) {
 }
 
 func BuildTestSubmessageStack(b buffer.Buffer) (_ TestSubmessageBuilder, err error) {
-	e := NewWriterBuffer(b)
+	e := spec.NewWriterBuffer(b)
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
 	return TestSubmessageBuilder{e}, nil
 }
 
-func BuildTestSubmessageWriter(e *Writer) (_ TestSubmessageBuilder, err error) {
+func BuildTestSubmessageWriter(e *spec.Writer) (_ TestSubmessageBuilder, err error) {
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
 	return TestSubmessageBuilder{e}, nil
 }
 
-func (m TestSubmessage) Int32() int32    { return m.msg.GetInt32(1) }
-func (m TestSubmessage) Int64() int64    { return m.msg.GetInt64(2) }
-func (m TestSubmessage) Unwrap() Message { return m.msg }
+func (m TestSubmessage) Int32() int32         { return m.msg.GetInt32(1) }
+func (m TestSubmessage) Int64() int64         { return m.msg.GetInt64(2) }
+func (m TestSubmessage) Unwrap() spec.Message { return m.msg }
 
 // TestSubmessageBuilder
 
 type TestSubmessageBuilder struct {
-	e *Writer
+	e *spec.Writer
 }
 
 func (b TestSubmessageBuilder) End() ([]byte, error) {
@@ -251,16 +254,16 @@ func (b TestSubmessageBuilder) Int64(v int64) error {
 // TestElement
 
 type TestElement struct {
-	msg Message
+	msg spec.Message
 }
 
 func GetTestElement(b []byte) TestElement {
-	msg := GetMessage(b)
+	msg := spec.GetMessage(b)
 	return TestElement{msg}
 }
 
 func DecodeTestElement(b []byte) (_ TestElement, size int, err error) {
-	msg, size, err := DecodeMessage(b)
+	msg, size, err := spec.DecodeMessage(b)
 	if err != nil {
 		return
 	}
@@ -268,7 +271,7 @@ func DecodeTestElement(b []byte) (_ TestElement, size int, err error) {
 }
 
 func BuildTestElement() (_ TestElementBuilder, err error) {
-	e := NewWriter()
+	e := spec.NewWriter()
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
@@ -276,14 +279,14 @@ func BuildTestElement() (_ TestElementBuilder, err error) {
 }
 
 func BuildTestElementBuffer(b buffer.Buffer) (_ TestElementBuilder, err error) {
-	e := NewWriterBuffer(b)
+	e := spec.NewWriterBuffer(b)
 	if err = e.BeginMessage(); err != nil {
 		return
 	}
 	return TestElementBuilder{e}, nil
 }
 
-func BuildTestElementWriter(e *Writer) (_ TestElementBuilder) {
+func BuildTestElementWriter(e *spec.Writer) (_ TestElementBuilder) {
 	if err := e.BeginMessage(); err != nil {
 		return
 	}
@@ -305,7 +308,7 @@ func (m TestElement) Int64() int64 {
 // TestElementBuilder
 
 type TestElementBuilder struct {
-	e *Writer
+	e *spec.Writer
 }
 
 func (b TestElementBuilder) End() ([]byte, error) {
@@ -340,7 +343,7 @@ func GetTestStruct(b []byte) (result TestStruct) {
 }
 
 func DecodeTestStruct(b []byte) (result TestStruct, total int, err error) {
-	dataSize, size, err := DecodeStruct(b)
+	dataSize, size, err := encoding.DecodeStruct(b)
 	if err != nil {
 		return
 	}
@@ -352,13 +355,13 @@ func DecodeTestStruct(b []byte) (result TestStruct, total int, err error) {
 	// decode in reverse order
 
 	off -= n
-	result.Y, n, err = DecodeInt64(b[:off])
+	result.Y, n, err = encoding.DecodeInt64(b[:off])
 	if err != nil {
 		return
 	}
 
 	off -= n
-	result.X, n, err = DecodeInt64(b[:off])
+	result.X, n, err = encoding.DecodeInt64(b[:off])
 	if err != nil {
 		return
 	}
@@ -370,19 +373,19 @@ func EncodeTestStruct(b buffer.Buffer, s TestStruct) (int, error) {
 	var dataSize, n int
 	var err error
 
-	n, err = EncodeInt64(b, s.X)
+	n, err = encoding.EncodeInt64(b, s.X)
 	if err != nil {
 		return 0, err
 	}
 	dataSize += n
 
-	n, err = EncodeInt64(b, s.Y)
+	n, err = encoding.EncodeInt64(b, s.Y)
 	if err != nil {
 		return 0, err
 	}
 	dataSize += n
 
-	n, err = EncodeStruct(b, dataSize)
+	n, err = encoding.EncodeStruct(b, dataSize)
 	if err != nil {
 		return 0, err
 	}

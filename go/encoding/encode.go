@@ -1,4 +1,4 @@
-package spec
+package encoding
 
 import (
 	"encoding/binary"
@@ -163,9 +163,9 @@ func EncodeStruct(b buffer.Buffer, dataSize int) (int, error) {
 	return n, nil
 }
 
-// list meta
+// ListMeta
 
-func encodeListMeta(b buffer.Buffer, dataSize int, table []listElement) (int, error) {
+func EncodeListMeta(b buffer.Buffer, dataSize int, table []ListElement) (int, error) {
 	if dataSize > MaxSize {
 		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
@@ -192,7 +192,7 @@ func encodeListMeta(b buffer.Buffer, dataSize int, table []listElement) (int, er
 	return n, nil
 }
 
-func encodeListTable(b buffer.Buffer, table []listElement, big bool) (int, error) {
+func encodeListTable(b buffer.Buffer, table []ListElement, big bool) (int, error) {
 	// element size
 	elemSize := listElementSmallSize
 	if big {
@@ -214,9 +214,9 @@ func encodeListTable(b buffer.Buffer, table []listElement, big bool) (int, error
 		q := p[off : off+elemSize]
 
 		if big {
-			binary.BigEndian.PutUint32(q, elem.offset)
+			binary.BigEndian.PutUint32(q, elem.Offset)
 		} else {
-			binary.BigEndian.PutUint16(q, uint16(elem.offset))
+			binary.BigEndian.PutUint16(q, uint16(elem.Offset))
 		}
 
 		off += elemSize
@@ -225,9 +225,9 @@ func encodeListTable(b buffer.Buffer, table []listElement, big bool) (int, error
 	return size, nil
 }
 
-// message meta
+// MessageMeta
 
-func encodeMessageMeta(b buffer.Buffer, dataSize int, table []messageField) (int, error) {
+func EncodeMessageMeta(b buffer.Buffer, dataSize int, table []MessageField) (int, error) {
 	if dataSize > MaxSize {
 		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
@@ -254,7 +254,7 @@ func encodeMessageMeta(b buffer.Buffer, dataSize int, table []messageField) (int
 	return n, nil
 }
 
-func encodeMessageTable(b buffer.Buffer, table []messageField, big bool) (int, error) {
+func encodeMessageTable(b buffer.Buffer, table []MessageField, big bool) (int, error) {
 	// field size
 	var fieldSize int
 	if big {
@@ -278,11 +278,11 @@ func encodeMessageTable(b buffer.Buffer, table []messageField, big bool) (int, e
 		q := p[off : off+fieldSize]
 
 		if big {
-			binary.BigEndian.PutUint16(q, field.tag)
-			binary.BigEndian.PutUint32(q[2:], field.offset)
+			binary.BigEndian.PutUint16(q, field.Tag)
+			binary.BigEndian.PutUint32(q[2:], field.Offset)
 		} else {
-			q[0] = byte(field.tag)
-			binary.BigEndian.PutUint16(q[1:], uint16(field.offset))
+			q[0] = byte(field.Tag)
+			binary.BigEndian.PutUint16(q[1:], uint16(field.Offset))
 		}
 
 		off += fieldSize

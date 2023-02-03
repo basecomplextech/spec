@@ -1,10 +1,11 @@
-package spec
+package tests
 
 import (
 	"fmt"
 	"math"
 
 	"github.com/complex1tech/baselibrary/types"
+	spec "github.com/complex1tech/spec/go"
 )
 
 // Simple
@@ -25,7 +26,7 @@ func newTestSmall() *TestSmall {
 	}
 }
 
-func (m *TestSmall) Encode(e *Writer) ([]byte, error) {
+func (m *TestSmall) Encode(e *spec.Writer) ([]byte, error) {
 	e.BeginMessage()
 
 	e.Int64(m.Field0)
@@ -44,7 +45,7 @@ func (m *TestSmall) Encode(e *Writer) ([]byte, error) {
 }
 
 func (m *TestSmall) Marshal() ([]byte, error) {
-	e := NewWriter()
+	e := spec.NewWriter()
 	return m.Encode(e)
 }
 
@@ -282,7 +283,7 @@ func (m *TestObject) Encode(b TestMessageBuilder) error {
 }
 
 func (m *TestObject) Marshal() ([]byte, error) {
-	e := NewWriter()
+	e := spec.NewWriter()
 	b, err := BuildTestMessageWriter(e)
 	if err != nil {
 		return nil, err
@@ -341,7 +342,7 @@ func newTestObjectElement(i int) *TestObjectElement {
 }
 
 func (m *TestObjectElement) Decode(b []byte) error {
-	msg, _, err := DecodeMessage(b)
+	msg, _, err := spec.DecodeMessage(b)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,8 @@ package spec
 
 import (
 	"fmt"
+
+	"github.com/complex1tech/spec/go/encoding"
 )
 
 // Value is a raw value.
@@ -9,11 +11,11 @@ type Value []byte
 
 // GetValue decodes and returns a value without recursive validation, or an empty value on error.
 func GetValue(b []byte) Value {
-	t, _, err := DecodeType(b)
+	t, _, err := encoding.DecodeType(b)
 	if err != nil {
 		return Value{}
 	}
-	if err := checkType(t); err != nil {
+	if err := (t).Check(); err != nil {
 		return Value{}
 	}
 	return Value(b)
@@ -21,7 +23,7 @@ func GetValue(b []byte) Value {
 
 // DecodeValue decodes, recursively validates and returns a value.
 func DecodeValue(b []byte) (_ Value, n int, err error) {
-	t, n, err := DecodeType(b)
+	t, n, err := encoding.DecodeType(b)
 	if err != nil {
 		return
 	}
@@ -35,34 +37,34 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 		// pass
 
 	case TypeByte:
-		_, n, err = DecodeByte(b)
+		_, n, err = encoding.DecodeByte(b)
 
 	case TypeInt32:
-		_, n, err = DecodeInt32(b)
+		_, n, err = encoding.DecodeInt32(b)
 	case TypeInt64:
-		_, n, err = DecodeInt64(b)
+		_, n, err = encoding.DecodeInt64(b)
 
 	case TypeUint32:
-		_, n, err = DecodeUint32(b)
+		_, n, err = encoding.DecodeUint32(b)
 	case TypeUint64:
-		_, n, err = DecodeUint64(b)
+		_, n, err = encoding.DecodeUint64(b)
 
 	case TypeBin64:
-		_, n, err = DecodeBin64(b)
+		_, n, err = encoding.DecodeBin64(b)
 	case TypeBin128:
-		_, n, err = DecodeBin128(b)
+		_, n, err = encoding.DecodeBin128(b)
 	case TypeBin256:
-		_, n, err = DecodeBin256(b)
+		_, n, err = encoding.DecodeBin256(b)
 
 	case TypeFloat32:
-		_, n, err = DecodeFloat32(b)
+		_, n, err = encoding.DecodeFloat32(b)
 	case TypeFloat64:
-		_, n, err = DecodeFloat64(b)
+		_, n, err = encoding.DecodeFloat64(b)
 
 	case TypeBytes:
-		_, n, err = DecodeBytes(b)
+		_, n, err = encoding.DecodeBytes(b)
 	case TypeString:
-		_, n, err = DecodeString(b)
+		_, n, err = encoding.DecodeString(b)
 
 	case TypeList, TypeBigList:
 		_, n, err = DecodeList(b, DecodeValue)
@@ -71,7 +73,7 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 		_, n, err = DecodeMessage(b)
 
 	case TypeStruct:
-		_, n, err = DecodeStruct(b)
+		_, n, err = encoding.DecodeStruct(b)
 	}
 
 	v := Value(b)
@@ -79,6 +81,6 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 }
 
 func (v Value) Type() Type {
-	p, _, _ := DecodeType(v)
+	p, _, _ := encoding.DecodeType(v)
 	return p
 }

@@ -1,4 +1,4 @@
-package spec
+package encoding
 
 import (
 	"encoding/binary"
@@ -448,9 +448,9 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 	return int(dsize), size, nil
 }
 
-// list meta
+// ListMeta
 
-func decodeListMeta(b []byte) (_ listMeta, size int, err error) {
+func DecodeListMeta(b []byte) (_ ListMeta, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -506,7 +506,7 @@ func decodeListMeta(b []byte) (_ listMeta, size int, err error) {
 	size += int(dataSize)
 
 	// done
-	meta := listMeta{
+	meta := ListMeta{
 		table: table,
 		data:  dataSize,
 		big:   big,
@@ -539,9 +539,9 @@ func decodeListTable(b []byte, size uint32, big bool) (_ listTable, err error) {
 	return v, nil
 }
 
-// message meta
+// MessageMeta
 
-func decodeMessageMeta(b []byte) (_ messageMeta, size int, err error) {
+func DecodeMessageMeta(b []byte) (_ MessageMeta, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -596,7 +596,7 @@ func decodeMessageMeta(b []byte) (_ messageMeta, size int, err error) {
 	size += int(dataSize)
 
 	// done
-	meta := messageMeta{
+	meta := MessageMeta{
 		table: table,
 		data:  dataSize,
 		big:   big,

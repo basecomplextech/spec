@@ -1,10 +1,11 @@
-package spec
+package writer
 
 import (
 	"math/rand"
 	"testing"
 	"unsafe"
 
+	"github.com/complex1tech/spec/go/encoding"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,14 +19,14 @@ func TestWriterState_Size__should_be_lte_1kb(t *testing.T) {
 // list buffer
 
 func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
-	matrix := [][]listElement{
-		testListElementsN(1),
-		testListElementsN(10),
-		testListElementsN(100),
-		testListElementsN(10),
-		testListElementsN(1),
-		testListElementsN(0),
-		testListElementsN(3),
+	matrix := [][]encoding.ListElement{
+		encoding.TestElementsN(1),
+		encoding.TestElementsN(10),
+		encoding.TestElementsN(100),
+		encoding.TestElementsN(10),
+		encoding.TestElementsN(1),
+		encoding.TestElementsN(0),
+		encoding.TestElementsN(3),
 	}
 
 	buffer := listStack{}
@@ -58,14 +59,14 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 // message buffer
 
 func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t *testing.T) {
-	matrix := [][]messageField{
-		testMessageFieldsN(1),
-		testMessageFieldsN(10),
-		testMessageFieldsN(100),
-		testMessageFieldsN(10),
-		testMessageFieldsN(1),
-		testMessageFieldsN(0),
-		testMessageFieldsN(3),
+	matrix := [][]encoding.MessageField{
+		encoding.TestFieldsN(1),
+		encoding.TestFieldsN(10),
+		encoding.TestFieldsN(100),
+		encoding.TestFieldsN(10),
+		encoding.TestFieldsN(1),
+		encoding.TestFieldsN(0),
+		encoding.TestFieldsN(3),
 	}
 
 	buffer := messageStack{}
@@ -77,7 +78,7 @@ func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t 
 		offsets = append(offsets, offset)
 
 		// copy
-		ff := make([]messageField, len(fields))
+		ff := make([]encoding.MessageField, len(fields))
 		copy(ff, fields)
 
 		// shuffle

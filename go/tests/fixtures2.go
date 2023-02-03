@@ -1,7 +1,9 @@
-package spec
+package tests
 
-func (m *TestSmall) Write(e *Writer) ([]byte, error) {
-	w := newMessageWriter(e)
+import spec "github.com/complex1tech/spec/go"
+
+func (m *TestSmall) Write(e *spec.Writer) ([]byte, error) {
+	w := e.Message()
 	w.Field(1).Int64(m.Field0)
 	w.Field(2).Int64(m.Field1)
 	w.Field(3).Int64(m.Field2)
@@ -9,8 +11,8 @@ func (m *TestSmall) Write(e *Writer) ([]byte, error) {
 	return w.Build()
 }
 
-func (m *TestObject) Write(e *Writer) ([]byte, error) {
-	w := newMessageWriter(e)
+func (m *TestObject) Write(e *spec.Writer) ([]byte, error) {
+	w := e.Message()
 
 	w.Field(1).Bool(m.Bool)
 	w.Field(2).Byte(m.Byte)
@@ -79,13 +81,13 @@ func (m *TestObject) Write(e *Writer) ([]byte, error) {
 	return w.Build()
 }
 
-func (m *TestSubobject) Write(w MessageWriter) ([]byte, error) {
+func (m *TestSubobject) Write(w spec.MessageWriter) ([]byte, error) {
 	w.Field(1).Int32(m.Int32)
 	w.Field(2).Int64(m.Int64)
 	return w.Build()
 }
 
-func (m *TestObjectElement) Write(w MessageWriter) ([]byte, error) {
+func (m *TestObjectElement) Write(w spec.MessageWriter) ([]byte, error) {
 	w.Field(1).Byte(m.Byte)
 	w.Field(2).Int32(m.Int32)
 	w.Field(3).Int64(m.Int64)

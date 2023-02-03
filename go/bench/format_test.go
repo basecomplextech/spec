@@ -8,7 +8,7 @@ import (
 
 func BenchmarkFieldTable_field(b *testing.B) {
 	buf := buffer.NewSize(4096)
-	fields := testMessageFieldsN(100)
+	fields := TestFieldsN(100)
 
 	size, err := encodeMessageTable(buf, fields, false)
 	if err != nil {
@@ -35,7 +35,7 @@ func BenchmarkFieldTable_field(b *testing.B) {
 
 func BenchmarkFieldTable_offset(b *testing.B) {
 	buf := buffer.NewSize(4096)
-	fields := testMessageFieldsN(100)
+	fields := TestFieldsN(100)
 
 	size, err := encodeMessageTable(buf, fields, false)
 	if err != nil {

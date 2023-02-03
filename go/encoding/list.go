@@ -1,4 +1,4 @@
-package spec
+package encoding
 
 import (
 	"encoding/binary"
@@ -10,25 +10,39 @@ const (
 	listElementBigSize   = 4
 )
 
-type listMeta struct {
+type ListMeta struct {
 	table listTable
 
 	data uint32 // data size
 	big  bool   // small/big table format
 }
 
-// len returns the number of elements in the table.
-func (m listMeta) len() int {
+// Data returns the size of the list data.
+func (m ListMeta) Data() int {
+	return int(m.data)
+}
+
+// Len returns the number of elements in the table.
+func (m ListMeta) Len() int {
 	return m.table.len(m.big)
 }
 
-// offset returns an element start/end by an index or -1/-1.
-func (m listMeta) offset(i int) (int, int) {
+// Offset returns an element start/end by an index or -1/-1.
+func (m ListMeta) Offset(i int) (int, int) {
 	if m.big {
 		return m.table.offset_big(i)
 	} else {
 		return m.table.offset_small(i)
 	}
+}
+
+// ListElement specifies a value offset in a list byte array.
+//
+//	+-------------------+
+//	|    offset(2/4)    |
+//	+-------------------+
+type ListElement struct {
+	Offset uint32
 }
 
 // listTable is a serialized array of list element offsets ordered by index.
@@ -39,17 +53,8 @@ func (m listMeta) offset(i int) (int, int) {
 //	+----------------+----------------+----------------+
 type listTable []byte
 
-// listElement specifies a value offset in a list byte array.
-//
-//	+-------------------+
-//	|    offset(2/4)    |
-//	+-------------------+
-type listElement struct {
-	offset uint32
-}
-
 // isBigList returns true if table count > uint8 or element offset > uint16.
-func isBigList(table []listElement) bool {
+func isBigList(table []ListElement) bool {
 	ln := len(table)
 	if ln == 0 {
 		return false
@@ -62,7 +67,7 @@ func isBigList(table []listElement) bool {
 
 	// or offset > uint16
 	last := table[ln-1]
-	return last.offset > math.MaxUint16
+	return last.Offset > math.MaxUint16
 }
 
 // len returns the number of elements in the table.
@@ -77,10 +82,10 @@ func (t listTable) len(big bool) int {
 }
 
 // elements parses the table and returns a slice of elements
-func (t listTable) elements(big bool) []listElement {
+func (t listTable) elements(big bool) []ListElement {
 	n := t.len(big)
 
-	result := make([]listElement, 0, n)
+	result := make([]ListElement, 0, n)
 	for i := 0; i < n; i++ {
 		var end int
 		if big {
@@ -89,8 +94,8 @@ func (t listTable) elements(big bool) []listElement {
 			_, end = t.offset_small(i)
 		}
 
-		elem := listElement{
-			offset: uint32(end),
+		elem := ListElement{
+			Offset: uint32(end),
 		}
 		result = append(result, elem)
 	}

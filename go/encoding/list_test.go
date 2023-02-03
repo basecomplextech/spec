@@ -1,4 +1,4 @@
-package spec
+package encoding
 
 import (
 	"math"
@@ -9,47 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testListElements() []listElement {
-	return testListElementsN(10)
-}
-
-func testListElementsN(n int) []listElement {
-	return testListElementsSizeN(false, n)
-}
-
-func testListElementsSize(big bool) []listElement {
-	return testListElementsSizeN(big, 10)
-}
-
-func testListElementsSizeN(big bool, n int) []listElement {
-	start := uint32(0)
-	if big {
-		start = math.MaxUint16 + 1
-	}
-
-	result := make([]listElement, 0, n)
-	for i := 0; i < n; i++ {
-		elem := listElement{
-			offset: start + uint32(i*10),
-		}
-		result = append(result, elem)
-	}
-	return result
-}
-
 // isBigList
 
 func TestIsBigList__should_return_true_when_len_greater_than_uint8(t *testing.T) {
-	smallTable := testListElementsN(math.MaxUint8)
-	bigTable := testListElementsN(math.MaxUint8 + 1)
+	smallTable := TestElementsN(math.MaxUint8)
+	bigTable := TestElementsN(math.MaxUint8 + 1)
 
 	assert.False(t, isBigList(smallTable))
 	assert.True(t, isBigList(bigTable))
 }
 
 func TestIsBigList__should_return_true_when_offset_greater_than_uint16(t *testing.T) {
-	smallTable := testListElementsSizeN(false, 1)
-	bigTable := testListElementsSizeN(true, 1)
+	smallTable := TestElementsSizeN(false, 1)
+	bigTable := TestElementsSizeN(true, 1)
 
 	assert.False(t, isBigList(smallTable))
 	assert.True(t, isBigList(bigTable))
@@ -59,7 +31,7 @@ func TestIsBigList__should_return_true_when_offset_greater_than_uint16(t *testin
 
 func TestListTable_len_big__should_return_number_of_elements(t *testing.T) {
 	big := true
-	elements := testListElementsSize(big)
+	elements := TestElementsSize(big)
 
 	buf := buffer.New()
 	size, err := encodeListTable(buf, elements, big)
@@ -77,7 +49,7 @@ func TestListTable_len_big__should_return_number_of_elements(t *testing.T) {
 
 func TestListTable_len_smal__should_return_number_of_elements(t *testing.T) {
 	small := false
-	elements := testListElementsSize(small)
+	elements := TestElementsSize(small)
 
 	buf := buffer.New()
 	size, err := encodeListTable(buf, elements, small)
@@ -97,7 +69,7 @@ func TestListTable_len_smal__should_return_number_of_elements(t *testing.T) {
 
 func TestListTable_offset_big__should_return_start_end_offset_by_index(t *testing.T) {
 	big := true
-	elements := testListElementsSize(big)
+	elements := TestElementsSize(big)
 
 	buf := buffer.New()
 	size, err := encodeListTable(buf, elements, big)
@@ -117,13 +89,13 @@ func TestListTable_offset_big__should_return_start_end_offset_by_index(t *testin
 
 		start, end := table.offset_big(i)
 		require.Equal(t, prev, start)
-		require.Equal(t, int(elem.offset), end)
+		require.Equal(t, int(elem.Offset), end)
 	}
 }
 
 func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *testing.T) {
 	big := true
-	elements := testListElementsSize(big)
+	elements := TestElementsSize(big)
 
 	buf := buffer.New()
 	size, err := encodeListTable(buf, elements, big)
@@ -149,7 +121,7 @@ func TestListTable_offset_big__should_return_minus_one_when_out_of_range(t *test
 
 func TestListTable_offset_small__should_return_start_end_offset_by_index(t *testing.T) {
 	big := false
-	elements := testListElementsSize(big)
+	elements := TestElementsSize(big)
 
 	buf := buffer.New()
 	size, err := encodeListTable(buf, elements, big)
@@ -169,13 +141,13 @@ func TestListTable_offset_small__should_return_start_end_offset_by_index(t *test
 
 		start, end := table.offset_small(i)
 		require.Equal(t, prev, start)
-		require.Equal(t, int(elem.offset), end)
+		require.Equal(t, int(elem.Offset), end)
 	}
 }
 
 func TestListTable_offset_small__should_return_minus_one_when_out_of_range(t *testing.T) {
 	big := false
-	elements := testListElementsSize(big)
+	elements := TestElementsSize(big)
 
 	buf := buffer.New()
 	size, err := encodeListTable(buf, elements, big)

@@ -1,4 +1,4 @@
-package spec
+package encoding
 
 import (
 	"math"
@@ -270,7 +270,7 @@ func TestDecodeListMeta__should_decode_list(t *testing.T) {
 }
 
 func TestDecodeListTable__should_decode_list_table(t *testing.T) {
-	elements := testListElements()
+	elements := TestElements()
 
 	for i := 0; i <= len(elements); i++ {
 		b := buffer.New()
@@ -362,7 +362,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_data(t *testing.T) {
 
 func TestDecodeMessageMeta__should_decode_message_meta(t *testing.T) {
 	b := testEncodeMessage(t)
-	_, n, err := decodeMessageMeta(b)
+	_, n, err := DecodeMessageMeta(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,7 +371,7 @@ func TestDecodeMessageMeta__should_decode_message_meta(t *testing.T) {
 }
 
 func TestDecodeMessageTable__should_decode_message_table(t *testing.T) {
-	fields := testMessageFields()
+	fields := TestFields()
 
 	for i := 0; i <= len(fields); i++ {
 		buf := buffer.New()
@@ -396,7 +396,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_type(t *testing.T) 
 	b := testEncodeMessage(t)
 	b[len(b)-1] = byte(TypeList)
 
-	_, _, err := decodeMessageMeta(b)
+	_, _, err := DecodeMessageMeta(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid type")
 }
@@ -406,7 +406,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table_size(t *testi
 	b = append(b, 0xff)
 	b = append(b, byte(TypeMessage))
 
-	_, _, err := decodeMessageMeta(b)
+	_, _, err := DecodeMessageMeta(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table size")
 }
@@ -418,7 +418,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_data_size(t *testin
 	b = appendSize(b, big, 1000)
 	b = append(b, byte(TypeMessage))
 
-	_, _, err := decodeMessageMeta(b)
+	_, _, err := DecodeMessageMeta(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid data size")
 }
@@ -436,7 +436,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T)
 	b = appendSize(b, big, 1000) // table size
 	b = append(b, byte(TypeMessage))
 
-	_, _, err = decodeMessageMeta(b)
+	_, _, err = DecodeMessageMeta(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table")
 }
@@ -455,7 +455,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_data(t *testing.T) 
 	b = appendSize(b, big, 0)
 	b = append(b, byte(TypeMessage))
 
-	_, _, err = decodeMessageMeta(b)
+	_, _, err = DecodeMessageMeta(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid data")
 }

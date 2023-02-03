@@ -1,4 +1,4 @@
-package spec
+package encoding
 
 import (
 	"encoding/binary"
@@ -10,20 +10,25 @@ const (
 	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
-type messageMeta struct {
+type MessageMeta struct {
 	table messageTable
 
 	data uint32 // message data size
 	big  bool   // big/small table format
 }
 
-// count returns the number of fields in the message.
-func (m messageMeta) count() int {
+// Len returns the number of fields in the message.
+func (m MessageMeta) Len() int {
 	return m.table.count(m.big)
 }
 
-// offset returns field end offset by a tag or -1.
-func (m messageMeta) offset(tag uint16) int {
+// Data returns the message data size.
+func (m MessageMeta) Data() uint32 {
+	return m.data
+}
+
+// Offset returns field end offset by a tag or -1.
+func (m MessageMeta) Offset(tag uint16) int {
 	if m.big {
 		return m.table.offset_big(tag)
 	} else {
@@ -31,8 +36,8 @@ func (m messageMeta) offset(tag uint16) int {
 	}
 }
 
-// offsetByIndex returns field end offset by an index or -1.
-func (m messageMeta) offsetByIndex(i int) int {
+// OffsetByIndex returns field end offset by an index or -1.
+func (m MessageMeta) OffsetByIndex(i int) int {
 	if m.big {
 		return m.table.offsetByIndex_big(i)
 	} else {
@@ -40,13 +45,23 @@ func (m messageMeta) offsetByIndex(i int) int {
 	}
 }
 
-// field returns a field by an index or false,
-func (m messageMeta) field(i int) (messageField, bool) {
+// Field returns a field by an index or false,
+func (m MessageMeta) Field(i int) (MessageField, bool) {
 	if m.big {
 		return m.table.field_big(i)
 	} else {
 		return m.table.field_small(i)
 	}
+}
+
+// MessageField specifies a tag and a value offset in a message byte array.
+//
+//	+----------+-------------------+
+//	| tag(1/2) |    offset(2/4)    |
+//	+----------+-------------------+
+type MessageField struct {
+	Tag    uint16
+	Offset uint32
 }
 
 // messageTable is a serialized array of message fields ordered by tags.
@@ -58,18 +73,8 @@ func (m messageMeta) field(i int) (messageField, bool) {
 //	+---------------------+---------------------+---------------------+
 type messageTable []byte
 
-// messageField specifies a tag and a value offset in a message byte array.
-//
-//	+----------+-------------------+
-//	| tag(1/2) |    offset(2/4)    |
-//	+----------+-------------------+
-type messageField struct {
-	tag    uint16
-	offset uint32
-}
-
 // isBigList returns true if any field tag > uint8 or offset > uint16.
-func isBigMessage(table []messageField) bool {
+func isBigMessage(table []MessageField) bool {
 	ln := len(table)
 	if ln == 0 {
 		return false
@@ -79,9 +84,9 @@ func isBigMessage(table []messageField) bool {
 		field := table[i]
 
 		switch {
-		case field.tag > math.MaxUint8:
+		case field.Tag > math.MaxUint8:
 			return true
-		case field.offset > math.MaxUint16:
+		case field.Offset > math.MaxUint16:
 			return true
 		}
 	}
@@ -212,7 +217,7 @@ func (t messageTable) offsetByIndex_small(i int) int {
 
 // field
 
-func (t messageTable) field_big(i int) (f messageField, ok bool) {
+func (t messageTable) field_big(i int) (f MessageField, ok bool) {
 	size := messageFieldBigSize
 	n := len(t) / size
 
@@ -227,16 +232,16 @@ func (t messageTable) field_big(i int) (f messageField, ok bool) {
 	off := i * size
 	b := t[off : off+size]
 
-	f = messageField{
-		tag:    binary.BigEndian.Uint16(b),
-		offset: binary.BigEndian.Uint32(b[2:]),
+	f = MessageField{
+		Tag:    binary.BigEndian.Uint16(b),
+		Offset: binary.BigEndian.Uint32(b[2:]),
 	}
 
 	ok = true
 	return
 }
 
-func (t messageTable) field_small(i int) (f messageField, ok bool) {
+func (t messageTable) field_small(i int) (f MessageField, ok bool) {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
@@ -251,9 +256,9 @@ func (t messageTable) field_small(i int) (f messageField, ok bool) {
 	off := i * size
 	b := t[off : off+size]
 
-	f = messageField{
-		tag:    uint16(b[0]),
-		offset: uint32(binary.BigEndian.Uint16(b[1:])),
+	f = MessageField{
+		Tag:    uint16(b[0]),
+		Offset: uint32(binary.BigEndian.Uint16(b[1:])),
 	}
 
 	ok = true
@@ -261,12 +266,12 @@ func (t messageTable) field_small(i int) (f messageField, ok bool) {
 }
 
 // fields parses the table and returns a slice of fields.
-func (t messageTable) fields(big bool) []messageField {
+func (t messageTable) fields(big bool) []MessageField {
 	n := t.count(big)
 
-	result := make([]messageField, 0, n)
+	result := make([]MessageField, 0, n)
 	for i := 0; i < n; i++ {
-		var field messageField
+		var field MessageField
 		var ok bool
 
 		if big {
