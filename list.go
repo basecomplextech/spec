@@ -41,11 +41,12 @@ func ParseList(b []byte) (_ List, size int, err error) {
 
 	ln := l.Len()
 	for i := 0; i < ln; i++ {
-		elem := l.GetBytes(i)
-		if len(elem) == 0 {
+		b1 := l.GetBytes(i)
+		if len(b1) == 0 {
 			continue
 		}
-		if _, _, err = ParseValue(elem); err != nil {
+
+		if _, _, err = ParseValue(b1); err != nil {
 			return
 		}
 	}
@@ -109,7 +110,7 @@ func (l List) Clone() List {
 	return NewList(b)
 }
 
-// CloneTo clones a list into a byte slice.
+// CloneTo clones a list into a slice.
 func (l List) CloneTo(b []byte) List {
 	ln := len(l.bytes)
 	if cap(b) < ln {
