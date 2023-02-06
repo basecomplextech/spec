@@ -50,7 +50,7 @@ var writerStatePool = &sync.Pool{
 	},
 }
 
-func getWriterState() *writerState {
+func acquireWriterState() *writerState {
 	return writerStatePool.Get().(*writerState)
 }
 

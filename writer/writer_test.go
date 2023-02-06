@@ -14,6 +14,51 @@ func testWriter() *writer {
 	return newWriter(buf)
 }
 
+// Reset
+
+func TestWriter_Reset__should_reset_writer(t *testing.T) {
+	w := testWriter()
+	w.closef("test error")
+
+	buf := buffer.New()
+	w.Reset(buf)
+
+	assert.NotNil(t, w.writerState)
+	assert.Nil(t, w.err)
+}
+
+func TestWriter_Reset__should_create_buffer_when_nil(t *testing.T) {
+	w := testWriter()
+	w.closef("test error")
+
+	w.Reset(nil)
+
+	assert.NotNil(t, w.writerState)
+	assert.Nil(t, w.err)
+}
+
+func TestWriter_Reset__should_reset_existing_state(t *testing.T) {
+	w := testWriter()
+	w.Value().String("hello, world")
+
+	s := w.writerState
+	w.Reset(nil)
+
+	s1 := w.writerState
+	assert.Same(t, s, s1)
+}
+
+// Free
+
+func TestWriter_Free__should_close_writer_and_release_state(t *testing.T) {
+	w := testWriter()
+	w.Value().String("hello, world")
+	w.Free()
+
+	assert.Equal(t, errClosed, w.err)
+	assert.Nil(t, w.writerState)
+}
+
 // end
 
 func TestWriter_end__should_return_finished_bytes(t *testing.T) {
@@ -48,7 +93,7 @@ func TestWriter_end__should_close_writer_on_root_element_end(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, writerClosed, w.err)
+	assert.Equal(t, errClosed, w.err)
 	assert.Nil(t, w.writerState)
 }
 

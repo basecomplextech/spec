@@ -46,7 +46,7 @@ func NewBuffer(buf buffer.Buffer) Writer {
 
 // internal
 
-var writerClosed = errors.New("operation on a closed writer")
+var errClosed = errors.New("operation on closed writer")
 
 type writer struct {
 	*writerState
@@ -54,7 +54,7 @@ type writer struct {
 }
 
 func newWriter(buf buffer.Buffer) *writer {
-	s := getWriterState()
+	s := acquireWriterState()
 	s.init(buf)
 
 	return &writer{writerState: s}
@@ -67,14 +67,17 @@ func (w *writer) Err() error {
 
 // Reset resets the writer and sets its output buffer.
 func (w *writer) Reset(buf buffer.Buffer) {
-	w.close(nil)
 	w.err = nil
 
 	if buf == nil {
 		buf = buffer.New()
 	}
 
-	s := getWriterState()
+	s := w.writerState
+	if s == nil {
+		s = acquireWriterState()
+	}
+
 	s.init(buf)
 	w.writerState = s
 }
@@ -102,7 +105,8 @@ func (w *writer) Message() MessageWriter {
 
 // Free frees the writer and releases its internal resources.
 func (w *writer) Free() {
-	w.close(nil)
+	w.err = errClosed
+	w.free()
 }
 
 // end ends a nested object and a parent field/element if present.
@@ -512,9 +516,9 @@ func (w *writer) popData() (start, end int, err error) {
 	return
 }
 
-// close
+// closes
 
-// close closes the writer and releases its state.
+// close sets the writer error and frees its state.
 func (w *writer) close(err error) error {
 	if w.err != nil {
 		return w.err
@@ -523,16 +527,14 @@ func (w *writer) close(err error) error {
 	if err != nil {
 		w.err = err
 	} else {
-		w.err = writerClosed
+		w.err = errClosed
 	}
 
-	s := w.writerState
-	w.writerState = nil
-
-	releaseWriterState(s)
+	w.free()
 	return err
 }
 
+// closef sets the writer error and frees its state.
 func (w *writer) closef(format string, args ...any) error {
 	var err error
 	if len(args) == 0 {
@@ -540,5 +542,15 @@ func (w *writer) closef(format string, args ...any) error {
 	} else {
 		err = fmt.Errorf(format, args...)
 	}
+
 	return w.close(err)
+}
+
+// free
+
+func (w *writer) free() {
+	s := w.writerState
+	w.writerState = nil
+
+	releaseWriterState(s)
 }
