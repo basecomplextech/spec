@@ -2,11 +2,23 @@ package writer
 
 import (
 	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/spec/encoding"
 )
 
 // ListWriter writes a list of elements.
 type ListWriter struct {
 	w *writer
+}
+
+// Err returns the current write error.
+func (l ListWriter) Err() error {
+	return l.w.err
+}
+
+// Len returns the number of written elements.
+// The method is only valid when there is no pending element.
+func (l ListWriter) Len() int {
+	return l.w.listLen()
 }
 
 // Build ends the list and returns its bytes.
@@ -18,6 +30,14 @@ func (l ListWriter) Build() ([]byte, error) {
 func (l ListWriter) End() error {
 	_, err := l.w.end()
 	return err
+}
+
+// WriteElement writes a generic element using the given encode function.
+func WriteElement[T any](w ListWriter, value T, encode encoding.EncodeFunc[T]) error {
+	if err := WriteValue(w.w, value, encode); err != nil {
+		return err
+	}
+	return w.w.element()
 }
 
 // Elements

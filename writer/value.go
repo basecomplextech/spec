@@ -10,18 +10,20 @@ type ValueWriter struct {
 	w *writer
 }
 
-func WriteValue[T any](e *writer, v T, encode encoding.EncodeFunc[T]) error {
-	if e.err != nil {
-		return e.err
+// WriteValue writes a generic value using the given encode function.
+func WriteValue[T any](w Writer, v T, encode encoding.EncodeFunc[T]) error {
+	w1 := w.(*writer)
+	if w1.err != nil {
+		return w1.err
 	}
 
-	start := e.buf.Len()
-	if _, err := encode(e.buf, v); err != nil {
-		return e.fail(err)
+	start := w1.buf.Len()
+	if _, err := encode(w1.buf, v); err != nil {
+		return w1.fail(err)
 	}
-	end := e.buf.Len()
+	end := w1.buf.Len()
 
-	return e.pushData(start, end)
+	return w1.pushData(start, end)
 }
 
 // Build ends the root value and returns its bytes.

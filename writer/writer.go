@@ -10,7 +10,7 @@ import (
 
 // Writer writes spec objects.
 type Writer interface {
-	// Err returns an error or nil.
+	// Err returns the current write error or nil.
 	Err() error
 
 	// Reset resets the writer and sets its output buffer.
@@ -62,7 +62,7 @@ func newWriter(buf buffer.Buffer, autoRelease bool) *writer {
 	return w
 }
 
-// Err returns an error or nil.
+// Err returns the current write error or nil.
 func (w *writer) Err() error {
 	return w.err
 }
