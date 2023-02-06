@@ -25,8 +25,9 @@ var builtin = map[Kind]*Type{
 	KindFloat32: newBuiltinType(KindFloat32),
 	KindFloat64: newBuiltinType(KindFloat64),
 
-	KindBytes:  newBuiltinType(KindBytes),
-	KindString: newBuiltinType(KindString),
+	KindBytes:      newBuiltinType(KindBytes),
+	KindString:     newBuiltinType(KindString),
+	KindAnyMessage: newBuiltinType(KindAnyMessage),
 }
 
 type Type struct {

@@ -55,6 +55,7 @@ import (
 %token <ident>   IDENT
 %token <integer> INTEGER
 %token <string>  STRING
+%token <ident>   MESSAGE
 
 // import
 %type <import_> import
@@ -369,5 +370,16 @@ base_type:
 				Kind:   ast.KindReference,
 				Name:   $3,
 				Import: $1,
+			}
+		}
+
+	| MESSAGE
+		{
+			if debugParser {
+				fmt.Println("base type", $1)
+			}
+			$$ = &ast.Type{
+				Kind: ast.KindAnyMessage,
+				Name: "message",
 			}
 		}

@@ -25,8 +25,9 @@ message Message {
     bin128  bin128  41;
     bin256  bin256  42;
 
-    string   string 50;
-    bytes1   bytes  51;
+    string      string  50;
+    bytes1      bytes   51;
+    message1    message 52;
 
     enum1       Enum            60;
     struct1     Struct          61;

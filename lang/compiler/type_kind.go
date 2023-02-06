@@ -34,6 +34,7 @@ const (
 
 	KindBytes
 	KindString
+	KindAnyMessage
 
 	// List
 
@@ -87,6 +88,8 @@ func parseKind(pkind ast.Kind) (Kind, error) {
 		return KindBytes, nil
 	case ast.KindString:
 		return KindString, nil
+	case ast.KindAnyMessage:
+		return KindAnyMessage, nil
 
 	case ast.KindList:
 		return KindList, nil
@@ -135,6 +138,8 @@ func (k Kind) String() string {
 		return "bytes"
 	case KindString:
 		return "string"
+	case KindAnyMessage:
+		return "message"
 
 	case KindList:
 		return "list"

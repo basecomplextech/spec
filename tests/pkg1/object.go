@@ -25,8 +25,9 @@ type Object struct {
 	Bin128 types.Bin128
 	Bin256 types.Bin256
 
-	String string
-	Bytes1 []byte
+	String   string
+	Bytes1   []byte
+	Message1 map[uint16]int32
 
 	Enum1      Enum
 	Struct1    Struct
@@ -76,6 +77,16 @@ func (o *Object) Write(w MessageWriter) (Message, error) {
 
 	w.Enum1(o.Enum1)
 	w.Struct1(o.Struct1)
+
+	if o.Message1 != nil {
+		w1 := w.Message1()
+		for tag, value := range o.Message1 {
+			w1.Field(tag).Int32(value)
+		}
+		if err := w1.End(); err != nil {
+			return Message{}, err
+		}
+	}
 
 	if o.Subobject != nil {
 		if _, err := o.Subobject.Write(w.Submessage()); err != nil {

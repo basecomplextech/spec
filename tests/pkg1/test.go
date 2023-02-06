@@ -10,6 +10,12 @@ import (
 )
 
 func TestObject(t tests.T) *Object {
+	message := map[uint16]int32{
+		1: 1,
+		2: 2,
+		3: 3,
+	}
+
 	ints := make([]int64, 0, 10)
 	for i := 0; i < 10; i++ {
 		ints = append(ints, int64(i))
@@ -59,8 +65,9 @@ func TestObject(t tests.T) *Object {
 		Bin128: types.Bin128FromInt64(2),
 		Bin256: types.Bin256FromInt64(3),
 
-		String: "hello, world",
-		Bytes1: []byte("goodbye, world"),
+		String:   "hello, world",
+		Bytes1:   []byte("goodbye, world"),
+		Message1: message,
 
 		Enum1:      EnumOne,
 		Struct1:    TestStruct(),

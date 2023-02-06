@@ -27,6 +27,7 @@ const (
 
 	KindBytes
 	KindString
+	KindAnyMessage
 
 	// Element-based
 
@@ -72,6 +73,8 @@ func GetKind(type_ string) Kind {
 		return KindBytes
 	case "string":
 		return KindString
+	case "message":
+		return KindAnyMessage
 	}
 
 	return KindReference

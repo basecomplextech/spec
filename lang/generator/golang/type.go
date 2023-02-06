@@ -46,6 +46,8 @@ func typeName(typ *compiler.Type) string {
 		return "[]byte"
 	case compiler.KindString:
 		return "string"
+	case compiler.KindAnyMessage:
+		return "spec.Message"
 
 	case compiler.KindList:
 		elem := typeName(typ.Element)
@@ -121,10 +123,12 @@ func typeDecodeFunc(typ *compiler.Type) string {
 		return "encoding.DecodeBytes"
 	case compiler.KindString:
 		return "encoding.DecodeString"
+	case compiler.KindAnyMessage:
+		return "spec.ParseMessage"
 
 	case compiler.KindList:
 		elem := typeName(typ.Element)
-		return fmt.Sprintf("encoding.ParseTypedList[%v]", elem)
+		return fmt.Sprintf("spec.ParseTypedList[%v]", elem)
 
 	case compiler.KindEnum,
 		compiler.KindMessage,
@@ -177,6 +181,8 @@ func typeWriteFunc(typ *compiler.Type) string {
 		return "encoding.EncodeBytes"
 	case compiler.KindString:
 		return "encoding.EncodeString"
+	case compiler.KindAnyMessage:
+		return "spec.WriteMessage"
 
 	case compiler.KindEnum:
 		if typ.Import != nil {

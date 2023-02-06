@@ -41,6 +41,13 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 	assert.Equal(t, "value 000", m.Submessage().Value())
 
 	{
+		m := m.Message1()
+		assert.Equal(t, int32(1), m.Field(1).Int32())
+		assert.Equal(t, int32(2), m.Field(2).Int32())
+		assert.Equal(t, int32(3), m.Field(3).Int32())
+	}
+
+	{
 		list := m.Ints()
 		for i := 0; i < 10; i++ {
 			v := list.Get(i)
@@ -52,7 +59,7 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 		list := m.Strings()
 		for i := 0; i < 10; i++ {
 			v := list.Get(i)
-			v0 := fmt.Sprintf("%03d", i)
+			v0 := fmt.Sprintf("hello, world %03d", i)
 			assert.Equal(t, v0, v)
 		}
 	}

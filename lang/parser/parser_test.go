@@ -333,3 +333,21 @@ message TestMessage {
 	assert.Equal(t, "Message", type_.Name)
 	assert.Equal(t, "pkg", type_.Import)
 }
+
+func TestParser_Parse__should_parse_any_message_type(t *testing.T) {
+	p := newParser()
+
+	file, err := p.Parse(`
+message TestMessage {
+	field1	message	1;
+}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := file.Definitions[0]
+	type_ := def.Message.Fields[0].Type
+
+	assert.Equal(t, ast.KindAnyMessage, type_.Kind)
+	assert.Equal(t, "message", type_.Name)
+}
