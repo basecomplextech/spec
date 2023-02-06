@@ -3,26 +3,20 @@ package spec
 import (
 	"fmt"
 
+	"github.com/complex1tech/baselibrary/types"
 	"github.com/complex1tech/spec/encoding"
 )
 
 // Value is a raw value.
 type Value []byte
 
-// GetValue decodes and returns a value without recursive validation, or an empty value on error.
-func GetValue(b []byte) Value {
-	t, _, err := encoding.DecodeType(b)
-	if err != nil {
-		return Value{}
-	}
-	if err := (t).Check(); err != nil {
-		return Value{}
-	}
+// NewValue returns a new value from bytes.
+func NewValue(b []byte) Value {
 	return Value(b)
 }
 
-// DecodeValue decodes, recursively validates and returns a value.
-func DecodeValue(b []byte) (_ Value, n int, err error) {
+// ParseValue recursively parses and returns a value.
+func ParseValue(b []byte) (_ Value, n int, err error) {
 	t, n, err := encoding.DecodeType(b)
 	if err != nil {
 		return
@@ -30,7 +24,7 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 
 	switch t {
 	default:
-		err = fmt.Errorf("unsupported type %d", t)
+		err = fmt.Errorf("parse: unsupported type %d", t)
 		return
 
 	case TypeTrue, TypeFalse:
@@ -67,10 +61,10 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 		_, n, err = encoding.DecodeString(b)
 
 	case TypeList, TypeBigList:
-		_, n, err = DecodeList(b, DecodeValue)
+		_, n, err = ParseList(b)
 
 	case TypeMessage, TypeBigMessage:
-		_, n, err = DecodeMessage(b)
+		_, n, err = ParseMessage(b)
 
 	case TypeStruct:
 		_, n, err = encoding.DecodeStruct(b)
@@ -83,4 +77,77 @@ func DecodeValue(b []byte) (_ Value, n int, err error) {
 func (v Value) Type() Type {
 	p, _, _ := encoding.DecodeType(v)
 	return p
+}
+
+func (v Value) Bool() bool {
+	p, _, _ := encoding.DecodeBool(v)
+	return p
+}
+
+func (v Value) Byte() byte {
+	p, _, _ := encoding.DecodeByte(v)
+	return p
+}
+
+func (v Value) Int32() int32 {
+	p, _, _ := encoding.DecodeInt32(v)
+	return p
+}
+
+func (v Value) Int64() int64 {
+	p, _, _ := encoding.DecodeInt64(v)
+	return p
+}
+
+func (v Value) Uint32() uint32 {
+	p, _, _ := encoding.DecodeUint32(v)
+	return p
+}
+
+func (v Value) Uint64() uint64 {
+	p, _, _ := encoding.DecodeUint64(v)
+	return p
+}
+
+func (v Value) Float32() float32 {
+	p, _, _ := encoding.DecodeFloat32(v)
+	return p
+}
+
+func (v Value) Float64() float64 {
+	p, _, _ := encoding.DecodeFloat64(v)
+	return p
+}
+
+func (v Value) Bin64() types.Bin64 {
+	p, _, _ := encoding.DecodeBin64(v)
+	return p
+}
+
+func (v Value) Bin128() types.Bin128 {
+	p, _, _ := encoding.DecodeBin128(v)
+	return p
+}
+
+func (v Value) Bin256() types.Bin256 {
+	p, _, _ := encoding.DecodeBin256(v)
+	return p
+}
+
+func (v Value) Bytes() []byte {
+	p, _, _ := encoding.DecodeBytes(v)
+	return p
+}
+
+func (v Value) String() string {
+	p, _, _ := encoding.DecodeString(v)
+	return p
+}
+
+func (v Value) List() List {
+	return List{}
+}
+
+func (v Value) Message() Message {
+	return Message{}
 }

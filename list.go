@@ -1,43 +1,42 @@
 package spec
 
 import (
+	"fmt"
+
 	"github.com/complex1tech/spec/encoding"
 )
 
-type List[T any] struct {
-	meta   encoding.ListMeta
-	bytes  []byte
-	decode func(b []byte) (T, int, error)
+// List is a raw list of elements.
+type List struct {
+	meta  encoding.ListMeta
+	bytes []byte
 }
 
-// NewList decodes and returns a list without recursive validation, or an empty list on error.
-func NewList[T any](b []byte, decode func([]byte) (T, int, error)) List[T] {
+// NewList returns a new list from bytes or an empty list when not a list.
+func NewList(b []byte) List {
 	meta, n, err := encoding.DecodeListMeta(b)
 	if err != nil {
-		return List[T]{}
+		return List{}
 	}
 	bytes := b[len(b)-n:]
 
-	l := List[T]{
-		meta:   meta,
-		bytes:  bytes,
-		decode: decode,
+	return List{
+		meta:  meta,
+		bytes: bytes,
 	}
-	return l
 }
 
-// DecodeList decodes, recursively validates and returns a list.
-func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (_ List[T], size int, err error) {
-	meta, size, err := encoding.DecodeListMeta(b)
+// ParseList recursively parses and returns a list.
+func ParseList(b []byte) (_ List, size int, err error) {
+	meta, n, err := encoding.DecodeListMeta(b)
 	if err != nil {
-		return
+		return List{}, 0, err
 	}
-	bytes := b[len(b)-size:]
+	bytes := b[len(b)-n:]
 
-	l := List[T]{
-		meta:   meta,
-		bytes:  bytes,
-		decode: decode,
+	l := List{
+		meta:  meta,
+		bytes: bytes,
 	}
 
 	ln := l.Len()
@@ -46,63 +45,78 @@ func DecodeList[T any](b []byte, decode func([]byte) (T, int, error)) (_ List[T]
 		if len(elem) == 0 {
 			continue
 		}
-		if _, _, err = decode(elem); err != nil {
+		if _, _, err = ParseValue(elem); err != nil {
 			return
 		}
 	}
-	return l, size, nil
+	return l, n, nil
 }
 
 // Len returns the number of elements in the list.
-func (l List[T]) Len() int {
+func (l List) Len() int {
 	return l.meta.Len()
 }
 
 // Bytes returns the exact list bytes.
-func (l List[T]) Bytes() []byte {
+func (l List) Bytes() []byte {
 	return l.bytes
 }
 
-// Get returns an element by index or panics on out of range.
-func (l List[T]) Get(i int) (result T) {
-	start, end := l.meta.Offset(i)
-	size := l.meta.DataSize()
+// Empty returns true if bytes are empty or list has no elements.
+func (l List) Empty() bool {
+	return len(l.bytes) == 0 || l.meta.Len() == 0
+}
 
-	// TODO: Or should be panic index out out range?
-	switch {
-	case start < 0:
-		return
-	case end > int(size):
-		return
+// Elements
+
+// Get returns an element at index i, panics on out of range.
+func (l List) Get(i int) Value {
+	start, end := l.meta.Offset(i)
+	if start < 0 {
+		panic(fmt.Sprintf("index out of range: %d", i))
+	}
+
+	size := l.meta.DataSize()
+	if end > int(size) {
+		return Value{}
 	}
 
 	b := l.bytes[start:end]
-	result, _, _ = l.decode(b)
-	return result
+	return NewValue(b)
 }
 
-// GetBytes returns raw element bytes or panics on out of range.
-func (l List[T]) GetBytes(i int) []byte {
+// GetBytes returns element bytes at index i, panics on out of range.
+func (l List) GetBytes(i int) []byte {
 	start, end := l.meta.Offset(i)
-	size := l.meta.DataSize()
+	if start < 0 {
+		panic(fmt.Sprintf("index out of range: %d", i))
+	}
 
-	// TODO: Or should be panic index out out range?
-	switch {
-	case start < 0:
-		return nil
-	case end > int(size):
+	size := l.meta.DataSize()
+	if end > int(size) {
 		return nil
 	}
 
 	return l.bytes[start:end]
 }
 
-// Values converts a list into a slice.
-func (l List[T]) Values() []T {
-	result := make([]T, 0, l.meta.Len())
-	for i := 0; i < l.meta.Len(); i++ {
-		elem := l.Get(i)
-		result = append(result, elem)
+// Clone
+
+// List returns a list clone.
+func (l List) Clone() List {
+	b := make([]byte, len(l.bytes))
+	copy(b, l.bytes)
+	return NewList(b)
+}
+
+// CloneTo clones a list into a byte slice.
+func (l List) CloneTo(b []byte) List {
+	ln := len(l.bytes)
+	if cap(b) < ln {
+		b = make([]byte, ln)
 	}
-	return result
+	b = b[:ln]
+
+	copy(b, l.bytes)
+	return NewList(b)
 }

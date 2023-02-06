@@ -5,13 +5,14 @@ import (
 	"github.com/complex1tech/spec/encoding"
 )
 
+// Message is a raw message.
 type Message struct {
 	meta  encoding.MessageMeta
 	bytes []byte
 }
 
-// GetMessage decodes and returns a message without recursive validation, or an empty message on error.
-func GetMessage(b []byte) Message {
+// NewMessage returns a new message from bytes or an empty message when not a message.
+func NewMessage(b []byte) Message {
 	meta, n, err := encoding.DecodeMessageMeta(b)
 	if err != nil {
 		return Message{}
@@ -24,11 +25,11 @@ func GetMessage(b []byte) Message {
 	}
 }
 
-// DecodeMessage decodes, recursively vaildates and returns a message.
-func DecodeMessage(b []byte) (_ Message, size int, err error) {
+// ParseMessage recursively parses and returns a message.
+func ParseMessage(b []byte) (_ Message, size int, err error) {
 	meta, size, err := encoding.DecodeMessageMeta(b)
 	if err != nil {
-		return
+		return Message{}, 0, err
 	}
 	bytes := b[len(b)-size:]
 
@@ -43,30 +44,11 @@ func DecodeMessage(b []byte) (_ Message, size int, err error) {
 		if len(field) == 0 {
 			continue
 		}
-		if _, _, err = DecodeValue(field); err != nil {
+		if _, _, err = ParseValue(field); err != nil {
 			return
 		}
 	}
 	return m, size, nil
-}
-
-// Message returns a message clone.
-func (m Message) Clone() Message {
-	b := make([]byte, len(m.bytes))
-	copy(b, m.bytes)
-	return GetMessage(b)
-}
-
-// CloneTo clones a message into a byte slice.
-func (m Message) CloneTo(b []byte) Message {
-	ln := len(m.bytes)
-	if cap(b) < ln {
-		b = make([]byte, ln)
-	}
-	b = b[:ln]
-
-	copy(b, m.bytes)
-	return GetMessage(b)
 }
 
 // Len returns the number of fields in the message.
@@ -79,10 +61,33 @@ func (m Message) Bytes() []byte {
 	return m.bytes
 }
 
-// Empty returns true if the message is backed byte an empty byte slice or has no fields.
+// Empty returns true if bytes are empty or message has no fields.
 func (m Message) Empty() bool {
 	return len(m.bytes) == 0 || m.meta.Len() == 0
 }
+
+// Clone
+
+// Message returns a message clone.
+func (m Message) Clone() Message {
+	b := make([]byte, len(m.bytes))
+	copy(b, m.bytes)
+	return NewMessage(b)
+}
+
+// CloneTo clones a message into a byte slice.
+func (m Message) CloneTo(b []byte) Message {
+	ln := len(m.bytes)
+	if cap(b) < ln {
+		b = make([]byte, ln)
+	}
+	b = b[:ln]
+
+	copy(b, m.bytes)
+	return NewMessage(b)
+}
+
+// Fields
 
 // Field returns field data by a tag or nil.
 func (m Message) Field(tag uint16) []byte {
@@ -350,5 +355,5 @@ func (m Message) GetMessage(tag uint16) Message {
 	}
 
 	b := m.bytes[:end]
-	return GetMessage(b)
+	return NewMessage(b)
 }

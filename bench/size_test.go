@@ -209,7 +209,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.sizes += m
 
 		// read list
-		list, _, err := DecodeList(b, DecodeValue)
+		list, _, err := DecodeList(b, ParseValue)
 		if err != nil {
 			return err
 		}
