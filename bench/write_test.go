@@ -73,9 +73,9 @@ func BenchmarkWrite_Large(b *testing.B) {
 	sec := t1.Sub(t0).Seconds()
 	ops := float64(b.N) / sec
 
+	b.SetBytes(int64(size))
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
-	b.SetBytes(int64(size))
 }
 
 // JSON

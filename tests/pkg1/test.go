@@ -10,7 +10,37 @@ import (
 )
 
 func TestObject(t tests.T) *Object {
-	o := &Object{
+	ints := make([]int64, 0, 10)
+	for i := 0; i < 10; i++ {
+		ints = append(ints, int64(i))
+	}
+
+	strings := make([]string, 0, 10)
+	for i := 0; i < 10; i++ {
+		s := fmt.Sprintf("hello, world %03d", i)
+		strings = append(strings, s)
+	}
+
+	structs := make([]Struct, 0, 10)
+	for i := 0; i < 10; i++ {
+		s := Struct{
+			Key:   int32(i),
+			Value: -int32(i),
+		}
+		structs = append(structs, s)
+	}
+
+	subObjects := make([]*Subobject, 0, 10)
+	for i := 0; i < 10; i++ {
+		subObjects = append(subObjects, TestSubobject(i))
+	}
+
+	subObjects1 := make([]*Subobject1, 0, 10)
+	for i := 0; i < 10; i++ {
+		subObjects1 = append(subObjects1, TestSubobject1(i))
+	}
+
+	return &Object{
 		Bool: true,
 		Byte: 255,
 
@@ -34,32 +64,13 @@ func TestObject(t tests.T) *Object {
 		Struct1:    TestStruct(),
 		Subobject:  TestSubobject(0),
 		Subobject1: TestSubobject1(0),
-	}
 
-	for i := 0; i < 10; i++ {
-		o.Ints = append(o.Ints, int64(i))
+		Ints:        ints,
+		Strings:     strings,
+		Structs:     structs,
+		Subobjects:  subObjects,
+		Subobjects1: subObjects1,
 	}
-
-	for i := 0; i < 10; i++ {
-		o.Strings = append(o.Strings, fmt.Sprintf("%03d", i))
-	}
-
-	for i := 0; i < 10; i++ {
-		o.Structs = append(o.Structs, Struct{
-			Key:   int32(i),
-			Value: -int32(i),
-		})
-	}
-
-	for i := 0; i < 10; i++ {
-		o.Subobjects = append(o.Subobjects, TestSubobject(i))
-	}
-
-	for i := 0; i < 10; i++ {
-		o.Subobjects1 = append(o.Subobjects1, TestSubobject1(i))
-	}
-
-	return o
 }
 
 func TestSubobject(i int) *Subobject {

@@ -73,14 +73,18 @@ func (o *Object) Write(w MessageWriter) (Message, error) {
 	w.Enum1(o.Enum1)
 	w.Struct1(o.Struct1)
 
-	if _, err := o.Subobject.Write(w.Submessage()); err != nil {
-		return Message{}, err
+	if o.Subobject != nil {
+		if _, err := o.Subobject.Write(w.Submessage()); err != nil {
+			return Message{}, err
+		}
 	}
-	if _, err := o.Subobject1.Write(w.Submessage1()); err != nil {
-		return Message{}, err
+	if o.Subobject1 != nil {
+		if _, err := o.Subobject1.Write(w.Submessage1()); err != nil {
+			return Message{}, err
+		}
 	}
 
-	{
+	if len(o.Ints) > 0 {
 		list := w.Ints()
 		for _, i := range o.Ints {
 			list.Add(int64(i))
@@ -90,7 +94,7 @@ func (o *Object) Write(w MessageWriter) (Message, error) {
 		}
 	}
 
-	{
+	if len(o.Strings) > 0 {
 		list := w.Strings()
 		for _, s := range o.Strings {
 			list.Add(s)
@@ -100,7 +104,7 @@ func (o *Object) Write(w MessageWriter) (Message, error) {
 		}
 	}
 
-	{
+	if len(o.Structs) > 0 {
 		list := w.Structs()
 		for _, s := range o.Structs {
 			list.Add(s)
@@ -110,7 +114,7 @@ func (o *Object) Write(w MessageWriter) (Message, error) {
 		}
 	}
 
-	{
+	if len(o.Subobjects) > 0 {
 		list := w.Submessages()
 		for _, sub := range o.Subobjects {
 			if _, err := sub.Write(list.Add()); err != nil {
@@ -122,7 +126,7 @@ func (o *Object) Write(w MessageWriter) (Message, error) {
 		}
 	}
 
-	{
+	if len(o.Subobjects1) > 0 {
 		list := w.Submessages1()
 		for _, sub := range o.Subobjects1 {
 			if _, err := sub.Write(list.Add()); err != nil {
