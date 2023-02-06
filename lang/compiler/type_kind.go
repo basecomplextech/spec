@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 type Kind int
@@ -47,43 +47,43 @@ const (
 	KindReference
 )
 
-func parseKind(pkind parser.Kind) (Kind, error) {
+func parseKind(pkind ast.Kind) (Kind, error) {
 	switch pkind {
-	case parser.KindBool:
+	case ast.KindBool:
 		return KindBool, nil
-	case parser.KindByte:
+	case ast.KindByte:
 		return KindByte, nil
 
-	case parser.KindInt32:
+	case ast.KindInt32:
 		return KindInt32, nil
-	case parser.KindInt64:
+	case ast.KindInt64:
 		return KindInt64, nil
-	case parser.KindUint32:
+	case ast.KindUint32:
 		return KindUint32, nil
-	case parser.KindUint64:
+	case ast.KindUint64:
 		return KindUint64, nil
 
-	case parser.KindBin64:
+	case ast.KindBin64:
 		return KindBin64, nil
-	case parser.KindBin128:
+	case ast.KindBin128:
 		return KindBin128, nil
-	case parser.KindBin256:
+	case ast.KindBin256:
 		return KindBin256, nil
 
-	case parser.KindFloat32:
+	case ast.KindFloat32:
 		return KindFloat32, nil
-	case parser.KindFloat64:
+	case ast.KindFloat64:
 		return KindFloat64, nil
 
-	case parser.KindBytes:
+	case ast.KindBytes:
 		return KindBytes, nil
-	case parser.KindString:
+	case ast.KindString:
 		return KindString, nil
 
-	case parser.KindList:
+	case ast.KindList:
 		return KindList, nil
 
-	case parser.KindReference:
+	case ast.KindReference:
 		return KindReference, nil
 	}
 

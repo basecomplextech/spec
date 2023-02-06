@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 type DefinitionType string
@@ -15,16 +15,16 @@ const (
 	DefinitionStruct    DefinitionType = "struct"
 )
 
-func getDefinitionType(ptype parser.DefinitionType) (DefinitionType, error) {
+func getDefinitionType(ptype ast.DefinitionType) (DefinitionType, error) {
 	switch ptype {
-	case parser.DefinitionEnum:
+	case ast.DefinitionEnum:
 		return DefinitionEnum, nil
-	case parser.DefinitionMessage:
+	case ast.DefinitionMessage:
 		return DefinitionMessage, nil
-	case parser.DefinitionStruct:
+	case ast.DefinitionStruct:
 		return DefinitionStruct, nil
 	}
-	return "", fmt.Errorf("unsupported parser definition type %v", ptype)
+	return "", fmt.Errorf("unsupported ast definition type %v", ptype)
 }
 
 // Definition
@@ -41,7 +41,7 @@ type Definition struct {
 	Struct  *Struct
 }
 
-func newDefinition(pkg *Package, file *File, pdef *parser.Definition) (*Definition, error) {
+func newDefinition(pkg *Package, file *File, pdef *ast.Definition) (*Definition, error) {
 	type_, err := getDefinitionType(pdef.Type)
 	if err != nil {
 		return nil, err

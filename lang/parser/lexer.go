@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"text/scanner"
+
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 const EOF = 0
@@ -15,8 +17,8 @@ var _ yyLexer = &lexer{}
 type lexer struct {
 	s *scanner.Scanner
 
-	file *File // used by yyParser to return result
-	err  error // parse error
+	file *ast.File // used by yyParser to return result
+	err  error     // parse error
 }
 
 func newLexer(filename string, src io.Reader) *lexer {
@@ -26,7 +28,7 @@ func newLexer(filename string, src io.Reader) *lexer {
 	return &lexer{s: s}
 }
 
-func setLexerResult(l yyLexer, file *File) {
+func setLexerResult(l yyLexer, file *ast.File) {
 	l1 := l.(*lexer)
 	l1.file = file
 }

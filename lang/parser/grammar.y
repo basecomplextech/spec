@@ -2,7 +2,11 @@
 %{
 package parser
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/complex1tech/spec/lang/ast"
+)
 %}
 
 // union defines yySymType body.
@@ -13,31 +17,31 @@ import "fmt"
 	string  string
 
 	// import
-	import_ *Import
-	imports []*Import
+	import_ *ast.Import
+	imports []*ast.Import
 
 	// option
-	option  *Option
-	options []*Option
+	option  *ast.Option
+	options []*ast.Option
 
 	// definition
-	definition  *Definition
-	definitions []*Definition
+	definition  *ast.Definition
+	definitions []*ast.Definition
 
 	// enum
-	enum_value  *EnumValue
-	enum_values []*EnumValue
+	enum_value  *ast.EnumValue
+	enum_values []*ast.EnumValue
 
 	// message
-	message_field  *MessageField
-	message_fields []*MessageField
+	message_field  *ast.MessageField
+	message_fields []*ast.MessageField
 
 	// struct
-	struct_field  *StructField
-	struct_fields []*StructField
+	struct_field  *ast.StructField
+	struct_fields []*ast.StructField
 
 	// type
-	type_ *Type
+	type_ *ast.Type
 }
 
 // keywords
@@ -92,7 +96,7 @@ import "fmt"
 
 file: imports options definitions
 	{ 
-		file := &File{
+		file := &ast.File{
 			Imports:     $1,
 			Options:     $2,
 			Definitions: $3,
@@ -108,7 +112,7 @@ import:
 			if debugParser {
 				fmt.Println("import ", $1)
 			}
-			$$ = &Import{
+			$$ = &ast.Import{
 				ID: trimString($1),
 			}
 		}
@@ -117,7 +121,7 @@ import:
 			if debugParser {
 				fmt.Println("import ", $1, $2)
 			}
-			$$ = &Import{
+			$$ = &ast.Import{
 				Alias: $1,
 				ID:    trimString($2),
 			}
@@ -179,7 +183,7 @@ option:
 			if debugParser {
 				fmt.Println("option ", $1, $3)
 			}
-			$$ = &Option{
+			$$ = &ast.Option{
 				Name:  $1,
 				Value: trimString($3),
 			}
@@ -213,11 +217,11 @@ enum: ENUM IDENT '{' enum_values '}'
 		if debugParser {
 			fmt.Println("enum", $2, $4)
 		}
-		$$ = &Definition{
-			Type: DefinitionEnum,
+		$$ = &ast.Definition{
+			Type: ast.DefinitionEnum,
 			Name: $2,
 
-			Enum: &Enum{
+			Enum: &ast.Enum{
 				Values: $4,
 			},
 		}
@@ -227,7 +231,7 @@ enum_value: IDENT '=' INTEGER ';'
 		if debugParser {
 			fmt.Println("enum value", $1, $3)
 		}
-		$$ = &EnumValue{
+		$$ = &ast.EnumValue{
 			Name: $1,
 			Value: $3,
 		}
@@ -253,11 +257,11 @@ message: MESSAGE IDENT '{' message_fields '}'
 		if debugParser {
 			fmt.Println("message", $2, $4)
 		}
-		$$ = &Definition{
-			Type: DefinitionMessage,
+		$$ = &ast.Definition{
+			Type: ast.DefinitionMessage,
 			Name: $2,
 
-			Message: &Message{
+			Message: &ast.Message{
 				Fields: $4,
 			},
 		}
@@ -267,7 +271,7 @@ message_field: IDENT type INTEGER ';'
 		if debugParser {
 			fmt.Println("message field", $1, $2, $3)
 		}
-		$$ = &MessageField{
+		$$ = &ast.MessageField{
 			Name: $1,
 			Type: $2,
 			Tag: $3,
@@ -293,11 +297,11 @@ struct: STRUCT IDENT '{' struct_fields '}'
 		if debugParser {
 			fmt.Println("struct", $2, $4)
 		}
-		$$ = &Definition{
-			Type: DefinitionStruct,
+		$$ = &ast.Definition{
+			Type: ast.DefinitionStruct,
 			Name: $2,
 
-			Struct: &Struct{
+			Struct: &ast.Struct{
 				Fields: $4,
 			},
 		}
@@ -307,7 +311,7 @@ struct_field: IDENT type ';'
 		if debugParser {
 			fmt.Println("struct field", $1, $2)
 		}
-		$$ = &StructField{
+		$$ = &ast.StructField{
 			Name: $1,
 			Type: $2,
 		}
@@ -340,8 +344,8 @@ type:
 			if debugParser {
 				fmt.Printf("type []%v\n", $3)
 			}
-			$$ = &Type{
-				Kind:    KindList,
+			$$ = &ast.Type{
+				Kind:    ast.KindList,
 				Element: $3,
 			}
 		}
@@ -351,8 +355,8 @@ base_type:
 			if debugParser {
 				fmt.Println("base type", $1)
 			}
-			$$ = &Type{
-				Kind: getKind($1),
+			$$ = &ast.Type{
+				Kind: ast.GetKind($1),
 				Name: $1,
 			}
 		}
@@ -361,8 +365,8 @@ base_type:
 			if debugParser {
 				fmt.Printf("base type %v.%v\n", $1, $3)
 			}
-			$$ = &Type{
-				Kind:   KindReference,
+			$$ = &ast.Type{
+				Kind:   ast.KindReference,
 				Name:   $3,
 				Import: $1,
 			}

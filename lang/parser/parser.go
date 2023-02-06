@@ -9,12 +9,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 type Parser interface {
-	Parse(s string) (*File, error)
-	ParseFile(path string) (*File, error)
-	ParseDirectory(path string) ([]*File, error)
+	Parse(s string) (*ast.File, error)
+	ParseFile(path string) (*ast.File, error)
+	ParseDirectory(path string) ([]*ast.File, error)
 }
 
 // New returns a new reusable parser.
@@ -28,12 +30,12 @@ func newParser() *parser {
 	return &parser{}
 }
 
-func (p *parser) Parse(s string) (*File, error) {
+func (p *parser) Parse(s string) (*ast.File, error) {
 	src := strings.NewReader(s)
 	return p.parse("", src)
 }
 
-func (p *parser) ParseFile(path string) (*File, error) {
+func (p *parser) ParseFile(path string) (*ast.File, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -45,7 +47,7 @@ func (p *parser) ParseFile(path string) (*File, error) {
 	return p.parse(name, src)
 }
 
-func (p *parser) ParseDirectory(path string) ([]*File, error) {
+func (p *parser) ParseDirectory(path string) ([]*ast.File, error) {
 	// check path is directory
 	info, err := os.Stat(path)
 	switch {
@@ -63,7 +65,7 @@ func (p *parser) ParseDirectory(path string) ([]*File, error) {
 	}
 
 	// parse files
-	files := make([]*File, 0, len(filepaths))
+	files := make([]*ast.File, 0, len(filepaths))
 	for _, filepath := range filepaths {
 		file, err := p.ParseFile(filepath)
 		if err != nil {
@@ -78,7 +80,7 @@ func (p *parser) ParseDirectory(path string) ([]*File, error) {
 
 // private
 
-func (p *parser) parse(filename string, src io.Reader) (*File, error) {
+func (p *parser) parse(filename string, src io.Reader) (*ast.File, error) {
 	lexer := newLexer(filename, src)
 	parser := yyNewParser()
 	parser.Parse(lexer)

@@ -1,4 +1,4 @@
-package parser
+package ast
 
 type File struct {
 	Path        string
@@ -117,8 +117,8 @@ const (
 	KindReference
 )
 
-// getKind returns a type kind by its name.
-func getKind(type_ string) Kind {
+// GetKind returns a type kind by its name.
+func GetKind(type_ string) Kind {
 	switch type_ {
 	case "bool":
 		return KindBool

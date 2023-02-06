@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 type Struct struct {
@@ -13,7 +13,7 @@ type Struct struct {
 	FieldNames map[string]*StructField
 }
 
-func newStruct(def *Definition, pstr *parser.Struct) (*Struct, error) {
+func newStruct(def *Definition, pstr *ast.Struct) (*Struct, error) {
 	str := &Struct{
 		Def:        def,
 		FieldNames: make(map[string]*StructField),
@@ -54,7 +54,7 @@ type StructField struct {
 	Type *Type
 }
 
-func newStructField(pfield *parser.StructField) (*StructField, error) {
+func newStructField(pfield *ast.StructField) (*StructField, error) {
 	type_, err := newType(pfield.Type)
 	if err != nil {
 		return nil, err

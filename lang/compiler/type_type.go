@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 var builtin = map[Kind]*Type{
@@ -37,7 +37,7 @@ type Type struct {
 	Import *Import
 }
 
-func newType(ptype *parser.Type) (*Type, error) {
+func newType(ptype *ast.Type) (*Type, error) {
 	kind, err := parseKind(ptype.Kind)
 	if err != nil {
 		return nil, err

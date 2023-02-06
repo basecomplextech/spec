@@ -3,7 +3,11 @@ package parser
 
 import __yyfmt__ "fmt"
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/complex1tech/spec/lang/ast"
+)
 
 type yySymType struct {
 	yys int
@@ -13,31 +17,31 @@ type yySymType struct {
 	string  string
 
 	// import
-	import_ *Import
-	imports []*Import
+	import_ *ast.Import
+	imports []*ast.Import
 
 	// option
-	option  *Option
-	options []*Option
+	option  *ast.Option
+	options []*ast.Option
 
 	// definition
-	definition  *Definition
-	definitions []*Definition
+	definition  *ast.Definition
+	definitions []*ast.Definition
 
 	// enum
-	enum_value  *EnumValue
-	enum_values []*EnumValue
+	enum_value  *ast.EnumValue
+	enum_values []*ast.EnumValue
 
 	// message
-	message_field  *MessageField
-	message_fields []*MessageField
+	message_field  *ast.MessageField
+	message_fields []*ast.MessageField
 
 	// struct
-	struct_field  *StructField
-	struct_fields []*StructField
+	struct_field  *ast.StructField
+	struct_fields []*ast.StructField
 
 	// type
-	type_ *Type
+	type_ *ast.Type
 }
 
 const ENUM = 57346
@@ -510,7 +514,7 @@ yydefault:
 	case 1:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			file := &File{
+			file := &ast.File{
 				Imports:     yyDollar[1].imports,
 				Options:     yyDollar[2].options,
 				Definitions: yyDollar[3].definitions,
@@ -523,7 +527,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("import ", yyDollar[1].string)
 			}
-			yyVAL.import_ = &Import{
+			yyVAL.import_ = &ast.Import{
 				ID: trimString(yyDollar[1].string),
 			}
 		}
@@ -533,7 +537,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("import ", yyDollar[1].ident, yyDollar[2].string)
 			}
-			yyVAL.import_ = &Import{
+			yyVAL.import_ = &ast.Import{
 				Alias: yyDollar[1].ident,
 				ID:    trimString(yyDollar[2].string),
 			}
@@ -596,7 +600,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("option ", yyDollar[1].ident, yyDollar[3].string)
 			}
-			yyVAL.option = &Option{
+			yyVAL.option = &ast.Option{
 				Name:  yyDollar[1].ident,
 				Value: trimString(yyDollar[3].string),
 			}
@@ -620,11 +624,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("enum", yyDollar[2].ident, yyDollar[4].enum_values)
 			}
-			yyVAL.definition = &Definition{
-				Type: DefinitionEnum,
+			yyVAL.definition = &ast.Definition{
+				Type: ast.DefinitionEnum,
 				Name: yyDollar[2].ident,
 
-				Enum: &Enum{
+				Enum: &ast.Enum{
 					Values: yyDollar[4].enum_values,
 				},
 			}
@@ -635,7 +639,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("enum value", yyDollar[1].ident, yyDollar[3].integer)
 			}
-			yyVAL.enum_value = &EnumValue{
+			yyVAL.enum_value = &ast.EnumValue{
 				Name:  yyDollar[1].ident,
 				Value: yyDollar[3].integer,
 			}
@@ -659,11 +663,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("message", yyDollar[2].ident, yyDollar[4].message_fields)
 			}
-			yyVAL.definition = &Definition{
-				Type: DefinitionMessage,
+			yyVAL.definition = &ast.Definition{
+				Type: ast.DefinitionMessage,
 				Name: yyDollar[2].ident,
 
-				Message: &Message{
+				Message: &ast.Message{
 					Fields: yyDollar[4].message_fields,
 				},
 			}
@@ -674,7 +678,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("message field", yyDollar[1].ident, yyDollar[2].type_, yyDollar[3].integer)
 			}
-			yyVAL.message_field = &MessageField{
+			yyVAL.message_field = &ast.MessageField{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
 				Tag:  yyDollar[3].integer,
@@ -699,11 +703,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("struct", yyDollar[2].ident, yyDollar[4].struct_fields)
 			}
-			yyVAL.definition = &Definition{
-				Type: DefinitionStruct,
+			yyVAL.definition = &ast.Definition{
+				Type: ast.DefinitionStruct,
 				Name: yyDollar[2].ident,
 
-				Struct: &Struct{
+				Struct: &ast.Struct{
 					Fields: yyDollar[4].struct_fields,
 				},
 			}
@@ -714,7 +718,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("struct field", yyDollar[1].ident, yyDollar[2].type_)
 			}
-			yyVAL.struct_field = &StructField{
+			yyVAL.struct_field = &ast.StructField{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
 			}
@@ -746,8 +750,8 @@ yydefault:
 			if debugParser {
 				fmt.Printf("type []%v\n", yyDollar[3].type_)
 			}
-			yyVAL.type_ = &Type{
-				Kind:    KindList,
+			yyVAL.type_ = &ast.Type{
+				Kind:    ast.KindList,
 				Element: yyDollar[3].type_,
 			}
 		}
@@ -757,8 +761,8 @@ yydefault:
 			if debugParser {
 				fmt.Println("base type", yyDollar[1].ident)
 			}
-			yyVAL.type_ = &Type{
-				Kind: getKind(yyDollar[1].ident),
+			yyVAL.type_ = &ast.Type{
+				Kind: ast.GetKind(yyDollar[1].ident),
 				Name: yyDollar[1].ident,
 			}
 		}
@@ -768,8 +772,8 @@ yydefault:
 			if debugParser {
 				fmt.Printf("base type %v.%v\n", yyDollar[1].ident, yyDollar[3].ident)
 			}
-			yyVAL.type_ = &Type{
-				Kind:   KindReference,
+			yyVAL.type_ = &ast.Type{
+				Kind:   ast.KindReference,
 				Name:   yyDollar[3].ident,
 				Import: yyDollar[1].ident,
 			}

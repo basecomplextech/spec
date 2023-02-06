@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 type Enum struct {
@@ -14,7 +14,7 @@ type Enum struct {
 	ValueNumbers map[int]*EnumValue
 }
 
-func newEnum(def *Definition, penum *parser.Enum) (*Enum, error) {
+func newEnum(def *Definition, penum *ast.Enum) (*Enum, error) {
 	e := &Enum{
 		Def:          def,
 		ValueNames:   make(map[string]*EnumValue),
@@ -62,7 +62,7 @@ type EnumValue struct {
 	Number int
 }
 
-func newEnumValue(enum *Enum, pval *parser.EnumValue) (*EnumValue, error) {
+func newEnumValue(enum *Enum, pval *ast.EnumValue) (*EnumValue, error) {
 	v := &EnumValue{
 		Enum:   enum,
 		Name:   pval.Name,

@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 type Message struct {
@@ -14,7 +14,7 @@ type Message struct {
 	FieldNames map[string]*MessageField
 }
 
-func newMessage(def *Definition, pmsg *parser.Message) (*Message, error) {
+func newMessage(def *Definition, pmsg *ast.Message) (*Message, error) {
 	msg := &Message{
 		Def: def,
 
@@ -56,7 +56,7 @@ type MessageField struct {
 	Type *Type
 }
 
-func newMessageField(pfield *parser.MessageField) (*MessageField, error) {
+func newMessageField(pfield *ast.MessageField) (*MessageField, error) {
 	tag := pfield.Tag
 	if tag == 0 {
 		return nil, fmt.Errorf("zero tag")

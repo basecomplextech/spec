@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/complex1tech/spec/lang/ast"
 )
 
 type File struct {
@@ -23,7 +23,7 @@ type File struct {
 	DefinitionNames map[string]*Definition
 }
 
-func newFile(pkg *Package, pfile *parser.File) (*File, error) {
+func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 	path := pfile.Path
 	name := filepath.Base(path)
 
@@ -119,7 +119,7 @@ type Import struct {
 	Resolved bool
 }
 
-func newImport(file *File, pimp *parser.Import) (*Import, error) {
+func newImport(file *File, pimp *ast.Import) (*Import, error) {
 	name := pimp.Alias
 	if name == "" {
 		name = filepath.Base(pimp.ID)

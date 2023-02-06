@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/complex1tech/spec/lang/ast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -131,7 +132,7 @@ enum TestEnum {
 	def := file.Definitions[0]
 
 	assert.Equal(t, "TestEnum", def.Name)
-	require.Equal(t, DefinitionEnum, def.Type)
+	require.Equal(t, ast.DefinitionEnum, def.Type)
 	require.Len(t, def.Enum.Values, 2)
 
 	value0 := def.Enum.Values[0]
@@ -176,7 +177,7 @@ message TestMessage {
 	def := file.Definitions[0]
 
 	assert.Equal(t, "TestMessage", def.Name)
-	require.Equal(t, DefinitionMessage, def.Type)
+	require.Equal(t, ast.DefinitionMessage, def.Type)
 	require.Len(t, def.Message.Fields, 2)
 
 	field0 := def.Message.Fields[0]
@@ -224,7 +225,7 @@ struct TestStruct {
 	def := file.Definitions[0]
 
 	assert.Equal(t, "TestStruct", def.Name)
-	require.Equal(t, DefinitionStruct, def.Type)
+	require.Equal(t, ast.DefinitionStruct, def.Type)
 	require.Len(t, def.Struct.Fields, 2)
 
 	field0 := def.Struct.Fields[0]
@@ -267,7 +268,7 @@ message TestMessage {
 	def := file.Definitions[0]
 	type_ := def.Message.Fields[0].Type
 
-	assert.Equal(t, KindInt32, type_.Kind)
+	assert.Equal(t, ast.KindInt32, type_.Kind)
 	assert.Equal(t, "int32", type_.Name)
 }
 
@@ -285,10 +286,10 @@ message TestMessage {
 	def := file.Definitions[0]
 	type_ := def.Message.Fields[0].Type
 
-	assert.Equal(t, KindList, type_.Kind)
+	assert.Equal(t, ast.KindList, type_.Kind)
 	require.NotNil(t, type_.Element)
 
-	assert.Equal(t, KindInt32, type_.Element.Kind)
+	assert.Equal(t, ast.KindInt32, type_.Element.Kind)
 	assert.Equal(t, "int32", type_.Element.Name)
 }
 
@@ -306,10 +307,10 @@ message TestMessage {
 	def := file.Definitions[0]
 	type_ := def.Message.Fields[0].Type
 
-	assert.Equal(t, KindList, type_.Kind)
+	assert.Equal(t, ast.KindList, type_.Kind)
 	require.NotNil(t, type_.Element)
 
-	assert.Equal(t, KindReference, type_.Element.Kind)
+	assert.Equal(t, ast.KindReference, type_.Element.Kind)
 	assert.Equal(t, "Message", type_.Element.Name)
 	assert.Equal(t, "pkg", type_.Element.Import)
 }
@@ -328,7 +329,7 @@ message TestMessage {
 	def := file.Definitions[0]
 	type_ := def.Message.Fields[0].Type
 
-	assert.Equal(t, KindReference, type_.Kind)
+	assert.Equal(t, ast.KindReference, type_.Kind)
 	assert.Equal(t, "Message", type_.Name)
 	assert.Equal(t, "pkg", type_.Import)
 }
