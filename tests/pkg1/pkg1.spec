@@ -3,7 +3,7 @@ import (
 )
 
 options (
-    go_package="github.com/complex1tech/spec/lang/testgen/golang/pkg1"
+    go_package="github.com/complex1tech/spec/tests/pkg1"
 )
 
 message Message {
