@@ -22,8 +22,8 @@ func (m MessageMeta) Len() int {
 	return m.table.count(m.big)
 }
 
-// Data returns the message data size.
-func (m MessageMeta) Data() uint32 {
+// DataSize returns the message data size.
+func (m MessageMeta) DataSize() uint32 {
 	return m.data
 }
 

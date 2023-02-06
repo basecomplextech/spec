@@ -17,14 +17,14 @@ type ListMeta struct {
 	big  bool   // small/big table format
 }
 
-// Data returns the size of the list data.
-func (m ListMeta) Data() int {
-	return int(m.data)
-}
-
 // Len returns the number of elements in the table.
 func (m ListMeta) Len() int {
 	return m.table.len(m.big)
+}
+
+// DataSize returns the size of the list data.
+func (m ListMeta) DataSize() uint32 {
+	return m.data
 }
 
 // Offset returns an element start/end by an index or -1/-1.

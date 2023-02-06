@@ -5,9 +5,21 @@ import (
 	"testing"
 
 	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func testEncodeListMeta(t tests.T, dataSize int, elements []ListElement) []byte {
+	buf := buffer.New()
+	buf.Grow(dataSize)
+
+	_, err := EncodeListMeta(buf, dataSize, elements)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
 
 // isBigList
 

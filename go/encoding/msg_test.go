@@ -5,9 +5,21 @@ import (
 	"testing"
 
 	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/complex1tech/baselibrary/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func testEncodeMessageMeta(t tests.T, dataSize int, fields []MessageField) []byte {
+	buf := buffer.New()
+	buf.Grow(dataSize)
+
+	_, err := EncodeMessageMeta(buf, dataSize, fields)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
 
 // isBigMessage
 
