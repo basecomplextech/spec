@@ -87,11 +87,15 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		case compiler.KindByte:
 			w.writef(`return m.msg.Field(%d).Byte()`, tag)
 
+		case compiler.KindInt16:
+			w.writef(`return m.msg.Field(%d).Int16()`, tag)
 		case compiler.KindInt32:
 			w.writef(`return m.msg.Field(%d).Int32()`, tag)
 		case compiler.KindInt64:
 			w.writef(`return m.msg.Field(%d).Int64()`, tag)
 
+		case compiler.KindUint16:
+			w.writef(`return m.msg.Field(%d).Uint16()`, tag)
 		case compiler.KindUint32:
 			w.writef(`return m.msg.Field(%d).Uint32()`, tag)
 		case compiler.KindUint64:
@@ -278,11 +282,15 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		case compiler.KindByte:
 			w.linef(`w.w.Field(%d).Byte(v)`, tag)
 
+		case compiler.KindInt16:
+			w.linef(`w.w.Field(%d).Int16(v)`, tag)
 		case compiler.KindInt32:
 			w.linef(`w.w.Field(%d).Int32(v)`, tag)
 		case compiler.KindInt64:
 			w.linef(`w.w.Field(%d).Int64(v)`, tag)
 
+		case compiler.KindUint16:
+			w.linef(`w.w.Field(%d).Uint16(v)`, tag)
 		case compiler.KindUint32:
 			w.linef(`w.w.Field(%d).Uint32(v)`, tag)
 		case compiler.KindUint64:

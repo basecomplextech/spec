@@ -67,6 +67,15 @@ func (f FieldWriter) Byte(v byte) error {
 	return f.w.field(f.tag)
 }
 
+// Int
+
+func (f FieldWriter) Int16(v int16) error {
+	if err := f.w.Value().Int16(v); err != nil {
+		return err
+	}
+	return f.w.field(f.tag)
+}
+
 func (f FieldWriter) Int32(v int32) error {
 	if err := f.w.Value().Int32(v); err != nil {
 		return err
@@ -76,6 +85,15 @@ func (f FieldWriter) Int32(v int32) error {
 
 func (f FieldWriter) Int64(v int64) error {
 	if err := f.w.Value().Int64(v); err != nil {
+		return err
+	}
+	return f.w.field(f.tag)
+}
+
+// Uint
+
+func (f FieldWriter) Uint16(v uint16) error {
+	if err := f.w.Value().Uint16(v); err != nil {
 		return err
 	}
 	return f.w.field(f.tag)
@@ -95,6 +113,8 @@ func (f FieldWriter) Uint64(v uint64) error {
 	return f.w.field(f.tag)
 }
 
+// Float
+
 func (f FieldWriter) Float32(v float32) error {
 	if err := f.w.Value().Float32(v); err != nil {
 		return err
@@ -108,6 +128,8 @@ func (f FieldWriter) Float64(v float64) error {
 	}
 	return f.w.field(f.tag)
 }
+
+// Bin
 
 func (f FieldWriter) Bin64(v types.Bin64) error {
 	if err := f.w.Value().Bin64(v); err != nil {
@@ -130,6 +152,8 @@ func (f FieldWriter) Bin256(v types.Bin256) error {
 	return f.w.field(f.tag)
 }
 
+// Bytes/string
+
 func (f FieldWriter) Bytes(v []byte) error {
 	if err := f.w.Value().Bytes(v); err != nil {
 		return err
@@ -143,6 +167,8 @@ func (f FieldWriter) String(v string) error {
 	}
 	return f.w.field(f.tag)
 }
+
+// List/message
 
 func (f FieldWriter) List() ListWriter {
 	f.w.beginField(f.tag)

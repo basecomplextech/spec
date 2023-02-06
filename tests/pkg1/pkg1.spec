@@ -10,11 +10,13 @@ message Message {
     bool    bool    1;
     byte    byte    2;
 
-    int32   int32   10;
-    int64   int64   11;
+    int16   int16   10;
+    int32   int32   11;
+    int64   int64   12;
 
-    uint32  uint32  20;
-    uint64  uint64  21;
+    uint16  uint16  20;
+    uint32  uint32  21;
+    uint64  uint64  22;
 
     float32 float32 30;
     float64 float64 31;

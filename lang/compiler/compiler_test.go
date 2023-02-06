@@ -162,7 +162,7 @@ func TestCompiler__should_compile_package_definitions(t *testing.T) {
 
 	assert.Contains(t, pkg.DefinitionNames, "Enum")
 	assert.Contains(t, pkg.DefinitionNames, "Message")
-	assert.Contains(t, pkg.DefinitionNames, "Node")
+	assert.Contains(t, pkg.DefinitionNames, "Submessage")
 	assert.Contains(t, pkg.DefinitionNames, "Struct")
 }
 
@@ -233,7 +233,7 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 23)
+	assert.Len(t, def.Message.Fields, 24)
 }
 
 func TestCompiler__should_compile_message_field_names(t *testing.T) {
@@ -248,10 +248,10 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 23)
-	assert.Contains(t, msg.FieldNames, "field_bool")
-	assert.Contains(t, msg.FieldNames, "field_enum")
-	assert.Contains(t, msg.FieldNames, "field_byte")
+	require.Len(t, def.Message.FieldNames, 24)
+	assert.Contains(t, msg.FieldNames, "bool")
+	assert.Contains(t, msg.FieldNames, "enum1")
+	assert.Contains(t, msg.FieldNames, "byte")
 }
 
 func TestCompiler__should_compile_message_field_tags(t *testing.T) {
@@ -266,7 +266,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 23)
+	require.Len(t, def.Message.FieldTags, 24)
 	assert.Contains(t, msg.FieldTags, 1)
 	assert.Contains(t, msg.FieldTags, 2)
 	assert.Contains(t, msg.FieldTags, 10)
@@ -320,7 +320,7 @@ func TestCompiler__should_compile_builtin_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["field_bool"]
+	field := def.Message.FieldNames["bool"]
 	require.NotNil(t, field)
 
 	type_ := field.Type
@@ -339,15 +339,15 @@ func TestCompiler__should_compile_reference_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["node"]
+	field := def.Message.FieldNames["submessage"]
 	require.NotNil(t, field)
 
 	// resolved
 	type_ := field.Type
-	assert.Equal(t, "Node", type_.Name)
+	assert.Equal(t, "Submessage", type_.Name)
 	assert.Equal(t, KindMessage, type_.Kind)
 	assert.NotNil(t, type_.Ref)
-	assert.Equal(t, "Node", type_.Ref.Name)
+	assert.Equal(t, "Submessage", type_.Ref.Name)
 }
 
 func TestCompiler__should_compile_imported_type(t *testing.T) {
@@ -361,7 +361,7 @@ func TestCompiler__should_compile_imported_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["imported"]
+	field := def.Message.FieldNames["submessage1"]
 	require.NotNil(t, field)
 
 	// resolved
@@ -384,7 +384,7 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["list_values"]
+	field := def.Message.FieldNames["structs"]
 	require.NotNil(t, field)
 
 	// list
@@ -408,7 +408,7 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["list_messages"]
+	field := def.Message.FieldNames["submessages"]
 	require.NotNil(t, field)
 
 	// list
@@ -419,7 +419,7 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 	elem := type_.Element
 	require.NotNil(t, elem)
 	assert.Equal(t, KindMessage, elem.Kind)
-	assert.Equal(t, "Node", elem.Name)
+	assert.Equal(t, "Submessage", elem.Name)
 	assert.NotNil(t, elem.Ref)
 }
 
@@ -434,7 +434,7 @@ func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["list_imported"]
+	field := def.Message.FieldNames["submessages1"]
 	require.NotNil(t, field)
 
 	// list

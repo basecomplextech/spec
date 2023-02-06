@@ -42,6 +42,20 @@ func (w ValueWriter) Byte(v byte) error {
 	return w.w.pushData(start, end)
 }
 
+// Int
+
+func (w ValueWriter) Int16(v int16) error {
+	if w.w.err != nil {
+		return w.w.err
+	}
+
+	start := w.w.buf.Len()
+	encoding.EncodeInt16(w.w.buf, v)
+	end := w.w.buf.Len()
+
+	return w.w.pushData(start, end)
+}
+
 func (w ValueWriter) Int32(v int32) error {
 	if w.w.err != nil {
 		return w.w.err
@@ -61,6 +75,20 @@ func (w ValueWriter) Int64(v int64) error {
 
 	start := w.w.buf.Len()
 	encoding.EncodeInt64(w.w.buf, v)
+	end := w.w.buf.Len()
+
+	return w.w.pushData(start, end)
+}
+
+// Uint
+
+func (w ValueWriter) Uint16(v uint16) error {
+	if w.w.err != nil {
+		return w.w.err
+	}
+
+	start := w.w.buf.Len()
+	encoding.EncodeUint16(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)

@@ -29,6 +29,18 @@ func EncodeByte(b buffer.Buffer, v byte) (int, error) {
 
 // Int
 
+func EncodeInt16(b buffer.Buffer, v int16) (int, error) {
+	p := [compactint.MaxLen32]byte{}
+	n := compactint.PutReverseInt32(p[:], int32(v))
+	off := compactint.MaxLen32 - n
+
+	buf := b.Grow(n + 1)
+	copy(buf[:n], p[off:])
+	buf[n] = byte(TypeInt16)
+
+	return n + 1, nil
+}
+
 func EncodeInt32(b buffer.Buffer, v int32) (int, error) {
 	p := [compactint.MaxLen32]byte{}
 	n := compactint.PutReverseInt32(p[:], v)
@@ -54,6 +66,18 @@ func EncodeInt64(b buffer.Buffer, v int64) (int, error) {
 }
 
 // Uint
+
+func EncodeUint16(b buffer.Buffer, v uint16) (int, error) {
+	p := [compactint.MaxLen32]byte{}
+	n := compactint.PutReverseUint32(p[:], uint32(v))
+	off := compactint.MaxLen32 - n
+
+	buf := b.Grow(n + 1)
+	copy(buf[:n], p[off:])
+	buf[n] = byte(TypeUint16)
+
+	return n + 1, nil
+}
 
 func EncodeUint32(b buffer.Buffer, v uint32) (int, error) {
 	p := [compactint.MaxLen32]byte{}

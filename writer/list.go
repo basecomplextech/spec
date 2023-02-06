@@ -55,6 +55,15 @@ func (l ListWriter) Byte(v byte) error {
 	return l.w.element()
 }
 
+// Int
+
+func (l ListWriter) Int16(v int16) error {
+	if err := l.w.Value().Int16(v); err != nil {
+		return err
+	}
+	return l.w.element()
+}
+
 func (l ListWriter) Int32(v int32) error {
 	if err := l.w.Value().Int32(v); err != nil {
 		return err
@@ -64,6 +73,15 @@ func (l ListWriter) Int32(v int32) error {
 
 func (l ListWriter) Int64(v int64) error {
 	if err := l.w.Value().Int64(v); err != nil {
+		return err
+	}
+	return l.w.element()
+}
+
+// Uint
+
+func (l ListWriter) Uint16(v uint16) error {
+	if err := l.w.Value().Uint16(v); err != nil {
 		return err
 	}
 	return l.w.element()
@@ -83,6 +101,8 @@ func (l ListWriter) Uint64(v uint64) error {
 	return l.w.element()
 }
 
+// Float
+
 func (l ListWriter) Float32(v float32) error {
 	if err := l.w.Value().Float32(v); err != nil {
 		return err
@@ -96,6 +116,8 @@ func (l ListWriter) Float64(v float64) error {
 	}
 	return l.w.element()
 }
+
+// Bin
 
 func (l ListWriter) Bin64(v types.Bin64) error {
 	if err := l.w.Value().Bin64(v); err != nil {
@@ -118,6 +140,8 @@ func (l ListWriter) Bin256(v types.Bin256) error {
 	return l.w.element()
 }
 
+// Bytes/string
+
 func (l ListWriter) Bytes(v []byte) error {
 	if err := l.w.Value().Bytes(v); err != nil {
 		return err
@@ -131,6 +155,8 @@ func (l ListWriter) String(v string) error {
 	}
 	return l.w.element()
 }
+
+// List/message
 
 func (l ListWriter) List() ListWriter {
 	l.w.beginElement()

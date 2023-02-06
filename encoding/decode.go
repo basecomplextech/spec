@@ -63,6 +63,34 @@ func DecodeBool(b []byte) (bool, int, error) {
 
 // Int
 
+func DecodeInt16(b []byte) (int16, int, error) {
+	typ, n := decodeType(b)
+	if n < 0 {
+		return 0, 0, errors.New("decode int16: invalid data")
+	}
+	end := len(b) - n
+
+	switch typ {
+	case TypeInt16, TypeInt32:
+		v, m := compactint.ReverseInt32(b[:end])
+		if m < 0 {
+			return 0, 0, errors.New("decode int16: invalid data")
+		}
+		n += m
+		return int16(v), n, nil
+
+	case TypeInt64:
+		v, m := compactint.ReverseInt64(b[:end])
+		if m < 0 {
+			return 0, 0, errors.New("decode int16: invalid data")
+		}
+		n += m
+		return int16(v), n, nil
+	}
+
+	return 0, 0, fmt.Errorf("decode int16: invalid type, type=%v:%d", typ, typ)
+}
+
 func DecodeInt32(b []byte) (int32, int, error) {
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -71,7 +99,7 @@ func DecodeInt32(b []byte) (int32, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeInt32:
+	case TypeInt16, TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int32: invalid data")
@@ -99,7 +127,7 @@ func DecodeInt64(b []byte) (int64, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeInt32:
+	case TypeInt16, TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int64: invalid data")
@@ -121,6 +149,34 @@ func DecodeInt64(b []byte) (int64, int, error) {
 
 // Uint
 
+func DecodeUint16(b []byte) (uint16, int, error) {
+	typ, n := decodeType(b)
+	if n < 0 {
+		return 0, 0, errors.New("decode uint16: invalid data")
+	}
+	end := len(b) - n
+
+	switch typ {
+	case TypeUint16, TypeUint32:
+		v, m := compactint.ReverseUint32(b[:end])
+		if m < 0 {
+			return 0, 0, errors.New("decode uint16: invalid data")
+		}
+		n += m
+		return uint16(v), n, nil
+
+	case TypeUint64:
+		v, m := compactint.ReverseUint64(b[:end])
+		if m < 0 {
+			return 0, 0, errors.New("decode uint16: invalid data")
+		}
+		n += m
+		return uint16(v), n, nil
+	}
+
+	return 0, 0, fmt.Errorf("decode uint32: invalid type, type=%v:%d", typ, typ)
+}
+
 func DecodeUint32(b []byte) (uint32, int, error) {
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -129,7 +185,7 @@ func DecodeUint32(b []byte) (uint32, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeUint32:
+	case TypeUint16, TypeUint32:
 		v, m := compactint.ReverseUint32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint32: invalid data")
@@ -157,7 +213,7 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeUint32:
+	case TypeUint16, TypeUint32:
 		v, m := compactint.ReverseUint32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint64: invalid data")

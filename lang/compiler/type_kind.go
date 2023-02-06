@@ -17,8 +17,11 @@ const (
 	KindBool
 	KindByte
 
+	KindInt16
 	KindInt32
 	KindInt64
+
+	KindUint16
 	KindUint32
 	KindUint64
 
@@ -54,10 +57,15 @@ func parseKind(pkind ast.Kind) (Kind, error) {
 	case ast.KindByte:
 		return KindByte, nil
 
+	case ast.KindInt16:
+		return KindInt16, nil
 	case ast.KindInt32:
 		return KindInt32, nil
 	case ast.KindInt64:
 		return KindInt64, nil
+
+	case ast.KindUint16:
+		return KindUint16, nil
 	case ast.KindUint32:
 		return KindUint32, nil
 	case ast.KindUint64:
@@ -97,10 +105,15 @@ func (k Kind) String() string {
 	case KindByte:
 		return "byte"
 
+	case KindInt16:
+		return "int16"
 	case KindInt32:
 		return "int32"
 	case KindInt64:
 		return "int64"
+
+	case KindUint16:
+		return "uint16"
 	case KindUint32:
 		return "uint32"
 	case KindUint64:

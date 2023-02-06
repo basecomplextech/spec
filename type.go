@@ -11,9 +11,11 @@ const (
 	TypeFalse = encoding.TypeFalse
 	TypeByte  = encoding.TypeByte
 
+	TypeInt16 = encoding.TypeInt16
 	TypeInt32 = encoding.TypeInt32
 	TypeInt64 = encoding.TypeInt64
 
+	TypeUint16 = encoding.TypeUint16
 	TypeUint32 = encoding.TypeUint32
 	TypeUint64 = encoding.TypeUint64
 

@@ -44,9 +44,11 @@ func TestObject(t tests.T) *Object {
 		Bool: true,
 		Byte: 255,
 
+		Int16: math.MaxInt16,
 		Int32: math.MaxInt32,
 		Int64: math.MaxInt64,
 
+		Uint16: math.MaxUint16,
 		Uint32: math.MaxUint32,
 		Uint64: math.MaxUint64,
 

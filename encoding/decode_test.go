@@ -74,11 +74,26 @@ func TestDecodeByte__should_decode_byte(t *testing.T) {
 	assert.Equal(t, byte(1), v)
 }
 
+// Int16
+
+func TestDecodeInt16__should_decode_int16(t *testing.T) {
+	b := buffer.New()
+	EncodeInt16(b, math.MaxInt16)
+
+	v, n, err := DecodeInt16(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, int16(math.MaxInt16), v)
+}
+
 // Int32
 
 func TestDecodeInt32__should_decode_int32(t *testing.T) {
 	b := buffer.New()
-	EncodeInt32(b, 1)
+	EncodeInt32(b, math.MaxInt32)
 
 	v, n, err := DecodeInt32(b.Bytes())
 	if err != nil {
@@ -86,14 +101,14 @@ func TestDecodeInt32__should_decode_int32(t *testing.T) {
 	}
 
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, int32(1), v)
+	assert.Equal(t, int32(math.MaxInt32), v)
 }
 
 // Int64
 
 func TestDecodeInt64__should_decode_int64(t *testing.T) {
 	b := buffer.New()
-	EncodeInt64(b, 1)
+	EncodeInt64(b, math.MaxInt64)
 
 	v, n, err := DecodeInt64(b.Bytes())
 	if err != nil {
@@ -101,12 +116,12 @@ func TestDecodeInt64__should_decode_int64(t *testing.T) {
 	}
 
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, int64(1), v)
+	assert.Equal(t, int64(math.MaxInt64), v)
 }
 
 func TestDecodeInt64__should_decode_int64_from_int32(t *testing.T) {
 	b := buffer.New()
-	EncodeInt32(b, 1)
+	EncodeInt32(b, math.MaxInt32)
 
 	v, n, err := DecodeInt64(b.Bytes())
 	if err != nil {
@@ -114,7 +129,65 @@ func TestDecodeInt64__should_decode_int64_from_int32(t *testing.T) {
 	}
 
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, int64(1), v)
+	assert.Equal(t, int64(math.MaxInt32), v)
+}
+
+// Uint16
+
+func TestDecodeUint16__should_decode_int16(t *testing.T) {
+	b := buffer.New()
+	EncodeUint16(b, math.MaxUint16)
+
+	v, n, err := DecodeUint16(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, uint16(math.MaxUint16), v)
+}
+
+// Uint32
+
+func TestDecodeUint32__should_decode_int32(t *testing.T) {
+	b := buffer.New()
+	EncodeUint32(b, math.MaxUint32)
+
+	v, n, err := DecodeUint32(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, uint32(math.MaxUint32), v)
+}
+
+// Uint64
+
+func TestDecodeUint64__should_decode_int64(t *testing.T) {
+	b := buffer.New()
+	EncodeUint64(b, math.MaxUint64)
+
+	v, n, err := DecodeUint64(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, uint64(math.MaxUint64), v)
+}
+
+func TestDecodeUint64__should_decode_uint64_from_uint32(t *testing.T) {
+	b := buffer.New()
+	EncodeUint32(b, math.MaxUint32)
+
+	v, n, err := DecodeUint64(b.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, n, b.Len())
+	assert.Equal(t, uint64(math.MaxUint32), v)
 }
 
 // Float32

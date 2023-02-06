@@ -10,9 +10,11 @@ type Object struct {
 	Bool bool
 	Byte byte
 
+	Int16 int16
 	Int32 int32
 	Int64 int64
 
+	Uint16 uint16
 	Uint32 uint32
 	Uint64 uint64
 
@@ -54,9 +56,11 @@ func (o *Object) Write(w MessageWriter) (Message, error) {
 	w.Bool(o.Bool)
 	w.Byte(o.Byte)
 
+	w.Int16(o.Int16)
 	w.Int32(o.Int32)
 	w.Int64(o.Int64)
 
+	w.Uint16(o.Uint16)
 	w.Uint32(o.Uint32)
 	w.Uint64(o.Uint64)
 

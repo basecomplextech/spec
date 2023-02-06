@@ -37,11 +37,15 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 	case TypeByte:
 		_, n, err = encoding.DecodeByte(b)
 
+	case TypeInt16:
+		_, n, err = encoding.DecodeInt16(b)
 	case TypeInt32:
 		_, n, err = encoding.DecodeInt32(b)
 	case TypeInt64:
 		_, n, err = encoding.DecodeInt64(b)
 
+	case TypeUint16:
+		_, n, err = encoding.DecodeUint16(b)
 	case TypeUint32:
 		_, n, err = encoding.DecodeUint32(b)
 	case TypeUint64:
@@ -101,6 +105,14 @@ func (v Value) Byte() byte {
 	return p
 }
 
+// Int
+
+// Int16 decodes and returns int16 or 0.
+func (v Value) Int16() int16 {
+	p, _, _ := encoding.DecodeInt16(v)
+	return p
+}
+
 // Int32 decodes and returns int32 or 0.
 func (v Value) Int32() int32 {
 	p, _, _ := encoding.DecodeInt32(v)
@@ -110,6 +122,14 @@ func (v Value) Int32() int32 {
 // Int64 decodes and returns int64 or 0.
 func (v Value) Int64() int64 {
 	p, _, _ := encoding.DecodeInt64(v)
+	return p
+}
+
+// Uint
+
+// Uint16 decodes and returns uint16 or 0.
+func (v Value) Uint16() uint16 {
+	p, _, _ := encoding.DecodeUint16(v)
 	return p
 }
 
@@ -125,6 +145,8 @@ func (v Value) Uint64() uint64 {
 	return p
 }
 
+// Float
+
 // Float32 decodes and returns float32 or 0.
 func (v Value) Float32() float32 {
 	p, _, _ := encoding.DecodeFloat32(v)
@@ -136,6 +158,8 @@ func (v Value) Float64() float64 {
 	p, _, _ := encoding.DecodeFloat64(v)
 	return p
 }
+
+// Bin
 
 // Bin64 decodes and returns bin64 or a zero value.
 func (v Value) Bin64() types.Bin64 {
@@ -155,6 +179,8 @@ func (v Value) Bin256() types.Bin256 {
 	return p
 }
 
+// Bytes/string
+
 // Bytes decodes and returns bytes or nil.
 func (v Value) Bytes() []byte {
 	p, _, _ := encoding.DecodeBytes(v)
@@ -166,6 +192,8 @@ func (v Value) String() string {
 	p, _, _ := encoding.DecodeString(v)
 	return p
 }
+
+// List/message
 
 // List decodes and returns a list or an empty list.
 func (v Value) List() List {

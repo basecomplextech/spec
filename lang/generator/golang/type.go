@@ -16,10 +16,15 @@ func typeName(typ *compiler.Type) string {
 	case compiler.KindByte:
 		return "byte"
 
+	case compiler.KindInt16:
+		return "int16"
 	case compiler.KindInt32:
 		return "int32"
 	case compiler.KindInt64:
 		return "int64"
+
+	case compiler.KindUint16:
+		return "uint16"
 	case compiler.KindUint32:
 		return "uint32"
 	case compiler.KindUint64:
@@ -86,10 +91,15 @@ func typeDecodeFunc(typ *compiler.Type) string {
 	case compiler.KindByte:
 		return "encoding.DecodeByte"
 
+	case compiler.KindInt16:
+		return "encoding.DecodeInt16"
 	case compiler.KindInt32:
 		return "encoding.DecodeInt32"
 	case compiler.KindInt64:
 		return "encoding.DecodeInt64"
+
+	case compiler.KindUint16:
+		return "encoding.DecodeUint16"
 	case compiler.KindUint32:
 		return "encoding.DecodeUint32"
 	case compiler.KindUint64:
@@ -137,10 +147,15 @@ func typeWriteFunc(typ *compiler.Type) string {
 	case compiler.KindByte:
 		return "encoding.EncodeByte"
 
+	case compiler.KindInt16:
+		return "encoding.EncodeInt16"
 	case compiler.KindInt32:
 		return "encoding.EncodeInt32"
 	case compiler.KindInt64:
 		return "encoding.EncodeInt64"
+
+	case compiler.KindUint16:
+		return "encoding.EncodeUint16"
 	case compiler.KindUint32:
 		return "encoding.EncodeUint32"
 	case compiler.KindUint64:

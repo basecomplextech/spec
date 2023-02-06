@@ -20,11 +20,13 @@ const (
 	TypeFalse Type = 02
 	TypeByte  Type = 03
 
-	TypeInt32 Type = 10
-	TypeInt64 Type = 11
+	TypeInt16 Type = 10
+	TypeInt32 Type = 11
+	TypeInt64 Type = 12
 
-	TypeUint32 Type = 20
-	TypeUint64 Type = 21
+	TypeUint16 Type = 20
+	TypeUint32 Type = 21
+	TypeUint64 Type = 22
 
 	TypeFloat32 Type = 40
 	TypeFloat64 Type = 41
@@ -52,9 +54,11 @@ func (t Type) Check() error {
 		TypeFalse,
 		TypeByte,
 
+		TypeInt16,
 		TypeInt32,
 		TypeInt64,
 
+		TypeUint16,
 		TypeUint32,
 		TypeUint64,
 
@@ -90,11 +94,15 @@ func (t Type) String() string {
 	case TypeByte:
 		return "int8"
 
+	case TypeInt16:
+		return "int16"
 	case TypeInt32:
 		return "int32"
 	case TypeInt64:
 		return "int64"
 
+	case TypeUint16:
+		return "uint16"
 	case TypeUint32:
 		return "uint32"
 	case TypeUint64:

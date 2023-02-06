@@ -10,9 +10,11 @@ const (
 	KindBool
 	KindByte
 
+	KindInt16
 	KindInt32
 	KindInt64
 
+	KindUint16
 	KindUint32
 	KindUint64
 
@@ -40,11 +42,15 @@ func GetKind(type_ string) Kind {
 	case "byte":
 		return KindByte
 
+	case "int16":
+		return KindInt16
 	case "int32":
 		return KindInt32
 	case "int64":
 		return KindInt64
 
+	case "uint16":
+		return KindUint16
 	case "uint32":
 		return KindUint32
 	case "uint64":
