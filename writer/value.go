@@ -17,7 +17,7 @@ func WriteValue[T any](e *writer, v T, encode encoding.EncodeFunc[T]) error {
 
 	start := e.buf.Len()
 	if _, err := encode(e.buf, v); err != nil {
-		return e.close(err)
+		return e.fail(err)
 	}
 	end := e.buf.Len()
 
@@ -169,7 +169,7 @@ func (w ValueWriter) Bytes(v []byte) error {
 
 	start := w.w.buf.Len()
 	if _, err := encoding.EncodeBytes(w.w.buf, v); err != nil {
-		return w.w.close(err)
+		return w.w.fail(err)
 	}
 	end := w.w.buf.Len()
 
@@ -183,7 +183,7 @@ func (w ValueWriter) String(v string) error {
 
 	start := w.w.buf.Len()
 	if _, err := encoding.EncodeString(w.w.buf, v); err != nil {
-		return w.w.close(err)
+		return w.w.fail(err)
 	}
 	end := w.w.buf.Len()
 

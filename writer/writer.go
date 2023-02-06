@@ -34,14 +34,15 @@ type Writer interface {
 }
 
 // New returns a new writer with a new empty buffer.
-func New() Writer {
-	buf := buffer.New()
-	return newWriter(buf)
+// The writer must be freed manually.
+func New(autoRelease bool) Writer {
+	return newWriter(nil, autoRelease)
 }
 
 // NewBuffer returns a new writer with the given buffer.
-func NewBuffer(buf buffer.Buffer) Writer {
-	return newWriter(buf)
+// The writer must be freed manually.
+func NewBuffer(buf buffer.Buffer, autoRelease bool) Writer {
+	return newWriter(buf, autoRelease)
 }
 
 // internal
@@ -50,14 +51,15 @@ var errClosed = errors.New("operation on closed writer")
 
 type writer struct {
 	*writerState
-	err error
+
+	err         error
+	autoRelease bool // whether to release the writer state on close
 }
 
-func newWriter(buf buffer.Buffer) *writer {
-	s := acquireWriterState()
-	s.init(buf)
-
-	return &writer{writerState: s}
+func newWriter(buf buffer.Buffer, autoRelease bool) *writer {
+	w := &writer{autoRelease: autoRelease}
+	w.Reset(buf)
+	return w
 }
 
 // Err returns an error or nil.
@@ -118,7 +120,7 @@ func (w *writer) end() (result []byte, err error) {
 	// end top object
 	entry, ok := w.stack.peek()
 	if !ok {
-		return nil, w.closef("end: encode stack is empty")
+		return nil, w.failf("end: encode stack is empty")
 	}
 
 	switch entry.type_ {
@@ -135,13 +137,13 @@ func (w *writer) end() (result []byte, err error) {
 		}
 
 	default:
-		return nil, w.closef("end: not list or message")
+		return nil, w.failf("end: not list or message")
 	}
 
 	// maybe end parent field/element
 	entry, ok = w.stack.peekSecondLast()
 	if !ok {
-		return result, w.close(nil)
+		return result, w.close()
 	}
 
 	switch entry.type_ {
@@ -177,9 +179,9 @@ func (w *writer) beginElement() error {
 	list, ok := w.stack.peek()
 	switch {
 	case !ok:
-		return w.closef("begin element: cannot begin element, parent not list")
+		return w.failf("begin element: cannot begin element, parent not list")
 	case list.type_ != entryList:
-		return w.closef("begin element: cannot begin element, parent not list")
+		return w.failf("begin element: cannot begin element, parent not list")
 	}
 
 	// push list element
@@ -196,16 +198,16 @@ func (w *writer) element() error {
 	// pop data
 	_, end, err := w.popData()
 	if err != nil {
-		return w.close(err)
+		return w.fail(err)
 	}
 
 	// check list
 	list, ok := w.stack.peek()
 	switch {
 	case !ok:
-		return w.closef("element: cannot encode element, parent not list")
+		return w.failf("element: cannot encode element, parent not list")
 	case list.type_ != entryList:
-		return w.closef("element: cannot encode element, parent not list")
+		return w.failf("element: cannot encode element, parent not list")
 	}
 
 	// append element relative offset
@@ -241,25 +243,25 @@ func (w *writer) endElement() ([]byte, error) {
 	// pop data
 	_, end, err := w.popData()
 	if err != nil {
-		return nil, w.close(err)
+		return nil, w.fail(err)
 	}
 
 	// pop element
 	elem, ok := w.stack.pop()
 	switch {
 	case !ok:
-		return nil, w.closef("end element: not element")
+		return nil, w.failf("end element: not element")
 	case elem.type_ != entryElement:
-		return nil, w.closef("end element: not element")
+		return nil, w.failf("end element: not element")
 	}
 
 	// check list
 	list, ok := w.stack.peek()
 	switch {
 	case !ok:
-		return nil, w.closef("end element: parent not list")
+		return nil, w.failf("end element: parent not list")
 	case list.type_ != entryList:
-		return nil, w.closef("end element: parent not list")
+		return nil, w.failf("end element: parent not list")
 	}
 
 	// append element relative offset
@@ -282,9 +284,9 @@ func (w *writer) endList() ([]byte, error) {
 	list, ok := w.stack.pop()
 	switch {
 	case !ok:
-		return nil, w.closef("end list: not list")
+		return nil, w.failf("end list: not list")
 	case list.type_ != entryList:
-		return nil, w.closef("end list: not list")
+		return nil, w.failf("end list: not list")
 	}
 
 	bodySize := w.buf.Len() - list.start
@@ -292,7 +294,7 @@ func (w *writer) endList() ([]byte, error) {
 
 	// encode list
 	if _, err := encoding.EncodeListMeta(w.buf, bodySize, table); err != nil {
-		return nil, w.close(err)
+		return nil, w.fail(err)
 	}
 
 	// push data entry
@@ -332,9 +334,9 @@ func (w *writer) beginField(tag uint16) error {
 	message, ok := w.stack.peek()
 	switch {
 	case !ok:
-		return w.closef("begin field: cannot begin field, parent not message")
+		return w.failf("begin field: cannot begin field, parent not message")
 	case message.type_ != entryMessage:
-		return w.closef("begin field: cannot begin field, parent not message")
+		return w.failf("begin field: cannot begin field, parent not message")
 	}
 
 	// push field
@@ -351,16 +353,16 @@ func (w *writer) field(tag uint16) error {
 	// pop data
 	_, end, err := w.popData()
 	if err != nil {
-		return w.close(err)
+		return w.fail(err)
 	}
 
 	// check message
 	message, ok := w.stack.peek()
 	switch {
 	case !ok:
-		return w.closef("field: cannot encode field, parent not message")
+		return w.failf("field: cannot encode field, parent not message")
 	case message.type_ != entryMessage:
-		return w.closef("field: cannot encode field, parent not message")
+		return w.failf("field: cannot encode field, parent not message")
 	}
 
 	// insert field tag and relative offset
@@ -379,7 +381,7 @@ func (w *writer) fieldAny(tag uint16, data []byte) error {
 
 	_, _, err := encoding.DecodeType(data)
 	if err != nil {
-		return w.close(err)
+		return w.fail(err)
 	}
 
 	start := w.buf.Len()
@@ -419,16 +421,16 @@ func (w *writer) endField() ([]byte, error) {
 	// pop data
 	_, end, err := w.popData()
 	if err != nil {
-		return nil, w.close(err)
+		return nil, w.fail(err)
 	}
 
 	// pop field
 	field, ok := w.stack.pop()
 	switch {
 	case !ok:
-		return nil, w.closef("end field: not field")
+		return nil, w.failf("end field: not field")
 	case field.type_ != entryField:
-		return nil, w.closef("end field: not field")
+		return nil, w.failf("end field: not field")
 	}
 	tag := field.tag()
 
@@ -436,9 +438,9 @@ func (w *writer) endField() ([]byte, error) {
 	message, ok := w.stack.peek()
 	switch {
 	case !ok:
-		return nil, w.closef("field: cannot encode field, parent not message")
+		return nil, w.failf("field: cannot encode field, parent not message")
 	case message.type_ != entryMessage:
-		return nil, w.closef("field: cannot encode field, parent not message")
+		return nil, w.failf("field: cannot encode field, parent not message")
 	}
 
 	// insert field with tag and relative offset
@@ -463,9 +465,9 @@ func (w *writer) endMessage() ([]byte, error) {
 	message, ok := w.stack.pop()
 	switch {
 	case !ok:
-		return nil, w.closef("end message: parent not message")
+		return nil, w.failf("end message: parent not message")
 	case message.type_ != entryMessage:
-		return nil, w.closef("end message: parent not message")
+		return nil, w.failf("end message: parent not message")
 	}
 
 	dataSize := w.buf.Len() - message.start
@@ -473,7 +475,7 @@ func (w *writer) endMessage() ([]byte, error) {
 
 	// encode message
 	if _, err := encoding.EncodeMessageMeta(w.buf, dataSize, table); err != nil {
-		return nil, w.close(err)
+		return nil, w.fail(err)
 	}
 
 	// push data
@@ -495,7 +497,7 @@ func (w *writer) pushData(start, end int) error {
 	entry, ok := w.stack.peek()
 	if ok {
 		if entry.type_ == entryData {
-			return w.closef("cannot push more data, element/field must be written first")
+			return w.failf("cannot push more data, element/field must be written first")
 		}
 	}
 
@@ -507,35 +509,47 @@ func (w *writer) popData() (start, end int, err error) {
 	entry, ok := w.stack.pop()
 	switch {
 	case !ok:
-		return 0, 0, w.closef("cannot pop data, no data")
+		return 0, 0, w.failf("cannot pop data, no data")
 	case entry.type_ != entryData:
-		return 0, 0, w.closef("cannot pop data, not data, type=%v", entry.type_)
+		return 0, 0, w.failf("cannot pop data, not data, type=%v", entry.type_)
 	}
 
 	start, end = entry.start, entry.end()
 	return
 }
 
-// closes
+// close
 
 // close sets the writer error and frees its state.
-func (w *writer) close(err error) error {
+func (w *writer) close() error {
 	if w.err != nil {
 		return w.err
 	}
 
-	if err != nil {
-		w.err = err
-	} else {
-		w.err = errClosed
+	w.err = errClosed
+	if w.autoRelease {
+		w.free()
 	}
-
-	w.free()
-	return err
+	return nil
 }
 
-// closef sets the writer error and frees its state.
-func (w *writer) closef(format string, args ...any) error {
+// fail sets the writer error and frees its state.
+func (w *writer) fail(err error) error {
+	if w.err != nil {
+		return w.err
+	}
+
+	if err == nil {
+		return w.close()
+	}
+
+	w.err = err
+	w.free()
+	return w.err
+}
+
+// failf sets the writer error and frees its state.
+func (w *writer) failf(format string, args ...any) error {
 	var err error
 	if len(args) == 0 {
 		err = errors.New(format)
@@ -543,7 +557,7 @@ func (w *writer) closef(format string, args ...any) error {
 		err = fmt.Errorf(format, args...)
 	}
 
-	return w.close(err)
+	return w.fail(err)
 }
 
 // free

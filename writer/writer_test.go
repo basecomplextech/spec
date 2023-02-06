@@ -10,15 +10,14 @@ import (
 )
 
 func testWriter() *writer {
-	buf := buffer.New()
-	return newWriter(buf)
+	return newWriter(nil, false /* auto release */)
 }
 
 // Reset
 
 func TestWriter_Reset__should_reset_writer(t *testing.T) {
 	w := testWriter()
-	w.closef("test error")
+	w.failf("test error")
 
 	buf := buffer.New()
 	w.Reset(buf)
@@ -29,7 +28,7 @@ func TestWriter_Reset__should_reset_writer(t *testing.T) {
 
 func TestWriter_Reset__should_create_buffer_when_nil(t *testing.T) {
 	w := testWriter()
-	w.closef("test error")
+	w.failf("test error")
 
 	w.Reset(nil)
 
@@ -81,7 +80,7 @@ func TestWriter_end__should_return_error_when_not_finished(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestWriter_end__should_close_writer_on_root_element_end(t *testing.T) {
+func TestWriter_end__should_close_writer_on_root_end(t *testing.T) {
 	w := testWriter()
 
 	msg := w.Message()
@@ -94,7 +93,36 @@ func TestWriter_end__should_close_writer_on_root_element_end(t *testing.T) {
 	}
 
 	assert.Equal(t, errClosed, w.err)
+}
+
+func TestWriter_end__should_free_when_autoreleasing(t *testing.T) {
+	w := newWriter(nil, true /* auto release */)
+
+	msg := w.Message()
+	msg.Field(1).Bool(true)
+	msg.Field(2).Byte(2)
+
+	_, err := msg.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	assert.Nil(t, w.writerState)
+}
+
+func TestWriter_end__should_not_free_when_not_autoreleasing(t *testing.T) {
+	w := newWriter(nil, false /* no auto release */)
+
+	msg := w.Message()
+	msg.Field(1).Bool(true)
+	msg.Field(2).Byte(2)
+
+	_, err := msg.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.NotNil(t, w.writerState)
 }
 
 // pushData
