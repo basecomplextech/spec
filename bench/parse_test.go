@@ -6,17 +6,20 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/complex1tech/spec/tests/pkg1"
 )
 
-func BenchmarkDecode_Large(b *testing.B) {
-	msg := newTestObject()
-	data, err := msg.Marshal()
+func BenchmarkParseMessage(b *testing.B) {
+	obj := pkg1.TestObject(b)
+	msg, err := obj.Write(pkg1.NewMessageWriter())
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	size := len(data)
-	compressed := compressedSize(data)
+	bytes := msg.Unwrap().Bytes()
+	size := len(bytes)
+	compressed := compressedSize(bytes)
 
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
@@ -24,7 +27,7 @@ func BenchmarkDecode_Large(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		_, _, err := DecodeTestMessage(data)
+		_, _, err := pkg1.ParseMessage(bytes)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -39,17 +42,18 @@ func BenchmarkDecode_Large(b *testing.B) {
 	b.ReportMetric(float64(compressed), "size-zlib")
 }
 
-// GetMessage
+// NewMessage
 
-func BenchmarkGetMessage(b *testing.B) {
-	msg := newTestObject()
-	data, err := msg.Marshal()
+func BenchmarkNewMessage(b *testing.B) {
+	obj := pkg1.TestObject(b)
+	msg, err := obj.Write(pkg1.NewMessageWriter())
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	size := len(data)
-	compressed := compressedSize(data)
+	bytes := msg.Unwrap().Bytes()
+	size := len(bytes)
+	compressed := compressedSize(bytes)
 
 	b.SetBytes(int64(size))
 	b.ReportAllocs()
@@ -57,8 +61,8 @@ func BenchmarkGetMessage(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		msg := GetTestMessage(data)
-		if len(msg.msg.bytes) == 0 {
+		msg := pkg1.NewMessage(bytes)
+		if len(msg.Unwrap().Bytes()) == 0 {
 			b.Fatal()
 		}
 	}
@@ -72,22 +76,23 @@ func BenchmarkGetMessage(b *testing.B) {
 	b.ReportMetric(float64(compressed), "size-zlib")
 }
 
-// Standard JSON
+// JSON
 
 func BenchmarkJSON_Unmarshal(b *testing.B) {
-	msg := newTestObject()
+	obj := pkg1.TestObject(b)
 
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(obj)
 	if err != nil {
 		b.Fatal(err)
 	}
 
+	b.SetBytes(int64(len(data)))
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	t0 := time.Now()
 
-	msg1 := &TestObject{}
+	msg1 := &pkg1.Object{}
 	for i := 0; i < b.N; i++ {
 		if err := json.Unmarshal(data, msg1); err != nil {
 			b.Fatal(err)
@@ -102,6 +107,8 @@ func BenchmarkJSON_Unmarshal(b *testing.B) {
 	b.ReportMetric(float64(len(data)), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
+
+// util
 
 func compressedSize(b []byte) int {
 	buf := &bytes.Buffer{}

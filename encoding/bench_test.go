@@ -1,4 +1,4 @@
-package spec
+package encoding
 
 import (
 	"testing"
@@ -27,7 +27,7 @@ func BenchmarkFieldTable_field(b *testing.B) {
 	last := len(fields) - 1
 	for i := 0; i < b.N; i++ {
 		f, ok := table.field_small(last)
-		if !ok || f.tag == 0 || f.offset == 0 {
+		if !ok || f.Tag == 0 || f.Offset == 0 {
 			b.Fatal()
 		}
 	}
@@ -52,7 +52,7 @@ func BenchmarkFieldTable_offset(b *testing.B) {
 	b.ResetTimer()
 
 	last := len(fields) - 1
-	tag := fields[last].tag
+	tag := fields[last].Tag
 
 	for i := 0; i < b.N; i++ {
 		end := table.offset_small(tag)

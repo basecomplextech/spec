@@ -6,103 +6,76 @@ import (
 
 	"github.com/complex1tech/baselibrary/tests"
 	"github.com/complex1tech/baselibrary/types"
-	"github.com/complex1tech/spec/tests/pkg2"
+	"github.com/complex1tech/spec/tests/pkg3/pkg3a"
 )
 
-func TestMessage(t tests.T) Message {
-	w := NewMessageWriter()
-	w.Bool(true)
-	w.Byte(255)
+func TestObject(t tests.T) *Object {
+	o := &Object{
+		Bool: true,
+		Byte: 255,
 
-	w.Int32(math.MaxInt32)
-	w.Int64(math.MaxInt64)
+		Int32: math.MaxInt32,
+		Int64: math.MaxInt64,
 
-	w.Uint32(math.MaxUint32)
-	w.Uint64(math.MaxUint64)
+		Uint32: math.MaxUint32,
+		Uint64: math.MaxUint64,
 
-	w.Float32(math.MaxFloat32)
-	w.Float64(math.MaxFloat64)
+		Float32: math.MaxFloat32,
+		Float64: math.MaxFloat64,
 
-	w.Bin64(types.Bin64FromInt64(1))
-	w.Bin128(types.Bin128FromInt64(2))
-	w.Bin256(types.Bin256FromInt64(3))
+		Bin64:  types.Bin64FromInt64(1),
+		Bin128: types.Bin128FromInt64(2),
+		Bin256: types.Bin256FromInt64(3),
 
-	w.String("hello, world")
-	w.Bytes1([]byte("goodbye, world"))
+		String: "hello, world",
+		Bytes1: []byte("goodbye, world"),
 
-	w.Enum1(EnumOne)
-	w.Struct1(TestStruct())
-	TestSubmessage(t, w.Submessage(), 0)
-	pkg2.TestSubmessage(t, w.Submessage1())
-
-	{
-		list := w.Ints()
-		for i := 0; i < 10; i++ {
-			list.Add(int64(i))
-		}
-		if err := list.End(); err != nil {
-			t.Fatal(err)
-		}
+		Enum1:      EnumOne,
+		Struct1:    TestStruct(),
+		Subobject:  TestSubobject(0),
+		Subobject1: TestSubobject1(0),
 	}
 
-	{
-		list := w.Strings()
-		for i := 0; i < 10; i++ {
-			list.Add(fmt.Sprintf("%03d", i))
-		}
-		if err := list.End(); err != nil {
-			t.Fatal(err)
-		}
+	for i := 0; i < 10; i++ {
+		o.Ints = append(o.Ints, int64(i))
 	}
 
-	{
-		list := w.Structs()
-		for i := 0; i < 10; i++ {
-			list.Add(Struct{
-				Key:   int32(i),
-				Value: -int32(i),
-			})
-		}
-		if err := list.End(); err != nil {
-			t.Fatal(err)
-		}
+	for i := 0; i < 10; i++ {
+		o.Strings = append(o.Strings, fmt.Sprintf("%03d", i))
 	}
 
-	{
-		list := w.Submessages()
-		for i := 0; i < 10; i++ {
-			TestSubmessage(t, list.Add(), i)
-		}
-		if err := list.End(); err != nil {
-			t.Fatal(err)
-		}
+	for i := 0; i < 10; i++ {
+		o.Structs = append(o.Structs, Struct{
+			Key:   int32(i),
+			Value: -int32(i),
+		})
 	}
 
-	{
-		list := w.Submessages1()
-		for i := 0; i < 10; i++ {
-			pkg2.TestSubmessage(t, list.Add())
-		}
-		if err := list.End(); err != nil {
-			t.Fatal(err)
-		}
+	for i := 0; i < 10; i++ {
+		o.Subobjects = append(o.Subobjects, TestSubobject(i))
 	}
 
-	m, err := w.Build()
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < 10; i++ {
+		o.Subobjects1 = append(o.Subobjects1, TestSubobject1(i))
 	}
-	return m
+
+	return o
 }
 
-func TestSubmessage(t tests.T, w SubmessageWriter, i int) Submessage {
-	w.Value(fmt.Sprintf("value %03d", i))
-
-	n, err := w.Build()
-	if err != nil {
-		t.Fatal(err)
+func TestSubobject(i int) *Subobject {
+	return &Subobject{
+		Value: fmt.Sprintf("value %03d", i),
 	}
-	return n
+}
+
+func TestSubobject1(i int) *Subobject1 {
+	return &Subobject1{
+		Key: fmt.Sprintf("key %03d", i),
+		Value: pkg3a.Value{
+			X: int32(i),
+			Y: int32(-i),
+		},
+	}
 }
 
 func TestStruct() Struct {

@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/complex1tech/spec/tests/pkg1"
 )
 
-func BenchmarkEncode_Small(b *testing.B) {
-	msg := newTestSmall()
+func BenchmarkWrite_Small(b *testing.B) {
+	obj := pkg1.TestSubobject(1)
 	buf := buffer.NewSize(4096)
 
 	b.ReportAllocs()
@@ -21,75 +22,31 @@ func BenchmarkEncode_Small(b *testing.B) {
 	var size int
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
-		e := NewWriterBuffer(buf)
+		w := pkg1.NewSubmessageWriterBuffer(buf)
 
-		data, err := msg.Encode(e)
+		data, err := obj.Write(w)
 		if err != nil {
 			b.Fatal(err)
 		}
-		if len(data) == 0 {
+
+		size = len(data.Unwrap().Bytes())
+		if size == 0 {
 			b.Fatal()
 		}
-
-		size = len(data)
 	}
 
 	t1 := time.Now()
 	sec := t1.Sub(t0).Seconds()
 	ops := float64(b.N) / sec
 
+	b.SetBytes(int64(size))
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
-	b.SetBytes(int64(size))
-}
-
-func BenchmarkEncode_Large(b *testing.B) {
-	msg := newTestObject()
-	buf := buffer.NewSize(4096)
-	e := NewWriterBuffer(buf)
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	t0 := time.Now()
-
-	var size int
-	for i := 0; i < b.N; i++ {
-		buf.Reset()
-		e.Reset(buf)
-
-		builder, err := BuildTestMessageWriter(e)
-		if err != nil {
-			b.Fatal(err)
-		}
-		if err := msg.Encode(builder); err != nil {
-			b.Fatal(err)
-		}
-
-		data, err := builder.End()
-		if err != nil {
-			b.Fatal(err)
-		}
-		if len(data) < 100 {
-			b.Fatal(len(data))
-		}
-
-		size = len(data)
-	}
-
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
-	ops := float64(b.N) / sec
-
-	b.ReportMetric(ops, "ops")
-	b.ReportMetric(float64(size), "size")
-	b.SetBytes(int64(size))
 }
 
 func BenchmarkWrite_Large(b *testing.B) {
-	msg := newTestObject()
+	obj := pkg1.TestObject(b)
 	buf := buffer.NewSize(4096)
-	e := NewWriterBuffer(buf)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -99,17 +56,17 @@ func BenchmarkWrite_Large(b *testing.B) {
 	var size int
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
-		e.Reset(buf)
+		w := pkg1.NewMessageWriterBuffer(buf)
 
-		data, err := msg.Write(e)
+		data, err := obj.Write(w)
 		if err != nil {
 			b.Fatal(err)
 		}
-		if len(data) < 100 {
-			b.Fatal(len(data))
-		}
 
-		size = len(data)
+		size = len(data.Unwrap().Bytes())
+		if size == 0 {
+			b.Fatal()
+		}
 	}
 
 	t1 := time.Now()
@@ -121,11 +78,12 @@ func BenchmarkWrite_Large(b *testing.B) {
 	b.SetBytes(int64(size))
 }
 
-// Standard JSON
+// JSON
 
 func BenchmarkJSON_Marshal_Small(b *testing.B) {
-	msg := newTestSmall()
-	data, err := json.Marshal(msg)
+	obj := pkg1.TestSubobject(1)
+
+	data, err := json.Marshal(obj)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -135,7 +93,7 @@ func BenchmarkJSON_Marshal_Small(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		_, err := json.Marshal(msg)
+		_, err := json.Marshal(obj)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -145,14 +103,16 @@ func BenchmarkJSON_Marshal_Small(b *testing.B) {
 	sec := t1.Sub(t0).Seconds()
 	ops := float64(b.N) / sec
 
+	b.SetBytes(int64(len(data)))
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(len(data)), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
 
 func BenchmarkJSON_Marshal_Large(b *testing.B) {
-	msg := newTestObject()
-	data, err := json.Marshal(msg)
+	obj := pkg1.TestObject(b)
+
+	data, err := json.Marshal(obj)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -162,7 +122,7 @@ func BenchmarkJSON_Marshal_Large(b *testing.B) {
 
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
-		_, err := json.Marshal(msg)
+		_, err := json.Marshal(obj)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -172,14 +132,16 @@ func BenchmarkJSON_Marshal_Large(b *testing.B) {
 	sec := t1.Sub(t0).Seconds()
 	ops := float64(b.N) / sec
 
+	b.SetBytes(int64(len(data)))
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(len(data)), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
 
 func BenchmarkJSON_Encode_Large(b *testing.B) {
-	msg := newTestObject()
-	data, err := json.Marshal(msg)
+	obj := pkg1.TestObject(b)
+
+	data, err := json.Marshal(obj)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -195,7 +157,7 @@ func BenchmarkJSON_Encode_Large(b *testing.B) {
 	var size int
 	for i := 0; i < b.N; i++ {
 		e := json.NewEncoder(buffer)
-		if err := e.Encode(msg); err != nil {
+		if err := e.Encode(obj); err != nil {
 			b.Fatal(err)
 		}
 		if buffer.Len() < 100 {
@@ -210,6 +172,7 @@ func BenchmarkJSON_Encode_Large(b *testing.B) {
 	sec := t1.Sub(t0).Seconds()
 	ops := float64(b.N) / sec
 
+	b.SetBytes(int64(size))
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(float64(size), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")

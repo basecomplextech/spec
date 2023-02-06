@@ -10,7 +10,12 @@ import (
 )
 
 func TestWriteMessage__should_write_message(t *testing.T) {
-	m := TestMessage(t)
+	o := TestObject(t)
+
+	m, err := o.Write(NewMessageWriter())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	assert.Equal(t, true, m.Bool())
 	assert.Equal(t, byte(255), m.Byte())
@@ -76,7 +81,12 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 }
 
 func TestParseMessage__should_parse_message(t *testing.T) {
-	m := TestMessage(t)
+	o := TestObject(t)
+
+	m, err := o.Write(NewMessageWriter())
+	if err != nil {
+		t.Fatal(err)
+	}
 	b := m.Unwrap().Bytes()
 
 	m1, n, err := ParseMessage(b)
