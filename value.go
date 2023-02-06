@@ -10,8 +10,16 @@ import (
 // Value is a raw value.
 type Value []byte
 
-// NewValue returns a new value from bytes.
+// NewValue returns a new value from bytes or nil when not a value.
 func NewValue(b []byte) Value {
+	t, _, err := encoding.DecodeType(b)
+	if err != nil {
+		return nil
+	}
+	if err := t.Check(); err != nil {
+		return nil
+	}
+
 	return Value(b)
 }
 
@@ -66,12 +74,13 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 		_, n, err = encoding.DecodeStruct(b)
 
 	default:
-		err = fmt.Errorf("unsupported type %d", t)
-		return
+		n, err = 0, fmt.Errorf("unsupported type %d", t)
+	}
+	if err != nil {
+		return nil, n, err
 	}
 
-	v := Value(b)
-	return v, n, nil
+	return b[len(b)-n:], n, nil
 }
 
 // Type decodes and returns a type or undefined.

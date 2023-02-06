@@ -14,29 +14,15 @@ type List struct {
 
 // NewList returns a new list from bytes or an empty list when not a list.
 func NewList(b []byte) List {
-	meta, n, err := encoding.DecodeListMeta(b)
-	if err != nil {
-		return List{}
-	}
-	bytes := b[len(b)-n:]
-
-	return List{
-		meta:  meta,
-		bytes: bytes,
-	}
+	l, _, _ := decodeList(b)
+	return l
 }
 
 // ParseList recursively parses and returns a list.
-func ParseList(b []byte) (_ List, size int, err error) {
-	meta, n, err := encoding.DecodeListMeta(b)
+func ParseList(b []byte) (l List, size int, err error) {
+	l, size, err = decodeList(b)
 	if err != nil {
 		return List{}, 0, err
-	}
-	bytes := b[len(b)-n:]
-
-	l := List{
-		meta:  meta,
-		bytes: bytes,
 	}
 
 	ln := l.Len()
@@ -50,7 +36,21 @@ func ParseList(b []byte) (_ List, size int, err error) {
 			return
 		}
 	}
-	return l, n, nil
+	return l, size, nil
+}
+
+func decodeList(b []byte) (l List, size int, err error) {
+	meta, size, err := encoding.DecodeListMeta(b)
+	if err != nil {
+		return List{}, 0, err
+	}
+	bytes := b[len(b)-size:]
+
+	l = List{
+		meta:  meta,
+		bytes: bytes,
+	}
+	return l, size, nil
 }
 
 // Len returns the number of elements in the list.
@@ -82,8 +82,7 @@ func (l List) Get(i int) Value {
 		return Value{}
 	}
 
-	b := l.bytes[start:end]
-	return NewValue(b)
+	return l.bytes[start:end]
 }
 
 // GetBytes returns element bytes at index i, panics on out of range.
