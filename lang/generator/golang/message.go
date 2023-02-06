@@ -91,6 +91,7 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 			w.writef(`return m.msg.Field(%d).Int32()`, tag)
 		case compiler.KindInt64:
 			w.writef(`return m.msg.Field(%d).Int64()`, tag)
+
 		case compiler.KindUint32:
 			w.writef(`return m.msg.Field(%d).Uint32()`, tag)
 		case compiler.KindUint64:
@@ -281,6 +282,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 			w.linef(`w.w.Field(%d).Int32(v)`, tag)
 		case compiler.KindInt64:
 			w.linef(`w.w.Field(%d).Int64(v)`, tag)
+
 		case compiler.KindUint32:
 			w.linef(`w.w.Field(%d).Uint32(v)`, tag)
 		case compiler.KindUint64:
@@ -312,8 +314,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		writeFunc := typeWriteFunc(field.Type)
 
 		w.linef(`func (w %v) %v(v %v) %v {`, wname, fname, tname, wname)
-		w.linef(`w1 := w.w.Field(%d)`, tag)
-		w.linef(`spec.WriteField(w1, v, %v)`, writeFunc)
+		w.linef(`spec.WriteField(w.w.Field(%d), v, %v)`, tag, writeFunc)
 		w.linef(`return w`)
 		w.linef(`}`)
 		w.line()
@@ -322,8 +323,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		writeFunc := typeWriteFunc(field.Type)
 
 		w.linef(`func (w %v) %v(v %v) %v {`, wname, fname, tname, wname)
-		w.linef(`w1 := w.w.Field(%d)`, tag)
-		w.linef(`spec.WriteField(w1, v, %v)`, writeFunc)
+		w.linef(`spec.WriteField(w.w.Field(%d), v, %v)`, tag, writeFunc)
 		w.linef(`return w`)
 		w.linef(`}`)
 		w.line()

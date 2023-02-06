@@ -7,44 +7,43 @@ options (
 )
 
 message Message {
-    field_bool  bool    1;
-    field_byte  byte    2;
-    field_enum  Enum    3;
+    bool    bool    1;
+    byte    byte    2;
 
-    field_int32   int32     10;
-    field_int64   int64     11;
+    int32   int32   10;
+    int64   int64   11;
 
-    field_uint32  uint32    20;
-    field_uint64  uint64    21;
+    uint32  uint32  20;
+    uint64  uint64  21;
 
-    field_float32 float32   30;
-    field_float64 float64   31;
+    float32 float32 30;
+    float64 float64 31;
 
-    field_bin64   bin64     40;
-    field_bin128  bin128    41;
-    field_bin256  bin256    42;
+    bin64   bin64   40;
+    bin128  bin128  41;
+    bin256  bin256  42;
 
-    field_string  string    50;
-    field_bytes   bytes     51;
-    field_struct  Struct    52;
+    string   string 50;
+    bytes1   bytes  51;
 
-    node         Node           60;
-    value       Struct          61;
-    imported    pkg2.Submessage 62;
+    enum1       Enum            60;
+    struct1     Struct          61;
+    submessage  Submessage      62;
+    submessage1 pkg2.Submessage 63;
 
-    list_ints       []int64             70;
-    list_strings    []string            71;
-    list_values     []Struct            73;
-    list_messages   []Node              74;
-    list_imported   []pkg2.Submessage   75;
-}
-
-message Node {
-    value   string  1;
-    next    Node    2;
+    ints            []int64             70;
+    strings         []string            71;
+    structs         []Struct            73;
+    submessages     []Submessage        74;
+    submessages1    []pkg2.Submessage   75;
 }
 
 struct Struct {
     key     int32;
     value   int32;
+}
+
+message Submessage {
+    value   string      1;
+    next    Submessage  2;
 }

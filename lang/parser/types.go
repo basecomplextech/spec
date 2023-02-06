@@ -129,15 +129,16 @@ func getKind(type_ string) Kind {
 		return KindInt32
 	case "int64":
 		return KindInt64
+
 	case "uint32":
 		return KindUint32
 	case "uint64":
 		return KindUint64
 
 	case "float32":
-		return KindUint32
+		return KindFloat32
 	case "float64":
-		return KindUint64
+		return KindFloat64
 
 	case "bin64":
 		return KindBin64
