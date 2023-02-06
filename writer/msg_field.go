@@ -2,7 +2,7 @@ package writer
 
 import (
 	"github.com/complex1tech/baselibrary/types"
-	"github.com/complex1tech/spec/go/encoding"
+	"github.com/complex1tech/spec/encoding"
 )
 
 // FieldWriter writes a message field.

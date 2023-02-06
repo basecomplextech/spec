@@ -6,7 +6,7 @@ import (
 
 	"github.com/complex1tech/baselibrary/buffer"
 	"github.com/complex1tech/baselibrary/types"
-	"github.com/complex1tech/spec/go/encoding"
+	"github.com/complex1tech/spec/encoding"
 )
 
 var writerClosed = errors.New("operation on a closed writer")

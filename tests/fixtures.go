@@ -3,9 +3,9 @@ package tests
 import (
 	"github.com/complex1tech/baselibrary/buffer"
 	"github.com/complex1tech/baselibrary/types"
-	spec "github.com/complex1tech/spec/go"
-	"github.com/complex1tech/spec/go/encoding"
-	"github.com/complex1tech/spec/go/writer"
+	spec "github.com/complex1tech/spec"
+	"github.com/complex1tech/spec/encoding"
+	"github.com/complex1tech/spec/writer"
 )
 
 // TestMessage

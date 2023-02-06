@@ -5,7 +5,7 @@ import (
 
 	"github.com/complex1tech/baselibrary/tests"
 	"github.com/complex1tech/baselibrary/types"
-	spec "github.com/complex1tech/spec/go"
+	spec "github.com/complex1tech/spec"
 	"github.com/complex1tech/spec/lang/testgen/golang/sub/pkg3"
 	"github.com/stretchr/testify/assert"
 )

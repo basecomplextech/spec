@@ -1,6 +1,6 @@
 package spec
 
-import "github.com/complex1tech/spec/go/encoding"
+import "github.com/complex1tech/spec/encoding"
 
 type Type = encoding.Type
 

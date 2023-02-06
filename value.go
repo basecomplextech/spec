@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/go/encoding"
+	"github.com/complex1tech/spec/encoding"
 )
 
 // Value is a raw value.

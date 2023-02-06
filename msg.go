@@ -2,7 +2,7 @@ package spec
 
 import (
 	"github.com/complex1tech/baselibrary/types"
-	"github.com/complex1tech/spec/go/encoding"
+	"github.com/complex1tech/spec/encoding"
 )
 
 type Message struct {
@@ -87,7 +87,7 @@ func (m Message) Empty() bool {
 // Field returns field data by a tag or nil.
 func (m Message) Field(tag uint16) []byte {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -101,7 +101,7 @@ func (m Message) Field(tag uint16) []byte {
 // FieldByIndex returns field data by an index or nil.
 func (m Message) FieldByIndex(i int) []byte {
 	end := m.meta.OffsetByIndex(i)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -115,7 +115,7 @@ func (m Message) FieldByIndex(i int) []byte {
 // HasField returns true if the message contains a field.
 func (m Message) HasField(tag uint16) bool {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 	return end >= 0 && end <= int(size)
 }
 
@@ -132,7 +132,7 @@ func (m Message) TagByIndex(i int) (uint16, bool) {
 
 func (m Message) GetBool(tag uint16) bool {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -148,7 +148,7 @@ func (m Message) GetBool(tag uint16) bool {
 
 func (m Message) GetByte(tag uint16) byte {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -164,7 +164,7 @@ func (m Message) GetByte(tag uint16) byte {
 
 func (m Message) GetInt32(tag uint16) int32 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -180,7 +180,7 @@ func (m Message) GetInt32(tag uint16) int32 {
 
 func (m Message) GetInt64(tag uint16) int64 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -196,7 +196,7 @@ func (m Message) GetInt64(tag uint16) int64 {
 
 func (m Message) GetUint32(tag uint16) uint32 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -212,7 +212,7 @@ func (m Message) GetUint32(tag uint16) uint32 {
 
 func (m Message) GetUint64(tag uint16) uint64 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -228,7 +228,7 @@ func (m Message) GetUint64(tag uint16) uint64 {
 
 func (m Message) GetBin64(tag uint16) types.Bin64 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -244,7 +244,7 @@ func (m Message) GetBin64(tag uint16) types.Bin64 {
 
 func (m Message) GetBin128(tag uint16) types.Bin128 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -260,7 +260,7 @@ func (m Message) GetBin128(tag uint16) types.Bin128 {
 
 func (m Message) GetBin256(tag uint16) types.Bin256 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -276,7 +276,7 @@ func (m Message) GetBin256(tag uint16) types.Bin256 {
 
 func (m Message) GetFloat32(tag uint16) float32 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -292,7 +292,7 @@ func (m Message) GetFloat32(tag uint16) float32 {
 
 func (m Message) GetFloat64(tag uint16) float64 {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -308,7 +308,7 @@ func (m Message) GetFloat64(tag uint16) float64 {
 
 func (m Message) GetBytes(tag uint16) []byte {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -324,7 +324,7 @@ func (m Message) GetBytes(tag uint16) []byte {
 
 func (m Message) GetString(tag uint16) string {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:
@@ -340,7 +340,7 @@ func (m Message) GetString(tag uint16) string {
 
 func (m Message) GetMessage(tag uint16) Message {
 	end := m.meta.Offset(tag)
-	size := m.meta.Data()
+	size := m.meta.DataSize()
 
 	switch {
 	case end < 0:

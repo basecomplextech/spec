@@ -1,6 +1,6 @@
 package writer
 
-import "github.com/complex1tech/spec/go/encoding"
+import "github.com/complex1tech/spec/encoding"
 
 func WriteValue[T any](e *Writer, v T, encode encoding.EncodeFunc[T]) error {
 	if e.err != nil {

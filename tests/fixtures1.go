@@ -5,7 +5,7 @@ import (
 	"math"
 
 	"github.com/complex1tech/baselibrary/types"
-	spec "github.com/complex1tech/spec/go"
+	spec "github.com/complex1tech/spec"
 )
 
 // Simple

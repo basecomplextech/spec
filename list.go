@@ -1,9 +1,7 @@
 package spec
 
 import (
-	"fmt"
-
-	"github.com/complex1tech/spec/go/encoding"
+	"github.com/complex1tech/spec/encoding"
 )
 
 type List[T any] struct {
@@ -68,10 +66,14 @@ func (l List[T]) Bytes() []byte {
 // Get returns an element by index or panics on out of range.
 func (l List[T]) Get(i int) (result T) {
 	start, end := l.meta.Offset(i)
-	size := l.meta.Data()
+	size := l.meta.DataSize()
 
-	if start < 0 || end > size {
-		panic(fmt.Sprintf("index out out range: %d", i))
+	// TODO: Or should be panic index out out range?
+	switch {
+	case start < 0:
+		return
+	case end > int(size):
+		return
 	}
 
 	b := l.bytes[start:end]
@@ -82,10 +84,14 @@ func (l List[T]) Get(i int) (result T) {
 // GetBytes returns raw element bytes or panics on out of range.
 func (l List[T]) GetBytes(i int) []byte {
 	start, end := l.meta.Offset(i)
-	size := l.meta.Data()
+	size := l.meta.DataSize()
 
-	if start < 0 || end > size {
-		panic(fmt.Sprintf("index out out range: %d", i))
+	// TODO: Or should be panic index out out range?
+	switch {
+	case start < 0:
+		return nil
+	case end > int(size):
+		return nil
 	}
 
 	return l.bytes[start:end]

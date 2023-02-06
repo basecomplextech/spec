@@ -1,6 +1,6 @@
 package tests
 
-import spec "github.com/complex1tech/spec/go"
+import spec "github.com/complex1tech/spec"
 
 func (m *TestSmall) Write(e *spec.Writer) ([]byte, error) {
 	w := e.Message()

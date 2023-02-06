@@ -1,8 +1,8 @@
 package spec
 
 import (
-	"github.com/complex1tech/spec/go/encoding"
-	"github.com/complex1tech/spec/go/writer"
+	"github.com/complex1tech/spec/encoding"
+	"github.com/complex1tech/spec/writer"
 )
 
 // NewListBuilder begins and returns a new list.

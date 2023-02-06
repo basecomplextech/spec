@@ -69,7 +69,7 @@ func (w *writer) file(file *compiler.File) error {
 	w.line("import (")
 	w.line(`"github.com/complex1tech/baselibrary/buffer"`)
 	w.line(`"github.com/complex1tech/baselibrary/types"`)
-	w.line(`spec "github.com/complex1tech/spec/go"`)
+	w.line(`spec "github.com/complex1tech/spec"`)
 
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)
