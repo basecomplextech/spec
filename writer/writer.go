@@ -5,68 +5,68 @@ import (
 	"fmt"
 
 	"github.com/complex1tech/baselibrary/buffer"
-	"github.com/complex1tech/baselibrary/types"
 	"github.com/complex1tech/spec/encoding"
 )
 
-var writerClosed = errors.New("operation on a closed writer")
+// Writer writes spec objects.
+type Writer interface {
+	// Err returns an error or nil.
+	Err() error
 
-// Writer writes spec elements.
-// It is not reusable, but small enough to have negligible effect on memory allocation.
-type Writer struct {
-	*writerState
-	err error
+	// Reset resets the writer and sets its output buffer.
+	Reset(buf buffer.Buffer)
+
+	// Objects
+
+	// List begins a new list and returns a list writer.
+	List() ListWriter
+
+	// Value returns a value writer.
+	Value() ValueWriter
+
+	// Message begins a new message and returns a message writer.
+	Message() MessageWriter
+
+	// Internal
+
+	// Free frees the writer and releases its internal resources.
+	Free()
 }
 
-// NewWriter returns a new writer with an empty buffer.
-func NewWriter() *Writer {
+// New returns a new writer with a new empty buffer.
+func New() Writer {
 	buf := buffer.New()
 	return newWriter(buf)
 }
 
-// NewWriterBuffer returns a new writer with a buffer.
-func NewWriterBuffer(buf buffer.Buffer) *Writer {
+// NewBuffer returns a new writer with the given buffer.
+func NewBuffer(buf buffer.Buffer) Writer {
 	return newWriter(buf)
 }
 
-func newWriter(buf buffer.Buffer) *Writer {
+// internal
+
+var writerClosed = errors.New("operation on a closed writer")
+
+type writer struct {
+	*writerState
+	err error
+}
+
+func newWriter(buf buffer.Buffer) *writer {
 	s := getWriterState()
 	s.init(buf)
 
-	return &Writer{writerState: s}
+	return &writer{writerState: s}
 }
 
-// close closes the writer and releases its state.
-func (w *Writer) close(err error) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	if err != nil {
-		w.err = err
-	} else {
-		w.err = writerClosed
-	}
-
-	s := w.writerState
-	w.writerState = nil
-
-	releaseWriterState(s)
-	return err
+// Err returns an error or nil.
+func (w *writer) Err() error {
+	return w.err
 }
 
-func (w *Writer) closef(format string, args ...any) error {
-	var err error
-	if len(args) == 0 {
-		err = errors.New(format)
-	} else {
-		err = fmt.Errorf(format, args...)
-	}
-	return w.close(err)
-}
-
-// Reset resets the writer state with the buffer.
-func (w *Writer) Reset(buf buffer.Buffer) {
+// Reset resets the writer and sets its output buffer.
+func (w *writer) Reset(buf buffer.Buffer) {
 	w.close(nil)
 	w.err = nil
 
@@ -79,13 +79,34 @@ func (w *Writer) Reset(buf buffer.Buffer) {
 	w.writerState = s
 }
 
-// Err returns an error or nil.
-func (w *Writer) Err() error {
-	return w.err
+// Objects
+
+// List begins a new list and returns a list writer.
+func (w *writer) List() ListWriter {
+	w.beginList()
+	return ListWriter{w}
 }
 
-// End ends a nested object and a parent field/element if present.
-func (w *Writer) End() (result []byte, err error) {
+// Value returns a value writer.
+func (w *writer) Value() ValueWriter {
+	return ValueWriter{w}
+}
+
+// Message begins a new message and returns a message writer.
+func (w *writer) Message() MessageWriter {
+	w.beginMessage()
+	return MessageWriter{w}
+}
+
+// Internal
+
+// Free frees the writer and releases its internal resources.
+func (w *writer) Free() {
+	w.close(nil)
+}
+
+// end ends a nested object and a parent field/element if present.
+func (w *writer) end() (result []byte, err error) {
 	if w.err != nil {
 		return nil, w.err
 	}
@@ -128,182 +149,9 @@ func (w *Writer) End() (result []byte, err error) {
 	return result, nil
 }
 
-// Primitive
+// list
 
-func (w *Writer) Bool(v bool) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeBool(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Byte(v byte) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeByte(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Int32(v int32) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeInt32(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Int64(v int64) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeInt64(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Uint32(v uint32) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeUint32(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Uint64(v uint64) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeUint64(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-// Bin64/128/256
-
-func (w *Writer) Bin64(v types.Bin64) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeBin64(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Bin128(v types.Bin128) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeBin128(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Bin256(v types.Bin256) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeBin256(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-// Float
-
-func (w *Writer) Float32(v float32) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeFloat32(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) Float64(v float64) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	encoding.EncodeFloat64(w.buf, v)
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-// Bytes/string
-
-func (w *Writer) Bytes(v []byte) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	if _, err := encoding.EncodeBytes(w.buf, v); err != nil {
-		return w.close(err)
-	}
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-func (w *Writer) String(v string) error {
-	if w.err != nil {
-		return w.err
-	}
-
-	start := w.buf.Len()
-	if _, err := encoding.EncodeString(w.buf, v); err != nil {
-		return w.close(err)
-	}
-	end := w.buf.Len()
-
-	return w.pushData(start, end)
-}
-
-// List
-
-func (w *Writer) List() ListWriter {
-	w.BeginList()
-	return ListWriter{w}
-}
-
-func (w *Writer) BeginList() error {
+func (w *writer) beginList() error {
 	if w.err != nil {
 		return w.err
 	}
@@ -316,7 +164,7 @@ func (w *Writer) BeginList() error {
 	return nil
 }
 
-func (w *Writer) BeginElement() error {
+func (w *writer) beginElement() error {
 	if w.err != nil {
 		return w.err
 	}
@@ -336,7 +184,7 @@ func (w *Writer) BeginElement() error {
 	return nil
 }
 
-func (w *Writer) Element() error {
+func (w *writer) element() error {
 	if w.err != nil {
 		return w.err
 	}
@@ -363,7 +211,7 @@ func (w *Writer) Element() error {
 	return nil
 }
 
-func (w *Writer) ListLen() int {
+func (w *writer) listLen() int {
 	if w.err != nil {
 		return 0
 	}
@@ -381,7 +229,7 @@ func (w *Writer) ListLen() int {
 	return w.elements.len(start)
 }
 
-func (w *Writer) endElement() ([]byte, error) {
+func (w *writer) endElement() ([]byte, error) {
 	if w.err != nil {
 		return nil, w.err
 	}
@@ -421,7 +269,7 @@ func (w *Writer) endElement() ([]byte, error) {
 	return b, nil
 }
 
-func (w *Writer) endList() ([]byte, error) {
+func (w *writer) endList() ([]byte, error) {
 	if w.err != nil {
 		return nil, w.err
 	}
@@ -456,14 +304,9 @@ func (w *Writer) endList() ([]byte, error) {
 	return b, nil
 }
 
-// Message
+// message
 
-func (w *Writer) Message() MessageWriter {
-	w.BeginMessage()
-	return MessageWriter{w}
-}
-
-func (w *Writer) BeginMessage() error {
+func (w *writer) beginMessage() error {
 	if w.err != nil {
 		return w.err
 	}
@@ -476,7 +319,7 @@ func (w *Writer) BeginMessage() error {
 	return nil
 }
 
-func (w *Writer) BeginField(tag uint16) error {
+func (w *writer) beginField(tag uint16) error {
 	if w.err != nil {
 		return w.err
 	}
@@ -496,7 +339,7 @@ func (w *Writer) BeginField(tag uint16) error {
 	return nil
 }
 
-func (w *Writer) Field(tag uint16) error {
+func (w *writer) field(tag uint16) error {
 	if w.err != nil {
 		return w.err
 	}
@@ -525,9 +368,14 @@ func (w *Writer) Field(tag uint16) error {
 	return nil
 }
 
-func (w *Writer) FieldBytes(tag uint16, data []byte) error {
+func (w *writer) fieldAny(tag uint16, data []byte) error {
 	if w.err != nil {
 		return w.err
+	}
+
+	_, _, err := encoding.DecodeType(data)
+	if err != nil {
+		return w.close(err)
 	}
 
 	start := w.buf.Len()
@@ -537,10 +385,10 @@ func (w *Writer) FieldBytes(tag uint16, data []byte) error {
 	if err := w.pushData(start, end); err != nil {
 		return err
 	}
-	return w.Field(tag)
+	return w.field(tag)
 }
 
-func (w *Writer) HasField(tag uint16) bool {
+func (w *writer) hasField(tag uint16) bool {
 	if w.err != nil {
 		return false
 	}
@@ -559,7 +407,7 @@ func (w *Writer) HasField(tag uint16) bool {
 	return w.fields.hasField(offset, tag)
 }
 
-func (w *Writer) endField() ([]byte, error) {
+func (w *writer) endField() ([]byte, error) {
 	if w.err != nil {
 		return nil, w.err
 	}
@@ -602,7 +450,7 @@ func (w *Writer) endField() ([]byte, error) {
 	return b, nil
 }
 
-func (w *Writer) endMessage() ([]byte, error) {
+func (w *writer) endMessage() ([]byte, error) {
 	if w.err != nil {
 		return nil, w.err
 	}
@@ -639,7 +487,7 @@ func (w *Writer) endMessage() ([]byte, error) {
 
 // data
 
-func (w *Writer) pushData(start, end int) error {
+func (w *writer) pushData(start, end int) error {
 	entry, ok := w.stack.peek()
 	if ok {
 		if entry.type_ == entryData {
@@ -651,7 +499,7 @@ func (w *Writer) pushData(start, end int) error {
 	return nil
 }
 
-func (w *Writer) popData() (start, end int, err error) {
+func (w *writer) popData() (start, end int, err error) {
 	entry, ok := w.stack.pop()
 	switch {
 	case !ok:
@@ -662,4 +510,35 @@ func (w *Writer) popData() (start, end int, err error) {
 
 	start, end = entry.start, entry.end()
 	return
+}
+
+// close
+
+// close closes the writer and releases its state.
+func (w *writer) close(err error) error {
+	if w.err != nil {
+		return w.err
+	}
+
+	if err != nil {
+		w.err = err
+	} else {
+		w.err = writerClosed
+	}
+
+	s := w.writerState
+	w.writerState = nil
+
+	releaseWriterState(s)
+	return err
+}
+
+func (w *writer) closef(format string, args ...any) error {
+	var err error
+	if len(args) == 0 {
+		err = errors.New(format)
+	} else {
+		err = fmt.Errorf(format, args...)
+	}
+	return w.close(err)
 }
