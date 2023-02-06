@@ -44,7 +44,7 @@ func typeName(typ *compiler.Type) string {
 
 	case compiler.KindList:
 		elem := typeName(typ.Element)
-		return fmt.Sprintf("spec.List[%v]", elem)
+		return fmt.Sprintf("spec.TypedList[%v]", elem)
 
 	case compiler.KindEnum,
 		compiler.KindMessage,
@@ -82,130 +82,135 @@ func typeDecodeFunc(typ *compiler.Type) string {
 
 	switch kind {
 	case compiler.KindBool:
-		return "spec.DecodeBool"
+		return "encoding.DecodeBool"
 	case compiler.KindByte:
-		return "spec.DecodeByte"
+		return "encoding.DecodeByte"
 
 	case compiler.KindInt32:
-		return "spec.DecodeInt32"
+		return "encoding.DecodeInt32"
 	case compiler.KindInt64:
-		return "spec.DecodeInt64"
+		return "encoding.DecodeInt64"
 	case compiler.KindUint32:
-		return "spec.DecodeUint32"
+		return "encoding.DecodeUint32"
 	case compiler.KindUint64:
-		return "spec.DecodeUint64"
+		return "encoding.DecodeUint64"
 
 	case compiler.KindBin64:
-		return "spec.DecodeBin64"
+		return "encoding.DecodeBin64"
 	case compiler.KindBin128:
-		return "spec.DecodeBin128"
+		return "encoding.DecodeBin128"
 	case compiler.KindBin256:
-		return "spec.DecodeBin256"
+		return "encoding.DecodeBin256"
 
 	case compiler.KindFloat32:
-		return "spec.DecodeFloat32"
+		return "encoding.DecodeFloat32"
 	case compiler.KindFloat64:
-		return "spec.DecodeFloat64"
+		return "encoding.DecodeFloat64"
 
 	case compiler.KindBytes:
-		return "spec.DecodeBytes"
+		return "encoding.DecodeBytes"
 	case compiler.KindString:
-		return "spec.DecodeString"
+		return "encoding.DecodeString"
 
 	case compiler.KindList:
 		elem := typeName(typ.Element)
-		return fmt.Sprintf("spec.DecodeList[%v]", elem)
+		return fmt.Sprintf("encoding.ParseTypedList[%v]", elem)
 
 	case compiler.KindEnum,
 		compiler.KindMessage,
 		compiler.KindStruct:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Decode%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Decode%v", typ.Name)
+		return fmt.Sprintf("Parse%v", typ.Name)
 	}
 
 	return ""
 }
 
-func typeEncodeFunc(typ *compiler.Type) string {
+func typeWriteFunc(typ *compiler.Type) string {
 	kind := typ.Kind
 
 	switch kind {
 	case compiler.KindBool:
-		return "spec.EncodeBool"
+		return "encoding.EncodeBool"
 	case compiler.KindByte:
-		return "spec.EncodeByte"
+		return "encoding.EncodeByte"
 
 	case compiler.KindInt32:
-		return "spec.EncodeInt32"
+		return "encoding.EncodeInt32"
 	case compiler.KindInt64:
-		return "spec.EncodeInt64"
+		return "encoding.EncodeInt64"
 	case compiler.KindUint32:
-		return "spec.EncodeUint32"
+		return "encoding.EncodeUint32"
 	case compiler.KindUint64:
-		return "spec.EncodeUint64"
+		return "encoding.EncodeUint64"
 
 	case compiler.KindBin64:
-		return "spec.EncodeBin64"
+		return "encoding.EncodeBin64"
 	case compiler.KindBin128:
-		return "spec.EncodeBin128"
+		return "encoding.EncodeBin128"
 	case compiler.KindBin256:
-		return "spec.EncodeBin256"
+		return "encoding.EncodeBin256"
 
 	case compiler.KindFloat32:
-		return "spec.EncodeFloat32"
+		return "encoding.EncodeFloat32"
 	case compiler.KindFloat64:
-		return "spec.EncodeFloat64"
+		return "encoding.EncodeFloat64"
 
 	case compiler.KindBytes:
-		return "spec.EncodeBytes"
+		return "encoding.EncodeBytes"
 	case compiler.KindString:
-		return "spec.EncodeString"
+		return "encoding.EncodeString"
 
-	case compiler.KindEnum,
-		compiler.KindStruct:
+	case compiler.KindEnum:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Encode%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.Write%v", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Encode%v", typ.Name)
+		return fmt.Sprintf("Write%v", typ.Name)
 
 	case compiler.KindList:
 		elem := typ.Element
 		if elem.Kind == compiler.KindMessage {
-			return fmt.Sprintf("spec.NewListBuilder")
+			return fmt.Sprintf("spec.NewMessageListWriter")
 		}
-		return fmt.Sprintf("spec.NewValueListBuilder")
+		return fmt.Sprintf("spec.NewValueListWriter")
 
 	case compiler.KindMessage:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.New%vBuilderEncoder", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.New%vWriterTo", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("New%vBuilderEncoder", typ.Name)
+		return fmt.Sprintf("New%vWriterTo", typ.Name)
+
+	case compiler.KindStruct:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Write%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Write%v", typ.Name)
 	}
 
 	return ""
 }
 
-func typeBuilder(typ *compiler.Type) string {
+func typeWriter(typ *compiler.Type) string {
 	kind := typ.Kind
 
 	switch kind {
 	case compiler.KindList:
 		elem := typ.Element
 		if elem.Kind == compiler.KindMessage {
-			encoder := typeBuilder(elem)
-			return fmt.Sprintf("spec.ListBuilder[%v]", encoder)
+			encoder := typeWriter(elem)
+			return fmt.Sprintf("spec.MessageListWriter[%v]", encoder)
 		}
 
 		elemName := typeName(elem)
-		return fmt.Sprintf("spec.ValueListBuilder[%v]", elemName)
+		return fmt.Sprintf("spec.ValueListWriter[%v]", elemName)
 
 	case compiler.KindMessage:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.%vBuilder", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.%vWriter", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("%vBuilder", typ.Name)
+		return fmt.Sprintf("%vWriter", typ.Name)
 	}
 
 	return ""

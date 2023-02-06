@@ -2,7 +2,6 @@ package writer
 
 import (
 	"github.com/complex1tech/baselibrary/types"
-	"github.com/complex1tech/spec/encoding"
 )
 
 // ListWriter writes a list of elements.
@@ -32,9 +31,9 @@ func (l ListWriter) End() error {
 	return err
 }
 
-// WriteElement writes a generic element using the given encode function.
-func WriteElement[T any](w ListWriter, value T, encode encoding.EncodeFunc[T]) error {
-	if err := WriteValue(w.w, value, encode); err != nil {
+// WriteElement writes a generic element using the given write function.
+func WriteElement[T any](w ListWriter, value T, write WriteFunc[T]) error {
+	if err := WriteValue(w.w, value, write); err != nil {
 		return err
 	}
 	return w.w.element()

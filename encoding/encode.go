@@ -10,8 +10,6 @@ import (
 	"github.com/complex1tech/baselibrary/types"
 )
 
-type EncodeFunc[T any] func(b buffer.Buffer, value T) (int, error)
-
 func EncodeBool(b buffer.Buffer, v bool) (int, error) {
 	p := b.Grow(1)
 	if v {

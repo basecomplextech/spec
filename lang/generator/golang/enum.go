@@ -16,10 +16,10 @@ func (w *writer) enum(def *compiler.Definition) error {
 	if err := w.newEnum(def); err != nil {
 		return err
 	}
-	if err := w.decodeEnum(def); err != nil {
+	if err := w.parseEnum(def); err != nil {
 		return err
 	}
-	if err := w.encodeEnum(def); err != nil {
+	if err := w.writeEnum(def); err != nil {
 		return err
 	}
 	if err := w.enumString(def); err != nil {
@@ -53,17 +53,17 @@ func (w *writer) enumValues(def *compiler.Definition) error {
 func (w *writer) newEnum(def *compiler.Definition) error {
 	name := def.Name
 	w.linef(`func New%v(b []byte) %v {`, name, name)
-	w.linef(`v, _, _ := spec.DecodeInt32(b)`)
+	w.linef(`v, _, _ := encoding.DecodeInt32(b)`)
 	w.linef(`return %v(v)`, name)
 	w.linef(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) decodeEnum(def *compiler.Definition) error {
+func (w *writer) parseEnum(def *compiler.Definition) error {
 	name := def.Name
-	w.linef(`func Decode%v(b []byte) (result %v, size int, err error) {`, name, name)
-	w.linef(`v, size, err := spec.DecodeInt32(b)`)
+	w.linef(`func Parse%v(b []byte) (result %v, size int, err error) {`, name, name)
+	w.linef(`v, size, err := encoding.DecodeInt32(b)`)
 	w.linef(`if err != nil || size == 0 {
 		return
 	}`)
@@ -74,9 +74,9 @@ func (w *writer) decodeEnum(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) encodeEnum(def *compiler.Definition) error {
-	w.linef(`func Encode%v(b buffer.Buffer, v %v) (int, error) {`, def.Name, def.Name)
-	w.linef(`return spec.EncodeInt32(b, int32(v))`)
+func (w *writer) writeEnum(def *compiler.Definition) error {
+	w.linef(`func Write%v(b buffer.Buffer, v %v) (int, error) {`, def.Name, def.Name)
+	w.linef(`return encoding.EncodeInt32(b, int32(v))`)
 	w.linef(`}`)
 	w.line()
 	return nil

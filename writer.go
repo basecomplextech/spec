@@ -2,6 +2,7 @@ package spec
 
 import (
 	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/complex1tech/spec/encoding"
 	"github.com/complex1tech/spec/writer"
 )
 
@@ -54,6 +55,11 @@ func NewMessageWriter() MessageWriter {
 func NewMessageWriterBuffer(buf buffer.Buffer) MessageWriter {
 	w := writer.NewBuffer(buf, true /* auto release */)
 	return w.Message()
+}
+
+// WriteField writes a generic field using the given encode function.
+func WriteField[T any](w writer.FieldWriter, value T, encode encoding.EncodeFunc[T]) error {
+	return writer.WriteField(w, value, encode)
 }
 
 // Value writer

@@ -69,7 +69,8 @@ func (w *writer) file(file *compiler.File) error {
 	w.line("import (")
 	w.line(`"github.com/complex1tech/baselibrary/buffer"`)
 	w.line(`"github.com/complex1tech/baselibrary/types"`)
-	w.line(`spec "github.com/complex1tech/spec"`)
+	w.line(`"github.com/complex1tech/spec"`)
+	w.line(`"github.com/complex1tech/spec/encoding"`)
 
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)
@@ -80,8 +81,10 @@ func (w *writer) file(file *compiler.File) error {
 
 	// empty values for imports
 	w.line(`var (`)
-	w.line(`_ types.Bin128 = types.Bin128{}`)
-	w.line(`_ buffer.Buffer = (buffer.Buffer)(nil)`)
+	w.line(`_ types.Bin128`)
+	w.line(`_ buffer.Buffer`)
+	w.line(`_ spec.Type`)
+	w.line(`_ encoding.Type`)
 	w.line(`)`)
 
 	// definitions
@@ -109,7 +112,7 @@ func (w *writer) definitions(file *compiler.File) error {
 	for _, def := range file.Definitions {
 		switch def.Type {
 		case compiler.DefinitionMessage:
-			if err := w.messageBuilder(def); err != nil {
+			if err := w.messageWriter(def); err != nil {
 				return err
 			}
 		}

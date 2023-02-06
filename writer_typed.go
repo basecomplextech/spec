@@ -1,7 +1,6 @@
 package spec
 
 import (
-	"github.com/complex1tech/spec/encoding"
 	"github.com/complex1tech/spec/writer"
 )
 
@@ -45,21 +44,21 @@ func (b MessageListWriter[T]) End() error {
 
 // ValueListWriter writes a list of primitive values.
 type ValueListWriter[T any] struct {
-	w      ListWriter
-	encode encoding.EncodeFunc[T]
+	w     ListWriter
+	write writer.WriteFunc[T]
 }
 
 // NewValueListWriter returns a new value list writer.
-func NewValueListWriter[T any](w ListWriter, encode encoding.EncodeFunc[T]) (_ ValueListWriter[T]) {
+func NewValueListWriter[T any](w ListWriter, write writer.WriteFunc[T]) (_ ValueListWriter[T]) {
 	return ValueListWriter[T]{
-		w:      w,
-		encode: encode,
+		w:     w,
+		write: write,
 	}
 }
 
 // Add adds the next element.
 func (b ValueListWriter[T]) Add(value T) error {
-	return writer.WriteElement(b.w, value, b.encode)
+	return writer.WriteElement(b.w, value, b.write)
 }
 
 // Len returns the number of written elements.

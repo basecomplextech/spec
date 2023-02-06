@@ -25,6 +25,14 @@ func (m MessageWriter) End() error {
 	return err
 }
 
+// WriteField writes a generic field using the given write function.
+func WriteField[T any](w FieldWriter, value T, write WriteFunc[T]) error {
+	if err := WriteValue(w.w, value, write); err != nil {
+		return err
+	}
+	return w.w.field(w.tag)
+}
+
 // Field
 
 // FieldWriter writes a message field.

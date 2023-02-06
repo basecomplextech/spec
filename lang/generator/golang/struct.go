@@ -13,10 +13,10 @@ func (w *writer) struct_(def *compiler.Definition) error {
 	if err := w.newStruct(def); err != nil {
 		return err
 	}
-	if err := w.decodeStruct(def); err != nil {
+	if err := w.parseStruct(def); err != nil {
 		return err
 	}
-	if err := w.encodeStruct(def); err != nil {
+	if err := w.writeStruct(def); err != nil {
 		return err
 	}
 	return nil
@@ -41,16 +41,16 @@ func (w *writer) structDef(def *compiler.Definition) error {
 
 func (w *writer) newStruct(def *compiler.Definition) error {
 	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
-	w.linef(`s, _, _ := Decode%v(b)`, def.Name)
+	w.linef(`s, _, _ := Parse%v(b)`, def.Name)
 	w.line(`return s`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) decodeStruct(def *compiler.Definition) error {
-	w.linef(`func Decode%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
-	w.line(`dataSize, size, err := spec.DecodeStruct(b)`)
+func (w *writer) parseStruct(def *compiler.Definition) error {
+	w.linef(`func Parse%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
+	w.line(`dataSize, size, err := encoding.DecodeStruct(b)`)
 	w.line(`if err != nil || size == 0 {
 		return
 	}`)
@@ -85,17 +85,17 @@ func (w *writer) decodeStruct(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) encodeStruct(def *compiler.Definition) error {
-	w.linef(`func Encode%v(b buffer.Buffer, s %v) (int, error) {`, def.Name, def.Name)
+func (w *writer) writeStruct(def *compiler.Definition) error {
+	w.linef(`func Write%v(b buffer.Buffer, s %v) (int, error) {`, def.Name, def.Name)
 	w.line(`var dataSize, n int`)
 	w.line(`var err error`)
 	w.line()
 
 	for _, field := range def.Struct.Fields {
 		fieldName := structFieldName(field)
-		encodeFunc := typeEncodeFunc(field.Type)
+		writeFunc := typeWriteFunc(field.Type)
 
-		w.linef(`n, err = %v(b, s.%v)`, encodeFunc, fieldName)
+		w.linef(`n, err = %v(b, s.%v)`, writeFunc, fieldName)
 		w.line(`if err != nil {
 			return 0, err
 		}`)
@@ -103,7 +103,7 @@ func (w *writer) encodeStruct(def *compiler.Definition) error {
 		w.line()
 	}
 
-	w.line(`n, err = spec.EncodeStruct(b, dataSize)`)
+	w.line(`n, err = encoding.EncodeStruct(b, dataSize)`)
 	w.line(`if err != nil {
 			return 0, err
 		}`)

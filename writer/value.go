@@ -10,22 +10,6 @@ type ValueWriter struct {
 	w *writer
 }
 
-// WriteValue writes a generic value using the given encode function.
-func WriteValue[T any](w Writer, v T, encode encoding.EncodeFunc[T]) error {
-	w1 := w.(*writer)
-	if w1.err != nil {
-		return w1.err
-	}
-
-	start := w1.buf.Len()
-	if _, err := encode(w1.buf, v); err != nil {
-		return w1.fail(err)
-	}
-	end := w1.buf.Len()
-
-	return w1.pushData(start, end)
-}
-
 // Build ends the root value and returns its bytes.
 // The method returns an error if the value is not root.
 func (w ValueWriter) Build() ([]byte, error) {
