@@ -9,6 +9,7 @@ type (
 	Writer        = writer.Writer
 	ListWriter    = writer.ListWriter
 	MessageWriter = writer.MessageWriter
+	ValueWriter   = writer.ValueWriter
 )
 
 // NewWriter returns a new writer with a new empty buffer.
@@ -53,4 +54,20 @@ func NewMessageWriter() MessageWriter {
 func NewMessageWriterBuffer(buf buffer.Buffer) MessageWriter {
 	w := writer.NewBuffer(buf, true /* auto release */)
 	return w.Message()
+}
+
+// Value writer
+
+// NewValueWriter returns a new value writer with a new empty buffer.
+// The writer is autoreleased on end.
+func NewValueWriter() ValueWriter {
+	w := writer.New(true /* auto release */)
+	return w.Value()
+}
+
+// NewValueWriterBuffer returns a new value writer with the given buffer.
+// The writer is autoreleased on end.
+func NewValueWriterBuffer(buf buffer.Buffer) ValueWriter {
+	w := writer.NewBuffer(buf, true /* auto release */)
+	return w.Value()
 }

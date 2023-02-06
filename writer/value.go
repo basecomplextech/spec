@@ -24,6 +24,14 @@ func WriteValue[T any](e *writer, v T, encode encoding.EncodeFunc[T]) error {
 	return e.pushData(start, end)
 }
 
+// Build ends the root value and returns its bytes.
+// The method returns an error if the value is not root.
+func (w ValueWriter) Build() ([]byte, error) {
+	return w.w.end()
+}
+
+// Values
+
 func (w ValueWriter) Bool(v bool) error {
 	if w.w.err != nil {
 		return w.w.err

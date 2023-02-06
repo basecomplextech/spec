@@ -111,7 +111,7 @@ func (w *writer) Free() {
 	w.free()
 }
 
-// end ends a nested object and a parent field/element if present.
+// end ends the top object and its parent field/element if present.
 func (w *writer) end() (result []byte, err error) {
 	if w.err != nil {
 		return nil, w.err
@@ -120,10 +120,16 @@ func (w *writer) end() (result []byte, err error) {
 	// end top object
 	entry, ok := w.stack.peek()
 	if !ok {
-		return nil, w.failf("end: encode stack is empty")
+		return nil, w.failf("end: stack is empty")
 	}
 
 	switch entry.type_ {
+	case entryData:
+		result, err = w.endValue()
+		if err != nil {
+			return nil, err
+		}
+
 	case entryList:
 		result, err = w.endList()
 		if err != nil {
@@ -137,7 +143,7 @@ func (w *writer) end() (result []byte, err error) {
 		}
 
 	default:
-		return nil, w.failf("end: not list or message")
+		return nil, w.failf("end: cannot end object, invalid entry type: %v", entry.type_)
 	}
 
 	// maybe end parent field/element
@@ -153,6 +159,35 @@ func (w *writer) end() (result []byte, err error) {
 		return w.endField()
 	}
 	return result, nil
+}
+
+// value
+
+func (w *writer) endValue() ([]byte, error) {
+	if w.err != nil {
+		return nil, w.err
+	}
+
+	if w.stack.len() > 1 {
+		return nil, w.failf("end value: cannot end value, not root value")
+	}
+
+	// pop data
+	entry, ok := w.stack.pop()
+	switch {
+	case !ok:
+		return nil, w.failf("end value: no data entry")
+	case entry.type_ != entryData:
+		return nil, w.failf("end value: not data entry, type=%v", entry.type_)
+	}
+
+	// return data
+	start := entry.start
+	end := w.buf.Len()
+
+	b := w.buf.Bytes()
+	b = b[start:end]
+	return b, nil
 }
 
 // list

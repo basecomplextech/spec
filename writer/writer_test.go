@@ -7,6 +7,7 @@ import (
 	"github.com/complex1tech/baselibrary/buffer"
 	"github.com/complex1tech/spec/encoding"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testWriter() *writer {
@@ -72,12 +73,23 @@ func TestWriter_end__should_return_finished_bytes(t *testing.T) {
 	assert.Equal(t, byte(encoding.TypeMessage), b[len(b)-1])
 }
 
-func TestWriter_end__should_return_error_when_not_finished(t *testing.T) {
+func TestWriter_end__should_return_error_when_no_data(t *testing.T) {
 	w := testWriter()
+
+	_, err := w.end()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stack is empty")
+}
+
+func TestWriter_end__should_return_error_when_not_root_value(t *testing.T) {
+	w := testWriter()
+	w.beginMessage()
+	w.beginField(1)
 	w.Value().Bool(true)
 
 	_, err := w.end()
-	assert.Error(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not root value")
 }
 
 func TestWriter_end__should_close_writer_on_root_end(t *testing.T) {
