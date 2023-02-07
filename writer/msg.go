@@ -14,6 +14,12 @@ func (m MessageWriter) Field(field uint16) FieldWriter {
 	return newField(m.w, field)
 }
 
+// HasField returns true if the message has the given field.
+// The method is only valid when there is no pending field.
+func (m MessageWriter) HasField(field uint16) bool {
+	return m.w.hasField(field)
+}
+
 // Build ends the message and returns its bytes.
 func (m MessageWriter) Build() ([]byte, error) {
 	return m.w.end()
