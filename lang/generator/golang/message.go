@@ -268,7 +268,7 @@ func (w *writer) messageWriterFields(def *compiler.Definition) error {
 
 func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.MessageField) error {
 	fname := messageFieldName(field)
-	tname := typeName(field.Type)
+	tname := inTypeName(field.Type)
 	wname := fmt.Sprintf("%vWriter", def.Name)
 
 	tag := field.Tag

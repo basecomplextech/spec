@@ -182,13 +182,13 @@ func (v Value) Bin256() types.Bin256 {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() []byte {
+func (v Value) Bytes() types.BytesView {
 	p, _, _ := encoding.DecodeBytes(v)
 	return p
 }
 
 // String decodes and returns string or an empty string.
-func (v Value) String() string {
+func (v Value) String() types.StringView {
 	p, _, _ := encoding.DecodeString(v)
 	return p
 }

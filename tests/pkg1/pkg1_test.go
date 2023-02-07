@@ -33,12 +33,12 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 	assert.Equal(t, types.Bin128FromInt64(2), m.Bin128())
 	assert.Equal(t, types.Bin256FromInt64(3), m.Bin256())
 
-	assert.Equal(t, "hello, world", m.String())
-	assert.Equal(t, []byte("goodbye, world"), m.Bytes1())
+	assert.Equal(t, "hello, world", m.String().Unwrap())
+	assert.Equal(t, []byte("goodbye, world"), m.Bytes1().Unwrap())
 
 	assert.Equal(t, EnumOne, m.Enum1())
 	assert.Equal(t, TestStruct(), m.Struct1())
-	assert.Equal(t, "value 000", m.Submessage().Value())
+	assert.Equal(t, "value 000", m.Submessage().Value().Unwrap())
 
 	{
 		m := m.Message1()
@@ -60,7 +60,7 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			v := list.Get(i)
 			v0 := fmt.Sprintf("hello, world %03d", i)
-			assert.Equal(t, v0, v)
+			assert.Equal(t, v0, v.Unwrap())
 		}
 	}
 

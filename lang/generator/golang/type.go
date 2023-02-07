@@ -43,9 +43,9 @@ func typeName(typ *compiler.Type) string {
 		return "float64"
 
 	case compiler.KindBytes:
-		return "[]byte"
+		return "types.BytesView"
 	case compiler.KindString:
-		return "string"
+		return "types.StringView"
 	case compiler.KindAnyMessage:
 		return "spec.Message"
 
@@ -63,6 +63,17 @@ func typeName(typ *compiler.Type) string {
 	}
 
 	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
+}
+
+func inTypeName(typ *compiler.Type) string {
+	kind := typ.Kind
+	switch kind {
+	case compiler.KindBytes:
+		return "[]byte"
+	case compiler.KindString:
+		return "string"
+	}
+	return typeName(typ)
 }
 
 func typeNewFunc(typ *compiler.Type) string {
@@ -224,7 +235,7 @@ func typeWriter(typ *compiler.Type) string {
 			return fmt.Sprintf("spec.MessageListWriter[%v]", encoder)
 		}
 
-		elemName := typeName(elem)
+		elemName := inTypeName(elem)
 		return fmt.Sprintf("spec.ValueListWriter[%v]", elemName)
 
 	case compiler.KindMessage:

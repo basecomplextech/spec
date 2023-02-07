@@ -383,7 +383,7 @@ func decodeFloat64(b []byte) (float64, int) {
 
 // Bytes
 
-func DecodeBytes(b []byte) (_ []byte, size int, err error) {
+func DecodeBytes(b []byte) (_ types.BytesView, size int, err error) {
 	// type
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -427,7 +427,7 @@ func decodeBytesData(b []byte, size uint32) ([]byte, error) {
 
 // String
 
-func DecodeString(b []byte) (_ string, size int, err error) {
+func DecodeString(b []byte) (_ types.StringView, size int, err error) {
 	// type
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -458,7 +458,7 @@ func DecodeString(b []byte) (_ string, size int, err error) {
 	}
 
 	size += int(dataSize)
-	return data, size, nil
+	return types.StringView(data), size, nil
 }
 
 func decodeStringData(b []byte, size uint32) (string, error) {

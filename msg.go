@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"github.com/complex1tech/baselibrary/types"
 	"github.com/complex1tech/spec/encoding"
 )
 
@@ -56,8 +57,8 @@ func (m Message) Len() int {
 	return m.meta.Len()
 }
 
-// Bytes returns the exact message bytes.
-func (m Message) Bytes() []byte {
+// Bytes returns the underlying message bytes.
+func (m Message) Bytes() types.BytesView {
 	return m.bytes
 }
 
@@ -91,7 +92,7 @@ func (m Message) Field(tag uint16) Value {
 }
 
 // FieldBytes returns field data by a tag or nil.
-func (m Message) FieldBytes(tag uint16) []byte {
+func (m Message) FieldBytes(tag uint16) types.BytesView {
 	end := m.meta.Offset(tag)
 	size := m.meta.DataSize()
 

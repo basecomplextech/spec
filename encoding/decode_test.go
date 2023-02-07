@@ -307,7 +307,7 @@ func TestDecodeBytes__should_decode_bytes(t *testing.T) {
 	}
 
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, v, v1)
+	assert.Equal(t, types.BytesView(v), v1)
 }
 
 // String
@@ -327,7 +327,7 @@ func TestDecodeString__should_decode_string(t *testing.T) {
 	}
 
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, v, v1)
+	assert.Equal(t, types.StringView(v), v1)
 }
 
 // List
