@@ -82,7 +82,6 @@ func (l List) Get(i int) Value {
 	if end > int(size) {
 		return Value{}
 	}
-
 	return l.bytes[start:end]
 }
 
@@ -97,7 +96,6 @@ func (l List) GetBytes(i int) types.BytesView {
 	if end > int(size) {
 		return nil
 	}
-
 	return l.bytes[start:end]
 }
 

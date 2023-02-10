@@ -11,6 +11,7 @@ import (
 	"github.com/complex1tech/baselibrary/types"
 )
 
+// DecodeType decodes a value type.
 func DecodeType(b []byte) (Type, int, error) {
 	v, n := decodeType(b)
 	if n < 0 {
@@ -19,6 +20,180 @@ func DecodeType(b []byte) (Type, int, error) {
 
 	size := n
 	return Type(v), size, nil
+}
+
+// DecodeTypeSize decodes a value type and its total size, returns 0, 0 on error.
+func DecodeTypeSize(b []byte) (Type, int, error) {
+	t, n := decodeType(b)
+	if n < 0 {
+		return 0, 0, fmt.Errorf("decode type: invalid data")
+	}
+
+	end := len(b) - n
+	v := b[:end]
+
+	switch t {
+	case TypeTrue, TypeFalse:
+		return t, n, nil
+
+	case TypeByte:
+		if len(v) < 1 {
+			return 0, 0, fmt.Errorf("decode byte: invalid data")
+		}
+		return t, n + 1, nil
+
+	// int
+
+	case TypeInt16, TypeInt32, TypeInt64:
+		m := compactint.ReverseSize(v)
+		if m <= 0 {
+			return 0, 0, fmt.Errorf("decode int: invalid data")
+		}
+		return t, n + m, nil
+
+	// uint
+
+	case TypeUint16, TypeUint32, TypeUint64:
+		m := compactint.ReverseSize(v)
+		if m <= 0 {
+			return 0, 0, fmt.Errorf("decode uint: invalid data")
+		}
+		return t, n + m, nil
+
+	// float
+
+	case TypeFloat32:
+		m := 4
+		if len(v) < m {
+			return 0, 0, fmt.Errorf("decode float32: invalid data")
+		}
+		return t, n + m, nil
+
+	case TypeFloat64:
+		m := 8
+		if len(v) < m {
+			return 0, 0, fmt.Errorf("decode float64: invalid data")
+		}
+		return t, n + m, nil
+
+	// bin
+
+	case TypeBin64:
+		m := 8
+		if len(v) < m {
+			return 0, 0, fmt.Errorf("decode bin64: invalid data")
+		}
+		return t, n + m, nil
+
+	case TypeBin128:
+		m := 16
+		if len(v) < m {
+			return 0, 0, fmt.Errorf("decode bin128: invalid data")
+		}
+		return t, n + m, nil
+
+	case TypeBin256:
+		m := 32
+		if len(v) < m {
+			return 0, 0, fmt.Errorf("decode bin256: invalid data")
+		}
+		return t, n + m, nil
+
+	// bytes/string
+
+	case TypeBytes:
+		dataSize, m := decodeSize(v)
+		if m < 0 {
+			return 0, 0, errors.New("decode bytes: invalid data size")
+		}
+		size := n + m + int(dataSize)
+		if len(b) < size {
+			return 0, 0, errors.New("decode bytes: invalid data")
+		}
+		return t, size, nil
+
+	case TypeString:
+		dataSize, m := decodeSize(v)
+		if m < 0 {
+			return 0, 0, errors.New("decode string: invalid data size")
+		}
+		size := n + m + int(dataSize) + 1 // +1 for null terminator
+		if len(b) < size {
+			return 0, 0, errors.New("decode string: invalid data")
+		}
+		return t, size, nil // +1 for null terminator
+
+	// list
+
+	case TypeList, TypeBigList:
+		size := n
+
+		// table size
+		tableSize, m := decodeSize(b[:end])
+		if m < 0 {
+			return 0, 0, errors.New("decode list: invalid table size")
+		}
+		end -= m
+		size += m + int(tableSize)
+
+		// data size
+		dataSize, m := decodeSize(b[:end])
+		if m < 0 {
+			return 0, 0, errors.New("decode list: invalid data size")
+		}
+		end -= m
+		size += m + int(dataSize)
+
+		if len(b) < size {
+			return 0, 0, errors.New("decode list: invalid data")
+		}
+		return t, size, nil
+
+	// message
+
+	case TypeMessage, TypeBigMessage:
+		size := n
+
+		// table size
+		tableSize, m := decodeSize(b[:end])
+		if m < 0 {
+			return 0, 0, errors.New("decode message: invalid table size")
+		}
+		end -= m
+		size += m + int(tableSize)
+
+		// data size
+		dataSize, m := decodeSize(b[:end])
+		if m < 0 {
+			return 0, 0, fmt.Errorf("decode message: invalid data size")
+		}
+		end -= m
+		size += m + int(dataSize)
+
+		if len(b) < size {
+			return 0, 0, errors.New("decode message: invalid data")
+		}
+		return t, size, nil
+
+	// struct
+
+	case TypeStruct:
+		size := n
+
+		// data size
+		dataSize, m := decodeSize(b[:end])
+		if n < 0 {
+			return 0, 0, errors.New("decode struct: invalid data size")
+		}
+
+		size += m + int(dataSize)
+		if len(b) < size {
+			return 0, 0, errors.New("decode struct: invalid data")
+		}
+		return t, size, nil
+	}
+
+	return 0, 0, fmt.Errorf("decode: invalid type, type=%d", t)
 }
 
 func decodeType(b []byte) (Type, int) {
@@ -449,7 +624,7 @@ func DecodeString(b []byte) (_ types.StringView, size int, err error) {
 		return
 	}
 	size += n + 1
-	end -= (n + 1) // zero byte
+	end -= (n + 1) // null terminator
 
 	// data
 	data, err := decodeStringData(b[:end], dataSize)
@@ -494,14 +669,14 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 	end := len(b) - size
 
 	// data size
-	dsize, n := decodeSize(b[:end])
+	dataSize_, n := decodeSize(b[:end])
 	if n < 0 {
 		err = errors.New("decode struct: invalid data size")
 		return
 	}
-	size += n + int(dsize)
+	size += n + int(dataSize_)
 
-	return int(dsize), size, nil
+	return int(dataSize_), size, nil
 }
 
 // ListMeta

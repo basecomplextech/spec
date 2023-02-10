@@ -88,7 +88,8 @@ func (m Message) Field(tag uint16) Value {
 		return nil
 	}
 
-	return m.bytes[:end]
+	b := m.bytes[:end]
+	return NewValue(b)
 }
 
 // FieldBytes returns field data by a tag or nil.
@@ -102,7 +103,10 @@ func (m Message) FieldBytes(tag uint16) types.BytesView {
 	case end > int(size):
 		return nil
 	}
-	return m.bytes[:end]
+
+	b := m.bytes[:end]
+	v := NewValue(b)
+	return types.BytesView(v)
 }
 
 // FieldByIndex returns field data by an index or nil.
@@ -116,7 +120,9 @@ func (m Message) FieldByIndex(i int) Value {
 	case end > int(size):
 		return nil
 	}
-	return m.bytes[:end]
+
+	b := m.bytes[:end]
+	return NewValue(b)
 }
 
 // Tags

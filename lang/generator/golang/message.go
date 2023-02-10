@@ -326,6 +326,11 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`}`)
 		w.line()
 
+		w.linef(`func (w %v) Copy%v(v spec.Message) error {`, wname, fname)
+		w.linef(`return w.w.Field(%d).Any(v.Bytes())`, tag)
+		w.linef(`}`)
+		w.line()
+
 	case compiler.KindEnum:
 		writeFunc := typeWriteFunc(field.Type)
 

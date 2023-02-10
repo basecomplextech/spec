@@ -12,15 +12,15 @@ type Value []byte
 
 // NewValue returns a new value from bytes or nil when not a value.
 func NewValue(b []byte) Value {
-	t, _, err := encoding.DecodeType(b)
-	if err != nil {
+	_, n, err := encoding.DecodeTypeSize(b)
+	switch {
+	case err != nil:
 		return nil
-	}
-	if err := t.Check(); err != nil {
+	case len(b) < n:
 		return nil
 	}
 
-	return Value(b)
+	return b[len(b)-n:]
 }
 
 // ParseValue recursively parses and returns a value.
@@ -86,6 +86,8 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 
 	return b[len(b)-n:], n, nil
 }
+
+// Types
 
 // Type decodes and returns a type or undefined.
 func (v Value) Type() Type {

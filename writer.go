@@ -8,6 +8,7 @@ import (
 type (
 	Writer        = writer.Writer
 	ListWriter    = writer.ListWriter
+	FieldWriter   = writer.FieldWriter
 	MessageWriter = writer.MessageWriter
 	ValueWriter   = writer.ValueWriter
 )
