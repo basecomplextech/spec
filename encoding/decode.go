@@ -504,9 +504,9 @@ func DecodeFloat32(b []byte) (float32, int, error) {
 	switch {
 	case n < 0:
 		return 0, 0, errors.New("decode float32: invalid data")
-	case v < math.SmallestNonzeroFloat32:
+	case v < -math.MaxFloat32:
 		return 0, 0, errors.New("decode float32: overflow, value too small")
-	case v > math.MaxFloat64:
+	case v > math.MaxFloat32:
 		return 0, 0, errors.New("decode float32: overflow, value too large")
 	}
 
