@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/spec/encoding"
 )
 
@@ -60,7 +60,7 @@ func (l List) Len() int {
 }
 
 // Bytes returns the underlying list bytes.
-func (l List) Bytes() types.BytesView {
+func (l List) Bytes() basic.BytesView {
 	return l.bytes
 }
 
@@ -86,7 +86,7 @@ func (l List) Get(i int) Value {
 }
 
 // GetBytes returns element bytes at index i, panics on out of range.
-func (l List) GetBytes(i int) types.BytesView {
+func (l List) GetBytes(i int) basic.BytesView {
 	start, end := l.meta.Offset(i)
 	if start < 0 {
 		panic(fmt.Sprintf("index out of range: %d", i))

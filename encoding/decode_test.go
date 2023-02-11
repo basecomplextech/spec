@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/baselibrary/buffer"
-	"github.com/complex1tech/baselibrary/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -322,7 +322,7 @@ func TestDecodeFloat64__should_decode_float64_from_float32(t *testing.T) {
 
 func TestDecodeBin64__should_decode_bin64(t *testing.T) {
 	b := buffer.New()
-	v := types.RandomBin64()
+	v := basic.RandomBin64()
 	EncodeBin64(b, v)
 	p := b.Bytes()
 
@@ -343,7 +343,7 @@ func TestDecodeBin64__should_decode_bin64(t *testing.T) {
 
 func TestDecodeBin128__should_decode_bin128(t *testing.T) {
 	b := buffer.New()
-	v := types.RandomBin128()
+	v := basic.RandomBin128()
 	EncodeBin128(b, v)
 	p := b.Bytes()
 
@@ -364,7 +364,7 @@ func TestDecodeBin128__should_decode_bin128(t *testing.T) {
 
 func TestDecodeBin256__should_decode_bin256(t *testing.T) {
 	b := buffer.New()
-	v := types.RandomBin256()
+	v := basic.RandomBin256()
 	EncodeBin256(b, v)
 	p := b.Bytes()
 
@@ -400,7 +400,7 @@ func TestDecodeBytes__should_decode_bytes(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, types.BytesView(v), v1)
+	assert.Equal(t, basic.BytesView(v), v1)
 
 	typ, size, err := DecodeTypeSize(p)
 	if err != nil {
@@ -427,7 +427,7 @@ func TestDecodeString__should_decode_string(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, types.StringView(v), v1)
+	assert.Equal(t, basic.StringView(v), v1)
 
 	typ, size, err := DecodeTypeSize(p)
 	if err != nil {

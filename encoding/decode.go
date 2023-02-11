@@ -7,8 +7,8 @@ import (
 	"math"
 	"unsafe"
 
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/baselibrary/encoding/compactint"
-	"github.com/complex1tech/baselibrary/types"
 )
 
 // DecodeType decodes a value type.
@@ -410,7 +410,7 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 
 // Bin64/128/256
 
-func DecodeBin64(b []byte) (_ types.Bin64, size int, err error) {
+func DecodeBin64(b []byte) (_ basic.Bin64, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin64: invalid data")
@@ -430,7 +430,7 @@ func DecodeBin64(b []byte) (_ types.Bin64, size int, err error) {
 		return
 	}
 
-	v, err := types.ParseBin64(b[start:end])
+	v, err := basic.ParseBin64(b[start:end])
 	if err != nil {
 		return
 	}
@@ -439,7 +439,7 @@ func DecodeBin64(b []byte) (_ types.Bin64, size int, err error) {
 	return v, size, nil
 }
 
-func DecodeBin128(b []byte) (_ types.Bin128, size int, err error) {
+func DecodeBin128(b []byte) (_ basic.Bin128, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin128: invalid data")
@@ -459,7 +459,7 @@ func DecodeBin128(b []byte) (_ types.Bin128, size int, err error) {
 		return
 	}
 
-	v, err := types.ParseBin128(b[start:end])
+	v, err := basic.ParseBin128(b[start:end])
 	if err != nil {
 		return
 	}
@@ -468,7 +468,7 @@ func DecodeBin128(b []byte) (_ types.Bin128, size int, err error) {
 	return v, size, nil
 }
 
-func DecodeBin256(b []byte) (_ types.Bin256, size int, err error) {
+func DecodeBin256(b []byte) (_ basic.Bin256, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin256: invalid data")
@@ -488,7 +488,7 @@ func DecodeBin256(b []byte) (_ types.Bin256, size int, err error) {
 		return
 	}
 
-	v, err := types.ParseBin256(b[start:end])
+	v, err := basic.ParseBin256(b[start:end])
 	if err != nil {
 		return
 	}
@@ -558,7 +558,7 @@ func decodeFloat64(b []byte) (float64, int) {
 
 // Bytes
 
-func DecodeBytes(b []byte) (_ types.BytesView, size int, err error) {
+func DecodeBytes(b []byte) (_ basic.BytesView, size int, err error) {
 	// type
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -602,7 +602,7 @@ func decodeBytesData(b []byte, size uint32) ([]byte, error) {
 
 // String
 
-func DecodeString(b []byte) (_ types.StringView, size int, err error) {
+func DecodeString(b []byte) (_ basic.StringView, size int, err error) {
 	// type
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -633,7 +633,7 @@ func DecodeString(b []byte) (_ types.StringView, size int, err error) {
 	}
 
 	size += int(dataSize)
-	return types.StringView(data), size, nil
+	return basic.StringView(data), size, nil
 }
 
 func decodeStringData(b []byte, size uint32) (string, error) {

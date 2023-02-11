@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/spec/encoding"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,9 +25,9 @@ func TestListWriter__should_write_list(t *testing.T) {
 	list.Float32(math.MaxFloat32)
 	list.Float64(math.MaxFloat64)
 
-	list.Bin64(types.RandomBin64())
-	list.Bin128(types.RandomBin128())
-	list.Bin256(types.RandomBin256())
+	list.Bin64(basic.RandomBin64())
+	list.Bin128(basic.RandomBin128())
+	list.Bin256(basic.RandomBin256())
 
 	list.String("hello world")
 	list.Bytes([]byte("hello world"))

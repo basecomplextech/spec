@@ -1,7 +1,7 @@
 package pkg1
 
 import (
-	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/spec/tests/pkg2"
 	"github.com/complex1tech/spec/tests/pkg3/pkg3a"
 )
@@ -21,9 +21,9 @@ type Object struct {
 	Float32 float32
 	Float64 float64
 
-	Bin64  types.Bin64
-	Bin128 types.Bin128
-	Bin256 types.Bin256
+	Bin64  basic.Bin64
+	Bin128 basic.Bin128
+	Bin256 basic.Bin256
 
 	String   string
 	Bytes1   []byte

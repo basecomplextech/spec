@@ -1,7 +1,7 @@
 package writer
 
 import (
-	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/spec/encoding"
 )
 
@@ -120,7 +120,7 @@ func (w ValueWriter) Uint64(v uint64) error {
 
 // Bin64/128/256
 
-func (w ValueWriter) Bin64(v types.Bin64) error {
+func (w ValueWriter) Bin64(v basic.Bin64) error {
 	if w.w.err != nil {
 		return w.w.err
 	}
@@ -132,7 +132,7 @@ func (w ValueWriter) Bin64(v types.Bin64) error {
 	return w.w.pushData(start, end)
 }
 
-func (w ValueWriter) Bin128(v types.Bin128) error {
+func (w ValueWriter) Bin128(v basic.Bin128) error {
 	if w.w.err != nil {
 		return w.w.err
 	}
@@ -144,7 +144,7 @@ func (w ValueWriter) Bin128(v types.Bin128) error {
 	return w.w.pushData(start, end)
 }
 
-func (w ValueWriter) Bin256(v types.Bin256) error {
+func (w ValueWriter) Bin256(v basic.Bin256) error {
 	if w.w.err != nil {
 		return w.w.err
 	}

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/baselibrary/tests"
-	"github.com/complex1tech/baselibrary/types"
 	"github.com/complex1tech/spec/tests/pkg3/pkg3a"
 )
 
@@ -61,9 +61,9 @@ func TestObject(t tests.T) *Object {
 		Float32: math.MaxFloat32,
 		Float64: math.MaxFloat64,
 
-		Bin64:  types.Bin64FromInt64(1),
-		Bin128: types.Bin128FromInt64(2),
-		Bin256: types.Bin256FromInt64(3),
+		Bin64:  basic.Bin64FromInt(1),
+		Bin128: basic.Bin128FromInt(2),
+		Bin256: basic.Bin256FromInt(3),
 
 		String:   "hello, world",
 		Bytes1:   []byte("goodbye, world"),

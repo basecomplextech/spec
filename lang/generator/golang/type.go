@@ -30,22 +30,22 @@ func typeName(typ *compiler.Type) string {
 	case compiler.KindUint64:
 		return "uint64"
 
-	case compiler.KindBin64:
-		return "types.Bin64"
-	case compiler.KindBin128:
-		return "types.Bin128"
-	case compiler.KindBin256:
-		return "types.Bin256"
-
 	case compiler.KindFloat32:
 		return "float32"
 	case compiler.KindFloat64:
 		return "float64"
 
+	case compiler.KindBin64:
+		return "basic.Bin64"
+	case compiler.KindBin128:
+		return "basic.Bin128"
+	case compiler.KindBin256:
+		return "basic.Bin256"
+
 	case compiler.KindBytes:
-		return "types.BytesView"
+		return "basic.BytesView"
 	case compiler.KindString:
-		return "types.StringView"
+		return "basic.StringView"
 	case compiler.KindAnyMessage:
 		return "spec.Message"
 

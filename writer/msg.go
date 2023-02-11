@@ -1,7 +1,7 @@
 package writer
 
 import (
-	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/baselibrary/basic"
 )
 
 // MessageWriter writes a message.
@@ -137,21 +137,21 @@ func (f FieldWriter) Float64(v float64) error {
 
 // Bin
 
-func (f FieldWriter) Bin64(v types.Bin64) error {
+func (f FieldWriter) Bin64(v basic.Bin64) error {
 	if err := f.w.Value().Bin64(v); err != nil {
 		return err
 	}
 	return f.w.field(f.tag)
 }
 
-func (f FieldWriter) Bin128(v types.Bin128) error {
+func (f FieldWriter) Bin128(v basic.Bin128) error {
 	if err := f.w.Value().Bin128(v); err != nil {
 		return err
 	}
 	return f.w.field(f.tag)
 }
 
-func (f FieldWriter) Bin256(v types.Bin256) error {
+func (f FieldWriter) Bin256(v basic.Bin256) error {
 	if err := f.w.Value().Bin256(v); err != nil {
 		return err
 	}

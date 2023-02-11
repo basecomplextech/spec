@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,9 +29,9 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 	assert.Equal(t, float32(math.MaxFloat32), m.Float32())
 	assert.Equal(t, float64(math.MaxFloat64), m.Float64())
 
-	assert.Equal(t, types.Bin64FromInt64(1), m.Bin64())
-	assert.Equal(t, types.Bin128FromInt64(2), m.Bin128())
-	assert.Equal(t, types.Bin256FromInt64(3), m.Bin256())
+	assert.Equal(t, basic.Bin64FromInt(1), m.Bin64())
+	assert.Equal(t, basic.Bin128FromInt(2), m.Bin128())
+	assert.Equal(t, basic.Bin256FromInt(3), m.Bin256())
 
 	assert.Equal(t, "hello, world", m.String().Unwrap())
 	assert.Equal(t, []byte("goodbye, world"), m.Bytes1().Unwrap())

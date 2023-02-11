@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/complex1tech/baselibrary/types"
+	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/spec/encoding"
 )
 
@@ -164,19 +164,19 @@ func (v Value) Float64() float64 {
 // Bin
 
 // Bin64 decodes and returns bin64 or a zero value.
-func (v Value) Bin64() types.Bin64 {
+func (v Value) Bin64() basic.Bin64 {
 	p, _, _ := encoding.DecodeBin64(v)
 	return p
 }
 
 // Bin128 decodes and returns bin128 or a zero value.
-func (v Value) Bin128() types.Bin128 {
+func (v Value) Bin128() basic.Bin128 {
 	p, _, _ := encoding.DecodeBin128(v)
 	return p
 }
 
 // Bin256 decodes and returns bin256 or a zero value.
-func (v Value) Bin256() types.Bin256 {
+func (v Value) Bin256() basic.Bin256 {
 	p, _, _ := encoding.DecodeBin256(v)
 	return p
 }
@@ -184,13 +184,13 @@ func (v Value) Bin256() types.Bin256 {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() types.BytesView {
+func (v Value) Bytes() basic.BytesView {
 	p, _, _ := encoding.DecodeBytes(v)
 	return p
 }
 
 // String decodes and returns string or an empty string.
-func (v Value) String() types.StringView {
+func (v Value) String() basic.StringView {
 	p, _, _ := encoding.DecodeString(v)
 	return p
 }
