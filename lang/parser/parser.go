@@ -48,7 +48,7 @@ func (p *parser) ParseFile(path string) (*ast.File, error) {
 }
 
 func (p *parser) ParseDirectory(path string) ([]*ast.File, error) {
-	// check path is directory
+	// Check path is directory
 	info, err := os.Stat(path)
 	switch {
 	case err != nil:
@@ -57,14 +57,14 @@ func (p *parser) ParseDirectory(path string) ([]*ast.File, error) {
 		return nil, fmt.Errorf("package not directory, path=%v", path)
 	}
 
-	// scan files
+	// Scan files
 	pattern := filepath.Join(path, "*.spec")
 	filepaths, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err
 	}
 
-	// parse files
+	// Parse files
 	files := make([]*ast.File, 0, len(filepaths))
 	for _, filepath := range filepaths {
 		file, err := p.ParseFile(filepath)

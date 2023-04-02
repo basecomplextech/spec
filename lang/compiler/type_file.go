@@ -37,7 +37,7 @@ func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 		DefinitionNames: make(map[string]*Definition),
 	}
 
-	// create imports
+	// Create imports
 	for _, pimp := range pfile.Imports {
 		imp, err := newImport(f, pimp)
 		if err != nil {
@@ -53,7 +53,7 @@ func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 		f.ImportMap[imp.Name] = imp
 	}
 
-	// create options
+	// Create options
 	for _, popt := range pfile.Options {
 		opt, err := newOption(popt)
 		if err != nil {
@@ -69,7 +69,7 @@ func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 		f.OptionMap[opt.Name] = opt
 	}
 
-	// create definitions
+	// Create definitions
 	for _, pdef := range pfile.Definitions {
 		def, err := newDefinition(pkg, f, pdef)
 		if err != nil {

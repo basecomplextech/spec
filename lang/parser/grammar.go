@@ -11,36 +11,36 @@ import (
 
 type yySymType struct {
 	yys int
-	// tokens
+	// Tokens
 	ident   string
 	integer int
 	string  string
 
-	// import
+	// Import
 	import_ *ast.Import
 	imports []*ast.Import
 
-	// option
+	// Option
 	option  *ast.Option
 	options []*ast.Option
 
-	// definition
+	// Definition
 	definition  *ast.Definition
 	definitions []*ast.Definition
 
-	// enum
+	// Enum
 	enum_value  *ast.EnumValue
 	enum_values []*ast.EnumValue
 
-	// message
+	// Message
 	message_field  *ast.MessageField
 	message_fields []*ast.MessageField
 
-	// struct
+	// Struct
 	struct_field  *ast.StructField
 	struct_fields []*ast.StructField
 
-	// type
+	// Type
 	type_ *ast.Type
 }
 
@@ -486,8 +486,8 @@ yydefault:
 	_ = yypt // guard against "declared and not used"
 
 	yyp -= yyR2[yyn]
-	// yyp is now the index of $0. Perform the default action. Iff the
-	// reduced production is ε, $1 is possibly out of range.
+	// Yyp is now the index of $0. Perform the default action. Iff the
+	// Reduced production is ε, $1 is possibly out of range.
 	if yyp+1 >= len(yyS) {
 		nyys := make([]yySymType, len(yyS)*2)
 		copy(nyys, yyS)
@@ -508,7 +508,7 @@ yydefault:
 			yystate = yyAct[yyg]
 		}
 	}
-	// dummy call; replaced with literal code
+	// Dummy call; replaced with literal code
 	switch yynt {
 
 	case 1:

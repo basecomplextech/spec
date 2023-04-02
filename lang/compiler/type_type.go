@@ -47,7 +47,7 @@ func newType(ptype *ast.Type) (*Type, error) {
 		return nil, err
 	}
 
-	// builtin type
+	// Builtin type
 	t, ok := builtin[kind]
 	if ok {
 		return t, nil

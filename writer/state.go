@@ -15,7 +15,7 @@ type writerState struct {
 	elements listStack    // buffer for list element tables
 	fields   messageStack // buffer for message field tables
 
-	// preallocated
+	// Preallocated
 	_stack    [14]stackEntry
 	_elements [48]encoding.ListElement
 	_fields   [48]encoding.MessageField

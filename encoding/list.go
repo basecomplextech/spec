@@ -60,12 +60,12 @@ func isBigList(table []ListElement) bool {
 		return false
 	}
 
-	// len > uint8
+	// Len > uint8
 	if ln > math.MaxUint8 {
 		return true
 	}
 
-	// or offset > uint16
+	// Or offset > uint16
 	last := table[ln-1]
 	return last.Offset > math.MaxUint16
 }
@@ -106,7 +106,7 @@ func (t listTable) offset_big(i int) (int, int) {
 	size := listElementBigSize
 	n := len(t) / size
 
-	// check count
+	// Check count
 	switch {
 	case i < 0:
 		return -1, -1
@@ -114,16 +114,16 @@ func (t listTable) offset_big(i int) (int, int) {
 		return -1, -1
 	}
 
-	// offset
+	// Offset
 	off := i * size
 
-	// start
+	// Start
 	var start int
 	if i > 0 {
 		start = int(binary.BigEndian.Uint32(t[off-4:]))
 	}
 
-	// end
+	// End
 	end := int(binary.BigEndian.Uint32(t[off:]))
 	return start, end
 }
@@ -132,7 +132,7 @@ func (t listTable) offset_small(i int) (int, int) {
 	size := listElementSmallSize
 	n := len(t) / size
 
-	// check count
+	// Check count
 	switch {
 	case i < 0:
 		return -1, -1
@@ -140,16 +140,16 @@ func (t listTable) offset_small(i int) (int, int) {
 		return -1, -1
 	}
 
-	// offset
+	// Offset
 	off := i * size
 
-	// start
+	// Start
 	var start int
 	if i > 0 {
 		start = int(binary.BigEndian.Uint16(t[off-2:]))
 	}
 
-	// end
+	// End
 	end := int(binary.BigEndian.Uint16(t[off:]))
 	return start, end
 }

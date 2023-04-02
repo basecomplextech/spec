@@ -111,7 +111,7 @@ func (t messageTable) offset_big(tag uint16) int {
 	size := messageFieldBigSize
 	n := len(t) / size
 
-	// binary search table
+	// Binary search table
 	left, right := 0, (n - 1)
 	for left <= right {
 		// middle
@@ -145,7 +145,7 @@ func (t messageTable) offset_small(tag uint16) int {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
-	// binary search table
+	// Binary search table
 	left, right := 0, (n - 1)
 	for left <= right {
 		// middle
@@ -181,7 +181,7 @@ func (t messageTable) offsetByIndex_big(i int) int {
 	size := messageFieldBigSize
 	n := len(t) / size
 
-	// check count
+	// Check count
 	switch {
 	case i < 0:
 		return -1
@@ -189,10 +189,10 @@ func (t messageTable) offsetByIndex_big(i int) int {
 		return -1
 	}
 
-	// field offset
+	// Field offset
 	off := i * size
 
-	// read end after tag
+	// Read end after tag
 	return int(binary.BigEndian.Uint32(t[off+2:]))
 }
 
@@ -200,7 +200,7 @@ func (t messageTable) offsetByIndex_small(i int) int {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
-	// check count
+	// Check count
 	switch {
 	case i < 0:
 		return -1
@@ -208,10 +208,10 @@ func (t messageTable) offsetByIndex_small(i int) int {
 		return -1
 	}
 
-	// field offset
+	// Field offset
 	off := i * size
 
-	// read end after tag
+	// Read end after tag
 	return int(binary.BigEndian.Uint16(t[off+1:]))
 }
 
@@ -221,7 +221,7 @@ func (t messageTable) field_big(i int) (f MessageField, ok bool) {
 	size := messageFieldBigSize
 	n := len(t) / size
 
-	// check count
+	// Check count
 	switch {
 	case i < 0:
 		return
@@ -245,7 +245,7 @@ func (t messageTable) field_small(i int) (f MessageField, ok bool) {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
-	// check count
+	// Check count
 	switch {
 	case i < 0:
 		return

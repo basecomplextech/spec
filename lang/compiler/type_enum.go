@@ -21,7 +21,7 @@ func newEnum(def *Definition, penum *ast.Enum) (*Enum, error) {
 		ValueNumbers: make(map[int]*EnumValue),
 	}
 
-	// create values
+	// Create values
 	for _, pval := range penum.Values {
 		val, err := newEnumValue(e, pval)
 		if err != nil {
@@ -44,7 +44,7 @@ func newEnum(def *Definition, penum *ast.Enum) (*Enum, error) {
 		e.ValueNumbers[val.Number] = val
 	}
 
-	// check zero present
+	// Check zero present
 	_, ok := e.ValueNumbers[0]
 	if !ok {
 		return nil, fmt.Errorf("zero enum value required")

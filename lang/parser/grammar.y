@@ -11,36 +11,36 @@ import (
 
 // union defines yySymType body.
 %union {
-	// tokens
+	// Tokens
 	ident   string
 	integer int
 	string  string
 
-	// import
+	// Import
 	import_ *ast.Import
 	imports []*ast.Import
 
-	// option
+	// Option
 	option  *ast.Option
 	options []*ast.Option
 
-	// definition
+	// Definition
 	definition  *ast.Definition
 	definitions []*ast.Definition
 
-	// enum
+	// Enum
 	enum_value  *ast.EnumValue
 	enum_values []*ast.EnumValue
 
-	// message
+	// Message
 	message_field  *ast.MessageField
 	message_fields []*ast.MessageField
 
-	// struct
+	// Struct
 	struct_field  *ast.StructField
 	struct_fields []*ast.StructField
 
-	// type
+	// Type
 	type_ *ast.Type
 }
 
@@ -128,7 +128,7 @@ import:
 			}
 		}
 import_list:
-	// empty
+	// Empty
 		{ 
 			$$ = nil
 		}
@@ -140,7 +140,7 @@ import_list:
 			$$ = append($$, $2)
 		}
 imports:
-	// empty
+	// Empty
 		{ 
 			$$ = nil
 		}
@@ -155,7 +155,7 @@ imports:
 // options
 
 options:
-	// empty
+	// Empty
 		{ 
 			$$ = nil
 		}
@@ -167,7 +167,7 @@ options:
 			$$ = append($$, $3...)
 		}
 option_list:
-	// empty
+	// Empty
 		{ 
 			$$ = nil
 		}
@@ -198,7 +198,7 @@ definition:
 	| message
 	| struct
 definitions:
-	// empty
+	// Empty
 		{ 
 			$$ = nil
 		}
@@ -238,7 +238,7 @@ enum_value: IDENT '=' INTEGER ';'
 		}
 	}
 enum_values:
-	// empty
+	// Empty
 		{
 			$$ = nil
 		}
@@ -279,7 +279,7 @@ message_field: IDENT type INTEGER ';'
 		}
 	}
 message_fields:
-	// empty
+	// Empty
 		{ 
 			$$ = nil
 		}
@@ -318,7 +318,7 @@ struct_field: IDENT type ';'
 		}
 	}
 struct_fields:
-	// empty
+	// Empty
 		{ 
 			$$ = nil
 		}

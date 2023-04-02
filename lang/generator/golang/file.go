@@ -61,11 +61,11 @@ func (w *writer) writef(format string, args ...interface{}) {
 // file
 
 func (w *writer) file(file *compiler.File) error {
-	// package
+	// Package
 	w.line("package ", file.Package.Name)
 	w.line()
 
-	// imports
+	// Imports
 	w.line("import (")
 	w.line(`"github.com/complex1tech/baselibrary/basic"`)
 	w.line(`"github.com/complex1tech/baselibrary/buffer"`)
@@ -79,7 +79,7 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(")")
 	w.line()
 
-	// empty values for imports
+	// Empty values for imports
 	w.line(`var (`)
 	w.line(`_ basic.Bin128`)
 	w.line(`_ buffer.Buffer`)
@@ -87,7 +87,7 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`_ encoding.Type`)
 	w.line(`)`)
 
-	// definitions
+	// Definitions
 	return w.definitions(file)
 }
 

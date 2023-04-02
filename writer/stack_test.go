@@ -32,7 +32,7 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 	buffer := listStack{}
 	offsets := []int{}
 
-	// build buffer
+	// Build buffer
 	for _, elements := range matrix {
 		offset := buffer.offset()
 		offsets = append(offsets, offset)
@@ -43,7 +43,7 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 		}
 	}
 
-	// check buffer
+	// Check buffer
 	for i := len(offsets) - 1; i >= 0; i-- {
 		offset := offsets[i]
 
@@ -72,7 +72,7 @@ func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t 
 	buffer := messageStack{}
 	offsets := []int{}
 
-	// build buffer
+	// Build buffer
 	for _, fields := range matrix {
 		offset := buffer.offset()
 		offsets = append(offsets, offset)
@@ -92,7 +92,7 @@ func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t 
 		}
 	}
 
-	// check buffer
+	// Check buffer
 	for i := len(offsets) - 1; i >= 0; i-- {
 		offset := offsets[i]
 

@@ -342,7 +342,7 @@ func TestCompiler__should_compile_reference_type(t *testing.T) {
 	field := def.Message.FieldNames["submessage"]
 	require.NotNil(t, field)
 
-	// resolved
+	// Resolved
 	type_ := field.Type
 	assert.Equal(t, "Submessage", type_.Name)
 	assert.Equal(t, KindMessage, type_.Kind)
@@ -364,7 +364,7 @@ func TestCompiler__should_compile_imported_type(t *testing.T) {
 	field := def.Message.FieldNames["submessage1"]
 	require.NotNil(t, field)
 
-	// resolved
+	// Resolved
 	type_ := field.Type
 	assert.Equal(t, "Submessage", type_.Name)
 	assert.Equal(t, "pkg2", type_.ImportName)
@@ -387,11 +387,11 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 	field := def.Message.FieldNames["structs"]
 	require.NotNil(t, field)
 
-	// list
+	// List
 	type_ := field.Type
 	assert.Equal(t, KindList, type_.Kind)
 
-	// element
+	// Element
 	elem := type_.Element
 	require.NotNil(t, elem)
 	assert.Equal(t, KindStruct, elem.Kind)
@@ -411,11 +411,11 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 	field := def.Message.FieldNames["submessages"]
 	require.NotNil(t, field)
 
-	// list
+	// List
 	type_ := field.Type
 	assert.Equal(t, KindList, type_.Kind)
 
-	// element
+	// Element
 	elem := type_.Element
 	require.NotNil(t, elem)
 	assert.Equal(t, KindMessage, elem.Kind)
@@ -437,12 +437,12 @@ func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 	field := def.Message.FieldNames["submessages1"]
 	require.NotNil(t, field)
 
-	// list
+	// List
 	type_ := field.Type
 	assert.Equal(t, KindList, type_.Kind)
 	require.NotNil(t, type_.Element)
 
-	// element
+	// Element
 	elem := type_.Element
 	assert.Equal(t, KindMessage, elem.Kind)
 	assert.Equal(t, "Submessage", elem.Name)

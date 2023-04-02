@@ -47,7 +47,7 @@ func newPackage(id string, path string, pfiles []*ast.File) (*Package, error) {
 		DefinitionNames: make(map[string]*Definition),
 	}
 
-	// create files
+	// Create files
 	for _, pfile := range pfiles {
 		f, err := newFile(pkg, pfile)
 		if err != nil {
@@ -58,7 +58,7 @@ func newPackage(id string, path string, pfiles []*ast.File) (*Package, error) {
 		pkg.FileNames[f.Name] = f
 	}
 
-	// compile options
+	// Compile options
 	for _, file := range pkg.Files {
 		for _, opt := range file.Options {
 			_, ok := pkg.OptionNames[opt.Name]
@@ -71,7 +71,7 @@ func newPackage(id string, path string, pfiles []*ast.File) (*Package, error) {
 		}
 	}
 
-	// compile definitions
+	// Compile definitions
 	for _, file := range pkg.Files {
 		for _, def := range file.Definitions {
 			_, ok := pkg.DefinitionNames[def.Name]

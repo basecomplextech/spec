@@ -22,7 +22,7 @@ func newMessage(def *Definition, pmsg *ast.Message) (*Message, error) {
 		FieldTags:  make(map[int]*MessageField),
 	}
 
-	// create fields
+	// Create fields
 	for _, pfield := range pmsg.Fields {
 		field, err := newMessageField(pfield)
 		if err != nil {

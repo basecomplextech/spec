@@ -27,7 +27,7 @@ func TestIsBigMessage__should_return_true_when_tag_greater_than_uint8(t *testing
 	small := TestFieldsSize(false)
 	big := TestFieldsSize(true)
 
-	// clear offsets to check tags
+	// Clear offsets to check tags
 	for i, f := range small {
 		f.Offset = 0
 		small[i] = f
@@ -45,7 +45,7 @@ func TestIsBigMessage__should_return_true_when_offset_greater_than_uint16(t *tes
 	small := TestFieldsSize(false)
 	big := TestFieldsSize(true)
 
-	// clear tags to check offsets
+	// Clear tags to check offsets
 	for i, f := range small {
 		f.Tag = 0
 		small[i] = f

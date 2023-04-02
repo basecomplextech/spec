@@ -55,16 +55,16 @@ func newCompiler(opts Options) (*compiler, error) {
 
 // Compile parses, compiles and returns a package from a directory.
 func (c *compiler) Compile(dir string) (*Package, error) {
-	// clean directory path
+	// Clean directory path
 	dir = filepath.Clean(dir)
 
-	// get absolute path relative to cwd
+	// Get absolute path relative to cwd
 	path, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	// compute id from directory when empty
+	// Compute id from directory when empty
 	id := dir
 	if id == "" || id == "." {
 		id, err = getCurrentDirectoryName()
@@ -79,7 +79,7 @@ func (c *compiler) Compile(dir string) (*Package, error) {
 // private
 
 func (c *compiler) getPackage(id string) (*Package, error) {
-	// try to get existing package
+	// Try to get existing package
 	pkg, ok := c.packages[id]
 	if ok {
 		if pkg.State != PackageCompiled {
@@ -88,7 +88,7 @@ func (c *compiler) getPackage(id string) (*Package, error) {
 		return pkg, nil
 	}
 
-	// try to find package in import paths
+	// Try to find package in import paths
 	for _, path := range c.paths {
 		p := filepath.Join(path, id)
 		_, err := os.Stat(p)
@@ -107,13 +107,13 @@ func (c *compiler) getPackage(id string) (*Package, error) {
 }
 
 func (c *compiler) compilePackage(id string, path string) (*Package, error) {
-	// return if already exists
+	// Return if already exists
 	pkg, ok := c.packages[id]
 	if ok {
 		return pkg, nil
 	}
 
-	// parse directory files
+	// Parse directory files
 	files, err := c.parser.ParseDirectory(path)
 	switch {
 	case err != nil:
@@ -122,7 +122,7 @@ func (c *compiler) compilePackage(id string, path string) (*Package, error) {
 		return nil, fmt.Errorf("empty package %q, path=%v", id, path)
 	}
 
-	// create package in compiling state
+	// Create package in compiling state
 	pkg, err = newPackage(id, path, files)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (c *compiler) compilePackage(id string, path string) (*Package, error) {
 		return nil, err
 	}
 
-	// done
+	// Done
 	pkg.State = PackageCompiled
 	return pkg, nil
 }

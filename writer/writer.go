@@ -117,7 +117,7 @@ func (w *writer) end() (result []byte, err error) {
 		return nil, w.err
 	}
 
-	// end top object
+	// End top object
 	entry, ok := w.stack.peek()
 	if !ok {
 		return nil, w.failf("end: stack is empty")
@@ -146,7 +146,7 @@ func (w *writer) end() (result []byte, err error) {
 		return nil, w.failf("end: cannot end object, invalid entry type: %v", entry.type_)
 	}
 
-	// maybe end parent field/element
+	// Maybe end parent field/element
 	entry, ok = w.stack.peekSecondLast()
 	if !ok {
 		return result, w.close()
@@ -172,7 +172,7 @@ func (w *writer) endValue() ([]byte, error) {
 		return nil, w.failf("end value: cannot end value, not root value")
 	}
 
-	// pop data
+	// Pop data
 	entry, ok := w.stack.pop()
 	switch {
 	case !ok:
@@ -181,7 +181,7 @@ func (w *writer) endValue() ([]byte, error) {
 		return nil, w.failf("end value: not data entry, type=%v", entry.type_)
 	}
 
-	// return data
+	// Return data
 	start := entry.start
 	end := w.buf.Len()
 
@@ -197,7 +197,7 @@ func (w *writer) beginList() error {
 		return w.err
 	}
 
-	// push list
+	// Push list
 	start := w.buf.Len()
 	tableStart := w.elements.offset()
 
@@ -210,7 +210,7 @@ func (w *writer) beginElement() error {
 		return w.err
 	}
 
-	// check list
+	// Check list
 	list, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -219,7 +219,7 @@ func (w *writer) beginElement() error {
 		return w.failf("begin element: cannot begin element, parent not list")
 	}
 
-	// push list element
+	// Push list element
 	start := w.buf.Len()
 	w.stack.pushElement(start)
 	return nil
@@ -230,13 +230,13 @@ func (w *writer) element() error {
 		return w.err
 	}
 
-	// pop data
+	// Pop data
 	_, end, err := w.popData()
 	if err != nil {
 		return w.fail(err)
 	}
 
-	// check list
+	// Check list
 	list, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -245,7 +245,7 @@ func (w *writer) element() error {
 		return w.failf("element: cannot encode element, parent not list")
 	}
 
-	// append element relative offset
+	// Append element relative offset
 	offset := uint32(end - list.start)
 	element := encoding.ListElement{Offset: offset}
 	w.elements.push(element)
@@ -257,7 +257,7 @@ func (w *writer) listLen() int {
 		return 0
 	}
 
-	// check list
+	// Check list
 	list, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -275,13 +275,13 @@ func (w *writer) endElement() ([]byte, error) {
 		return nil, w.err
 	}
 
-	// pop data
+	// Pop data
 	_, end, err := w.popData()
 	if err != nil {
 		return nil, w.fail(err)
 	}
 
-	// pop element
+	// Pop element
 	elem, ok := w.stack.pop()
 	switch {
 	case !ok:
@@ -290,7 +290,7 @@ func (w *writer) endElement() ([]byte, error) {
 		return nil, w.failf("end element: not element")
 	}
 
-	// check list
+	// Check list
 	list, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -299,12 +299,12 @@ func (w *writer) endElement() ([]byte, error) {
 		return nil, w.failf("end element: parent not list")
 	}
 
-	// append element relative offset
+	// Append element relative offset
 	offset := uint32(end - list.start)
 	element := encoding.ListElement{Offset: offset}
 	w.elements.push(element)
 
-	// return data
+	// Return data
 	b := w.buf.Bytes()
 	b = b[elem.start:end]
 	return b, nil
@@ -315,7 +315,7 @@ func (w *writer) endList() ([]byte, error) {
 		return nil, w.err
 	}
 
-	// pop list
+	// Pop list
 	list, ok := w.stack.pop()
 	switch {
 	case !ok:
@@ -327,19 +327,19 @@ func (w *writer) endList() ([]byte, error) {
 	bodySize := w.buf.Len() - list.start
 	table := w.elements.pop(list.tableStart)
 
-	// encode list
+	// Encode list
 	if _, err := encoding.EncodeListMeta(w.buf, bodySize, table); err != nil {
 		return nil, w.fail(err)
 	}
 
-	// push data entry
+	// Push data entry
 	start := list.start
 	end := w.buf.Len()
 	if err := w.pushData(start, end); err != nil {
 		return nil, err
 	}
 
-	// return data
+	// Return data
 	b := w.buf.Bytes()
 	b = b[start:end]
 	return b, nil
@@ -352,7 +352,7 @@ func (w *writer) beginMessage() error {
 		return w.err
 	}
 
-	// push message
+	// Push message
 	start := w.buf.Len()
 	tableStart := w.fields.offset()
 
@@ -365,7 +365,7 @@ func (w *writer) beginField(tag uint16) error {
 		return w.err
 	}
 
-	// check message
+	// Check message
 	message, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -374,7 +374,7 @@ func (w *writer) beginField(tag uint16) error {
 		return w.failf("begin field: cannot begin field, parent not message")
 	}
 
-	// push field
+	// Push field
 	start := w.buf.Len()
 	w.stack.pushField(start, tag)
 	return nil
@@ -385,13 +385,13 @@ func (w *writer) field(tag uint16) error {
 		return w.err
 	}
 
-	// pop data
+	// Pop data
 	_, end, err := w.popData()
 	if err != nil {
 		return w.fail(err)
 	}
 
-	// check message
+	// Check message
 	message, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -400,7 +400,7 @@ func (w *writer) field(tag uint16) error {
 		return w.failf("field: cannot encode field, parent not message")
 	}
 
-	// insert field tag and relative offset
+	// Insert field tag and relative offset
 	f := encoding.MessageField{
 		Tag:    tag,
 		Offset: uint32(end - message.start),
@@ -434,7 +434,7 @@ func (w *writer) hasField(tag uint16) bool {
 		return false
 	}
 
-	// peek message
+	// Peek message
 	message, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -443,7 +443,7 @@ func (w *writer) hasField(tag uint16) bool {
 		return false
 	}
 
-	// check field table
+	// Check field table
 	offset := message.tableStart
 	return w.fields.hasField(offset, tag)
 }
@@ -453,13 +453,13 @@ func (w *writer) endField() ([]byte, error) {
 		return nil, w.err
 	}
 
-	// pop data
+	// Pop data
 	_, end, err := w.popData()
 	if err != nil {
 		return nil, w.fail(err)
 	}
 
-	// pop field
+	// Pop field
 	field, ok := w.stack.pop()
 	switch {
 	case !ok:
@@ -469,7 +469,7 @@ func (w *writer) endField() ([]byte, error) {
 	}
 	tag := field.tag()
 
-	// check message
+	// Check message
 	message, ok := w.stack.peek()
 	switch {
 	case !ok:
@@ -478,14 +478,14 @@ func (w *writer) endField() ([]byte, error) {
 		return nil, w.failf("field: cannot encode field, parent not message")
 	}
 
-	// insert field with tag and relative offset
+	// Insert field with tag and relative offset
 	f := encoding.MessageField{
 		Tag:    tag,
 		Offset: uint32(end - message.start),
 	}
 	w.fields.insert(message.tableStart, f)
 
-	// return data
+	// Return data
 	b := w.buf.Bytes()
 	b = b[field.start:end]
 	return b, nil
@@ -496,7 +496,7 @@ func (w *writer) endMessage() ([]byte, error) {
 		return nil, w.err
 	}
 
-	// pop message
+	// Pop message
 	message, ok := w.stack.pop()
 	switch {
 	case !ok:
@@ -508,19 +508,19 @@ func (w *writer) endMessage() ([]byte, error) {
 	dataSize := w.buf.Len() - message.start
 	table := w.fields.pop(message.tableStart)
 
-	// encode message
+	// Encode message
 	if _, err := encoding.EncodeMessageMeta(w.buf, dataSize, table); err != nil {
 		return nil, w.fail(err)
 	}
 
-	// push data
+	// Push data
 	start := message.start
 	end := w.buf.Len()
 	if err := w.pushData(start, end); err != nil {
 		return nil, err
 	}
 
-	// return data
+	// Return data
 	b := w.buf.Bytes()
 	b = b[start:end]
 	return b, nil

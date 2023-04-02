@@ -31,15 +31,15 @@ func (s *messageStack) offset() int {
 
 // insert inserts a new field into the last table starting at offset, keeps the table sorted.
 func (s *messageStack) insert(tableOffset int, f encoding.MessageField) {
-	// append new field
+	// Append new field
 	s.stack = append(s.stack, f)
 
-	// get table
+	// Get table
 	table := s.stack[tableOffset:]
 
-	// walk table in reverse order
-	// move new field to its position
-	// using insertion sort
+	// Walk table in reverse order
+	// Move new field to its position
+	// Using insertion sort
 	for i := len(table) - 1; i > 0; i-- {
 		left := table[i-1]
 		right := table[i]

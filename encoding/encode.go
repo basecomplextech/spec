@@ -192,46 +192,46 @@ func EncodeListMeta(b buffer.Buffer, dataSize int, table []ListElement) (int, er
 		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
-	// type
+	// Type
 	big := isBigList(table)
 	type_ := TypeList
 	if big {
 		type_ = TypeBigList
 	}
 
-	// write table
+	// Write table
 	tableSize, err := encodeListTable(b, table, big)
 	if err != nil {
 		return int(tableSize), err
 	}
 	n := tableSize
 
-	// write data size
+	// Write data size
 	n += encodeSize(b, uint32(dataSize))
 
-	// write table size and type
+	// Write table size and type
 	n += encodeSizeType(b, uint32(tableSize), type_)
 	return n, nil
 }
 
 func encodeListTable(b buffer.Buffer, table []ListElement, big bool) (int, error) {
-	// element size
+	// Element size
 	elemSize := listElementSmallSize
 	if big {
 		elemSize = listElementBigSize
 	}
 
-	// check table size
+	// Check table size
 	size := len(table) * elemSize
 	if size > MaxSize {
 		return 0, fmt.Errorf("encode: list table too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
-	// write table
+	// Write table
 	p := b.Grow(size)
 	off := 0
 
-	// put elements
+	// Put elements
 	for _, elem := range table {
 		q := p[off : off+elemSize]
 
@@ -254,30 +254,30 @@ func EncodeMessageMeta(b buffer.Buffer, dataSize int, table []MessageField) (int
 		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", MaxSize, dataSize)
 	}
 
-	// type
+	// Type
 	big := isBigMessage(table)
 	type_ := TypeMessage
 	if big {
 		type_ = TypeBigMessage
 	}
 
-	// write table
+	// Write table
 	tableSize, err := encodeMessageTable(b, table, big)
 	if err != nil {
 		return 0, err
 	}
 	n := tableSize
 
-	// write data size
+	// Write data size
 	n += encodeSize(b, uint32(dataSize))
 
-	// write table size and type
+	// Write table size and type
 	n += encodeSizeType(b, uint32(tableSize), type_)
 	return n, nil
 }
 
 func encodeMessageTable(b buffer.Buffer, table []MessageField, big bool) (int, error) {
-	// field size
+	// Field size
 	var fieldSize int
 	if big {
 		fieldSize = messageFieldBigSize
@@ -285,17 +285,17 @@ func encodeMessageTable(b buffer.Buffer, table []MessageField, big bool) (int, e
 		fieldSize = messageFieldSmallSize
 	}
 
-	// check table size
+	// Check table size
 	size := len(table) * fieldSize
 	if size > MaxSize {
 		return 0, fmt.Errorf("encode: message table too large, max size=%d, actual size=%d", MaxSize, size)
 	}
 
-	// write table
+	// Write table
 	p := b.Grow(size)
 	off := 0
 
-	// put fields
+	// Put fields
 	for _, field := range table {
 		q := p[off : off+fieldSize]
 

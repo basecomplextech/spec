@@ -40,38 +40,38 @@ func _BenchmarkSizeDistribution(b *testing.B) {
 }
 
 type sizeDistrib struct {
-	// total size
+	// Total size
 	size int
 
-	// total distribution
+	// Total distribution
 	meta   int
 	tables int
 	data   int
 
-	// meta distribution
+	// Meta distribution
 	types int
 	sizes int
 
-	// data distribution
+	// Data distribution
 	values  int
 	bytes   int
 	strings int
 }
 
 type sizeDistribPercent struct {
-	// total size
+	// Total size
 	size int
 
-	// total distribution
+	// Total distribution
 	meta   float32
 	tables float32
 	data   float32
 
-	// meta distribution
+	// Meta distribution
 	types float32
 	sizes float32
 
-	// data distribution
+	// Data distribution
 	values  float32
 	bytes   float32
 	strings float32

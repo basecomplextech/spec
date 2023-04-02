@@ -19,7 +19,7 @@ func newStruct(def *Definition, pstr *ast.Struct) (*Struct, error) {
 		FieldNames: make(map[string]*StructField),
 	}
 
-	// create fields
+	// Create fields
 	for _, pfield := range pstr.Fields {
 		field, err := newStructField(pfield)
 		if err != nil {
