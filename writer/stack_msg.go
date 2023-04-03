@@ -46,11 +46,11 @@ func (s *messageStack) insert(tableOffset int, f encoding.MessageField) {
 
 		// TODO: Replace previous field with the same tag?
 		if left.Tag < right.Tag {
-			// sorted
+			// Sorted
 			break
 		}
 
-		// swap fields
+		// Swap fields
 		table[i-1] = right
 		table[i] = left
 	}

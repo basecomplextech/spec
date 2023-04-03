@@ -35,11 +35,11 @@ func setLexerResult(l yyLexer, file *ast.File) {
 
 func (l *lexer) Lex(lval *yySymType) int {
 	for {
-		// scan next token
+		// Scan next token
 		token := l.s.Scan()
 		text := l.s.TokenText()
 
-		// return on eof
+		// Return on eof
 		if token == scanner.EOF {
 			lval.yys = EOF
 			return EOF

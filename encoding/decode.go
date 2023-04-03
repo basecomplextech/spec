@@ -128,7 +128,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 	case TypeList, TypeBigList:
 		size := n
 
-		// table size
+		// Table size
 		tableSize, m := decodeSize(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode list: invalid table size")
@@ -136,7 +136,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 		end -= m
 		size += m + int(tableSize)
 
-		// data size
+		// Data size
 		dataSize, m := decodeSize(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode list: invalid data size")
@@ -154,7 +154,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 	case TypeMessage, TypeBigMessage:
 		size := n
 
-		// table size
+		// Table size
 		tableSize, m := decodeSize(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode message: invalid table size")
@@ -162,7 +162,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 		end -= m
 		size += m + int(tableSize)
 
-		// data size
+		// Data size
 		dataSize, m := decodeSize(b[:end])
 		if m < 0 {
 			return 0, 0, fmt.Errorf("decode message: invalid data size")
@@ -180,7 +180,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 	case TypeStruct:
 		size := n
 
-		// data size
+		// Data size
 		dataSize, m := decodeSize(b[:end])
 		if n < 0 {
 			return 0, 0, errors.New("decode struct: invalid data size")

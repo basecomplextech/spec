@@ -62,7 +62,7 @@ func (w *writer) parseStruct(def *compiler.Definition) error {
 	`)
 	w.line()
 
-	w.line(`// decode in reverse order`)
+	w.line(`// Decode in reverse order`)
 	w.line()
 
 	fields := def.Struct.Fields

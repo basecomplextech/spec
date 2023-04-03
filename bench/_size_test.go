@@ -192,7 +192,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	case TypeList, TypeBigList:
 		off := len(b) - 1
 
-		// read table size
+		// Read table size
 		tableSize, m := decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid list table size")
@@ -201,20 +201,20 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.sizes += m
 		d.tables += int(tableSize)
 
-		// read data size
+		// Read data size
 		_, m = decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid list data size")
 		}
 		d.sizes += m
 
-		// read list
+		// Read list
 		list, _, err := DecodeList(b, ParseValue)
 		if err != nil {
 			return err
 		}
 
-		// read elements
+		// Read elements
 		for i := 0; i < list.Len(); i++ {
 			elem := list.GetBytes(i)
 			if err := _computeSizeDistribution(elem, d); err != nil {
@@ -225,7 +225,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 	case TypeMessage, TypeBigMessage:
 		off := len(b) - 1
 
-		// read table size
+		// Read table size
 		tableSize, m := decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid message table size")
@@ -234,20 +234,20 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 		d.sizes += m
 		d.tables += int(tableSize)
 
-		// read data size
+		// Read data size
 		_, m = decodeSize(b[:off])
 		if m < 0 {
 			return fmt.Errorf("invalid message data size")
 		}
 		d.sizes += m
 
-		// read message meta
+		// Read message meta
 		msg, _, err := DecodeMessage(b)
 		if err != nil {
 			return err
 		}
 
-		// read fields
+		// Read fields
 		for i := 0; i < msg.Len(); i++ {
 			field := msg.FieldByIndex(i)
 			if err := _computeSizeDistribution(field, d); err != nil {

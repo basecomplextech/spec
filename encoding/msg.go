@@ -114,17 +114,17 @@ func (t messageTable) offset_big(tag uint16) int {
 	// Binary search table
 	left, right := 0, (n - 1)
 	for left <= right {
-		// middle
+		// Middle
 		middle := int(uint(left+right) >> 1) // avoid overflow
 
-		// offset
+		// Offset
 		off := middle * size
 		b := t[off : off+size]
 
-		// current tag
+		// Current tag
 		cur := binary.BigEndian.Uint16(b)
 
-		// check current
+		// Check current
 		switch {
 		case cur < tag:
 			left = middle + 1
@@ -133,7 +133,7 @@ func (t messageTable) offset_big(tag uint16) int {
 			right = middle - 1
 
 		case cur == tag:
-			// read offset after tag
+			// Read offset after tag
 			return int(binary.BigEndian.Uint32(b[2:]))
 		}
 	}
@@ -148,17 +148,17 @@ func (t messageTable) offset_small(tag uint16) int {
 	// Binary search table
 	left, right := 0, (n - 1)
 	for left <= right {
-		// middle
+		// Middle
 		middle := int(uint(left+right) >> 1) // avoid overflow
 
-		// offset
+		// Offset
 		off := middle * size
 		b := t[off : off+size]
 
-		// current tag
+		// Current tag
 		cur := uint16(b[0])
 
-		// check current
+		// Check current
 		switch {
 		case cur < tag:
 			left = middle + 1
@@ -167,7 +167,7 @@ func (t messageTable) offset_small(tag uint16) int {
 			right = middle - 1
 
 		case cur == tag:
-			// read offset after tag
+			// Read offset after tag
 			return int(binary.BigEndian.Uint16(b[1:]))
 		}
 	}

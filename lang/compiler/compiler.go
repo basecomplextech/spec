@@ -99,7 +99,7 @@ func (c *compiler) getPackage(id string) (*Package, error) {
 			return nil, err
 		}
 
-		// found package
+		// Found package
 		return c.compilePackage(id, p)
 	}
 
@@ -209,7 +209,7 @@ func (c *compiler) _resolveType(file *File, type_ *Type) error {
 
 	case KindReference:
 		if type_.ImportName == "" {
-			// local type
+			// Local type
 
 			pkg := file.Package
 			def, ok := pkg.lookupType(type_.Name)
@@ -219,7 +219,7 @@ func (c *compiler) _resolveType(file *File, type_ *Type) error {
 			type_.resolve(def, nil)
 
 		} else {
-			// imported type
+			// Imported type
 
 			imp, ok := file.lookupImport(type_.ImportName)
 			if !ok {

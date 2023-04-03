@@ -37,7 +37,7 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 		offset := buffer.offset()
 		offsets = append(offsets, offset)
 
-		// push
+		// Push
 		for _, elem := range elements {
 			buffer.push(elem)
 		}
@@ -47,11 +47,11 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 	for i := len(offsets) - 1; i >= 0; i-- {
 		offset := offsets[i]
 
-		// pop table
+		// Pop table
 		ff := buffer.pop(offset)
 		elements := matrix[i]
 
-		// check table
+		// Check table
 		require.Equal(t, elements, ff)
 	}
 }
@@ -77,16 +77,16 @@ func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t 
 		offset := buffer.offset()
 		offsets = append(offsets, offset)
 
-		// copy
+		// Copy
 		ff := make([]encoding.MessageField, len(fields))
 		copy(ff, fields)
 
-		// shuffle
+		// Shuffle
 		rand.Shuffle(len(ff), func(i, j int) {
 			ff[j], ff[i] = ff[i], ff[j]
 		})
 
-		// insert
+		// Insert
 		for _, f := range ff {
 			buffer.insert(offset, f)
 		}
@@ -96,11 +96,11 @@ func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t 
 	for i := len(offsets) - 1; i >= 0; i-- {
 		offset := offsets[i]
 
-		// pop table
+		// Pop table
 		ff := buffer.pop(offset)
 		fields := matrix[i]
 
-		// check table
+		// Check table
 		require.Equal(t, fields, ff)
 	}
 }

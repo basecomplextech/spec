@@ -45,7 +45,7 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 
 	switch t {
 	case TypeTrue, TypeFalse:
-		// pass
+		// Pass
 
 	case TypeByte:
 		_, n, err = encoding.DecodeByte(b)
