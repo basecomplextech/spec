@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/complex1tech/baselibrary/basic"
+	"github.com/complex1tech/baselibrary/ref"
 	"github.com/complex1tech/spec/encoding"
 )
 
@@ -275,27 +276,27 @@ func (v Value) Bin256Err() (basic.Bin256, error) {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() basic.BytesView {
+func (v Value) Bytes() ref.Unowned[[]byte] {
 	p, _, _ := encoding.DecodeBytes(v)
-	return p
+	return ref.Unown(p)
 }
 
 // BytesErr decodes and returns bytes or an error.
-func (v Value) BytesErr() (basic.BytesView, error) {
+func (v Value) BytesErr() (ref.Unowned[[]byte], error) {
 	p, _, err := encoding.DecodeBytes(v)
-	return p, err
+	return ref.Unown(p), err
 }
 
 // String decodes and returns a string or an empty string.
-func (v Value) String() basic.StringView {
+func (v Value) String() ref.Unowned[string] {
 	p, _, _ := encoding.DecodeString(v)
-	return p
+	return ref.Unown(p)
 }
 
 // StringErr decodes and returns a string or an error.
-func (v Value) StringErr() (basic.StringView, error) {
+func (v Value) StringErr() (ref.Unowned[string], error) {
 	p, _, err := encoding.DecodeString(v)
-	return p, err
+	return ref.Unown(p), err
 }
 
 // List/message

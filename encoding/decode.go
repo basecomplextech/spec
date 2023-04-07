@@ -9,6 +9,7 @@ import (
 
 	"github.com/complex1tech/baselibrary/basic"
 	"github.com/complex1tech/baselibrary/encoding/compactint"
+	"github.com/complex1tech/baselibrary/ref"
 )
 
 // DecodeType decodes a value type.
@@ -558,7 +559,7 @@ func decodeFloat64(b []byte) (float64, int) {
 
 // Bytes
 
-func DecodeBytes(b []byte) (_ basic.BytesView, size int, err error) {
+func DecodeBytes(b []byte) (_ []byte, size int, err error) {
 	// Type
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -592,6 +593,14 @@ func DecodeBytes(b []byte) (_ basic.BytesView, size int, err error) {
 	return data, size, nil
 }
 
+func DecodeBytesRef(b []byte) (_ ref.Unowned[[]byte], size int, err error) {
+	v, size, err := DecodeBytes(b)
+	if err != nil {
+		return
+	}
+	return ref.Unown(v), size, nil
+}
+
 func decodeBytesData(b []byte, size uint32) ([]byte, error) {
 	off := len(b) - int(size)
 	if off < 0 {
@@ -602,7 +611,7 @@ func decodeBytesData(b []byte, size uint32) ([]byte, error) {
 
 // String
 
-func DecodeString(b []byte) (_ basic.StringView, size int, err error) {
+func DecodeString(b []byte) (_ string, size int, err error) {
 	// Type
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -633,7 +642,7 @@ func DecodeString(b []byte) (_ basic.StringView, size int, err error) {
 	}
 
 	size += int(dataSize)
-	return basic.StringView(data), size, nil
+	return data, size, nil
 }
 
 func decodeStringData(b []byte, size uint32) (string, error) {
@@ -645,6 +654,14 @@ func decodeStringData(b []byte, size uint32) (string, error) {
 	p := b[off:]
 	s := *(*string)(unsafe.Pointer(&p))
 	return s, nil
+}
+
+func DecodeStringRef(b []byte) (_ ref.Unowned[string], size int, err error) {
+	v, size, err := DecodeString(b)
+	if err != nil {
+		return
+	}
+	return ref.Unown(v), size, nil
 }
 
 // Struct

@@ -72,7 +72,7 @@ func (w *writer) messageFields(def *compiler.Definition) error {
 
 func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageField) error {
 	fieldName := messageFieldName(field)
-	typeName := typeName(field.Type)
+	typeName := typeRefName(field.Type)
 
 	tag := field.Tag
 	kind := field.Type.Kind
@@ -125,7 +125,7 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		w.line()
 
 	case compiler.KindList:
-		decodeFunc := typeDecodeFunc(field.Type.Element)
+		decodeFunc := typeDecodeRefFunc(field.Type.Element)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
 		w.writef(`return spec.NewTypedList(m.msg.FieldBytes(%d), %v)`, tag, decodeFunc)

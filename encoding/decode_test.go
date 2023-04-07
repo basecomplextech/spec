@@ -400,7 +400,7 @@ func TestDecodeBytes__should_decode_bytes(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, basic.BytesView(v), v1)
+	assert.Equal(t, v, v1)
 
 	typ, size, err := DecodeTypeSize(p)
 	if err != nil {
@@ -427,7 +427,7 @@ func TestDecodeString__should_decode_string(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, n, b.Len())
-	assert.Equal(t, basic.StringView(v), v1)
+	assert.Equal(t, v, v1)
 
 	typ, size, err := DecodeTypeSize(p)
 	if err != nil {

@@ -43,9 +43,9 @@ func typeName(typ *compiler.Type) string {
 		return "basic.Bin256"
 
 	case compiler.KindBytes:
-		return "basic.BytesView"
+		return "[]byte"
 	case compiler.KindString:
-		return "basic.StringView"
+		return "string"
 	case compiler.KindAnyMessage:
 		return "spec.Message"
 
@@ -63,6 +63,23 @@ func typeName(typ *compiler.Type) string {
 	}
 
 	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
+}
+
+func typeRefName(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindBytes:
+		return "ref.Unowned[[]byte]"
+	case compiler.KindString:
+		return "ref.Unowned[string]"
+
+	case compiler.KindList:
+		elem := typeRefName(typ.Element)
+		return fmt.Sprintf("spec.TypedList[%v]", elem)
+	}
+
+	return typeName(typ)
 }
 
 func inTypeName(typ *compiler.Type) string {
@@ -151,6 +168,23 @@ func typeDecodeFunc(typ *compiler.Type) string {
 	}
 
 	return ""
+}
+
+func typeDecodeRefFunc(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindBytes:
+		return "encoding.DecodeBytesRef"
+	case compiler.KindString:
+		return "encoding.DecodeStringRef"
+
+	case compiler.KindList:
+		elem := typeRefName(typ.Element)
+		return fmt.Sprintf("spec.ParseTypedList[%v]", elem)
+	}
+
+	return typeDecodeFunc(typ)
 }
 
 func typeWriteFunc(typ *compiler.Type) string {
