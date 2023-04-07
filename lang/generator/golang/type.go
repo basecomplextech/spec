@@ -36,11 +36,11 @@ func typeName(typ *compiler.Type) string {
 		return "float64"
 
 	case compiler.KindBin64:
-		return "basic.Bin64"
+		return "bin.Bin64"
 	case compiler.KindBin128:
-		return "basic.Bin128"
+		return "bin.Bin128"
 	case compiler.KindBin256:
-		return "basic.Bin256"
+		return "bin.Bin256"
 
 	case compiler.KindBytes:
 		return "[]byte"

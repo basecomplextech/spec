@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/complex1tech/baselibrary/basic"
+	"github.com/complex1tech/baselibrary/bin"
 	"github.com/complex1tech/baselibrary/buffer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -322,7 +322,7 @@ func TestDecodeFloat64__should_decode_float64_from_float32(t *testing.T) {
 
 func TestDecodeBin64__should_decode_bin64(t *testing.T) {
 	b := buffer.New()
-	v := basic.RandomBin64()
+	v := bin.Random64()
 	EncodeBin64(b, v)
 	p := b.Bytes()
 
@@ -343,7 +343,7 @@ func TestDecodeBin64__should_decode_bin64(t *testing.T) {
 
 func TestDecodeBin128__should_decode_bin128(t *testing.T) {
 	b := buffer.New()
-	v := basic.RandomBin128()
+	v := bin.Random128()
 	EncodeBin128(b, v)
 	p := b.Bytes()
 
@@ -364,7 +364,7 @@ func TestDecodeBin128__should_decode_bin128(t *testing.T) {
 
 func TestDecodeBin256__should_decode_bin256(t *testing.T) {
 	b := buffer.New()
-	v := basic.RandomBin256()
+	v := bin.Random256()
 	EncodeBin256(b, v)
 	p := b.Bytes()
 

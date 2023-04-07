@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/complex1tech/baselibrary/basic"
+	"github.com/complex1tech/baselibrary/bin"
 	"github.com/complex1tech/baselibrary/ref"
 	"github.com/complex1tech/spec/encoding"
 )
@@ -238,37 +238,37 @@ func (v Value) Float64Err() (float64, error) {
 // Bin
 
 // Bin64 decodes and returns a bin64 or a zero value.
-func (v Value) Bin64() basic.Bin64 {
+func (v Value) Bin64() bin.Bin64 {
 	p, _, _ := encoding.DecodeBin64(v)
 	return p
 }
 
 // Bin64Err decodes and returns bin96 or an error.
-func (v Value) Bin64Err() (basic.Bin64, error) {
+func (v Value) Bin64Err() (bin.Bin64, error) {
 	p, _, err := encoding.DecodeBin64(v)
 	return p, err
 }
 
 // Bin128 decodes and returns a bin128 or a zero value.
-func (v Value) Bin128() basic.Bin128 {
+func (v Value) Bin128() bin.Bin128 {
 	p, _, _ := encoding.DecodeBin128(v)
 	return p
 }
 
 // Bin128Err decodes and returns a bin128 or an error.
-func (v Value) Bin128Err() (basic.Bin128, error) {
+func (v Value) Bin128Err() (bin.Bin128, error) {
 	p, _, err := encoding.DecodeBin128(v)
 	return p, err
 }
 
 // Bin256 decodes and returns a bin256 or a zero value.
-func (v Value) Bin256() basic.Bin256 {
+func (v Value) Bin256() bin.Bin256 {
 	p, _, _ := encoding.DecodeBin256(v)
 	return p
 }
 
 // Bin256Err decodes and returns a bin256 or an error.
-func (v Value) Bin256Err() (basic.Bin256, error) {
+func (v Value) Bin256Err() (bin.Bin256, error) {
 	p, _, err := encoding.DecodeBin256(v)
 	return p, err
 }

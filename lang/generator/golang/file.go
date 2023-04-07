@@ -67,7 +67,7 @@ func (w *writer) file(file *compiler.File) error {
 
 	// Imports
 	w.line("import (")
-	w.line(`"github.com/complex1tech/baselibrary/basic"`)
+	w.line(`"github.com/complex1tech/baselibrary/bin"`)
 	w.line(`"github.com/complex1tech/baselibrary/buffer"`)
 	w.line(`"github.com/complex1tech/baselibrary/ref"`)
 	w.line(`"github.com/complex1tech/spec"`)
@@ -82,7 +82,7 @@ func (w *writer) file(file *compiler.File) error {
 
 	// Empty values for imports
 	w.line(`var (`)
-	w.line(`_ basic.Bin128`)
+	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.Type`)
 	w.line(`_ ref.Ref`)

@@ -7,7 +7,7 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/complex1tech/baselibrary/basic"
+	"github.com/complex1tech/baselibrary/bin"
 	"github.com/complex1tech/baselibrary/encoding/compactint"
 	"github.com/complex1tech/baselibrary/ref"
 )
@@ -411,7 +411,7 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 
 // Bin64/128/256
 
-func DecodeBin64(b []byte) (_ basic.Bin64, size int, err error) {
+func DecodeBin64(b []byte) (_ bin.Bin64, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin64: invalid data")
@@ -431,7 +431,7 @@ func DecodeBin64(b []byte) (_ basic.Bin64, size int, err error) {
 		return
 	}
 
-	v, err := basic.ParseBin64(b[start:end])
+	v, err := bin.Parse64(b[start:end])
 	if err != nil {
 		return
 	}
@@ -440,7 +440,7 @@ func DecodeBin64(b []byte) (_ basic.Bin64, size int, err error) {
 	return v, size, nil
 }
 
-func DecodeBin128(b []byte) (_ basic.Bin128, size int, err error) {
+func DecodeBin128(b []byte) (_ bin.Bin128, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin128: invalid data")
@@ -460,7 +460,7 @@ func DecodeBin128(b []byte) (_ basic.Bin128, size int, err error) {
 		return
 	}
 
-	v, err := basic.ParseBin128(b[start:end])
+	v, err := bin.Parse128(b[start:end])
 	if err != nil {
 		return
 	}
@@ -469,7 +469,7 @@ func DecodeBin128(b []byte) (_ basic.Bin128, size int, err error) {
 	return v, size, nil
 }
 
-func DecodeBin256(b []byte) (_ basic.Bin256, size int, err error) {
+func DecodeBin256(b []byte) (_ bin.Bin256, size int, err error) {
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin256: invalid data")
@@ -489,7 +489,7 @@ func DecodeBin256(b []byte) (_ basic.Bin256, size int, err error) {
 		return
 	}
 
-	v, err := basic.ParseBin256(b[start:end])
+	v, err := bin.Parse256(b[start:end])
 	if err != nil {
 		return
 	}

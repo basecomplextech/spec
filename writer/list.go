@@ -1,8 +1,6 @@
 package writer
 
-import (
-	"github.com/complex1tech/baselibrary/basic"
-)
+import "github.com/complex1tech/baselibrary/bin"
 
 // ListWriter writes a list of elements.
 type ListWriter struct {
@@ -119,21 +117,21 @@ func (l ListWriter) Float64(v float64) error {
 
 // Bin
 
-func (l ListWriter) Bin64(v basic.Bin64) error {
+func (l ListWriter) Bin64(v bin.Bin64) error {
 	if err := l.w.Value().Bin64(v); err != nil {
 		return err
 	}
 	return l.w.element()
 }
 
-func (l ListWriter) Bin128(v basic.Bin128) error {
+func (l ListWriter) Bin128(v bin.Bin128) error {
 	if err := l.w.Value().Bin128(v); err != nil {
 		return err
 	}
 	return l.w.element()
 }
 
-func (l ListWriter) Bin256(v basic.Bin256) error {
+func (l ListWriter) Bin256(v bin.Bin256) error {
 	if err := l.w.Value().Bin256(v); err != nil {
 		return err
 	}
