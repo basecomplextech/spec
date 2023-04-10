@@ -593,12 +593,12 @@ func DecodeBytes(b []byte) (_ []byte, size int, err error) {
 	return data, size, nil
 }
 
-func DecodeBytesRef(b []byte) (_ ref.Unowned[[]byte], size int, err error) {
+func DecodeBytesRef(b []byte) (_ ref.Ext[[]byte], size int, err error) {
 	v, size, err := DecodeBytes(b)
 	if err != nil {
 		return
 	}
-	return ref.Unown(v), size, nil
+	return ref.WrapExt(v), size, nil
 }
 
 func decodeBytesData(b []byte, size uint32) ([]byte, error) {
@@ -656,12 +656,12 @@ func decodeStringData(b []byte, size uint32) (string, error) {
 	return s, nil
 }
 
-func DecodeStringRef(b []byte) (_ ref.Unowned[string], size int, err error) {
+func DecodeStringRef(b []byte) (_ ref.Ext[string], size int, err error) {
 	v, size, err := DecodeString(b)
 	if err != nil {
 		return
 	}
-	return ref.Unown(v), size, nil
+	return ref.WrapExt(v), size, nil
 }
 
 // Struct

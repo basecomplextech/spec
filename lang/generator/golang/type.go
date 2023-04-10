@@ -70,9 +70,9 @@ func typeRefName(typ *compiler.Type) string {
 
 	switch kind {
 	case compiler.KindBytes:
-		return "ref.Unowned[[]byte]"
+		return "ref.Ext[[]byte]"
 	case compiler.KindString:
-		return "ref.Unowned[string]"
+		return "ref.Ext[string]"
 
 	case compiler.KindList:
 		elem := typeRefName(typ.Element)

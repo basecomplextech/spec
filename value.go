@@ -276,27 +276,27 @@ func (v Value) Bin256Err() (bin.Bin256, error) {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() ref.Unowned[[]byte] {
+func (v Value) Bytes() ref.Ext[[]byte] {
 	p, _, _ := encoding.DecodeBytes(v)
-	return ref.Unown(p)
+	return ref.WrapExt(p)
 }
 
 // BytesErr decodes and returns bytes or an error.
-func (v Value) BytesErr() (ref.Unowned[[]byte], error) {
+func (v Value) BytesErr() (ref.Ext[[]byte], error) {
 	p, _, err := encoding.DecodeBytes(v)
-	return ref.Unown(p), err
+	return ref.WrapExt(p), err
 }
 
 // String decodes and returns a string or an empty string.
-func (v Value) String() ref.Unowned[string] {
+func (v Value) String() ref.Ext[string] {
 	p, _, _ := encoding.DecodeString(v)
-	return ref.Unown(p)
+	return ref.WrapExt(p)
 }
 
 // StringErr decodes and returns a string or an error.
-func (v Value) StringErr() (ref.Unowned[string], error) {
+func (v Value) StringErr() (ref.Ext[string], error) {
 	p, _, err := encoding.DecodeString(v)
-	return ref.Unown(p), err
+	return ref.WrapExt(p), err
 }
 
 // List/message
