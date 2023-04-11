@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/baselibrary/ref"
+	"github.com/complex1tech/baselibrary/mod"
 	"github.com/complex1tech/spec/encoding"
 )
 
@@ -276,27 +276,27 @@ func (v Value) Bin256Err() (bin.Bin256, error) {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() ref.Ext[[]byte] {
+func (v Value) Bytes() mod.Ext[[]byte] {
 	p, _, _ := encoding.DecodeBytes(v)
-	return ref.WrapExt(p)
+	return mod.NewExt(p)
 }
 
 // BytesErr decodes and returns bytes or an error.
-func (v Value) BytesErr() (ref.Ext[[]byte], error) {
+func (v Value) BytesErr() (mod.Ext[[]byte], error) {
 	p, _, err := encoding.DecodeBytes(v)
-	return ref.WrapExt(p), err
+	return mod.NewExt(p), err
 }
 
 // String decodes and returns a string or an empty string.
-func (v Value) String() ref.Ext[string] {
+func (v Value) String() mod.Ext[string] {
 	p, _, _ := encoding.DecodeString(v)
-	return ref.WrapExt(p)
+	return mod.NewExt(p)
 }
 
 // StringErr decodes and returns a string or an error.
-func (v Value) StringErr() (ref.Ext[string], error) {
+func (v Value) StringErr() (mod.Ext[string], error) {
 	p, _, err := encoding.DecodeString(v)
-	return ref.WrapExt(p), err
+	return mod.NewExt(p), err
 }
 
 // List/message

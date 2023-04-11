@@ -9,7 +9,7 @@ import (
 
 	"github.com/complex1tech/baselibrary/bin"
 	"github.com/complex1tech/baselibrary/encoding/compactint"
-	"github.com/complex1tech/baselibrary/ref"
+	"github.com/complex1tech/baselibrary/mod"
 )
 
 // DecodeType decodes a value type.
@@ -593,12 +593,12 @@ func DecodeBytes(b []byte) (_ []byte, size int, err error) {
 	return data, size, nil
 }
 
-func DecodeBytesRef(b []byte) (_ ref.Ext[[]byte], size int, err error) {
+func DecodeBytesExt(b []byte) (_ mod.Ext[[]byte], size int, err error) {
 	v, size, err := DecodeBytes(b)
 	if err != nil {
 		return
 	}
-	return ref.WrapExt(v), size, nil
+	return mod.NewExt(v), size, nil
 }
 
 func decodeBytesData(b []byte, size uint32) ([]byte, error) {
@@ -656,12 +656,12 @@ func decodeStringData(b []byte, size uint32) (string, error) {
 	return s, nil
 }
 
-func DecodeStringRef(b []byte) (_ ref.Ext[string], size int, err error) {
+func DecodeStringRef(b []byte) (_ mod.Ext[string], size int, err error) {
 	v, size, err := DecodeString(b)
 	if err != nil {
 		return
 	}
-	return ref.WrapExt(v), size, nil
+	return mod.NewExt(v), size, nil
 }
 
 // Struct
