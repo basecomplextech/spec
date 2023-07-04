@@ -1,6 +1,9 @@
 package spec
 
-import "github.com/complex1tech/spec/encoding"
+import (
+	"github.com/complex1tech/spec/encoding"
+	"github.com/complex1tech/spec/types"
+)
 
 type Type = encoding.Type
 
@@ -36,4 +39,14 @@ const (
 	TypeBigMessage = encoding.TypeBigMessage
 
 	TypeStruct = encoding.TypeStruct
+)
+
+type (
+	// Bytes is a spec byte slice backed by a buffer.
+	// Clone it if you need to keep it around.
+	Bytes = types.Bytes
+
+	// String is a spec string backed by a buffer.
+	// Clone it if you need to keep it around.
+	String = types.String
 )

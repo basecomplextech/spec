@@ -24,7 +24,7 @@ func TestValueWriter_End__should_return_root_value_bytes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "hello, world", s)
+	assert.Equal(t, "hello, world", s.Unwrap())
 }
 
 func TestValueWriter_End__should_return_error_when_not_root_value(t *testing.T) {

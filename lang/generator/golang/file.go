@@ -69,7 +69,6 @@ func (w *writer) file(file *compiler.File) error {
 	w.line("import (")
 	w.line(`"github.com/complex1tech/baselibrary/bin"`)
 	w.line(`"github.com/complex1tech/baselibrary/buffer"`)
-	w.line(`"github.com/complex1tech/baselibrary/mod"`)
 	w.line(`"github.com/complex1tech/spec"`)
 	w.line(`"github.com/complex1tech/spec/encoding"`)
 
@@ -85,7 +84,6 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.Type`)
-	w.line(`_ mod.Ext[any]`)
 	w.line(`_ spec.Type`)
 	w.line(`)`)
 

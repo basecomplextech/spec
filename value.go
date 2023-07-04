@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/baselibrary/mod"
 	"github.com/complex1tech/spec/encoding"
 )
 
@@ -276,27 +275,27 @@ func (v Value) Bin256Err() (bin.Bin256, error) {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() mod.Ext[[]byte] {
+func (v Value) Bytes() Bytes {
 	p, _, _ := encoding.DecodeBytes(v)
-	return mod.NewExt(p)
+	return p
 }
 
 // BytesErr decodes and returns bytes or an error.
-func (v Value) BytesErr() (mod.Ext[[]byte], error) {
+func (v Value) BytesErr() (Bytes, error) {
 	p, _, err := encoding.DecodeBytes(v)
-	return mod.NewExt(p), err
+	return p, err
 }
 
 // String decodes and returns a string or an empty string.
-func (v Value) String() mod.Ext[string] {
+func (v Value) String() String {
 	p, _, _ := encoding.DecodeString(v)
-	return mod.NewExt(p)
+	return String(p)
 }
 
 // StringErr decodes and returns a string or an error.
-func (v Value) StringErr() (mod.Ext[string], error) {
+func (v Value) StringErr() (String, error) {
 	p, _, err := encoding.DecodeString(v)
-	return mod.NewExt(p), err
+	return String(p), err
 }
 
 // List/message

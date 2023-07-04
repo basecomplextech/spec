@@ -70,9 +70,9 @@ func typeRefName(typ *compiler.Type) string {
 
 	switch kind {
 	case compiler.KindBytes:
-		return "mod.Ext[[]byte]"
+		return "spec.Bytes"
 	case compiler.KindString:
-		return "mod.Ext[string]"
+		return "spec.String"
 
 	case compiler.KindList:
 		elem := typeRefName(typ.Element)
@@ -175,9 +175,9 @@ func typeDecodeRefFunc(typ *compiler.Type) string {
 
 	switch kind {
 	case compiler.KindBytes:
-		return "encoding.DecodeBytesExt"
+		return "encoding.DecodeBytes"
 	case compiler.KindString:
-		return "encoding.DecodeStringRef"
+		return "encoding.DecodeString"
 
 	case compiler.KindList:
 		elem := typeRefName(typ.Element)
