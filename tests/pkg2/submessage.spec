@@ -3,7 +3,7 @@ import (
 )
 
 options (
-    go_package="github.com/complex1tech/spec/tests/pkg2"
+    go_package="github.com/basecomplextech/spec/tests/pkg2"
 )
 
 message Submessage {
