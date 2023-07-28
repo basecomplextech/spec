@@ -1,9 +1,9 @@
 package pkg1
 
 import (
-	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/spec/tests/pkg2"
-	"github.com/complex1tech/spec/tests/pkg3/pkg3a"
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/spec/tests/pkg2"
+	"github.com/basecomplextech/spec/tests/pkg3/pkg3a"
 )
 
 type Object struct {

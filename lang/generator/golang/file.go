@@ -6,7 +6,7 @@ import (
 	"go/format"
 	"strings"
 
-	"github.com/complex1tech/spec/lang/compiler"
+	"github.com/basecomplextech/spec/lang/compiler"
 )
 
 const (
@@ -67,10 +67,10 @@ func (w *writer) file(file *compiler.File) error {
 
 	// Imports
 	w.line("import (")
-	w.line(`"github.com/complex1tech/baselibrary/bin"`)
-	w.line(`"github.com/complex1tech/baselibrary/buffer"`)
-	w.line(`"github.com/complex1tech/spec"`)
-	w.line(`"github.com/complex1tech/spec/encoding"`)
+	w.line(`"github.com/basecomplextech/baselibrary/bin"`)
+	w.line(`"github.com/basecomplextech/baselibrary/buffer"`)
+	w.line(`"github.com/basecomplextech/spec"`)
+	w.line(`"github.com/basecomplextech/spec/encoding"`)
 
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)

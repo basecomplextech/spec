@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/ast"
+	"github.com/basecomplextech/spec/lang/ast"
 )
 
 var builtin = map[Kind]*Type{

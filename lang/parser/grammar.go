@@ -6,7 +6,7 @@ import __yyfmt__ "fmt"
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/ast"
+	"github.com/basecomplextech/spec/lang/ast"
 )
 
 type yySymType struct {

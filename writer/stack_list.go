@@ -1,6 +1,6 @@
 package writer
 
-import "github.com/complex1tech/spec/encoding"
+import "github.com/basecomplextech/spec/encoding"
 
 // listStack is a stack for encoding nested list tables.
 //

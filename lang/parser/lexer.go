@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/scanner"
 
-	"github.com/complex1tech/spec/lang/ast"
+	"github.com/basecomplextech/spec/lang/ast"
 )
 
 const EOF = 0

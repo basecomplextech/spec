@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/complex1tech/spec/lang/ast"
+	"github.com/basecomplextech/spec/lang/ast"
 )
 
 type File struct {

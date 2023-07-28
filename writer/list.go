@@ -1,6 +1,6 @@
 package writer
 
-import "github.com/complex1tech/baselibrary/bin"
+import "github.com/basecomplextech/baselibrary/bin"
 
 // ListWriter writes a list of elements.
 type ListWriter struct {

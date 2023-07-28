@@ -4,8 +4,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/complex1tech/baselibrary/buffer"
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/baselibrary/buffer"
+	"github.com/basecomplextech/spec/encoding"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

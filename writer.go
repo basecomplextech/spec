@@ -1,8 +1,8 @@
 package spec
 
 import (
-	"github.com/complex1tech/baselibrary/buffer"
-	"github.com/complex1tech/spec/writer"
+	"github.com/basecomplextech/baselibrary/buffer"
+	"github.com/basecomplextech/spec/writer"
 )
 
 type (

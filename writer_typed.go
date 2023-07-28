@@ -1,7 +1,7 @@
 package spec
 
 import (
-	"github.com/complex1tech/spec/writer"
+	"github.com/basecomplextech/spec/writer"
 )
 
 // MessageListWriter writes a list of messages.

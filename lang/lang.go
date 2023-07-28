@@ -1,8 +1,8 @@
 package lang
 
 import (
-	"github.com/complex1tech/spec/lang/compiler"
-	"github.com/complex1tech/spec/lang/generator"
+	"github.com/basecomplextech/spec/lang/compiler"
+	"github.com/basecomplextech/spec/lang/generator"
 )
 
 type Spec struct{}

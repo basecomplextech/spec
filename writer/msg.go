@@ -1,6 +1,6 @@
 package writer
 
-import "github.com/complex1tech/baselibrary/bin"
+import "github.com/basecomplextech/baselibrary/bin"
 
 // MessageWriter writes a message.
 type MessageWriter struct {

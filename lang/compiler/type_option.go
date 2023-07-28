@@ -1,6 +1,6 @@
 package compiler
 
-import "github.com/complex1tech/spec/lang/ast"
+import "github.com/basecomplextech/spec/lang/ast"
 
 type Option struct {
 	Name  string

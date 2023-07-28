@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/spec/encoding"
 )
 
 // List is a raw list of elements.

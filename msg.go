@@ -1,7 +1,7 @@
 package spec
 
 import (
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/spec/encoding"
 )
 
 // Message is a raw message.

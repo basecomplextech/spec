@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/baselibrary/buffer"
-	"github.com/complex1tech/baselibrary/encoding/compactint"
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/baselibrary/buffer"
+	"github.com/basecomplextech/baselibrary/encoding/compactint"
 )
 
 func EncodeBool(b buffer.Buffer, v bool) (int, error) {

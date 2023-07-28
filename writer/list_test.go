@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/spec/encoding"
 	"github.com/stretchr/testify/assert"
 )
 

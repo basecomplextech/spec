@@ -3,8 +3,8 @@ package writer
 import (
 	"sync"
 
-	"github.com/complex1tech/baselibrary/buffer"
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/baselibrary/buffer"
+	"github.com/basecomplextech/spec/encoding"
 )
 
 // writerState is a big pooled struct which holds an encoding state.

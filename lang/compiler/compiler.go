@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/complex1tech/spec/lang/parser"
+	"github.com/basecomplextech/spec/lang/parser"
 )
 
 type Compiler interface {

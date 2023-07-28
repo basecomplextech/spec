@@ -7,9 +7,9 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/baselibrary/encoding/compactint"
-	"github.com/complex1tech/spec/types"
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/baselibrary/encoding/compactint"
+	"github.com/basecomplextech/spec/types"
 )
 
 // DecodeType decodes a value type.

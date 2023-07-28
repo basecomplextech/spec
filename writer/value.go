@@ -1,8 +1,8 @@
 package writer
 
 import (
-	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/spec/encoding"
 )
 
 // ValueWriter writes spec values.

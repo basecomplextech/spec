@@ -1,6 +1,6 @@
 package writer
 
-import "github.com/complex1tech/baselibrary/buffer"
+import "github.com/basecomplextech/baselibrary/buffer"
 
 // WriteFunc specifies a generic function to write a value directly into a buffer.
 type WriteFunc[T any] func(b buffer.Buffer, value T) (int, error)

@@ -1,9 +1,9 @@
-module github.com/complex1tech/spec
+module github.com/basecomplextech/spec
 
-go 1.18
+go 1.20
 
 require (
-	github.com/complex1tech/baselibrary v0.0.0-20230402085015-25cb4530452f
+	github.com/basecomplextech/baselibrary v0.0.0-20230728082627-410508a32a8e
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 )

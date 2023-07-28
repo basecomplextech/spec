@@ -3,8 +3,8 @@ package spec
 import (
 	"fmt"
 
-	"github.com/complex1tech/baselibrary/bin"
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/spec/encoding"
 )
 
 // Value is a raw value.

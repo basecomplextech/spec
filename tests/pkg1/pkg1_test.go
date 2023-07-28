@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/complex1tech/baselibrary/bin"
+	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/stretchr/testify/assert"
 )
 

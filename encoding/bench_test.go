@@ -3,7 +3,7 @@ package encoding
 import (
 	"testing"
 
-	"github.com/complex1tech/baselibrary/buffer"
+	"github.com/basecomplextech/baselibrary/buffer"
 )
 
 func BenchmarkFieldTable_field(b *testing.B) {

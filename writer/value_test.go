@@ -3,7 +3,7 @@ package writer
 import (
 	"testing"
 
-	"github.com/complex1tech/spec/encoding"
+	"github.com/basecomplextech/spec/encoding"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
