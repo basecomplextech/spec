@@ -82,7 +82,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-var yyExca = [...]int{
+var yyExca = [...]int8{
 	-1, 1,
 	1, -1,
 	-2, 0,
@@ -90,69 +90,72 @@ var yyExca = [...]int{
 
 const yyPrivate = 57344
 
-const yyLast = 63
+const yyLast = 75
 
-var yyAct = [...]int{
-	48, 47, 56, 51, 55, 59, 50, 58, 57, 45,
-	42, 39, 61, 31, 30, 49, 43, 40, 37, 29,
-	21, 46, 20, 32, 19, 27, 8, 6, 36, 25,
-	28, 51, 54, 53, 50, 14, 24, 15, 23, 16,
-	5, 22, 3, 1, 35, 44, 13, 52, 34, 41,
-	12, 33, 38, 11, 7, 10, 60, 4, 17, 26,
-	2, 9, 18,
+var yyAct = [...]int8{
+	56, 55, 43, 45, 46, 47, 48, 53, 45, 46,
+	47, 48, 44, 64, 49, 59, 63, 67, 58, 40,
+	54, 66, 65, 39, 8, 31, 30, 57, 29, 21,
+	37, 20, 32, 19, 6, 27, 36, 62, 52, 25,
+	28, 59, 61, 14, 58, 15, 69, 16, 3, 24,
+	23, 22, 5, 60, 1, 51, 35, 50, 13, 42,
+	34, 41, 12, 33, 68, 38, 11, 7, 10, 4,
+	17, 26, 2, 9, 18,
 }
 
-var yyPact = [...]int{
-	37, -1000, 33, 15, -1000, 14, -1000, 31, -1000, 11,
-	-1000, -1000, -1000, -1000, 32, 29, 27, 16, -1000, -1000,
-	-1000, 19, 4, -1, -2, -1000, -1000, 9, -1000, -1000,
-	-1000, -1000, 17, 2, 1, 0, -1000, -1000, -1000, 7,
-	-1000, -1000, -3, -1000, -1000, -3, 23, 22, -1000, -15,
-	-18, -1000, -9, -10, -12, 25, 3, -1000, -1000, -1000,
-	-1000, -1000,
+var yyPact = [...]int16{
+	43, -1000, 45, 22, -1000, 12, -1000, 39, -1000, 20,
+	-1000, -1000, -1000, -1000, 42, 41, 40, 26, -1000, -1000,
+	-1000, 29, 13, 11, 10, -1000, -1000, 18, -1000, -1000,
+	-1000, -1000, 25, 14, 3, -2, -1000, -1000, -1000, 6,
+	-1000, -1000, 9, -1000, -1000, -1000, -1000, -1000, -1000, -1000,
+	-1000, 9, -1000, -1000, 32, 27, -1000, -3, -7, -1000,
+	5, 4, 0, 35, 37, -1000, -1000, -1000, -1000, -1000,
 }
 
-var yyPgo = [...]int{
-	0, 62, 61, 60, 59, 58, 57, 55, 54, 53,
-	52, 51, 50, 49, 48, 46, 45, 44, 1, 0,
-	43,
+var yyPgo = [...]int8{
+	0, 2, 74, 73, 72, 71, 70, 69, 68, 67,
+	66, 65, 63, 62, 61, 60, 59, 58, 57, 56,
+	55, 1, 0, 54,
 }
 
-var yyR1 = [...]int{
-	0, 20, 1, 1, 2, 2, 3, 3, 6, 6,
-	5, 5, 4, 7, 7, 7, 8, 8, 9, 10,
-	11, 11, 12, 13, 14, 14, 15, 16, 17, 17,
-	18, 18, 19, 19, 19,
+var yyR1 = [...]int8{
+	0, 1, 1, 1, 1, 23, 2, 2, 3, 3,
+	4, 4, 7, 7, 6, 6, 5, 8, 8, 8,
+	9, 9, 10, 11, 12, 12, 13, 14, 16, 16,
+	15, 15, 17, 18, 20, 20, 19, 19, 21, 21,
+	22, 22, 22,
 }
 
-var yyR2 = [...]int{
-	0, 3, 1, 2, 0, 2, 0, 4, 0, 4,
-	0, 2, 3, 1, 1, 1, 0, 2, 5, 4,
-	0, 2, 5, 4, 0, 2, 5, 3, 0, 2,
-	1, 3, 1, 3, 1,
+var yyR2 = [...]int8{
+	0, 1, 1, 1, 1, 3, 1, 2, 0, 2,
+	0, 4, 0, 4, 0, 2, 3, 1, 1, 1,
+	0, 2, 5, 4, 0, 2, 5, 4, 1, 1,
+	0, 2, 5, 3, 1, 1, 0, 2, 1, 3,
+	1, 3, 1,
 }
 
-var yyChk = [...]int{
-	-1000, -20, -3, 5, -6, 7, 12, -8, 12, -2,
-	-7, -9, -12, -15, 4, 6, 8, -5, -1, 13,
-	11, 9, 9, 9, 9, 13, -4, 9, 11, 15,
-	15, 15, 14, -11, -14, -17, 11, 16, -10, 9,
-	16, -13, 9, 16, -16, 9, 14, -18, -19, 18,
-	9, 6, -18, 10, 10, 19, 20, 17, 17, 17,
-	-19, 9,
+var yyChk = [...]int16{
+	-1000, -23, -4, 5, -7, 7, 12, -9, 12, -3,
+	-8, -10, -13, -17, 4, 6, 8, -6, -2, 13,
+	11, 9, 9, 9, 9, 13, -5, 9, 11, 15,
+	15, 15, 14, -12, -15, -19, 11, 16, -11, 9,
+	16, -14, -16, -1, 9, 5, 6, 7, 8, 16,
+	-18, -20, -1, 9, 14, -21, -22, 18, 9, 6,
+	-21, 10, 10, 19, 20, 17, 17, 17, -22, 9,
 }
 
-var yyDef = [...]int{
-	6, -2, 8, 0, 16, 0, 4, 1, 10, 0,
-	17, 13, 14, 15, 0, 0, 0, 0, 5, 7,
-	2, 0, 0, 0, 0, 9, 11, 0, 3, 20,
-	24, 28, 0, 0, 0, 0, 12, 18, 21, 0,
-	22, 25, 0, 26, 29, 0, 0, 0, 30, 0,
-	32, 34, 0, 0, 0, 0, 0, 27, 19, 23,
-	31, 33,
+var yyDef = [...]int8{
+	10, -2, 12, 0, 20, 0, 8, 5, 14, 0,
+	21, 17, 18, 19, 0, 0, 0, 0, 9, 11,
+	6, 0, 0, 0, 0, 13, 15, 0, 7, 24,
+	30, 36, 0, 0, 0, 0, 16, 22, 25, 0,
+	26, 31, 0, 28, 29, 1, 2, 3, 4, 32,
+	37, 0, 34, 35, 0, 0, 38, 0, 40, 42,
+	0, 0, 0, 0, 0, 33, 23, 27, 39, 41,
 }
 
-var yyTok1 = [...]int{
+var yyTok1 = [...]int8{
 	1, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -168,11 +171,11 @@ var yyTok1 = [...]int{
 	3, 3, 3, 15, 3, 16,
 }
 
-var yyTok2 = [...]int{
+var yyTok2 = [...]int8{
 	2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
 }
 
-var yyTok3 = [...]int{
+var yyTok3 = [...]int8{
 	0,
 }
 
@@ -252,9 +255,9 @@ func yyErrorMessage(state, lookAhead int) string {
 	expected := make([]int, 0, 4)
 
 	// Look for shiftable tokens.
-	base := yyPact[state]
+	base := int(yyPact[state])
 	for tok := TOKSTART; tok-1 < len(yyToknames); tok++ {
-		if n := base + tok; n >= 0 && n < yyLast && yyChk[yyAct[n]] == tok {
+		if n := base + tok; n >= 0 && n < yyLast && int(yyChk[int(yyAct[n])]) == tok {
 			if len(expected) == cap(expected) {
 				return res
 			}
@@ -264,13 +267,13 @@ func yyErrorMessage(state, lookAhead int) string {
 
 	if yyDef[state] == -2 {
 		i := 0
-		for yyExca[i] != -1 || yyExca[i+1] != state {
+		for yyExca[i] != -1 || int(yyExca[i+1]) != state {
 			i += 2
 		}
 
 		// Look for tokens that we accept or reduce.
 		for i += 2; yyExca[i] >= 0; i += 2 {
-			tok := yyExca[i]
+			tok := int(yyExca[i])
 			if tok < TOKSTART || yyExca[i+1] == 0 {
 				continue
 			}
@@ -301,30 +304,30 @@ func yylex1(lex yyLexer, lval *yySymType) (char, token int) {
 	token = 0
 	char = lex.Lex(lval)
 	if char <= 0 {
-		token = yyTok1[0]
+		token = int(yyTok1[0])
 		goto out
 	}
 	if char < len(yyTok1) {
-		token = yyTok1[char]
+		token = int(yyTok1[char])
 		goto out
 	}
 	if char >= yyPrivate {
 		if char < yyPrivate+len(yyTok2) {
-			token = yyTok2[char-yyPrivate]
+			token = int(yyTok2[char-yyPrivate])
 			goto out
 		}
 	}
 	for i := 0; i < len(yyTok3); i += 2 {
-		token = yyTok3[i+0]
+		token = int(yyTok3[i+0])
 		if token == char {
-			token = yyTok3[i+1]
+			token = int(yyTok3[i+1])
 			goto out
 		}
 	}
 
 out:
 	if token == 0 {
-		token = yyTok2[1] /* unknown char */
+		token = int(yyTok2[1]) /* unknown char */
 	}
 	if yyDebug >= 3 {
 		__yyfmt__.Printf("lex %s(%d)\n", yyTokname(token), uint(char))
@@ -379,7 +382,7 @@ yystack:
 	yyS[yyp].yys = yystate
 
 yynewstate:
-	yyn = yyPact[yystate]
+	yyn = int(yyPact[yystate])
 	if yyn <= yyFlag {
 		goto yydefault /* simple state */
 	}
@@ -390,8 +393,8 @@ yynewstate:
 	if yyn < 0 || yyn >= yyLast {
 		goto yydefault
 	}
-	yyn = yyAct[yyn]
-	if yyChk[yyn] == yytoken { /* valid shift */
+	yyn = int(yyAct[yyn])
+	if int(yyChk[yyn]) == yytoken { /* valid shift */
 		yyrcvr.char = -1
 		yytoken = -1
 		yyVAL = yyrcvr.lval
@@ -404,7 +407,7 @@ yynewstate:
 
 yydefault:
 	/* default state action */
-	yyn = yyDef[yystate]
+	yyn = int(yyDef[yystate])
 	if yyn == -2 {
 		if yyrcvr.char < 0 {
 			yyrcvr.char, yytoken = yylex1(yylex, &yyrcvr.lval)
@@ -413,18 +416,18 @@ yydefault:
 		/* look through exception table */
 		xi := 0
 		for {
-			if yyExca[xi+0] == -1 && yyExca[xi+1] == yystate {
+			if yyExca[xi+0] == -1 && int(yyExca[xi+1]) == yystate {
 				break
 			}
 			xi += 2
 		}
 		for xi += 2; ; xi += 2 {
-			yyn = yyExca[xi+0]
+			yyn = int(yyExca[xi+0])
 			if yyn < 0 || yyn == yytoken {
 				break
 			}
 		}
-		yyn = yyExca[xi+1]
+		yyn = int(yyExca[xi+1])
 		if yyn < 0 {
 			goto ret0
 		}
@@ -446,10 +449,10 @@ yydefault:
 
 			/* find a state where "error" is a legal shift action */
 			for yyp >= 0 {
-				yyn = yyPact[yyS[yyp].yys] + yyErrCode
+				yyn = int(yyPact[yyS[yyp].yys]) + yyErrCode
 				if yyn >= 0 && yyn < yyLast {
-					yystate = yyAct[yyn] /* simulate a shift of "error" */
-					if yyChk[yystate] == yyErrCode {
+					yystate = int(yyAct[yyn]) /* simulate a shift of "error" */
+					if int(yyChk[yystate]) == yyErrCode {
 						goto yystack
 					}
 				}
@@ -485,9 +488,9 @@ yydefault:
 	yypt := yyp
 	_ = yypt // guard against "declared and not used"
 
-	yyp -= yyR2[yyn]
-	// Yyp is now the index of $0. Perform the default action. Iff the
-	// Reduced production is ε, $1 is possibly out of range.
+	yyp -= int(yyR2[yyn])
+	// yyp is now the index of $0. Perform the default action. Iff the
+	// reduced production is ε, $1 is possibly out of range.
 	if yyp+1 >= len(yyS) {
 		nyys := make([]yySymType, len(yyS)*2)
 		copy(nyys, yyS)
@@ -496,22 +499,42 @@ yydefault:
 	yyVAL = yyS[yyp+1]
 
 	/* consult goto table to find next state */
-	yyn = yyR1[yyn]
-	yyg := yyPgo[yyn]
+	yyn = int(yyR1[yyn])
+	yyg := int(yyPgo[yyn])
 	yyj := yyg + yyS[yyp].yys + 1
 
 	if yyj >= yyLast {
-		yystate = yyAct[yyg]
+		yystate = int(yyAct[yyg])
 	} else {
-		yystate = yyAct[yyj]
-		if yyChk[yystate] != -yyn {
-			yystate = yyAct[yyg]
+		yystate = int(yyAct[yyj])
+		if int(yyChk[yystate]) != -yyn {
+			yystate = int(yyAct[yyg])
 		}
 	}
-	// Dummy call; replaced with literal code
+	// dummy call; replaced with literal code
 	switch yynt {
 
 	case 1:
+		yyDollar = yyS[yypt-1 : yypt+1]
+		{
+			yyVAL.ident = "import"
+		}
+	case 2:
+		yyDollar = yyS[yypt-1 : yypt+1]
+		{
+			yyVAL.ident = "message"
+		}
+	case 3:
+		yyDollar = yyS[yypt-1 : yypt+1]
+		{
+			yyVAL.ident = "options"
+		}
+	case 4:
+		yyDollar = yyS[yypt-1 : yypt+1]
+		{
+			yyVAL.ident = "struct"
+		}
+	case 5:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			file := &ast.File{
@@ -521,7 +544,7 @@ yydefault:
 			}
 			setLexerResult(yylex, file)
 		}
-	case 2:
+	case 6:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 			if debugParser {
@@ -531,7 +554,7 @@ yydefault:
 				ID: trimString(yyDollar[1].string),
 			}
 		}
-	case 3:
+	case 7:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
@@ -542,12 +565,12 @@ yydefault:
 				ID:    trimString(yyDollar[2].string),
 			}
 		}
-	case 4:
+	case 8:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.imports = nil
 		}
-	case 5:
+	case 9:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
@@ -555,12 +578,12 @@ yydefault:
 			}
 			yyVAL.imports = append(yyVAL.imports, yyDollar[2].import_)
 		}
-	case 6:
+	case 10:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.imports = nil
 		}
-	case 7:
+	case 11:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
@@ -568,12 +591,12 @@ yydefault:
 			}
 			yyVAL.imports = append(yyVAL.imports, yyDollar[3].imports...)
 		}
-	case 8:
+	case 12:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.options = nil
 		}
-	case 9:
+	case 13:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
@@ -581,12 +604,12 @@ yydefault:
 			}
 			yyVAL.options = append(yyVAL.options, yyDollar[3].options...)
 		}
-	case 10:
+	case 14:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.options = nil
 		}
-	case 11:
+	case 15:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
@@ -594,7 +617,7 @@ yydefault:
 			}
 			yyVAL.options = append(yyVAL.options, yyDollar[2].option)
 		}
-	case 12:
+	case 16:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
@@ -605,12 +628,12 @@ yydefault:
 				Value: trimString(yyDollar[3].string),
 			}
 		}
-	case 16:
+	case 20:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.definitions = nil
 		}
-	case 17:
+	case 21:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
@@ -618,7 +641,7 @@ yydefault:
 			}
 			yyVAL.definitions = append(yyVAL.definitions, yyDollar[2].definition)
 		}
-	case 18:
+	case 22:
 		yyDollar = yyS[yypt-5 : yypt+1]
 		{
 			if debugParser {
@@ -633,7 +656,7 @@ yydefault:
 				},
 			}
 		}
-	case 19:
+	case 23:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
@@ -644,12 +667,12 @@ yydefault:
 				Value: yyDollar[3].integer,
 			}
 		}
-	case 20:
+	case 24:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.enum_values = nil
 		}
-	case 21:
+	case 25:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
@@ -657,7 +680,7 @@ yydefault:
 			}
 			yyVAL.enum_values = append(yyVAL.enum_values, yyDollar[2].enum_value)
 		}
-	case 22:
+	case 26:
 		yyDollar = yyS[yypt-5 : yypt+1]
 		{
 			if debugParser {
@@ -672,7 +695,7 @@ yydefault:
 				},
 			}
 		}
-	case 23:
+	case 27:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
@@ -684,12 +707,12 @@ yydefault:
 				Tag:  yyDollar[3].integer,
 			}
 		}
-	case 24:
+	case 30:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.message_fields = nil
 		}
-	case 25:
+	case 31:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
@@ -697,7 +720,7 @@ yydefault:
 			}
 			yyVAL.message_fields = append(yyVAL.message_fields, yyDollar[2].message_field)
 		}
-	case 26:
+	case 32:
 		yyDollar = yyS[yypt-5 : yypt+1]
 		{
 			if debugParser {
@@ -712,7 +735,7 @@ yydefault:
 				},
 			}
 		}
-	case 27:
+	case 33:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
@@ -723,12 +746,12 @@ yydefault:
 				Type: yyDollar[2].type_,
 			}
 		}
-	case 28:
+	case 36:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.struct_fields = nil
 		}
-	case 29:
+	case 37:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
@@ -736,7 +759,7 @@ yydefault:
 			}
 			yyVAL.struct_fields = append(yyVAL.struct_fields, yyDollar[2].struct_field)
 		}
-	case 30:
+	case 38:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 			if debugParser {
@@ -744,7 +767,7 @@ yydefault:
 			}
 			yyVAL.type_ = yyDollar[1].type_
 		}
-	case 31:
+	case 39:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
@@ -755,7 +778,7 @@ yydefault:
 				Element: yyDollar[3].type_,
 			}
 		}
-	case 32:
+	case 40:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 			if debugParser {
@@ -766,7 +789,7 @@ yydefault:
 				Name: yyDollar[1].ident,
 			}
 		}
-	case 33:
+	case 41:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
@@ -778,7 +801,7 @@ yydefault:
 				Import: yyDollar[1].ident,
 			}
 		}
-	case 34:
+	case 42:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 			if debugParser {

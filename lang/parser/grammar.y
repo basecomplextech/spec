@@ -5,7 +5,7 @@ package parser
 import (
 	"fmt"
 
-	"github.com/complex1tech/spec/lang/ast"
+	"github.com/basecomplextech/spec/lang/ast"
 )
 %}
 
@@ -56,6 +56,7 @@ import (
 %token <integer> INTEGER
 %token <string>  STRING
 %token <ident>   MESSAGE
+%type  <ident>   keyword
 
 // import
 %type <import_> import
@@ -77,14 +78,16 @@ import (
 %type <enum_values> enum_values
 
 // message
-%type <definition>     message
-%type <message_field>  message_field
-%type <message_fields> message_fields
+%type <definition>      message
+%type <message_field>   message_field
+%type <message_fields> 	message_fields
+%type <ident>           message_field_name
 
 // struct
-%type <definition>    struct
-%type <struct_field>  struct_field
-%type <struct_fields> struct_fields
+%type <definition>      struct
+%type <struct_field>    struct_field
+%type <struct_fields>   struct_fields
+%type <ident>           struct_field_name
 
 // type
 %type <type_> type
@@ -94,6 +97,27 @@ import (
 %start file
 
 %%
+
+keyword:
+	IMPORT
+    {
+        $$ = "import"
+    }
+	| MESSAGE
+    {
+        $$ = "message"
+    }
+	| OPTIONS
+    {
+        $$ = "options"
+    }
+	| STRUCT
+    {
+        $$ = "struct"
+    }
+	;
+
+// file
 
 file: imports options definitions
 	{ 
@@ -109,86 +133,90 @@ file: imports options definitions
 
 import:
 	STRING
-		{ 
-			if debugParser {
-				fmt.Println("import ", $1)
-			}
-			$$ = &ast.Import{
-				ID: trimString($1),
-			}
+	{ 
+		if debugParser {
+			fmt.Println("import ", $1)
 		}
+		$$ = &ast.Import{
+			ID: trimString($1),
+		}
+	}
 	| IDENT STRING
-		{
-			if debugParser {
-				fmt.Println("import ", $1, $2)
-			}
-			$$ = &ast.Import{
-				Alias: $1,
-				ID:    trimString($2),
-			}
+	{
+		if debugParser {
+			fmt.Println("import ", $1, $2)
 		}
+		$$ = &ast.Import{
+			Alias: $1,
+			ID:    trimString($2),
+		}
+	}
+
 import_list:
 	// Empty
-		{ 
-			$$ = nil
-		}
+	{ 
+		$$ = nil
+	}
 	| import_list import
-		{
-			if debugParser {
-				fmt.Println("import_list", $1, $2)
-			}
-			$$ = append($$, $2)
+	{
+		if debugParser {
+			fmt.Println("import_list", $1, $2)
 		}
+		$$ = append($$, $2)
+	}
+
 imports:
 	// Empty
-		{ 
-			$$ = nil
-		}
+	{ 
+		$$ = nil
+	}
 	| IMPORT '(' import_list ')'
-		{
-			if debugParser {
-				fmt.Println("imports", $3)
-			}
-			$$ = append($$, $3...)
+	{
+		if debugParser {
+			fmt.Println("imports", $3)
 		}
+		$$ = append($$, $3...)
+	}
 
 // options
 
 options:
 	// Empty
-		{ 
-			$$ = nil
-		}
+	{ 
+		$$ = nil
+	}
 	| OPTIONS '(' option_list ')'
-		{
-			if debugParser {
-				fmt.Println("options", $3)
-			}
-			$$ = append($$, $3...)
+	{
+		if debugParser {
+			fmt.Println("options", $3)
 		}
+		$$ = append($$, $3...)
+	}
+
 option_list:
 	// Empty
-		{ 
-			$$ = nil
-		}
+	{ 
+		$$ = nil
+	}
 	| option_list option
-		{
-			if debugParser {
-				fmt.Println("option_list", $1, $2)
-			}
-			$$ = append($$, $2)
+	{
+		if debugParser {
+			fmt.Println("option_list", $1, $2)
 		}
+		$$ = append($$, $2)
+	}
+
 option:
 	IDENT '=' STRING
-		{
-			if debugParser {
-				fmt.Println("option ", $1, $3)
-			}
-			$$ = &ast.Option{
-				Name:  $1,
-				Value: trimString($3),
-			}
+	{
+		if debugParser {
+			fmt.Println("option ", $1, $3)
 		}
+		$$ = &ast.Option{
+			Name:  $1,
+			Value: trimString($3),
+		}
+	}
 
 
 // definition
@@ -197,18 +225,19 @@ definition:
 	enum 
 	| message
 	| struct
+
 definitions:
 	// Empty
-		{ 
-			$$ = nil
-		}
+	{ 
+		$$ = nil
+	}
 	| definitions definition
-		{
-			if debugParser {
-				fmt.Println("definitions", $1, $2)
-			}
-			$$ = append($$, $2)
+	{
+		if debugParser {
+			fmt.Println("definitions", $1, $2)
 		}
+		$$ = append($$, $2)
+	}
 
 
 // enum
@@ -227,6 +256,7 @@ enum: ENUM IDENT '{' enum_values '}'
 			},
 		}
 	}
+
 enum_value: IDENT '=' INTEGER ';'
 	{
 		if debugParser {
@@ -237,18 +267,19 @@ enum_value: IDENT '=' INTEGER ';'
 			Value: $3,
 		}
 	}
+
 enum_values:
 	// Empty
-		{
-			$$ = nil
-		}
+	{
+		$$ = nil
+	}
 	| enum_values enum_value
-		{
-			if debugParser {
-				fmt.Println("enum values", $1, $2)
-			}
-			$$ = append($$, $2)
+	{
+		if debugParser {
+			fmt.Println("enum values", $1, $2)
 		}
+		$$ = append($$, $2)
+	}
 
 
 // message
@@ -267,7 +298,8 @@ message: MESSAGE IDENT '{' message_fields '}'
 			},
 		}
 	}
-message_field: IDENT type INTEGER ';'
+
+message_field: message_field_name type INTEGER ';'
 	{
 		if debugParser {
 			fmt.Println("message field", $1, $2, $3)
@@ -278,18 +310,24 @@ message_field: IDENT type INTEGER ';'
 			Tag: $3,
 		}
 	}
+
+message_field_name:
+	keyword
+	| IDENT
+	;
+
 message_fields:
 	// Empty
-		{ 
-			$$ = nil
-		}
+	{
+		$$ = nil
+	}
 	| message_fields message_field
-		{
-			if debugParser {
-				fmt.Println("message fields", $1, $2)
-			}
-			$$ = append($$, $2)
+	{
+		if debugParser {
+			fmt.Println("message fields", $1, $2)
 		}
+		$$ = append($$, $2)
+	}
 
 // struct
 
@@ -307,7 +345,8 @@ struct: STRUCT IDENT '{' struct_fields '}'
 			},
 		}
 	}
-struct_field: IDENT type ';'
+
+struct_field: struct_field_name type ';'
 	{
 		if debugParser {
 			fmt.Println("struct field", $1, $2)
@@ -317,69 +356,75 @@ struct_field: IDENT type ';'
 			Type: $2,
 		}
 	}
+
+struct_field_name:
+	keyword
+	| IDENT
+	;
+
 struct_fields:
 	// Empty
-		{ 
-			$$ = nil
-		}
+	{ 
+		$$ = nil
+	}
 	| struct_fields struct_field
-		{
-			if debugParser {
-				fmt.Println("struct fields", $1, $2)
-			}
-			$$ = append($$, $2)
+	{
+		if debugParser {
+			fmt.Println("struct fields", $1, $2)
 		}
+		$$ = append($$, $2)
+	}
 
 // type
 
 type:
 	base_type
-		{
-			if debugParser {
-				fmt.Printf("type *%v\n", $1)
-			}
-			$$ = $1
-		}	
-	| '[' ']' base_type
-		{
-			if debugParser {
-				fmt.Printf("type []%v\n", $3)
-			}
-			$$ = &ast.Type{
-				Kind:    ast.KindList,
-				Element: $3,
-			}
+	{
+		if debugParser {
+			fmt.Printf("type *%v\n", $1)
 		}
+		$$ = $1
+	}	
+	| '[' ']' base_type
+	{
+		if debugParser {
+			fmt.Printf("type []%v\n", $3)
+		}
+		$$ = &ast.Type{
+			Kind:    ast.KindList,
+			Element: $3,
+		}
+	}
+
 base_type:
 	IDENT
-		{
-			if debugParser {
-				fmt.Println("base type", $1)
-			}
-			$$ = &ast.Type{
-				Kind: ast.GetKind($1),
-				Name: $1,
-			}
+	{
+		if debugParser {
+			fmt.Println("base type", $1)
 		}
+		$$ = &ast.Type{
+			Kind: ast.GetKind($1),
+			Name: $1,
+		}
+	}
 	| IDENT '.' IDENT
-		{
-			if debugParser {
-				fmt.Printf("base type %v.%v\n", $1, $3)
-			}
-			$$ = &ast.Type{
-				Kind:   ast.KindReference,
-				Name:   $3,
-				Import: $1,
-			}
+	{
+		if debugParser {
+			fmt.Printf("base type %v.%v\n", $1, $3)
 		}
-
+		$$ = &ast.Type{
+			Kind:   ast.KindReference,
+			Name:   $3,
+			Import: $1,
+		}
+	}
 	| MESSAGE
-		{
-			if debugParser {
-				fmt.Println("base type", $1)
-			}
-			$$ = &ast.Type{
-				Kind: ast.KindAnyMessage,
-				Name: "message",
-			}
+	{
+		if debugParser {
+			fmt.Println("base type", $1)
 		}
+		$$ = &ast.Type{
+			Kind: ast.KindAnyMessage,
+			Name: "message",
+		}
+	}
