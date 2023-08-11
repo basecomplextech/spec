@@ -36,7 +36,7 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 	assert.Equal(t, "hello, world", m.String().Unwrap())
 	assert.Equal(t, []byte("goodbye, world"), m.Bytes1().Unwrap())
 
-	assert.Equal(t, EnumOne, m.Enum1())
+	assert.Equal(t, Enum_One, m.Enum1())
 	assert.Equal(t, TestStruct(), m.Struct1())
 	assert.Equal(t, "value 000", m.Submessage().Value().Unwrap())
 

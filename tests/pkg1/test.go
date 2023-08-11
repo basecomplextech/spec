@@ -69,7 +69,7 @@ func TestObject(t tests.T) *Object {
 		Bytes1:   []byte("goodbye, world"),
 		Message1: message,
 
-		Enum1:      EnumOne,
+		Enum1:      Enum_One,
 		Struct1:    TestStruct(),
 		Subobject:  TestSubobject(0),
 		Subobject1: TestSubobject1(0),

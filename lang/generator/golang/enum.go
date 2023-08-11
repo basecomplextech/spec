@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/basecomplextech/spec/lang/compiler"
@@ -101,5 +102,5 @@ func (w *writer) enumString(def *compiler.Definition) error {
 
 func enumValueName(val *compiler.EnumValue) string {
 	name := toUpperCamelCase(val.Name)
-	return val.Enum.Def.Name + name
+	return fmt.Sprintf("%v_%v", val.Enum.Def.Name, name)
 }
