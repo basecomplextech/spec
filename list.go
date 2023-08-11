@@ -18,6 +18,12 @@ func NewList(b []byte) List {
 	return l
 }
 
+// NewListErr returns a new list from bytes or an error when not a list.
+func NewListErr(b []byte) (List, error) {
+	l, _, err := decodeList(b)
+	return l, err
+}
+
 // ParseList recursively parses and returns a list.
 func ParseList(b []byte) (l List, size int, err error) {
 	l, size, err = decodeList(b)

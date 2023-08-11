@@ -305,7 +305,17 @@ func (v Value) List() List {
 	return NewList(v)
 }
 
+// ListErr decodes and returns a list or an error.
+func (v Value) ListErr() (List, error) {
+	return NewListErr(v)
+}
+
 // Message decodes and returns a message or an empty message.
 func (v Value) Message() Message {
 	return NewMessage(v)
+}
+
+// MessageErr decodes and returns a message or an error.
+func (v Value) MessageErr() (Message, error) {
+	return NewMessageErr(v)
 }

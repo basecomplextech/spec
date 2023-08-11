@@ -24,6 +24,21 @@ func NewMessage(b []byte) Message {
 	}
 }
 
+// NewMessageErr returns a new message from bytes or an error when not a message.
+func NewMessageErr(b []byte) (Message, error) {
+	meta, n, err := encoding.DecodeMessageMeta(b)
+	if err != nil {
+		return Message{}, err
+	}
+	bytes := b[len(b)-n:]
+
+	m := Message{
+		meta:  meta,
+		bytes: bytes,
+	}
+	return m, nil
+}
+
 // ParseMessage recursively parses and returns a message.
 func ParseMessage(b []byte) (_ Message, size int, err error) {
 	meta, size, err := encoding.DecodeMessageMeta(b)
