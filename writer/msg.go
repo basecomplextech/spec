@@ -19,6 +19,7 @@ func (m MessageWriter) HasField(field uint16) bool {
 }
 
 // Build ends the message and returns its bytes.
+// TODO: Return Message instead of []byte.
 func (m MessageWriter) Build() ([]byte, error) {
 	return m.w.end()
 }

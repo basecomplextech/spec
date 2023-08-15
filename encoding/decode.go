@@ -784,7 +784,9 @@ func DecodeMessageMeta(b []byte) (_ MessageMeta, size int, err error) {
 		err = errors.New("decode message: invalid type")
 		return
 	}
-	if typ != TypeMessage && typ != TypeBigMessage {
+	switch typ {
+	case TypeMessage, TypeBigMessage:
+	default:
 		err = fmt.Errorf("decode message: invalid type, type=%v:%d", typ, typ)
 		return
 	}

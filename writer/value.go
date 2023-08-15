@@ -18,6 +18,23 @@ func (w ValueWriter) Build() ([]byte, error) {
 
 // Values
 
+func (w ValueWriter) Any(b []byte) error {
+	if w.w.err != nil {
+		return w.w.err
+	}
+
+	_, _, err := encoding.DecodeType(b)
+	if err != nil {
+		return w.w.fail(err)
+	}
+
+	start := w.w.buf.Len()
+	w.w.buf.Write(b)
+	end := w.w.buf.Len()
+
+	return w.w.pushData(start, end)
+}
+
 func (w ValueWriter) Bool(v bool) error {
 	if w.w.err != nil {
 		return w.w.err

@@ -103,7 +103,7 @@ func (m Message) Field(tag uint16) Value {
 	}
 
 	b := m.bytes[:end]
-	return NewValue(b)
+	return Value(b)
 }
 
 // FieldBytes returns field data by a tag or nil.
