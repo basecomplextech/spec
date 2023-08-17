@@ -24,7 +24,7 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 		results := w.Results()
 		arg := results.Add()
 		arg.Name("result")
-		arg.Value([]byte("hello, world"))
+		arg.Value().String("hello, world")
 		if err := arg.End(); err != nil {
 			t.Fatal(err)
 		}
@@ -48,7 +48,7 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 		args := call.Args()
 		arg := args.Add()
 		arg.Name("arg")
-		arg.Value([]byte("hello, world"))
+		arg.Value().String("hello, world")
 		if err := args.End(); err != nil {
 			t.Fatal(err)
 		}
@@ -71,5 +71,5 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 	assert.Equal(t, "ok", stat.Code().Unwrap())
 	assert.Equal(t, "Success", stat.Message().Unwrap())
 	assert.Equal(t, "result", result.Name().Unwrap())
-	assert.Equal(t, []byte("hello, world"), result.Value().Unwrap())
+	assert.Equal(t, "hello, world", result.Value().String().Unwrap())
 }

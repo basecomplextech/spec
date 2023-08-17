@@ -14,7 +14,7 @@ func TestGenerator_Golang__should_generate_go_package(t *testing.T) {
 	}
 	g := newGenerator()
 
-	names := []string{"pkg1", "pkg2", "pkg3/pkg3a"}
+	names := []string{"pkg1", "pkg2", "pkg3/pkg3a", "pkg4"}
 	for _, name := range names {
 		pkg1, err := c.Compile("../../tests/" + name)
 		if err != nil {

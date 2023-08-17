@@ -12,7 +12,7 @@ message Call {
 
 message Arg {
     name    string  1;
-    value   bytes   2;
+    value   any     2;
 }
 
 // Response
@@ -29,5 +29,5 @@ message Status {
 
 message Result {
     name    string  1;
-    value   bytes   2;
+    value   any     2;
 }

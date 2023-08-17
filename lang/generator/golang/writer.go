@@ -69,8 +69,10 @@ func (w *writer) file(file *compiler.File) error {
 	w.line("import (")
 	w.line(`"github.com/basecomplextech/baselibrary/bin"`)
 	w.line(`"github.com/basecomplextech/baselibrary/buffer"`)
+	w.line(`"github.com/basecomplextech/baselibrary/status"`)
 	w.line(`"github.com/basecomplextech/spec"`)
 	w.line(`"github.com/basecomplextech/spec/encoding"`)
+	w.line(`"github.com/basecomplextech/spec/rpc"`)
 
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)
@@ -84,7 +86,9 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.Type`)
+	w.line(`_ rpc.Client`)
 	w.line(`_ spec.Type`)
+	w.line(`_ status.Status`)
 	w.line(`)`)
 
 	// Definitions
@@ -104,6 +108,10 @@ func (w *writer) definitions(file *compiler.File) error {
 			}
 		case compiler.DefinitionStruct:
 			if err := w.struct_(def); err != nil {
+				return err
+			}
+		case compiler.DefinitionService:
+			if err := w.service(def); err != nil {
 				return err
 			}
 		}
@@ -139,4 +147,13 @@ func toUpperCamelCase(s string) string {
 		parts[i] = part
 	}
 	return strings.Join(parts, "")
+}
+
+func toLowerCameCase(s string) string {
+	if len(s) == 0 {
+		return ""
+	}
+
+	s = toUpperCamelCase(s)
+	return strings.ToLower(s[:1]) + s[1:]
 }
