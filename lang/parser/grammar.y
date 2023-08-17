@@ -54,6 +54,7 @@ import (
 }
 
 // keywords
+%token ANY
 %token ENUM
 %token IMPORT
 %token MESSAGE
@@ -132,7 +133,11 @@ field_name:
 	};
 
 keyword:
-    IMPORT
+	ANY
+	{
+		$$ = "any"
+	}
+    | IMPORT
     {
         $$ = "import"
     }
@@ -297,10 +302,20 @@ base_type:
 			Import: $1,
 		}
 	}
+	| ANY
+	{
+		if debugParser {
+			fmt.Println("base type", "any")
+		}
+		$$ = &ast.Type{
+			Kind: ast.KindAny,
+			Name: "any",
+		}
+	}
 	| MESSAGE
 	{
 		if debugParser {
-			fmt.Println("base type", $1)
+			fmt.Println("base type", "message")
 		}
 		$$ = &ast.Type{
 			Kind: ast.KindAnyMessage,

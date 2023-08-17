@@ -39,6 +39,8 @@ message Message {
     structs         []Struct            73;
     submessages     []Submessage        74;
     submessages1    []pkg2.Submessage   75;
+
+    any any 80;
 }
 
 struct Struct {

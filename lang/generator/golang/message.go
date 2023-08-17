@@ -82,6 +82,9 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
 
 		switch kind {
+		case compiler.KindAny:
+			w.writef(`return m.msg.Field(%d)`, tag)
+
 		case compiler.KindBool:
 			w.writef(`return m.msg.Field(%d).Bool()`, tag)
 		case compiler.KindByte:
@@ -317,6 +320,17 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		}
 
 		w.linef(`return w`)
+		w.linef(`}`)
+		w.line()
+
+	case compiler.KindAny:
+		w.linef(`func (w %v) %v() spec.FieldWriter {`, wname, fname)
+		w.linef(`return w.w.Field(%d)`, tag)
+		w.linef(`}`)
+		w.line()
+
+		w.linef(`func (w %v) Copy%v(v spec.Value) error {`, wname, fname)
+		w.linef(`return w.w.Field(%d).Any(v)`, tag)
 		w.linef(`}`)
 		w.line()
 

@@ -11,8 +11,7 @@ type Kind int
 
 const (
 	KindUndefined Kind = iota
-
-	// Builtin
+	KindAny
 
 	KindBool
 	KindByte
@@ -53,6 +52,9 @@ const (
 
 func parseKind(pkind ast.Kind) (Kind, error) {
 	switch pkind {
+	case ast.KindAny:
+		return KindAny, nil
+
 	case ast.KindBool:
 		return KindBool, nil
 	case ast.KindByte:
@@ -103,6 +105,9 @@ func parseKind(pkind ast.Kind) (Kind, error) {
 
 func (k Kind) String() string {
 	switch k {
+	case KindAny:
+		return "any"
+
 	case KindBool:
 		return "bool"
 	case KindByte:

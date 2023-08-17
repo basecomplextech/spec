@@ -11,6 +11,9 @@ func typeName(typ *compiler.Type) string {
 	kind := typ.Kind
 
 	switch kind {
+	case compiler.KindAny:
+		return "spec.Value"
+
 	case compiler.KindBool:
 		return "bool"
 	case compiler.KindByte:
@@ -116,6 +119,9 @@ func typeDecodeFunc(typ *compiler.Type) string {
 	kind := typ.Kind
 
 	switch kind {
+	case compiler.KindAny:
+		return "spec.ParseValue"
+
 	case compiler.KindBool:
 		return "encoding.DecodeBool"
 	case compiler.KindByte:
@@ -191,6 +197,9 @@ func typeWriteFunc(typ *compiler.Type) string {
 	kind := typ.Kind
 
 	switch kind {
+	case compiler.KindAny:
+		return "spec.WriteValue"
+
 	case compiler.KindBool:
 		return "encoding.EncodeBool"
 	case compiler.KindByte:

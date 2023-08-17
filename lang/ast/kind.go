@@ -4,8 +4,7 @@ type Kind int
 
 const (
 	KindUndefined Kind = iota
-
-	// Builtin
+	KindAny
 
 	KindBool
 	KindByte
@@ -38,6 +37,9 @@ const (
 // GetKind returns a type kind by its name.
 func GetKind(type_ string) Kind {
 	switch type_ {
+	case "any":
+		return KindAny
+
 	case "bool":
 		return KindBool
 	case "byte":

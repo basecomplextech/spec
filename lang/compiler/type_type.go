@@ -7,6 +7,8 @@ import (
 )
 
 var builtin = map[Kind]*Type{
+	KindAny: newBuiltinType(KindAny),
+
 	KindBool: newBuiltinType(KindBool),
 	KindByte: newBuiltinType(KindByte),
 

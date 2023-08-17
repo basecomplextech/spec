@@ -45,6 +45,8 @@ message TestMessage {
     strings     []string            62;
 
     imported    pkg.ImportedMessage 70;
+
+    any any 80;
 }
 
 message TestObjectElement {
