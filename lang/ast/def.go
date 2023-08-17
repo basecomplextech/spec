@@ -7,6 +7,7 @@ const (
 	DefinitionEnum
 	DefinitionMessage
 	DefinitionStruct
+	DefinitionService
 )
 
 type Definition struct {
@@ -16,4 +17,5 @@ type Definition struct {
 	Enum    *Enum
 	Message *Message
 	Struct  *Struct
+	Service *Service
 }

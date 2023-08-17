@@ -9,8 +9,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testSpec(t *testing.T) string {
+func testFile(t *testing.T) string {
 	b, err := os.ReadFile("test.spec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+func testServiceFile(t *testing.T) string {
+	b, err := os.ReadFile("test_service.spec")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +29,7 @@ func testSpec(t *testing.T) string {
 
 func TestParser_Parse__should_parse_file(t *testing.T) {
 	p := newParser()
-	s := testSpec(t)
+	s := testFile(t)
 
 	file, err := p.Parse(s)
 	if err != nil {
@@ -350,4 +358,98 @@ message TestMessage {
 
 	assert.Equal(t, ast.KindAnyMessage, type_.Kind)
 	assert.Equal(t, "message", type_.Name)
+}
+
+// service
+
+func TestParse_Parse__should_parse_service_file(t *testing.T) {
+	p := newParser()
+	s := testServiceFile(t)
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.NotNil(t, file)
+}
+
+func TestParse_Parse__should_parse_empty_service(t *testing.T) {
+	p := newParser()
+	s := `service Service {}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+
+	assert.Equal(t, "Service", def.Name)
+	assert.Equal(t, ast.DefinitionService, def.Type)
+	assert.Len(t, def.Service.Methods, 0)
+}
+
+// method
+
+func TestParse_Parse__should_parse_empty_method(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method0();
+		method1() ();
+	}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+	srv := def.Service
+
+	assert.Len(t, srv.Methods, 2)
+}
+
+func TestParse_Parse__should_parse_method_args(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method(a bool, b int64, c string);
+	}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+
+	srv := def.Service
+	require.Len(t, srv.Methods, 1)
+
+	method := srv.Methods[0]
+	assert.Len(t, method.Args, 3)
+}
+
+func TestParse_Parse__should_parse_method_results(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method() (a bool, b int64, c string);
+	}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+
+	srv := def.Service
+	require.Len(t, srv.Methods, 1)
+
+	method := srv.Methods[0]
+	assert.Len(t, method.Results, 3)
 }

@@ -6,4 +6,5 @@ var keywords = map[string]int{
 	"message": MESSAGE,
 	"options": OPTIONS,
 	"struct":  STRUCT,
+	"service": SERVICE,
 }
