@@ -5,16 +5,21 @@ message Request {
 }
 
 message Response {
-    status  string  1;
-    result  []Arg   2;
+    status  Status  1;
+    result  []Item  2;
 }
 
 message Call {
     method  string  1;
-    args    []Arg   2;
+    args    []Item  2;
 }
 
-message Arg {
+message Item {
     name    string  1;
     value   bytes   2;
+}
+
+message Status {
+    code    string  1;
+    message string  2;
 }

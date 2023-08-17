@@ -14,7 +14,12 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 	// Push test response
 	{
 		w := prpc.NewResponseWriter()
-		w.Status("ok")
+		stat := w.Status()
+		stat.Code("ok")
+		stat.Message("Success")
+		if err := stat.End(); err != nil {
+			t.Fatal(err)
+		}
 
 		result := w.Result()
 		arg := result.Add()
@@ -61,8 +66,10 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 		t.Fatal(st)
 	}
 
+	stat := resp.Status()
 	result := resp.Result().Get(0)
-	assert.Equal(t, "ok", resp.Status().Unwrap())
+	assert.Equal(t, "ok", stat.Code().Unwrap())
+	assert.Equal(t, "Success", stat.Message().Unwrap())
 	assert.Equal(t, "result", result.Name().Unwrap())
 	assert.Equal(t, []byte("hello, world"), result.Value().Unwrap())
 }

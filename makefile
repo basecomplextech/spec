@@ -1,4 +1,5 @@
 # Spec Makefile
+.PHONY: proto
 
 install:
 	@ go install ./cmd/spec
@@ -12,3 +13,6 @@ test:
 clean:
 	@ find . -name '*pb.go' -delete
 	@ find . -name '*_generated.go' -delete
+
+proto:
+	@ go generate ./proto/...
