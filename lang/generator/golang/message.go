@@ -327,7 +327,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.line()
 
 		w.linef(`func (w %v) Copy%v(v spec.Message) error {`, wname, fname)
-		w.linef(`return w.w.Field(%d).Any(v.Bytes())`, tag)
+		w.linef(`return w.w.Field(%d).Any(v.Raw())`, tag)
 		w.linef(`}`)
 		w.line()
 
@@ -371,7 +371,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 
 		tname := typeName(field.Type)
 		w.linef(`func (w %v) Copy%v(v %v) error {`, wname, fname, tname)
-		w.linef(`return w.w.Field(%d).Any(v.Unwrap().Bytes())`, tag)
+		w.linef(`return w.w.Field(%d).Any(v.Unwrap().Raw())`, tag)
 		w.linef(`}`)
 		w.line()
 	}

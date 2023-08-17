@@ -94,7 +94,7 @@ func TestParseMessage__should_parse_message(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b := m.Unwrap().Bytes()
+	b := m.Unwrap().Raw()
 
 	m1, n, err := ParseMessage(b)
 	if err != nil {

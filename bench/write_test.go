@@ -29,7 +29,7 @@ func BenchmarkWrite_Small(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		size = len(data.Unwrap().Bytes())
+		size = len(data.Unwrap().Raw())
 		if size == 0 {
 			b.Fatal()
 		}
@@ -63,7 +63,7 @@ func BenchmarkWrite_Large(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		size = len(data.Unwrap().Bytes())
+		size = len(data.Unwrap().Raw())
 		if size == 0 {
 			b.Fatal()
 		}

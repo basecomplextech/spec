@@ -64,14 +64,14 @@ func (l List) Len() int {
 	return l.meta.Len()
 }
 
-// Bytes returns the underlying list bytes.
-func (l List) Bytes() []byte {
-	return l.bytes
-}
-
 // Empty returns true if bytes are empty or list has no elements.
 func (l List) Empty() bool {
 	return len(l.bytes) == 0 || l.meta.Len() == 0
+}
+
+// Raw returns the underlying list bytes.
+func (l List) Raw() []byte {
+	return l.bytes
 }
 
 // Elements

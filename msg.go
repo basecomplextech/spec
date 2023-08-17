@@ -71,14 +71,14 @@ func (m Message) Len() int {
 	return m.meta.Len()
 }
 
-// Bytes returns the underlying message bytes.
-func (m Message) Bytes() []byte {
-	return m.bytes
-}
-
 // Empty returns true if bytes are empty or message has no fields.
 func (m Message) Empty() bool {
 	return len(m.bytes) == 0 || m.meta.Len() == 0
+}
+
+// Raw returns the underlying message bytes.
+func (m Message) Raw() []byte {
+	return m.bytes
 }
 
 // Fields

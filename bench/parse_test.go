@@ -17,7 +17,7 @@ func BenchmarkParseMessage(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	bytes := msg.Unwrap().Bytes()
+	bytes := msg.Unwrap().Raw()
 	size := len(bytes)
 	compressed := compressedSize(bytes)
 
@@ -51,7 +51,7 @@ func BenchmarkNewMessage(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	bytes := msg.Unwrap().Bytes()
+	bytes := msg.Unwrap().Raw()
 	size := len(bytes)
 	compressed := compressedSize(bytes)
 
@@ -62,7 +62,7 @@ func BenchmarkNewMessage(b *testing.B) {
 	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
 		msg := pkg1.NewMessage(bytes)
-		if len(msg.Unwrap().Bytes()) == 0 {
+		if len(msg.Unwrap().Raw()) == 0 {
 			b.Fatal()
 		}
 	}
