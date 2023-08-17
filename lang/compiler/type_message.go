@@ -31,13 +31,12 @@ func newMessage(def *Definition, pmsg *ast.Message) (*Message, error) {
 
 		_, ok := msg.FieldTags[field.Tag]
 		if ok {
-			return nil, fmt.Errorf("duplicate field tag, name=%v, tag=%d",
-				field.Name, field.Tag)
+			return nil, fmt.Errorf("invalid field %q: duplicate tag %d", field.Name, field.Tag)
 		}
 
 		_, ok = msg.FieldNames[field.Name]
 		if ok {
-			return nil, fmt.Errorf("duplicate field name, name=%v", field.Name)
+			return nil, fmt.Errorf("duplicate field %q", field.Name)
 		}
 
 		msg.Fields = append(msg.Fields, field)

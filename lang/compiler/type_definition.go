@@ -13,6 +13,7 @@ const (
 	DefinitionEnum      DefinitionType = "enum"
 	DefinitionMessage   DefinitionType = "message"
 	DefinitionStruct    DefinitionType = "struct"
+	DefinitionService   DefinitionType = "service"
 )
 
 func getDefinitionType(ptype ast.DefinitionType) (DefinitionType, error) {
@@ -23,6 +24,8 @@ func getDefinitionType(ptype ast.DefinitionType) (DefinitionType, error) {
 		return DefinitionMessage, nil
 	case ast.DefinitionStruct:
 		return DefinitionStruct, nil
+	case ast.DefinitionService:
+		return DefinitionService, nil
 	}
 	return "", fmt.Errorf("unsupported ast definition type %v", ptype)
 }
@@ -39,6 +42,7 @@ type Definition struct {
 	Enum    *Enum
 	Message *Message
 	Struct  *Struct
+	Service *Service
 }
 
 func newDefinition(pkg *Package, file *File, pdef *ast.Definition) (*Definition, error) {
@@ -73,6 +77,15 @@ func newDefinition(pkg *Package, file *File, pdef *ast.Definition) (*Definition,
 		if err != nil {
 			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}
+
+	case DefinitionService:
+		def.Service, err = newService(def, pdef.Service)
+		if err != nil {
+			return nil, fmt.Errorf("%v: %w", def.Name, err)
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported definition type %q", type_)
 	}
 
 	return def, nil

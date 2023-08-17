@@ -180,6 +180,8 @@ func (c *compiler) _resolveDefinition(file *File, def *Definition) error {
 		return c._resolveMessage(file, def)
 	case DefinitionStruct:
 		return c._resolveStruct(file, def)
+	case DefinitionService:
+		return c._resolveService(file, def)
 	}
 	return nil
 }
@@ -197,6 +199,22 @@ func (c *compiler) _resolveStruct(file *File, def *Definition) error {
 	for _, field := range def.Struct.Fields {
 		if err := c._resolveType(file, field.Type); err != nil {
 			return fmt.Errorf("%v.%v: %w", def.Name, field.Name, err)
+		}
+	}
+	return nil
+}
+
+func (c *compiler) _resolveService(file *File, def *Definition) error {
+	for _, method := range def.Service.Methods {
+		for _, arg := range method.Args {
+			if err := c._resolveType(file, arg.Type); err != nil {
+				return fmt.Errorf("%v.%v %v: %w", def.Name, method.Name, arg.Name, err)
+			}
+		}
+		for _, result := range method.Results {
+			if err := c._resolveType(file, result.Type); err != nil {
+				return fmt.Errorf("%v.%v %v: %w", def.Name, method.Name, result.Name, err)
+			}
 		}
 	}
 	return nil

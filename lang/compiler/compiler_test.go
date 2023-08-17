@@ -450,3 +450,20 @@ func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 	assert.NotNil(t, elem.Ref)
 	assert.NotNil(t, elem.Import)
 }
+
+// Service
+
+func TestCompiler__should_compile_service(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("../../tests/pkg4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[0].DefinitionNames["Service"]
+	require.NotNil(t, def.Service)
+
+	m0 := def.Service.MethodNames["method"]
+	require.NotNil(t, m0)
+}
