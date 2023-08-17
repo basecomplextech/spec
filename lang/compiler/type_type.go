@@ -107,5 +107,7 @@ func (t *Type) resolve(def *Definition, impOrNil *Import) {
 		t.Kind = KindMessage
 	case DefinitionStruct:
 		t.Kind = KindStruct
+	case DefinitionService:
+		t.Kind = KindService
 	}
 }

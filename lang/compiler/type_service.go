@@ -39,10 +39,20 @@ func newService(def *Definition, psrv *ast.Service) (*Service, error) {
 	return srv, nil
 }
 
+func (s *Service) resolved() error {
+	for _, m := range s.Methods {
+		if err := m.resolved(); err != nil {
+			return fmt.Errorf("%v.%v: %w", s.Def.Name, m.Name, err)
+		}
+	}
+	return nil
+}
+
 // Method
 
 type Method struct {
-	Name string
+	Name    string
+	Chained bool // Returns subservice
 
 	Args     []*MethodArg
 	ArgNames map[string]*MethodArg
@@ -92,6 +102,22 @@ func newMethod(pm *ast.Method) (*Method, error) {
 	}
 
 	return m, nil
+}
+
+func (m *Method) resolved() error {
+	for _, result := range m.Results {
+		if result.Type.Kind == KindService {
+			m.Chained = true
+		}
+	}
+	if !m.Chained {
+		return nil
+	}
+
+	if len(m.Results) != 1 {
+		return fmt.Errorf("chained methods must return exactly one subservice")
+	}
+	return nil
 }
 
 // Arg

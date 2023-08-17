@@ -45,6 +45,10 @@ const (
 	KindMessage
 	KindStruct
 
+	// Service
+
+	KindService
+
 	// Pending
 
 	KindReference
@@ -155,6 +159,9 @@ func (k Kind) String() string {
 		return "message"
 	case KindStruct:
 		return "struct"
+
+	case KindService:
+		return "service"
 
 	case KindReference:
 		return "reference"

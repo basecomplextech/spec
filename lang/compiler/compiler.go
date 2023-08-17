@@ -135,6 +135,9 @@ func (c *compiler) compilePackage(id string, path string) (*Package, error) {
 	if err := c._resolveTypes(pkg); err != nil {
 		return nil, err
 	}
+	if err := c._resolved(pkg); err != nil {
+		return nil, err
+	}
 
 	// Done
 	pkg.State = PackageCompiled
@@ -248,6 +251,22 @@ func (c *compiler) _resolveType(file *File, type_ *Type) error {
 				return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
 			}
 			type_.resolve(def, imp)
+		}
+	}
+	return nil
+}
+
+// resolved
+
+func (c *compiler) _resolved(pkg *Package) error {
+	for _, file := range pkg.Files {
+		for _, def := range file.Definitions {
+			switch def.Type {
+			case DefinitionService:
+				if err := def.Service.resolved(); err != nil {
+					return fmt.Errorf("%v/%v: %w", pkg.Name, file.Name, err)
+				}
+			}
 		}
 	}
 	return nil
