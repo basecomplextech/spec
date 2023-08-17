@@ -15,8 +15,8 @@ type Client interface {
 }
 
 // NewClient returns a new client.
-func NewClient() Client {
-	return nil
+func NewClient(t Transport) Client {
+	return newClient(t)
 }
 
 // internal

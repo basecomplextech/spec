@@ -21,14 +21,14 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		result := w.Result()
-		arg := result.Add()
+		results := w.Results()
+		arg := results.Add()
 		arg.Name("result")
 		arg.Value([]byte("hello, world"))
 		if err := arg.End(); err != nil {
 			t.Fatal(err)
 		}
-		if err := result.End(); err != nil {
+		if err := results.End(); err != nil {
 			t.Fatal(err)
 		}
 
@@ -67,7 +67,7 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 	}
 
 	stat := resp.Status()
-	result := resp.Result().Get(0)
+	result := resp.Results().Get(0)
 	assert.Equal(t, "ok", stat.Code().Unwrap())
 	assert.Equal(t, "Success", stat.Message().Unwrap())
 	assert.Equal(t, "result", result.Name().Unwrap())
