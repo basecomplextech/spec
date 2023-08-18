@@ -96,13 +96,10 @@ func (w *writer) methodResults(def *compiler.Definition, m *compiler.Method) err
 		w.writef(`(rpc.Future[%v], status.Status)`, typeName)
 
 	default:
-		w.writef(`(rpc.Future%d[`, len(m.Results))
-		for i, res := range m.Results {
-			if i > 0 {
-				w.write(`, `)
-			}
+		w.linef(`(rpc.Future%d[`, len(m.Results))
+		for _, res := range m.Results {
 			typeName := typeRefName(res.Type)
-			w.writef(`%v`, typeName)
+			w.linef(`%v,`, typeName)
 		}
 		w.writef(`], status.Status)`)
 	}
@@ -221,14 +218,21 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 
 	// Make result types
 	resultTypes := ""
-	if m.Chained {
-	} else {
-		for i, res := range m.Results {
-			if i > 0 {
-				resultTypes += ", "
-			}
+	switch {
+	case m.Chained:
+		w.line(`return nil, status.OK`)
+		w.line(`}`)
+		return nil
+	case len(m.Results) == 1:
+		res := m.Results[0]
+		typeName := typeRefName(res.Type)
+		resultTypes += typeName
+	default:
+		resultTypes += "\n"
+		for _, res := range m.Results {
 			typeName := typeRefName(res.Type)
 			resultTypes += typeName
+			resultTypes += ",\n"
 		}
 	}
 
@@ -249,23 +253,72 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	w.line(`_res := _results.Get(i)`)
 	w.line(`_name := _res.Name().Unwrap()`)
 	w.line()
+
 	w.line(`switch _name {`)
 	for i, res := range m.Results {
-		field := "A"
-		switch i {
-		case 0:
-			field = "A"
-		case 1:
-			field = "B"
-		case 2:
-			field = "C"
-		case 3:
-			field = "D"
-		case 4:
-			field = "E"
-		}
+		kind := res.Type.Kind
+		field := [...]string{"A", "B", "C", "D", "E"}[i]
 		w.linef(`case "%v":`, res.Name)
-		w.linef(`_result.%v = _res.Value().String()`, field)
+
+		switch kind {
+		case compiler.KindBool:
+			w.linef(`_result.%v = _res.Value().Bool()`, field)
+		case compiler.KindByte:
+			w.linef(`_result.%v = _res.Value().Byte()`, field)
+
+		case compiler.KindInt16:
+			w.linef(`_result.%v = _res.Value().Int16()`, field)
+		case compiler.KindInt32:
+			w.linef(`_result.%v = _res.Value().Int32()`, field)
+		case compiler.KindInt64:
+			w.linef(`_result.%v = _res.Value().Int64()`, field)
+
+		case compiler.KindUint16:
+			w.linef(`_result.%v = _res.Value().Uint16()`, field)
+		case compiler.KindUint32:
+			w.linef(`_result.%v = _res.Value().Uint32()`, field)
+		case compiler.KindUint64:
+			w.linef(`_result.%v = _res.Value().Uint64()`, field)
+
+		case compiler.KindBin64:
+			w.linef(`_result.%v = _res.Value().Bin64()`, field)
+		case compiler.KindBin128:
+			w.linef(`_result.%v = _res.Value().Bin128()`, field)
+		case compiler.KindBin256:
+			w.linef(`_result.%v = _res.Value().Bin256()`, field)
+
+		case compiler.KindFloat32:
+			w.linef(`_result.%v = _res.Value().Float32()`, field)
+		case compiler.KindFloat64:
+			w.linef(`_result.%v = _res.Value().Float64()`, field)
+
+		case compiler.KindBytes:
+			w.linef(`_result.%v = _res.Value().Bytes()`, field)
+		case compiler.KindString:
+			w.linef(`_result.%v = _res.Value().String()`, field)
+
+		case compiler.KindList:
+			decodeFunc := typeDecodeRefFunc(res.Type.Element)
+
+			w.writef(`_result.%v = spec.NewTypedList(_res.Value(), %v)`, field, decodeFunc)
+			w.line()
+
+		case compiler.KindEnum,
+			compiler.KindMessage,
+			compiler.KindStruct:
+			newFunc := typeNewFunc(res.Type)
+
+			w.writef(`_result.%v = %v(_res.Value())`, field, newFunc)
+			w.line()
+
+		case compiler.KindAny:
+			w.linef(`_result.%v = _res.Value()`, field)
+		case compiler.KindAnyMessage:
+			w.linef(`_result.%v = _res.Value().Message()`, field)
+
+		default:
+			return fmt.Errorf("unknown arg kind: %v", kind)
+		}
 	}
 	w.line(`}`)
 	w.line(`}`)
