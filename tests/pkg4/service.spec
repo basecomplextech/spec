@@ -116,5 +116,5 @@ service Service {
 }
 
 subservice Subservice {
-    hello(msg string) (msg1 string);
+    hello(msg string) (msg string);
 }
