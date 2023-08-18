@@ -115,6 +115,25 @@ func typeNewFunc(typ *compiler.Type) string {
 	return ""
 }
 
+func typeParseFunc(typ *compiler.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case compiler.KindList:
+		elem := typeName(typ.Element)
+		return "spec.List[]" + elem
+
+	case compiler.KindEnum,
+		compiler.KindMessage,
+		compiler.KindStruct:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Parse%v", typ.Name)
+	}
+	return ""
+}
+
 func typeDecodeFunc(typ *compiler.Type) string {
 	kind := typ.Kind
 

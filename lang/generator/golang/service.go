@@ -243,8 +243,10 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	case m.Chained:
 	case len(m.Results) == 1:
 		w.linef(`_result := rpc.Result[%v]{}`, resultTypes)
+		w.line()
 	default:
 		w.linef(`_result := rpc.Result%d[%v]{}`, len(m.Results), resultTypes)
+		w.line()
 	}
 
 	// Parse results
@@ -252,6 +254,7 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	w.line(`for i := 0; i < _results.Len(); i++ {`)
 	w.line(`_res := _results.Get(i)`)
 	w.line(`_name := _res.Name().Unwrap()`)
+	w.line(`var _err error`)
 	w.line()
 
 	w.line(`switch _name {`)
@@ -262,65 +265,71 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 
 		switch kind {
 		case compiler.KindBool:
-			w.linef(`_result.%v = _res.Value().Bool()`, field)
+			w.linef(`_result.%v, _err = _res.Value().BoolErr()`, field)
 		case compiler.KindByte:
-			w.linef(`_result.%v = _res.Value().Byte()`, field)
+			w.linef(`_result.%v, _err = _res.Value().ByteErr()`, field)
 
 		case compiler.KindInt16:
-			w.linef(`_result.%v = _res.Value().Int16()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Int16Err()`, field)
 		case compiler.KindInt32:
-			w.linef(`_result.%v = _res.Value().Int32()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Int32Err()`, field)
 		case compiler.KindInt64:
-			w.linef(`_result.%v = _res.Value().Int64()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Int64Err()`, field)
 
 		case compiler.KindUint16:
-			w.linef(`_result.%v = _res.Value().Uint16()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Uint16Err()`, field)
 		case compiler.KindUint32:
-			w.linef(`_result.%v = _res.Value().Uint32()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Uint32Err()`, field)
 		case compiler.KindUint64:
-			w.linef(`_result.%v = _res.Value().Uint64()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Uint64Err()`, field)
 
 		case compiler.KindBin64:
-			w.linef(`_result.%v = _res.Value().Bin64()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Bin64Err()`, field)
 		case compiler.KindBin128:
-			w.linef(`_result.%v = _res.Value().Bin128()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Bin128Err()`, field)
 		case compiler.KindBin256:
-			w.linef(`_result.%v = _res.Value().Bin256()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Bin256Err()`, field)
 
 		case compiler.KindFloat32:
-			w.linef(`_result.%v = _res.Value().Float32()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Float32Err()`, field)
 		case compiler.KindFloat64:
-			w.linef(`_result.%v = _res.Value().Float64()`, field)
+			w.linef(`_result.%v, _err = _res.Value().Float64Err()`, field)
 
 		case compiler.KindBytes:
-			w.linef(`_result.%v = _res.Value().Bytes()`, field)
+			w.linef(`_result.%v, _err = _res.Value().BytesErr()`, field)
 		case compiler.KindString:
-			w.linef(`_result.%v = _res.Value().String()`, field)
+			w.linef(`_result.%v, _err = _res.Value().StringErr()`, field)
 
 		case compiler.KindList:
 			decodeFunc := typeDecodeRefFunc(res.Type.Element)
 
-			w.writef(`_result.%v = spec.NewTypedList(_res.Value(), %v)`, field, decodeFunc)
+			w.writef(`_result.%v, _, _err = spec.ParseTypedList(_res.Value(), %v)`, field, decodeFunc)
 			w.line()
 
 		case compiler.KindEnum,
 			compiler.KindMessage,
 			compiler.KindStruct:
-			newFunc := typeNewFunc(res.Type)
+			parseFunc := typeParseFunc(res.Type)
 
-			w.writef(`_result.%v = %v(_res.Value())`, field, newFunc)
+			w.writef(`_result.%v, _, _err = %v(_res.Value())`, field, parseFunc)
 			w.line()
 
 		case compiler.KindAny:
 			w.linef(`_result.%v = _res.Value()`, field)
 		case compiler.KindAnyMessage:
-			w.linef(`_result.%v = _res.Value().Message()`, field)
+			w.linef(`_result.%v, _err = _res.Value().MessageErr()`, field)
 
 		default:
 			return fmt.Errorf("unknown arg kind: %v", kind)
 		}
 	}
 	w.line(`}`)
+	w.line()
+
+	w.line(`if _err != nil {`)
+	w.line(`return nil, status.WrapError(_err)`)
+	w.line(`}`)
+
 	w.line(`}`)
 	w.line()
 
