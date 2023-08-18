@@ -21,7 +21,7 @@ func WriteFile(file *compiler.File) ([]byte, error) {
 	}
 
 	bytes := w.b.Bytes()
-	// return bytes, nil
+	return bytes, nil
 	return format.Source(bytes)
 }
 
