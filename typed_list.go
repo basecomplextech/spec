@@ -46,8 +46,8 @@ func (l TypedList[T]) Len() int {
 	return l.list.Len()
 }
 
-// Bytes returns the exact list bytes.
-func (l TypedList[T]) Bytes() []byte {
+// Raw returns the exact list bytes.
+func (l TypedList[T]) Raw() []byte {
 	return l.list.bytes
 }
 

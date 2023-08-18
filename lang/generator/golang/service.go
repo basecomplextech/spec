@@ -1,6 +1,10 @@
 package golang
 
-import "github.com/basecomplextech/spec/lang/compiler"
+import (
+	"fmt"
+
+	"github.com/basecomplextech/spec/lang/compiler"
+)
 
 func (w *writer) service(def *compiler.Definition) error {
 	if err := w.serviceDef(def); err != nil {
@@ -45,7 +49,10 @@ func (w *writer) method(def *compiler.Definition, m *compiler.Method) error {
 	if err := w.methodResults(def, m); err != nil {
 		return err
 	}
-	if err := w.methodBody(def, m); err != nil {
+	if err := w.methodCall(def, m); err != nil {
+		return err
+	}
+	if err := w.methodRequest(def, m); err != nil {
 		return err
 	}
 
@@ -54,14 +61,21 @@ func (w *writer) method(def *compiler.Definition, m *compiler.Method) error {
 }
 
 func (w *writer) methodArgs(def *compiler.Definition, m *compiler.Method) error {
-	w.write(`(`)
-	w.write(`cancel <-chan struct{}`)
+	w.write(`(cancel <-chan struct{}`)
 
 	for _, arg := range m.Args {
+		if len(m.Args) <= 3 {
+			w.write(`, `)
+		} else {
+			w.line(`,`)
+		}
+
 		argName := toLowerCameCase(arg.Name)
 		typeName := typeName(arg.Type)
-		w.write(`, `)
 		w.writef(`%v %v`, argName, typeName)
+	}
+	if len(m.Args) > 3 {
+		w.line(`,`)
 	}
 
 	w.write(`) `)
@@ -69,28 +83,33 @@ func (w *writer) methodArgs(def *compiler.Definition, m *compiler.Method) error 
 }
 
 func (w *writer) methodResults(def *compiler.Definition, m *compiler.Method) error {
-	if m.Chained {
+	// TODO: Check number of results in compiler, zero results
+	switch {
+	case m.Chained:
 		res := m.Results[0]
-		resName := toLowerCameCase(res.Name)
 		serviceName := res.Type.Name
-		w.write(`(`)
-		w.writef(`%v %v`, resName, serviceName)
-		w.write(`)`)
-		return nil
-	}
+		w.writef(`%v`, serviceName)
 
-	w.write(`(`)
-	for _, res := range m.Results {
-		resName := toLowerCameCase(res.Name)
-		typeName := typeRefName(res.Type)
-		w.writef(`%v %v, `, resName, typeName)
+	case len(m.Results) == 1:
+		result := m.Results[0]
+		typeName := typeRefName(result.Type)
+		w.writef(`(rpc.Future[%v], status.Status)`, typeName)
+
+	default:
+		w.writef(`(rpc.Future%d[`, len(m.Results))
+		for i, res := range m.Results {
+			if i > 0 {
+				w.write(`, `)
+			}
+			typeName := typeRefName(res.Type)
+			w.writef(`%v`, typeName)
+		}
+		w.writef(`], status.Status)`)
 	}
-	w.writef(`st status.Status`)
-	w.write(`) `)
 	return nil
 }
 
-func (w *writer) methodBody(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) methodCall(def *compiler.Definition, m *compiler.Method) error {
 	w.line(`{`)
 
 	// Make request
@@ -107,60 +126,163 @@ func (w *writer) methodBody(def *compiler.Definition, m *compiler.Method) error 
 
 	// Make args
 	for _, arg := range m.Args {
-		argName := toLowerCameCase(arg.Name)
+		kind := arg.Type.Kind
+		name := toLowerCameCase(arg.Name)
 
 		w.line(`{`)
 		w.line(`_arg := _args.Add()`)
-		w.linef(`_arg.Name(%v)`, arg.Name)
-		w.linef(`_arg.Value(%v)`, argName)
+		w.linef(`_arg.Name("%v")`, arg.Name)
+
+		switch kind {
+		case compiler.KindBool:
+			w.linef(`_arg.Value().Bool(%v)`, name)
+		case compiler.KindByte:
+			w.linef(`_arg.Value().Byte(%v)`, name)
+
+		case compiler.KindInt16:
+			w.linef(`_arg.Value().Int16(%v)`, name)
+		case compiler.KindInt32:
+			w.linef(`_arg.Value().Int32(%v)`, name)
+		case compiler.KindInt64:
+			w.linef(`_arg.Value().Int64(%v)`, name)
+
+		case compiler.KindUint16:
+			w.linef(`_arg.Value().Uint16(%v)`, name)
+		case compiler.KindUint32:
+			w.linef(`_arg.Value().Uint32(%v)`, name)
+		case compiler.KindUint64:
+			w.linef(`_arg.Value().Uint64(%v)`, name)
+
+		case compiler.KindBin64:
+			w.linef(`_arg.Value().Bin64(%v)`, name)
+		case compiler.KindBin128:
+			w.linef(`_arg.Value().Bin128(%v)`, name)
+		case compiler.KindBin256:
+			w.linef(`_arg.Value().Bin256(%v)`, name)
+
+		case compiler.KindFloat32:
+			w.linef(`_arg.Value().Float32(%v)`, name)
+		case compiler.KindFloat64:
+			w.linef(`_arg.Value().Float64(%v)`, name)
+
+		case compiler.KindBytes:
+			w.linef(`_arg.Value().Bytes(%v)`, name)
+		case compiler.KindString:
+			w.linef(`_arg.Value().String(%v)`, name)
+
+		case compiler.KindEnum:
+			writeFunc := typeWriteFunc(arg.Type)
+			w.linef(`spec.WriteField(_arg.Value(), %v, %v)`, name, writeFunc)
+		case compiler.KindList:
+			w.linef(`_arg.Value().Any(%v.Raw())`, name)
+		case compiler.KindMessage:
+			w.linef(`_arg.Value().Any(%v.Unwrap().Raw())`, name)
+		case compiler.KindStruct:
+			writeFunc := typeWriteFunc(arg.Type)
+			w.linef(`spec.WriteField(_arg.Value(), %v, %v)`, name, writeFunc)
+
+		case compiler.KindAny:
+			w.linef(`_arg.Value().Any(%v)`, name)
+		case compiler.KindAnyMessage:
+			w.linef(`_arg.Value().Any(%v.Raw())`, name)
+
+		default:
+			return fmt.Errorf("unknown arg kind: %v", kind)
+		}
 
 		w.line(`if err := _arg.End(); err != nil {`)
-		w.line(`return status.WrapError(err)`)
+		w.line(`return nil, status.WrapError(err)`)
 		w.line(`}`)
 		w.line(`}`)
 	}
 
 	// End args
 	w.line(`if err := _args.End(); err != nil {`)
-	w.line(`return status.WrapError(err)`)
+	w.line(`return nil, status.WrapError(err)`)
 	w.line(`}`)
 
 	// End call
 	w.line(`if err := _call.End(); err != nil {`)
-	w.line(`return status.WrapError(err)`)
+	w.line(`return nil, status.WrapError(err)`)
 	w.line(`}`)
 	w.line(`}`)
 	w.line()
+	return nil
+}
 
+func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) error {
 	// Send request
 	w.line(`// Send request`)
 	w.line(`_resp, st := _c.client.Request(cancel, _req)`)
 	w.line(`if !st.OK() {`)
-	w.line(`return st`)
+	w.line(`return nil, st`)
 	w.line(`}`)
 	w.line(``)
 
-	// Parse results
+	// Make result types
+	resultTypes := ""
+	if m.Chained {
+	} else {
+		for i, res := range m.Results {
+			if i > 0 {
+				resultTypes += ", "
+			}
+			typeName := typeRefName(res.Type)
+			resultTypes += typeName
+		}
+	}
+
+	// Make results
+	// TODO: Check number of results in compiler, zero results
 	w.line(`// Parse results`)
+	switch {
+	case m.Chained:
+	case len(m.Results) == 1:
+		w.linef(`_result := rpc.Result[%v]{}`, resultTypes)
+	default:
+		w.linef(`_result := rpc.Result%d[%v]{}`, len(m.Results), resultTypes)
+	}
+
+	// Parse results
 	w.line(`_results := _resp.Results()`)
 	w.line(`for i := 0; i < _results.Len(); i++ {`)
-	w.line(`_result := _results.Get(i)`)
-	w.line(`_name := _result.Name().Unwrap()`)
+	w.line(`_res := _results.Get(i)`)
+	w.line(`_name := _res.Name().Unwrap()`)
 	w.line()
 	w.line(`switch _name {`)
-	for _, res := range m.Results {
-		resName := toLowerCameCase(res.Name)
+	for i, res := range m.Results {
+		field := "A"
+		switch i {
+		case 0:
+			field = "A"
+		case 1:
+			field = "B"
+		case 2:
+			field = "C"
+		case 3:
+			field = "D"
+		case 4:
+			field = "E"
+		}
 		w.linef(`case "%v":`, res.Name)
-		w.linef(`%v = _result.Value().String()`, resName)
+		w.linef(`_result.%v = _res.Value().String()`, field)
 	}
 	w.line(`}`)
 	w.line(`}`)
 	w.line()
 
-	// Done
-	w.line(`// Done`)
-	w.line(`st = rpc.ParseStatus(_resp.Status())`)
-	w.line(`return msg1, st`)
+	// Return future
+	w.line(`// Return future`)
+	w.line(`_st := rpc.ParseStatus(_resp.Status())`)
+
+	switch {
+	case m.Chained:
+	case len(m.Results) == 1:
+		w.linef(`_future := rpc.Completed[%v](_result.A, _st)`, resultTypes)
+	default:
+		w.linef(`_future := rpc.Completed%d[%v](_result, _st)`, len(m.Results), resultTypes)
+	}
+	w.line(`return _future, status.OK`)
 	w.line(`}`)
 	return nil
 }
