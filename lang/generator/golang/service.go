@@ -58,7 +58,7 @@ func (w *writer) serviceMethods(def *compiler.Definition) error {
 
 func (w *writer) method(def *compiler.Definition, m *compiler.Method) error {
 	methodName := toUpperCamelCase(m.Name)
-	w.writef(`func (_c *%v) %v`, def.Name, methodName)
+	w.writef(`func (_s *%v) %v`, def.Name, methodName)
 
 	if err := w.methodArgs(def, m); err != nil {
 		return err
@@ -66,11 +66,18 @@ func (w *writer) method(def *compiler.Definition, m *compiler.Method) error {
 	if err := w.methodResults(def, m); err != nil {
 		return err
 	}
-	if err := w.methodCall(def, m); err != nil {
+	if err := w.methodMakeCall(def, m); err != nil {
 		return err
 	}
-	if err := w.methodRequest(def, m); err != nil {
-		return err
+
+	if m.Sub {
+		if err := w.methodCallSubservice(def, m); err != nil {
+			return err
+		}
+	} else {
+		if err := w.methodCallClient(def, m); err != nil {
+			return err
+		}
 	}
 
 	w.line()
@@ -123,17 +130,28 @@ func (w *writer) methodResults(def *compiler.Definition, m *compiler.Method) err
 	return nil
 }
 
-func (w *writer) methodCall(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) methodMakeCall(def *compiler.Definition, m *compiler.Method) error {
 	w.line(`{`)
 
 	// Make request
 	if def.Service.Sub {
 		w.line(`// Continue request`)
-		w.line(`_req := _c.req`)
-		w.line()
+		w.line(`_req := _s.req`)
 	} else {
 		w.line(`// Begin request`)
 		w.line(`_req := rpc.NewRequest()`)
+	}
+
+	// Free request
+	if m.Sub {
+		w.line(`_ok := false`)
+		w.line(`defer func() {`)
+		w.line(`if !_ok {`)
+		w.line(`_req.Free()`)
+		w.line(`}`)
+		w.line(`}()`)
+		w.line()
+	} else {
 		w.line(`defer _req.Free()`)
 		w.line()
 	}
@@ -230,10 +248,10 @@ func (w *writer) methodCall(def *compiler.Definition, m *compiler.Method) error 
 	return nil
 }
 
-func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) methodCallClient(def *compiler.Definition, m *compiler.Method) error {
 	// Send request
 	w.line(`// Send request`)
-	w.line(`_resp, st := _c.client.Request(cancel, _req)`)
+	w.line(`_resp, st := _s.client.Request(cancel, _req)`)
 	w.line(`if !st.OK() {`)
 	w.line(`return nil, st`)
 	w.line(`}`)
@@ -260,10 +278,9 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	}
 
 	// Make results
-	// TODO: Check number of results in compiler, zero results
+	// TODO: Handle zero results
 	w.line(`// Parse results`)
 	switch {
-	case m.Sub:
 	case len(m.Results) == 1:
 		w.linef(`_result := rpc.Result[%v]{}`, resultTypes)
 		w.line()
@@ -275,11 +292,13 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	// Parse results
 	w.line(`_results := _resp.Results()`)
 	w.line(`for i := 0; i < _results.Len(); i++ {`)
-	w.line(`_res := _results.Get(i)`)
-	w.line(`_name := _res.Name().Unwrap()`)
-	w.line(`var _err error`)
+	w.line(`_res, _err := _results.GetErr(i)`)
+	w.line(`if _err != nil {`)
+	w.line(`return nil, status.WrapError(_err)`)
+	w.line(`}`)
 	w.line()
 
+	w.line(`_name := _res.Name().Unwrap()`)
 	w.line(`switch _name {`)
 	for i, res := range m.Results {
 		kind := res.Type.Kind
@@ -347,8 +366,6 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 		}
 	}
 	w.line(`}`)
-	w.line()
-
 	w.line(`if _err != nil {`)
 	w.line(`return nil, status.WrapError(_err)`)
 	w.line(`}`)
@@ -363,11 +380,22 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	switch {
 	case m.Sub:
 	case len(m.Results) == 1:
-		w.linef(`_future := rpc.Completed[%v](_result.A, _st)`, resultTypes)
+		w.linef(`_future := rpc.Completed(_result.A, _st)`) //, resultTypes)
 	default:
-		w.linef(`_future := rpc.Completed%d[%v](_result, _st)`, len(m.Results), resultTypes)
+		w.linef(`_future := rpc.Completed%d(_result, _st)`, len(m.Results)) //, resultTypes)
 	}
 	w.line(`return _future, status.OK`)
+	w.line(`}`)
+	return nil
+}
+
+func (w *writer) methodCallSubservice(def *compiler.Definition, m *compiler.Method) error {
+	// Call subservice
+	_res := m.Results[0]
+	w.line(`// Return subservice`)
+	w.linef(`_sub := New%v(_s.client, _req)`, _res.Type.Name)
+	w.line(`_ok = true`)
+	w.line(`return _sub, status.OK`)
 	w.line(`}`)
 	return nil
 }

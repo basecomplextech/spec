@@ -63,6 +63,13 @@ func (l TypedList[T]) Get(i int) T {
 	return elem
 }
 
+// GetErr returns an element at index i or an error.
+func (l TypedList[T]) GetErr(i int) (T, error) {
+	b := l.list.GetBytes(i)
+	elem, _, err := l.element(b)
+	return elem, err
+}
+
 // GetBytes returns element bytes at index i, panics on out of range.
 func (l TypedList[T]) GetBytes(i int) []byte {
 	return l.list.GetBytes(i)
