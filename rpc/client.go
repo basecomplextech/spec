@@ -66,11 +66,11 @@ func (c *client) Request(cancel <-chan struct{}, req *Request) (prpc.Response, s
 	}
 
 	// Parse response
-	resp, _, err := prpc.ParseResponse(bresp)
+	presp, _, err := prpc.ParseResponse(bresp)
 	if err != nil {
 		return prpc.Response{}, status.WrapError(err)
 	}
 
 	// Return response
-	return resp, status.OK
+	return presp, status.OK
 }

@@ -63,6 +63,12 @@ func typeName(typ *compiler.Type) string {
 			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
 		}
 		return typ.Name
+
+	case compiler.KindService:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
+		}
+		return typ.Name
 	}
 
 	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))

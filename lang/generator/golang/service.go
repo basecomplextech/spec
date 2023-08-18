@@ -66,20 +66,23 @@ func (w *writer) method(def *compiler.Definition, m *compiler.Method) error {
 	if err := w.methodResults(def, m); err != nil {
 		return err
 	}
-	if err := w.methodMakeCall(def, m); err != nil {
+	w.line(`{`)
+
+	if err := w.methodCall(def, m); err != nil {
 		return err
 	}
 
 	if m.Sub {
-		if err := w.methodCallSubservice(def, m); err != nil {
+		if err := w.methodSubservice(def, m); err != nil {
 			return err
 		}
 	} else {
-		if err := w.methodCallClient(def, m); err != nil {
+		if err := w.methodRequest(def, m); err != nil {
 			return err
 		}
 	}
 
+	w.line(`}`)
 	w.line()
 	return nil
 }
@@ -108,30 +111,38 @@ func (w *writer) methodArgs(def *compiler.Definition, m *compiler.Method) error 
 
 func (w *writer) methodResults(def *compiler.Definition, m *compiler.Method) error {
 	// TODO: Handle zero results
-	switch {
-	case m.Sub:
-		res := m.Results[0]
-		serviceName := res.Type.Name
-		w.writef(`(*%v, status.Status)`, serviceName)
-
-	case len(m.Results) == 1:
-		result := m.Results[0]
-		typeName := typeRefName(result.Type)
-		w.writef(`(rpc.Future[%v], status.Status)`, typeName)
-
-	default:
-		w.linef(`(rpc.Future%d[`, len(m.Results))
-		for _, res := range m.Results {
-			typeName := typeRefName(res.Type)
-			w.linef(`%v,`, typeName)
-		}
-		w.writef(`], status.Status)`)
+	if len(m.Results) > 1 {
+		w.linef(`(`)
+	} else {
+		w.write(`(`)
 	}
+
+	for _, res := range m.Results {
+		resName := toLowerCameCase(res.Name)
+		typeName := typeRefName(res.Type)
+
+		if res.Type.Kind == compiler.KindService {
+			typeName = fmt.Sprintf("*%v", typeName)
+		}
+
+		if len(m.Results) > 1 {
+			w.linef(`%v_ %v,`, resName, typeName)
+		} else {
+			w.writef(`%v_ %v, `, resName, typeName)
+		}
+	}
+
+	if len(m.Results) > 1 {
+		w.line(`st_ status.Status,`)
+	} else {
+		w.write(`st_ status.Status`)
+	}
+	w.write(`)`)
 	return nil
 }
 
-func (w *writer) methodMakeCall(def *compiler.Definition, m *compiler.Method) error {
-	w.line(`{`)
+func (w *writer) methodCall(def *compiler.Definition, m *compiler.Method) error {
+	return_ := methodReturn(m)
 
 	// Make request
 	if def.Service.Sub {
@@ -156,8 +167,8 @@ func (w *writer) methodMakeCall(def *compiler.Definition, m *compiler.Method) er
 		w.line()
 	}
 
-	// Add call
-	w.line(`// Add call`)
+	// Make call
+	w.line(`// Make call`)
 	w.linef(`_call := _req.Call("%v")`, m.Name)
 	w.line(`{`)
 	w.line(`_args := _call.Args()`)
@@ -229,46 +240,43 @@ func (w *writer) methodMakeCall(def *compiler.Definition, m *compiler.Method) er
 		}
 
 		w.line(`if err := _arg.End(); err != nil {`)
-		w.line(`return nil, status.WrapError(err)`)
+		w.linef(`return %v status.WrapError(err)`, return_)
 		w.line(`}`)
 		w.line(`}`)
 	}
 
 	// End args
 	w.line(`if err := _args.End(); err != nil {`)
-	w.line(`return nil, status.WrapError(err)`)
+	w.linef(`return %v status.WrapError(err)`, return_)
 	w.line(`}`)
 
 	// End call
 	w.line(`if err := _call.End(); err != nil {`)
-	w.line(`return nil, status.WrapError(err)`)
+	w.linef(`return %v status.WrapError(err)`, return_)
 	w.line(`}`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
-func (w *writer) methodCallClient(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) error {
+	return_ := methodReturn(m)
+
 	// Send request
 	w.line(`// Send request`)
 	w.line(`_resp, st := _s.client.Request(cancel, _req)`)
 	w.line(`if !st.OK() {`)
-	w.line(`return nil, st`)
+	w.linef(`return %v st`, return_)
 	w.line(`}`)
 	w.line(``)
 
 	// Make result types
 	resultTypes := ""
-	switch {
-	case m.Sub:
-		w.line(`return nil, status.OK`)
-		w.line(`}`)
-		return nil
-	case len(m.Results) == 1:
+	if len(m.Results) == 1 {
 		res := m.Results[0]
 		typeName := typeRefName(res.Type)
 		resultTypes += typeName
-	default:
+	} else {
 		resultTypes += "\n"
 		for _, res := range m.Results {
 			typeName := typeRefName(res.Type)
@@ -277,75 +285,65 @@ func (w *writer) methodCallClient(def *compiler.Definition, m *compiler.Method) 
 		}
 	}
 
-	// Make results
+	// Parse results
 	// TODO: Handle zero results
 	w.line(`// Parse results`)
-	switch {
-	case len(m.Results) == 1:
-		w.linef(`_result := rpc.Result[%v]{}`, resultTypes)
-		w.line()
-	default:
-		w.linef(`_result := rpc.Result%d[%v]{}`, len(m.Results), resultTypes)
-		w.line()
-	}
-
-	// Parse results
 	w.line(`_results := _resp.Results()`)
 	w.line(`for i := 0; i < _results.Len(); i++ {`)
 	w.line(`_res, _err := _results.GetErr(i)`)
 	w.line(`if _err != nil {`)
-	w.line(`return nil, status.WrapError(_err)`)
+	w.linef(`return %v status.WrapError(_err)`, return_)
 	w.line(`}`)
 	w.line()
 
 	w.line(`_name := _res.Name().Unwrap()`)
 	w.line(`switch _name {`)
-	for i, res := range m.Results {
+	for _, res := range m.Results {
 		kind := res.Type.Kind
-		field := [...]string{"A", "B", "C", "D", "E"}[i]
+		name := toLowerCameCase(res.Name) + "_"
 		w.linef(`case "%v":`, res.Name)
 
 		switch kind {
 		case compiler.KindBool:
-			w.linef(`_result.%v, _err = _res.Value().BoolErr()`, field)
+			w.linef(`%v, _err = _res.Value().BoolErr()`, name)
 		case compiler.KindByte:
-			w.linef(`_result.%v, _err = _res.Value().ByteErr()`, field)
+			w.linef(`%v, _err = _res.Value().ByteErr()`, name)
 
 		case compiler.KindInt16:
-			w.linef(`_result.%v, _err = _res.Value().Int16Err()`, field)
+			w.linef(`%v, _err = _res.Value().Int16Err()`, name)
 		case compiler.KindInt32:
-			w.linef(`_result.%v, _err = _res.Value().Int32Err()`, field)
+			w.linef(`%v, _err = _res.Value().Int32Err()`, name)
 		case compiler.KindInt64:
-			w.linef(`_result.%v, _err = _res.Value().Int64Err()`, field)
+			w.linef(`%v, _err = _res.Value().Int64Err()`, name)
 
 		case compiler.KindUint16:
-			w.linef(`_result.%v, _err = _res.Value().Uint16Err()`, field)
+			w.linef(`%v, _err = _res.Value().Uint16Err()`, name)
 		case compiler.KindUint32:
-			w.linef(`_result.%v, _err = _res.Value().Uint32Err()`, field)
+			w.linef(`%v, _err = _res.Value().Uint32Err()`, name)
 		case compiler.KindUint64:
-			w.linef(`_result.%v, _err = _res.Value().Uint64Err()`, field)
+			w.linef(`%v, _err = _res.Value().Uint64Err()`, name)
 
 		case compiler.KindBin64:
-			w.linef(`_result.%v, _err = _res.Value().Bin64Err()`, field)
+			w.linef(`%v, _err = _res.Value().Bin64Err()`, name)
 		case compiler.KindBin128:
-			w.linef(`_result.%v, _err = _res.Value().Bin128Err()`, field)
+			w.linef(`%v, _err = _res.Value().Bin128Err()`, name)
 		case compiler.KindBin256:
-			w.linef(`_result.%v, _err = _res.Value().Bin256Err()`, field)
+			w.linef(`%v, _err = _res.Value().Bin256Err()`, name)
 
 		case compiler.KindFloat32:
-			w.linef(`_result.%v, _err = _res.Value().Float32Err()`, field)
+			w.linef(`%v, _err = _res.Value().Float32Err()`, name)
 		case compiler.KindFloat64:
-			w.linef(`_result.%v, _err = _res.Value().Float64Err()`, field)
+			w.linef(`%v, _err = _res.Value().Float64Err()`, name)
 
 		case compiler.KindBytes:
-			w.linef(`_result.%v, _err = _res.Value().BytesErr()`, field)
+			w.linef(`%v, _err = _res.Value().BytesErr()`, name)
 		case compiler.KindString:
-			w.linef(`_result.%v, _err = _res.Value().StringErr()`, field)
+			w.linef(`%v, _err = _res.Value().StringErr()`, name)
 
 		case compiler.KindList:
 			decodeFunc := typeDecodeRefFunc(res.Type.Element)
 
-			w.writef(`_result.%v, _, _err = spec.ParseTypedList(_res.Value(), %v)`, field, decodeFunc)
+			w.writef(`%v, _, _err = spec.ParseTypedList(_res.Value(), %v)`, name, decodeFunc)
 			w.line()
 
 		case compiler.KindEnum,
@@ -353,13 +351,13 @@ func (w *writer) methodCallClient(def *compiler.Definition, m *compiler.Method) 
 			compiler.KindStruct:
 			parseFunc := typeParseFunc(res.Type)
 
-			w.writef(`_result.%v, _, _err = %v(_res.Value())`, field, parseFunc)
+			w.writef(`%v, _, _err = %v(_res.Value())`, name, parseFunc)
 			w.line()
 
 		case compiler.KindAny:
-			w.linef(`_result.%v = _res.Value()`, field)
+			w.linef(`%v = _res.Value()`, name)
 		case compiler.KindAnyMessage:
-			w.linef(`_result.%v, _err = _res.Value().MessageErr()`, field)
+			w.linef(`%v, _err = _res.Value().MessageErr()`, name)
 
 		default:
 			return fmt.Errorf("unknown arg kind: %v", kind)
@@ -367,35 +365,35 @@ func (w *writer) methodCallClient(def *compiler.Definition, m *compiler.Method) 
 	}
 	w.line(`}`)
 	w.line(`if _err != nil {`)
-	w.line(`return nil, status.WrapError(_err)`)
+	w.linef(`return %v status.WrapError(_err)`, return_)
 	w.line(`}`)
 
 	w.line(`}`)
 	w.line()
 
-	// Return future
-	w.line(`// Return future`)
-	w.line(`_st := rpc.ParseStatus(_resp.Status())`)
-
-	switch {
-	case m.Sub:
-	case len(m.Results) == 1:
-		w.linef(`_future := rpc.Completed(_result.A, _st)`) //, resultTypes)
-	default:
-		w.linef(`_future := rpc.Completed%d(_result, _st)`, len(m.Results)) //, resultTypes)
-	}
-	w.line(`return _future, status.OK`)
-	w.line(`}`)
+	w.line(`// Return result`)
+	w.line(`st_ = rpc.ParseStatus(_resp.Status())`)
+	w.linef(`return %v st_`, return_)
 	return nil
 }
 
-func (w *writer) methodCallSubservice(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) methodSubservice(def *compiler.Definition, m *compiler.Method) error {
 	// Call subservice
-	_res := m.Results[0]
+	res := m.Results[0]
+	resName := toLowerCameCase(res.Name) + "_"
+	typeName := typeRefName(res.Type)
+
 	w.line(`// Return subservice`)
-	w.linef(`_sub := New%v(_s.client, _req)`, _res.Type.Name)
+	w.linef(`%v = New%v(_s.client, _req)`, resName, typeName)
 	w.line(`_ok = true`)
-	w.line(`return _sub, status.OK`)
-	w.line(`}`)
+	w.linef(`return %v, status.OK`, resName)
 	return nil
+}
+
+func methodReturn(m *compiler.Method) string {
+	s := ""
+	for _, res := range m.Results {
+		s += toLowerCameCase(res.Name) + "_, "
+	}
+	return s
 }
