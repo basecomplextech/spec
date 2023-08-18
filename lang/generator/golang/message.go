@@ -117,6 +117,11 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 			w.writef(`return m.msg.Field(%d).Bytes()`, tag)
 		case compiler.KindString:
 			w.writef(`return m.msg.Field(%d).String()`, tag)
+
+		case compiler.KindAny:
+			w.writef(`return m.msg.Field(%d)`, tag)
+		case compiler.KindAnyMessage:
+			w.writef(`return m.msg.Field(%d).Message()`, tag)
 		}
 
 		w.writef(`}`)
@@ -139,11 +144,6 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		w.writef(`return %v(m.msg.FieldBytes(%d))`, newFunc, tag)
 		w.writef(`}`)
 		w.line()
-
-	case compiler.KindAny:
-		w.writef(`return m.msg.Field(%d)`, tag)
-	case compiler.KindAnyMessage:
-		w.writef(`return m.msg.Field(%d).Message()`, tag)
 	}
 	return nil
 }

@@ -17,16 +17,33 @@ func (w *writer) service(def *compiler.Definition) error {
 }
 
 func (w *writer) serviceDef(def *compiler.Definition) error {
-	w.linef(`// %v`, def.Name)
-	w.line()
-	w.linef(`type %v struct {`, def.Name)
-	w.line(`client rpc.Client`)
-	w.line(`}`)
-	w.line()
-	w.linef(`func New%v(client rpc.Client) *%v {`, def.Name, def.Name)
-	w.linef(`return &%v{client}`, def.Name)
-	w.linef(`}`)
-	w.line()
+	if def.Service.Sub {
+		w.linef(`// %v`, def.Name)
+		w.line()
+		w.linef(`type %v struct {`, def.Name)
+		w.line(`client rpc.Client`)
+		w.line(`req *rpc.Request`)
+		w.line(`}`)
+		w.line()
+		w.linef(`func New%v(client rpc.Client, req *rpc.Request) *%v {`, def.Name, def.Name)
+		w.linef(`return &%v{`, def.Name)
+		w.linef(`client: client,`)
+		w.linef(`req: req,`)
+		w.linef(`}`)
+		w.linef(`}`)
+		w.line()
+	} else {
+		w.linef(`// %v`, def.Name)
+		w.line()
+		w.linef(`type %v struct {`, def.Name)
+		w.line(`client rpc.Client`)
+		w.line(`}`)
+		w.line()
+		w.linef(`func New%v(client rpc.Client) *%v {`, def.Name, def.Name)
+		w.linef(`return &%v{client}`, def.Name)
+		w.linef(`}`)
+		w.line()
+	}
 	return nil
 }
 
@@ -41,7 +58,7 @@ func (w *writer) serviceMethods(def *compiler.Definition) error {
 
 func (w *writer) method(def *compiler.Definition, m *compiler.Method) error {
 	methodName := toUpperCamelCase(m.Name)
-	w.writef(`func (_c %v) %v`, def.Name, methodName)
+	w.writef(`func (_c *%v) %v`, def.Name, methodName)
 
 	if err := w.methodArgs(def, m); err != nil {
 		return err
@@ -83,12 +100,12 @@ func (w *writer) methodArgs(def *compiler.Definition, m *compiler.Method) error 
 }
 
 func (w *writer) methodResults(def *compiler.Definition, m *compiler.Method) error {
-	// TODO: Check number of results in compiler, zero results
+	// TODO: Handle zero results
 	switch {
-	case m.Chained:
+	case m.Sub:
 		res := m.Results[0]
 		serviceName := res.Type.Name
-		w.writef(`%v`, serviceName)
+		w.writef(`(*%v, status.Status)`, serviceName)
 
 	case len(m.Results) == 1:
 		result := m.Results[0]
@@ -110,13 +127,19 @@ func (w *writer) methodCall(def *compiler.Definition, m *compiler.Method) error 
 	w.line(`{`)
 
 	// Make request
-	w.line(`// Make request`)
-	w.line(`_req := rpc.NewRequest()`)
-	w.line(`defer _req.Free()`)
-	w.line()
+	if def.Service.Sub {
+		w.line(`// Continue request`)
+		w.line(`_req := _c.req`)
+		w.line()
+	} else {
+		w.line(`// Begin request`)
+		w.line(`_req := rpc.NewRequest()`)
+		w.line(`defer _req.Free()`)
+		w.line()
+	}
 
-	// Make call
-	w.line(`// Make call`)
+	// Add call
+	w.line(`// Add call`)
 	w.linef(`_call := _req.Call("%v")`, m.Name)
 	w.line(`{`)
 	w.line(`_args := _call.Args()`)
@@ -219,7 +242,7 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	// Make result types
 	resultTypes := ""
 	switch {
-	case m.Chained:
+	case m.Sub:
 		w.line(`return nil, status.OK`)
 		w.line(`}`)
 		return nil
@@ -240,7 +263,7 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	// TODO: Check number of results in compiler, zero results
 	w.line(`// Parse results`)
 	switch {
-	case m.Chained:
+	case m.Sub:
 	case len(m.Results) == 1:
 		w.linef(`_result := rpc.Result[%v]{}`, resultTypes)
 		w.line()
@@ -338,7 +361,7 @@ func (w *writer) methodRequest(def *compiler.Definition, m *compiler.Method) err
 	w.line(`_st := rpc.ParseStatus(_resp.Status())`)
 
 	switch {
-	case m.Chained:
+	case m.Sub:
 	case len(m.Results) == 1:
 		w.linef(`_future := rpc.Completed[%v](_result.A, _st)`, resultTypes)
 	default:

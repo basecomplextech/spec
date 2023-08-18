@@ -8,6 +8,7 @@ import (
 
 type Service struct {
 	Def *Definition
+	Sub bool // Subservice
 
 	Methods     []*Method
 	MethodNames map[string]*Method
@@ -16,6 +17,7 @@ type Service struct {
 func newService(def *Definition, psrv *ast.Service) (*Service, error) {
 	srv := &Service{
 		Def: def,
+		Sub: psrv.Sub,
 
 		MethodNames: make(map[string]*Method),
 	}
@@ -51,8 +53,8 @@ func (s *Service) resolved() error {
 // Method
 
 type Method struct {
-	Name    string
-	Chained bool // Returns subservice
+	Name string
+	Sub  bool // Returns subservice
 
 	Args     []*MethodArg
 	ArgNames map[string]*MethodArg
@@ -101,21 +103,32 @@ func newMethod(pm *ast.Method) (*Method, error) {
 		m.ResultNames[result.Name] = result
 	}
 
+	// Check results number
+	if len(m.Results) > 5 {
+		return nil, fmt.Errorf("too many method results, at most 5 allowed")
+	}
+
 	return m, nil
 }
 
 func (m *Method) resolved() error {
 	for _, result := range m.Results {
 		if result.Type.Kind == KindService {
-			m.Chained = true
+			m.Sub = true
 		}
 	}
-	if !m.Chained {
+	if !m.Sub {
 		return nil
 	}
 
 	if len(m.Results) != 1 {
-		return fmt.Errorf("chained methods must return exactly one subservice")
+		return fmt.Errorf("subservice method must return exactly one subservice")
+	}
+
+	result := m.Results[0].Type
+	sub := result.Ref.Service.Sub
+	if !sub {
+		return fmt.Errorf("subservice method must return a subservice")
 	}
 	return nil
 }

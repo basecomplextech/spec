@@ -61,6 +61,7 @@ import (
 %token OPTIONS
 %token STRUCT
 %token SERVICE
+%token SUBSERVICE
 
 // general
 %token <ident>      IDENT
@@ -106,6 +107,7 @@ import (
 
 // service
 %type <definition>      service
+%type <definition>      subservice
 %type <methods>         methods
 %type <method>          method
 %type <method_args>     method_arg_list
@@ -156,6 +158,10 @@ keyword:
 	| SERVICE
 	{
 		$$ = "service"
+	}
+	| SUBSERVICE
+	{
+		$$ = "subservice"
 	};
 
 // file
@@ -330,6 +336,7 @@ definition:
 	| message
 	| struct
     | service
+	| subservice
     ;
 
 definitions:
@@ -483,6 +490,23 @@ service: SERVICE IDENT '{' methods '}'
 			Name: $2,
 
 			Service: &ast.Service{
+				Methods: $4,
+			},
+		}
+	}
+	;
+
+subservice: SUBSERVICE IDENT '{' methods '}'
+	{
+		if debugParser {
+			fmt.Println("subservice", $2, $4)
+		}
+		$$ = &ast.Definition{
+			Type: ast.DefinitionService,
+			Name: $2,
+
+			Service: &ast.Service{
+				Sub: true,
 				Methods: $4,
 			},
 		}

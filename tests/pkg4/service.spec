@@ -8,8 +8,8 @@ options (
 )
 
 service Service {
-    // Service doc comment
-    service(id bin128) (sub Subservice);
+    // Subservice doc comment
+    subservice(id bin128) (sub Subservice);
 
     // Method doc comment.
     method(msg string) (msg1 string);
@@ -104,6 +104,6 @@ service Service {
     );
 }
 
-service Subservice {
+subservice Subservice {
     hello(msg string) (msg1 string);
 }

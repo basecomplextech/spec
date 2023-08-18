@@ -1,6 +1,7 @@
 package ast
 
 type Service struct {
+	Sub     bool // Subservice
 	Methods []*Method
 }
 

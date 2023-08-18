@@ -7,10 +7,10 @@ service TestService {
     // Method1 doc comment.
     method1(a int, b string, c bool) (a int, b string, c bool);
 
-    // Service doc comment
-    service(id bin128) (sub TestSubservice);
+    // Subservice doc comment.
+    subservice(id bin128) (sub TestSubservice);
 }
 
-service TestSubservice {
+subservice TestSubservice {
     hello(msg string) (msg string);
 }
