@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basecomplextech/spec/tests/pkg1"
+	"github.com/basecomplextech/spec/internal/tests/pkg1"
 )
 
 func BenchmarkParseMessage(b *testing.B) {

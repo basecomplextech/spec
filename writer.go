@@ -2,7 +2,7 @@ package spec
 
 import (
 	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/spec/writer"
+	"github.com/basecomplextech/spec/internal/writer"
 )
 
 type (

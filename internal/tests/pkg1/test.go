@@ -6,7 +6,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/tests"
-	"github.com/basecomplextech/spec/tests/pkg3/pkg3a"
+	"github.com/basecomplextech/spec/internal/tests/pkg3/pkg3a"
 )
 
 func TestObject(t tests.T) *Object {

@@ -2,7 +2,7 @@ package spec
 
 import (
 	"github.com/basecomplextech/spec/encoding"
-	"github.com/basecomplextech/spec/types"
+	"github.com/basecomplextech/spec/internal/types"
 )
 
 type Type = encoding.Type

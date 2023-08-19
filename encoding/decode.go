@@ -9,7 +9,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/encoding/compactint"
-	"github.com/basecomplextech/spec/types"
+	"github.com/basecomplextech/spec/internal/types"
 )
 
 // DecodeType decodes a value type.

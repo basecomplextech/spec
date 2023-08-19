@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/spec/tests/pkg1"
+	"github.com/basecomplextech/spec/internal/tests/pkg1"
 )
 
 func BenchmarkWrite_Small(b *testing.B) {

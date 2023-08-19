@@ -17,8 +17,8 @@
 .LSOverride
 
 # Certs
-/certs/*.crt
-/certs/*.csr
-/certs/*.key
-/certs/*.pem
-/certs/*.srl
+*.crt
+*.csr
+*.key
+*.pem
+*.srl
