@@ -7,49 +7,49 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
-var _ Transport = (*TestTransport)(nil)
+var _ Connector = (*TestConnector)(nil)
 
-type TestTransport struct {
+type TestConnector struct {
 	mu sync.Mutex
 
-	Stream *TestStream
+	Conn *TestClientConn
 }
 
-func NewTestTransport() *TestTransport {
-	return &TestTransport{
-		Stream: NewTestStream(),
+func NewTestConnector() *TestConnector {
+	return &TestConnector{
+		Conn: NewTestClientConn(),
 	}
 }
 
 // Free releases the transport.
-func (t *TestTransport) Free() {}
+func (t *TestConnector) Free() {}
 
-// Open opens a stream.
-func (t *TestTransport) Open(cancel <-chan struct{}) (TransportStream, status.Status) {
+// Connect connects to a server.
+func (t *TestConnector) Connect(cancel <-chan struct{}) (ClientConn, status.Status) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	if t.Stream == nil || t.Stream.closed {
-		t.Stream = NewTestStream()
+	if t.Conn == nil || t.Conn.closed {
+		t.Conn = NewTestClientConn()
 	}
-	return t.Stream, status.OK
+	return t.Conn, status.OK
 }
 
 // Push pushes an incoming message.
-func (t *TestTransport) Push(msg []byte) {
-	t.Stream.Push(msg)
+func (t *TestConnector) Push(msg []byte) {
+	t.Conn.Push(msg)
 }
 
 // Pop pops an outgoing message.
-func (t *TestTransport) Pop() ([]byte, bool) {
-	return t.Stream.Pop()
+func (t *TestConnector) Pop() ([]byte, bool) {
+	return t.Conn.Pop()
 }
 
-// Stream
+// Conn
 
-var _ TransportStream = (*TestStream)(nil)
+var _ ClientConn = (*TestClientConn)(nil)
 
-type TestStream struct {
+type TestClientConn struct {
 	mu         sync.RWMutex
 	closed     bool
 	closedChan chan struct{}
@@ -58,8 +58,8 @@ type TestStream struct {
 	outgoing async.Queue[[]byte]
 }
 
-func NewTestStream() *TestStream {
-	return &TestStream{
+func NewTestClientConn() *TestClientConn {
+	return &TestClientConn{
 		closedChan: make(chan struct{}),
 		incoming:   async.NewQueue[[]byte](),
 		outgoing:   async.NewQueue[[]byte](),
@@ -67,7 +67,7 @@ func NewTestStream() *TestStream {
 }
 
 // Free releases the stream.
-func (s *TestStream) Free() {
+func (s *TestClientConn) Free() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -79,7 +79,7 @@ func (s *TestStream) Free() {
 }
 
 // Send sends a message.
-func (s *TestStream) Send(cancel <-chan struct{}, msg []byte) status.Status {
+func (s *TestClientConn) Send(cancel <-chan struct{}, msg []byte) status.Status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -92,7 +92,7 @@ func (s *TestStream) Send(cancel <-chan struct{}, msg []byte) status.Status {
 }
 
 // Receive receives a message, the message is valid until the next call to Receive.
-func (s *TestStream) Receive(cancel <-chan struct{}) ([]byte, status.Status) {
+func (s *TestClientConn) Receive(cancel <-chan struct{}) ([]byte, status.Status) {
 loop:
 	for {
 		// Try to pop incoming message
@@ -114,11 +114,11 @@ loop:
 }
 
 // Push pushes an incoming message.
-func (s *TestStream) Push(msg []byte) {
+func (s *TestClientConn) Push(msg []byte) {
 	s.incoming.Push(msg)
 }
 
 // Pop pops an outgoing message.
-func (s *TestStream) Pop() ([]byte, bool) {
+func (s *TestClientConn) Pop() ([]byte, bool) {
 	return s.outgoing.Pop()
 }

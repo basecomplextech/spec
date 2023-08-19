@@ -7,7 +7,7 @@ import (
 
 // Clien is an RPC client.
 type Client interface {
-	// Free releases the client and its underlying transport.
+	// Free releases the client and its underlying connector.
 	Free()
 
 	// Request sends a request and returns a response.
@@ -15,8 +15,8 @@ type Client interface {
 }
 
 // NewClient returns a new client.
-func NewClient(t Transport) Client {
-	return newClient(t)
+func NewClient(c Connector) Client {
+	return newClient(c)
 }
 
 // internal
@@ -24,18 +24,18 @@ func NewClient(t Transport) Client {
 var _ Client = (*client)(nil)
 
 type client struct {
-	transport Transport
+	connector Connector
 }
 
-func newClient(t Transport) *client {
+func newClient(c Connector) *client {
 	return &client{
-		transport: t,
+		connector: c,
 	}
 }
 
-// Free releases the transport.
+// Free releases the client.
 func (c *client) Free() {
-	c.transport.Free()
+	c.connector.Free()
 }
 
 // Request sends a request and returns a response.
@@ -46,21 +46,21 @@ func (c *client) Request(cancel <-chan struct{}, req *Request) (prpc.Response, s
 		return prpc.Response{}, st
 	}
 
-	// Open stream
-	stream, st := c.transport.Open(cancel)
+	// Open connection
+	conn, st := c.connector.Connect(cancel)
 	if !st.OK() {
 		return prpc.Response{}, st
 	}
-	defer stream.Free()
+	defer conn.Free()
 
 	// Send request
 	breq := preq.Unwrap().Raw()
-	if st := stream.Send(cancel, breq); !st.OK() {
+	if st := conn.Send(cancel, breq); !st.OK() {
 		return prpc.Response{}, st
 	}
 
 	// Receive response
-	bresp, st := stream.Receive(cancel)
+	bresp, st := conn.Receive(cancel)
 	if !st.OK() {
 		return prpc.Response{}, st
 	}

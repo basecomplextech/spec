@@ -8,8 +8,8 @@ import (
 )
 
 func TestClient_Send__should_send_request_receive_response(t *testing.T) {
-	ts := NewTestTransport()
-	c := newClient(ts)
+	co := NewTestConnector()
+	c := newClient(co)
 
 	// Push test response
 	{
@@ -38,7 +38,7 @@ func TestClient_Send__should_send_request_receive_response(t *testing.T) {
 		}
 
 		b := p.Unwrap().Raw()
-		ts.Push(b)
+		co.Push(b)
 	}
 
 	// Make test request
