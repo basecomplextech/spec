@@ -107,7 +107,7 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 			w.line(`// Declare args`)
 			w.line(`var (`)
 			for _, arg := range m.Args {
-				typeName := typeName(arg.Type)
+				typeName := typeRefName(arg.Type)
 				w.linef(`_%v %v`, toLowerCameCase(arg.Name), typeName)
 			}
 			w.line(`)`)
@@ -126,14 +126,74 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 
 			w.line(`switch name {`)
 			for _, arg := range m.Args {
-				argName := toLowerCameCase(arg.Name)
+				kind := arg.Type.Kind
+				name := "_" + toLowerCameCase(arg.Name)
 				w.linef(`case "%v":`, arg.Name)
-				w.linef(`_%v, err = arg.Value().Bin128Err()`, argName)
+
+				switch kind {
+				case compiler.KindBool:
+					w.linef(`%v, err = arg.Value().BoolErr()`, name)
+				case compiler.KindByte:
+					w.linef(`%v, err = arg.Value().ByteErr()`, name)
+
+				case compiler.KindInt16:
+					w.linef(`%v, err = arg.Value().Int16Err()`, name)
+				case compiler.KindInt32:
+					w.linef(`%v, err = arg.Value().Int32Err()`, name)
+				case compiler.KindInt64:
+					w.linef(`%v, err = arg.Value().Int64Err()`, name)
+
+				case compiler.KindUint16:
+					w.linef(`%v, err = arg.Value().Uint16Err()`, name)
+				case compiler.KindUint32:
+					w.linef(`%v, err = arg.Value().Uint32Err()`, name)
+				case compiler.KindUint64:
+					w.linef(`%v, err = arg.Value().Uint64Err()`, name)
+
+				case compiler.KindBin64:
+					w.linef(`%v, err = arg.Value().Bin64Err()`, name)
+				case compiler.KindBin128:
+					w.linef(`%v, err = arg.Value().Bin128Err()`, name)
+				case compiler.KindBin256:
+					w.linef(`%v, err = arg.Value().Bin256Err()`, name)
+
+				case compiler.KindFloat32:
+					w.linef(`%v, err = arg.Value().Float32Err()`, name)
+				case compiler.KindFloat64:
+					w.linef(`%v, err = arg.Value().Float64Err()`, name)
+
+				case compiler.KindBytes:
+					w.linef(`%v, err = arg.Value().BytesErr()`, name)
+				case compiler.KindString:
+					w.linef(`%v, err = arg.Value().StringErr()`, name)
+
+				case compiler.KindList:
+					decodeFunc := typeDecodeRefFunc(arg.Type.Element)
+
+					w.writef(`%v, _, err = spec.ParseTypedList(arg.Value(), %v)`, name, decodeFunc)
+					w.line()
+
+				case compiler.KindEnum,
+					compiler.KindMessage,
+					compiler.KindStruct:
+					parseFunc := typeParseFunc(arg.Type)
+
+					w.writef(`%v, _, err = %v(arg.Value())`, name, parseFunc)
+					w.line()
+
+				case compiler.KindAny:
+					w.linef(`%v = arg.Value()`, name)
+				case compiler.KindAnyMessage:
+					w.linef(`%v, err = arg.Value().MessageErr()`, name)
+
+				default:
+					return fmt.Errorf("unknown arg kind: %v", kind)
+				}
 			}
 			w.line(`}`)
 
 			w.line(`if err != nil {`)
-			w.line(`return status.Newf("rpc_error", "Invalid argument %%q: %%v", name, err)`)
+			w.line(`return status.Newf("rpc_error", "Invalid argument %q: %v", name, err)`)
 			w.line(`}`)
 			w.line(`}`)
 			w.line()
@@ -168,7 +228,6 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 		w.line(`if !st_.OK() {`)
 		w.line(`return st_`)
 		w.line(`}`)
-		w.line()
 	}
 
 	// Call subservice
@@ -176,16 +235,17 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 		res := m.Results[0]
 		resName := toLowerCameCase(res.Name)
 
+		w.line()
 		w.line(`// Handle next call`)
 		w.linef(`h1 := NewSubserviceHandler(%v_)`, resName)
 		w.line(`return h1.Handle(cancel, req, resp, index+1)`)
 		w.line(`}`)
-		w.line()
 		return nil
 	}
 
 	// Serialize results
 	if len(m.Results) > 0 {
+		w.line()
 		w.line(`// Serialize results`)
 		for _, res := range m.Results {
 			kind := res.Type.Kind

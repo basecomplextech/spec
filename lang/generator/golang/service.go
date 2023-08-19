@@ -60,7 +60,7 @@ func (w *writer) ifaceMethod_args(def *compiler.Definition, m *compiler.Method) 
 		}
 
 		argName := toLowerCameCase(arg.Name)
-		typeName := typeName(arg.Type)
+		typeName := typeRefName(arg.Type)
 		w.writef(`%v %v`, argName, typeName)
 	}
 	if len(m.Args) > 3 {
