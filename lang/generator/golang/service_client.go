@@ -285,7 +285,6 @@ func (w *writer) clientMethod_request(def *compiler.Definition, m *compiler.Meth
 	}
 
 	// Parse results
-	// TODO: Handle zero results
 	w.line(`// Parse results`)
 	w.line(`_results := _resp.Results()`)
 	w.line(`for i := 0; i < _results.Len(); i++ {`)
@@ -364,7 +363,7 @@ func (w *writer) clientMethod_request(def *compiler.Definition, m *compiler.Meth
 	}
 	w.line(`}`)
 	w.line(`if _err != nil {`)
-	w.linef(`return %v status.WrapError(_err)`, return_)
+	w.linef(`return %v rpc.WrapErrorf(_err, "Invalid result")`, return_)
 	w.line(`}`)
 
 	w.line(`}`)

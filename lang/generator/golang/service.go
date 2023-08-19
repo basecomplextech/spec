@@ -5,17 +5,15 @@ import (
 )
 
 func (w *writer) service(def *compiler.Definition) error {
-	if err := w.handler(def); err != nil {
-		return err
-	}
-
 	if err := w.iface(def); err != nil {
 		return err
 	}
 	if err := w.client(def); err != nil {
 		return err
 	}
-
+	if err := w.handler(def); err != nil {
+		return err
+	}
 	return nil
 }
 

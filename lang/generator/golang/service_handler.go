@@ -64,7 +64,7 @@ func (w *writer) handlerHandle(def *compiler.Definition) error {
 	w.line(`}`)
 	w.line()
 
-	w.linef(`return status.Newf("rpc_error", "Unknown %v method %%q", method)`, def.Name)
+	w.linef(`return rpc.Errorf("Unknown %v method %%q", method)`, def.Name)
 	w.line(`}`)
 	w.line()
 	return nil
@@ -193,7 +193,7 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 			w.line(`}`)
 
 			w.line(`if err != nil {`)
-			w.line(`return status.Newf("rpc_error", "Invalid argument %q: %v", name, err)`)
+			w.line(`return rpc.WrapErrorf(err, "Invalid argument %q", name)`)
 			w.line(`}`)
 			w.line(`}`)
 			w.line()
