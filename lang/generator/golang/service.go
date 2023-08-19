@@ -80,7 +80,7 @@ func (w *writer) ifaceMethod_results(def *compiler.Definition, m *compiler.Metho
 
 	for _, res := range m.Results {
 		resName := toLowerCameCase(res.Name)
-		typeName := typeRefName(res.Type)
+		typeName := typeName(res.Type)
 
 		if len(m.Results) > 1 {
 			w.linef(`%v_ %v,`, resName, typeName)
