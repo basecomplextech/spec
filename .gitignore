@@ -15,3 +15,10 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Certs
+/certs/*.crt
+/certs/*.csr
+/certs/*.key
+/certs/*.pem
+/certs/*.srl

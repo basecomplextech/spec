@@ -13,7 +13,7 @@ import (
 
 const (
 	url        = "https://localhost:7777"
-	caCertPath = "../../../certs/localhost.crt"
+	caCertPath = "../../certs/localhost.crt"
 )
 
 func main() {

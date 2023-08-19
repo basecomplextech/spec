@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	certPath    = "../../../certs/localhost.crt"
-	certKeyPath = "../../../certs/localhost.key"
+	certPath    = "../../certs/localhost.crt"
+	certKeyPath = "../../certs/localhost.key"
 )
 
 func main() {
