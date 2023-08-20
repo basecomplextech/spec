@@ -252,66 +252,67 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 			name := toLowerCameCase(res.Name)
 
 			w.line(`{`)
-			w.linef(`val := resp.Result("%v")`, res.Name)
+			w.line(`res := resp.Result()`)
+			w.linef(`res.Name("%v")`, res.Name)
 
 			switch kind {
 			case compiler.KindBool:
-				w.linef(`err := val.Bool(%v_)`, name)
+				w.linef(`res.Value().Bool(%v_)`, name)
 			case compiler.KindByte:
-				w.linef(`err := val.Byte(%v_)`, name)
+				w.linef(`res.Value().Byte(%v_)`, name)
 
 			case compiler.KindInt16:
-				w.linef(`err := val.Int16(%v_)`, name)
+				w.linef(`res.Value().Int16(%v_)`, name)
 			case compiler.KindInt32:
-				w.linef(`err := val.Int32(%v_)`, name)
+				w.linef(`res.Value().Int32(%v_)`, name)
 			case compiler.KindInt64:
-				w.linef(`err := val.Int64(%v_)`, name)
+				w.linef(`res.Value().Int64(%v_)`, name)
 
 			case compiler.KindUint16:
-				w.linef(`err := val.Uint16(%v_)`, name)
+				w.linef(`res.Value().Uint16(%v_)`, name)
 			case compiler.KindUint32:
-				w.linef(`err := val.Uint32(%v_)`, name)
+				w.linef(`res.Value().Uint32(%v_)`, name)
 			case compiler.KindUint64:
-				w.linef(`err := val.Uint64(%v_)`, name)
+				w.linef(`res.Value().Uint64(%v_)`, name)
 
 			case compiler.KindBin64:
-				w.linef(`err := val.Bin64(%v_)`, name)
+				w.linef(`res.Value().Bin64(%v_)`, name)
 			case compiler.KindBin128:
-				w.linef(`err := val.Bin128(%v_)`, name)
+				w.linef(`res.Value().Bin128(%v_)`, name)
 			case compiler.KindBin256:
-				w.linef(`err := val.Bin256(%v_)`, name)
+				w.linef(`res.Value().Bin256(%v_)`, name)
 
 			case compiler.KindFloat32:
-				w.linef(`err := val.Float32(%v_)`, name)
+				w.linef(`res.Value().Float32(%v_)`, name)
 			case compiler.KindFloat64:
-				w.linef(`err := val.Float64(%v_)`, name)
+				w.linef(`res.Value().Float64(%v_)`, name)
 
 			case compiler.KindBytes:
-				w.linef(`err := val.Bytes(%v_)`, name)
+				w.linef(`res.Value().Bytes(%v_)`, name)
 			case compiler.KindString:
-				w.linef(`err := val.String(%v_)`, name)
+				w.linef(`res.Value().String(%v_)`, name)
 
 			case compiler.KindEnum:
 				writeFunc := typeWriteFunc(res.Type)
-				w.linef(`err := spec.WriteField(val, %v_, %v)`, name, writeFunc)
+				w.linef(`spec.WriteField(res.Value(), %v_, %v)`, name, writeFunc)
 			case compiler.KindList:
-				w.linef(`err := val.Any(%v_.Raw())`, name)
+				w.linef(`res.Value().Any(%v_.Raw())`, name)
 			case compiler.KindMessage:
-				w.linef(`err := val.Any(%v_.Unwrap().Raw())`, name)
+				w.linef(`res.Value().Any(%v_.Unwrap().Raw())`, name)
 			case compiler.KindStruct:
 				writeFunc := typeWriteFunc(res.Type)
-				w.linef(`err := spec.WriteField(val, %v_, %v)`, name, writeFunc)
+				w.linef(`spec.WriteField(res.Value(), %v_, %v)`, name, writeFunc)
 
 			case compiler.KindAny:
-				w.linef(`err := val.Any(%v_)`, name)
+				w.linef(`res.Value().Any(%v_)`, name)
 			case compiler.KindAnyMessage:
-				w.linef(`err := val.Any(%v_.Raw())`, name)
+				w.linef(`res.Value().Any(%v_.Raw())`, name)
 
 			default:
 				return fmt.Errorf("unknown arg kind: %v", kind)
 			}
 
-			w.line(`if err != nil {`)
+			w.line(`if err := res.End(); err != nil {`)
 			w.linef(`return status.WrapError(err)`)
 			w.line(`}`)
 			w.line(`}`)
