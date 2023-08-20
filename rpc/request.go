@@ -9,8 +9,9 @@ import (
 
 // Request is a client RPC request.
 type Request struct {
-	buf *alloc.Buffer
+	url string
 
+	buf   *alloc.Buffer
 	req   prpc.RequestWriter
 	calls spec.MessageListWriter[prpc.CallWriter]
 
@@ -18,12 +19,14 @@ type Request struct {
 	freed bool
 }
 
-func NewRequest() *Request {
+func NewRequest(url string) *Request {
 	buf := alloc.NewBuffer()
 	req := prpc.NewRequestWriterBuffer(buf)
 	calls := req.Calls()
 
 	return &Request{
+		url: url,
+
 		buf:   buf,
 		req:   req,
 		calls: calls,

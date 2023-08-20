@@ -37,10 +37,14 @@ func (w *writer) clientDef(def *compiler.Definition) error {
 		w.line()
 		w.linef(`type %vClient struct {`, def.Name)
 		w.line(`client rpc.Client`)
+		w.line(`url string`)
 		w.line(`}`)
 		w.line()
-		w.linef(`func New%vClient(client rpc.Client) *%vClient {`, def.Name, def.Name)
-		w.linef(`return &%vClient{client}`, def.Name)
+		w.linef(`func New%vClient(client rpc.Client, url string) *%vClient {`, def.Name, def.Name)
+		w.linef(`return &%vClient{`, def.Name)
+		w.linef(`client: client,`)
+		w.linef(`url: url,`)
+		w.linef(`}`)
 		w.linef(`}`)
 		w.line()
 	}
@@ -58,7 +62,7 @@ func (w *writer) clientMethods(def *compiler.Definition) error {
 
 func (w *writer) clientMethod(def *compiler.Definition, m *compiler.Method) error {
 	methodName := toUpperCamelCase(m.Name)
-	w.writef(`func (_s *%vClient) %v`, def.Name, methodName)
+	w.writef(`func (_c *%vClient) %v`, def.Name, methodName)
 
 	if err := w.clientMethod_args(def, m); err != nil {
 		return err
@@ -146,10 +150,10 @@ func (w *writer) clientMethod_call(def *compiler.Definition, m *compiler.Method)
 	// Make request
 	if def.Service.Sub {
 		w.line(`// Continue request`)
-		w.line(`_req := _s.req`)
+		w.line(`_req := _c.req`)
 	} else {
 		w.line(`// Begin request`)
-		w.line(`_req := rpc.NewRequest()`)
+		w.line(`_req := rpc.NewRequest(_c.url)`)
 	}
 
 	// Free request
@@ -263,7 +267,7 @@ func (w *writer) clientMethod_request(def *compiler.Definition, m *compiler.Meth
 
 	// Send request
 	w.line(`// Send request`)
-	w.line(`_resp, st := _s.client.Request(cancel, _req)`)
+	w.line(`_resp, st := _c.client.Request(cancel, _req)`)
 	w.line(`if !st.OK() {`)
 	w.linef(`return %v st`, return_)
 	w.line(`}`)
@@ -382,7 +386,7 @@ func (w *writer) clientMethod_subservice(def *compiler.Definition, m *compiler.M
 	typeName := typeRefName(res.Type)
 
 	w.line(`// Return subservice`)
-	w.linef(`%v = New%vClient(_s.client, _req)`, resName, typeName)
+	w.linef(`%v = New%vClient(_c.client, _req)`, resName, typeName)
 	w.line(`_ok = true`)
 	w.linef(`return %v, status.OK`, resName)
 	return nil

@@ -30,3 +30,21 @@ func DefaultClientConfig() *ClientConfig {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 }
+
+type ServerConfig struct {
+	Listen          string        `json:"listen"`
+	ShutdownTimeout time.Duration `json:"shutdown_timeout"`
+
+	CertPath string `json:"cert_path"`
+	KeyPath  string `json:"key_path"`
+}
+
+func DefaultServerConfig() *ServerConfig {
+	return &ServerConfig{
+		Listen:          ":0",
+		ShutdownTimeout: 10 * time.Second,
+
+		CertPath: "certs/localhost.crt",
+		KeyPath:  "certs/localhost.key",
+	}
+}

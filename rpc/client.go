@@ -14,8 +14,6 @@ import (
 	"github.com/basecomplextech/spec/proto/prpc"
 )
 
-const ContentType = "application/spec-rpc"
-
 // Clien is an RPC client.
 type Client interface {
 	// Free releases the client and its underlying connector.
@@ -26,12 +24,12 @@ type Client interface {
 }
 
 // NewClient returns a new client with the given config.
-func NewClient(config *ClientConfig, url string) (Client, status.Status) {
+func NewClient(config *ClientConfig) (Client, status.Status) {
 	client, st := newHttpClient(config)
 	if !st.OK() {
 		return nil, st
 	}
-	return newClient(client, url), status.OK
+	return newClient(client), status.OK
 }
 
 // internal
@@ -40,14 +38,10 @@ var _ Client = (*client)(nil)
 
 type client struct {
 	client *http.Client
-	url    string
 }
 
-func newClient(client_ *http.Client, url string) *client {
-	return &client{
-		client: client_,
-		url:    url,
-	}
+func newClient(client_ *http.Client) *client {
+	return &client{client: client_}
 }
 
 func newHttpClient(config *ClientConfig) (*http.Client, status.Status) {
@@ -128,7 +122,7 @@ func (c *client) Request(cancel <-chan struct{}, req *Request) (prpc.Response, s
 		buf := bytes.NewBuffer(preq.Unwrap().Raw())
 		var err error
 
-		req1, err = http.NewRequest(http.MethodPost, c.url, buf)
+		req1, err = http.NewRequest(http.MethodPost, req.url, buf)
 		if err != nil {
 			return prpc.Response{}, status.WrapError(err)
 		}

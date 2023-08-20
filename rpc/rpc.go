@@ -4,7 +4,10 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
-const ErrorCode = status.Code("rpc_error")
+const (
+	ContentType = "application/spec-rpc"
+	ErrorCode   = status.Code("rpc_error")
+)
 
 // Error returns an RPC error status with the given message.
 func Error(msg string) status.Status {
