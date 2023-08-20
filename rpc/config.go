@@ -42,7 +42,7 @@ type ServerConfig struct {
 func DefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		Listen:          ":0",
-		ShutdownTimeout: 10 * time.Second,
+		ShutdownTimeout: 5 * time.Second,
 
 		CertPath: "certs/localhost.crt",
 		KeyPath:  "certs/localhost.key",

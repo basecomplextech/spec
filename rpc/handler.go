@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/basecomplextech/baselibrary/alloc"
@@ -15,15 +16,52 @@ type Handler interface {
 	Handle(cancel <-chan struct{}, req *ServerRequest, resp ServerResponse) status.Status
 }
 
+// HandlerFunc is a type adapter to allow the use of ordinary functions as RPC handlers.
+type HandlerFunc func(cancel <-chan struct{}, req *ServerRequest, resp ServerResponse) status.Status
+
+// Handle handles a server RPC request.
+func (f HandlerFunc) Handle(cancel <-chan struct{}, req *ServerRequest, resp ServerResponse) status.Status {
+	return f(cancel, req, resp)
+}
+
 // Request
 
 // ServerRequest is a server RPC request.
 type ServerRequest struct {
+	buf *alloc.Buffer
 	req prpc.Request
 }
 
 func newServerRequest(req *http.Request) (*ServerRequest, status.Status) {
-	return nil, status.OK
+	clen := req.ContentLength
+	if clen < 0 {
+		return nil, Error("Absent content length")
+	}
+	buf := alloc.NewBufferSize(int(clen))
+
+	ok := false
+	defer func() {
+		if !ok {
+			buf.Free()
+		}
+	}()
+
+	b := buf.Grow(int(clen))
+	if _, err := io.ReadFull(req.Body, b); err != nil {
+		return nil, Errorf("Failed to read body: %v", err)
+	}
+
+	preq, _, err := prpc.ParseRequest(b)
+	if err != nil {
+		return nil, Errorf("Failed to parse request: %v", err)
+	}
+
+	req1 := &ServerRequest{
+		buf: buf,
+		req: preq,
+	}
+	ok = true
+	return req1, status.OK
 }
 
 // Call returns an RPC call by index or panics on out of range.
@@ -45,12 +83,20 @@ func (r *ServerRequest) Calls() int {
 	return r.req.Calls().Len()
 }
 
+// free frees the request.
+func (r *ServerRequest) free() {
+	r.req = prpc.Request{}
+
+	r.buf.Free()
+	r.buf = nil
+}
+
 // Response
 
 // ServerResponse writes the result of a server RPC call.
 type ServerResponse interface {
 	// Result adds a new result to the response.
-	Result(name string) spec.FieldWriter
+	Result() prpc.ResultWriter
 }
 
 // internal
@@ -78,10 +124,8 @@ func newServerResponse() *serverResponse {
 }
 
 // Result adds a new result to the response.
-func (r *serverResponse) Result(name string) spec.FieldWriter {
-	result := r.results.Add()
-	result.Name(name)
-	return result.Value()
+func (r *serverResponse) Result() prpc.ResultWriter {
+	return r.results.Add()
 }
 
 func (r *serverResponse) free() {
@@ -97,6 +141,10 @@ func (r *serverResponse) build() (prpc.Response, status.Status) {
 		return prpc.Response{}, status.New("rpc_error", "Response already completed")
 	}
 	r.done = true
+
+	if err := r.results.End(); err != nil {
+		return prpc.Response{}, status.WrapError(err)
+	}
 
 	p, err := r.resp.Build()
 	if err != nil {

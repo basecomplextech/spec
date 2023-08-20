@@ -3,10 +3,10 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
@@ -19,6 +19,15 @@ import (
 
 // Server is an RPC server backed by an HTTP2 server.
 type Server interface {
+	// Running indicates that the server is running.
+	Running() <-chan struct{}
+
+	// Stopped indicates that the server is stopped.
+	Stopped() <-chan struct{}
+
+	// Listening indicates that the server is listening to an address.
+	Listening() <-chan struct{}
+
 	// Run runs the server.
 	Run() (async.Routine[struct{}], status.Status)
 }
@@ -39,12 +48,17 @@ func NewServerHandlers(config *ServerConfig, logger logging.Logger, handlers map
 var _ Server = (*server)(nil)
 
 type server struct {
-	config *ServerConfig
-	logger logging.Logger
-
-	mu       sync.Mutex
-	main     async.Routine[struct{}]
+	config   *ServerConfig
+	logger   logging.Logger
 	handlers map[string]Handler
+
+	running   *async.Flag
+	stopped   *async.Flag
+	listening *async.Flag
+
+	mu      sync.Mutex
+	main    async.Routine[struct{}]
+	address string
 }
 
 func newServer(config *ServerConfig, logger logging.Logger, handlers map[string]Handler) (*server, status.Status) {
@@ -56,16 +70,40 @@ func newServer(config *ServerConfig, logger logging.Logger, handlers map[string]
 		config: config,
 		logger: logger,
 
+		running:   async.NewFlag(),
+		stopped:   async.SetFlag(),
+		listening: async.NewFlag(),
+
 		handlers: make(map[string]Handler),
 	}
 
 	for path, h := range handlers {
+		if path == "" {
+			path = "/"
+		}
+
 		if _, ok := s.handlers[path]; ok {
 			return nil, Errorf("Duplicate server handler for path %q", path)
 		}
+
 		s.handlers[path] = h
 	}
 	return s, status.OK
+}
+
+// Running indicates that the server is running.
+func (s *server) Running() <-chan struct{} {
+	return s.running.Wait()
+}
+
+// Stopped indicates that the server is stopped.
+func (s *server) Stopped() <-chan struct{} {
+	return s.stopped.Wait()
+}
+
+// Listening indicates that the server is listening to an address.
+func (s *server) Listening() <-chan struct{} {
+	return s.listening.Wait()
 }
 
 // Run runs the server.
@@ -101,6 +139,13 @@ func (s *server) checkConfig() status.Status {
 }
 
 func (s *server) run(cancel <-chan struct{}) status.Status {
+	s.stopped.Reset()
+	s.running.Set()
+	defer s.stopped.Set()
+	defer s.running.Reset()
+	defer s.listening.Reset()
+
+	// Make server
 	srv := &http.Server{
 		Addr:    s.config.Listen,
 		Handler: http.HandlerFunc(s.handle),
@@ -114,22 +159,31 @@ func (s *server) run(cancel <-chan struct{}) status.Status {
 		return st
 	}
 
+	// Listen to address
+	addr := srv.Addr
+	if addr == "" {
+		addr = ":https"
+	}
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		s.logger.Error("Failed to listen to address", "address", addr, "status", err)
+		return status.WrapError(err)
+	}
+	defer ln.Close()
+
+	s.address = ln.Addr().String()
+	s.listening.Set()
+	s.logger.Info("Listening", "address", addr)
+
 	// Run server
 	serving := async.Go(func(cancel <-chan struct{}) status.Status {
-		err := srv.ListenAndServeTLS(s.config.CertPath, s.config.KeyPath)
+		err := srv.ServeTLS(ln, s.config.CertPath, s.config.KeyPath)
 		if err != nil {
 			return status.WrapError(err)
 		}
 		return status.OK
 	})
-
-	// Await listening
-	select {
-	case <-cancel:
-	case <-serving.Wait():
-	case <-time.After(time.Millisecond * 100):
-		s.logger.Info("Listening", "address", s.config.Listen)
-	}
 
 	// Wait for cancel or error
 	var st status.Status
@@ -155,8 +209,9 @@ func (s *server) run(cancel <-chan struct{}) status.Status {
 
 func (s *server) handle(w http.ResponseWriter, req *http.Request) {
 	defer func() {
-		if r := recover(); r != nil {
-			s.logger.Error("Server panic", "panic", r)
+		if e := recover(); e != nil {
+			st, stack := status.RecoverStack(e)
+			s.logger.Error("Server panic", "status", st, "stack", string(stack))
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 	}()
@@ -193,6 +248,7 @@ func (s *server) handle(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
+	defer req1.free()
 
 	// Make response
 	resp1 := newServerResponse()

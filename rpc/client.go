@@ -25,11 +25,7 @@ type Client interface {
 
 // NewClient returns a new client with the given config.
 func NewClient(config *ClientConfig) (Client, status.Status) {
-	client, st := newHttpClient(config)
-	if !st.OK() {
-		return nil, st
-	}
-	return newClient(client), status.OK
+	return newClient(config)
 }
 
 // internal
@@ -40,8 +36,14 @@ type client struct {
 	client *http.Client
 }
 
-func newClient(client_ *http.Client) *client {
-	return &client{client: client_}
+func newClient(config *ClientConfig) (*client, status.Status) {
+	client_, st := newHttpClient(config)
+	if !st.OK() {
+		return nil, st
+	}
+
+	c := &client{client: client_}
+	return c, status.OK
 }
 
 func newHttpClient(config *ClientConfig) (*http.Client, status.Status) {
@@ -162,8 +164,9 @@ func (c *client) Request(cancel <-chan struct{}, req *Request) (prpc.Response, s
 		}
 	}()
 
-	_, err = io.Copy(buf1, resp1.Body)
-	if err != nil {
+	// TODO: Handle closed and EOF
+	b := buf1.Grow(int(clen))
+	if _, err := io.ReadFull(resp1.Body, b); err != nil {
 		return prpc.Response{}, WrapError(err)
 	}
 
