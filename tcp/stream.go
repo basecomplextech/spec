@@ -35,12 +35,9 @@ type stream struct {
 
 	id bin.Bin128
 
-	mu sync.Mutex
-	st status.Status
-
-	readBuf    *messageBuffer
-	readChan   chan struct{}
-	readWaiter bool
+	mu        sync.Mutex
+	st        status.Status
+	readQueue *messageBuffer
 
 	// enforce single reader/writer
 	readMu  sync.Mutex
@@ -51,11 +48,9 @@ func newStream(conn *conn, id bin.Bin128) *stream {
 	return &stream{
 		conn: conn,
 
-		id: id,
-		st: status.OK,
-
-		readBuf:  newMessageBuffer(),
-		readChan: make(chan struct{}, 1),
+		id:        id,
+		st:        status.OK,
+		readQueue: newMessageBuffer(),
 	}
 }
 
@@ -89,7 +84,7 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 		select {
 		case <-cancel:
 			return nil, status.Cancelled
-		case <-s.readChan:
+		case <-s.readQueue.wait():
 			continue
 		}
 	}
@@ -111,7 +106,7 @@ func (s *stream) Write(msg []byte) status.Status {
 	s.mu.Unlock()
 
 	// Write message
-	ok, st := s.conn.writeStream(s.id, msg)
+	ok, st := s.conn.streamSend(s.id, msg)
 	switch {
 	case !st.OK():
 		return st
@@ -130,14 +125,18 @@ func (s *stream) Write(msg []byte) status.Status {
 // Free closes the stream and releases its resources.
 func (s *stream) Free() {
 	s.close()
-	s.conn.closeStream(s.id)
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.readBuf.free()
+	s.conn.streamClose(s.id)
+	s.free()
 }
 
 // internal
+
+func (s *stream) free() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.readQueue.free()
+}
 
 // close closes the stream.
 func (s *stream) close() {
@@ -148,38 +147,18 @@ func (s *stream) close() {
 		return
 	}
 
-	// Close stream
 	s.st = status.End
-	if !s.readWaiter {
-		return
-	}
-
-	// Notify waiter
-	select {
-	case s.readChan <- struct{}{}:
-	default:
-	}
+	s.readQueue.close()
 }
 
 func (s *stream) read() ([]byte, bool, status.Status) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Read next message
-	msg, ok := s.readBuf.next()
+	msg, ok := s.readQueue.next()
 	if ok {
-		s.readWaiter = false
 		return msg, true, status.OK
 	}
-
-	// Clear channel
-	select {
-	case <-s.readChan:
-	default:
-	}
-
-	// Add waiter, this is a small performance optimization
-	s.readWaiter = true
 	return nil, false, s.st
 }
 
@@ -192,16 +171,6 @@ func (s *stream) receive(msg []byte) bool {
 		return false
 	}
 
-	// Append message
-	s.readBuf.append(msg)
-	if !s.readWaiter {
-		return true
-	}
-
-	// Notify waiter
-	select {
-	case s.readChan <- struct{}{}:
-	default:
-	}
+	s.readQueue.append(msg)
 	return true
 }

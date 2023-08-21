@@ -1,6 +1,6 @@
 
 
-enum MessageCode {
+enum Code {
     UNDEFINED = 0;
     OPEN_STREAM = 1;
     CLOSE_STREAM = 2;
@@ -8,14 +8,15 @@ enum MessageCode {
 }
 
 message Message {
-    code    MessageCode     1;
+    code    Code            1;
     open    OpenStream      2;
     close   CloseStream     3;
     message StreamMessage   4;
 }
 
 message OpenStream {
-    id  bin128  1;
+    id      bin128  1;
+    data    bytes   2; // First message
 }
 
 message CloseStream {
@@ -24,5 +25,5 @@ message CloseStream {
 
 message StreamMessage {
     id      bin128  1;
-    bytes   bytes   2;
+    data    bytes   2;
 }
