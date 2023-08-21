@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
+	"log"
 	"net"
 	"sync"
 
@@ -25,7 +26,9 @@ type Conn interface {
 var _ Conn = (*conn)(nil)
 
 type conn struct {
-	conn net.Conn
+	conn    net.Conn
+	server  bool
+	handler Handler // only for server connections
 
 	r     *bufio.Reader
 	rhead [4]byte
@@ -50,6 +53,12 @@ func newConn(c net.Conn) *conn {
 	return &conn{
 		conn: c,
 
+		r:     bufio.NewReader(c),
+		rbody: alloc.NewBuffer(),
+
+		w: bufio.NewWriter(c),
+
+		st:      status.OK,
 		streams: make(map[bin.Bin128]*stream),
 
 		writeBuf:   buf,
@@ -58,12 +67,47 @@ func newConn(c net.Conn) *conn {
 	}
 }
 
+// newClientCon returns a client connection.
+func newClientCon(address string) (*conn, status.Status) {
+	c, err := net.Dial("tcp", address)
+	if err != nil {
+		return nil, tcpError(err)
+	}
+
+	conn := newConn(c)
+	go conn.run(nil)
+	return conn, status.OK
+}
+
+func newServerConn(c net.Conn, handler Handler) *conn {
+	conn := newConn(c)
+	conn.server = true
+	conn.handler = handler
+	return conn
+}
+
 // Open opens a new stream and immediately sends a message.
 func (c *conn) Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status) {
 	return c.openStream(msg)
 }
 
 // internal
+
+func (c *conn) close() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.st.OK() {
+		return
+	}
+	c.st = status.New(codeClosed, "connection closed")
+	c.conn.Close()
+
+	for _, s := range c.streams {
+		s.close()
+	}
+	c.streams = nil
+}
 
 func (c *conn) run(cancel <-chan struct{}) status.Status {
 	defer c.close() // for panics
@@ -78,27 +122,14 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 		st = status.Cancelled
 	case <-reading.Wait():
 		st = reading.Status()
+		log.Fatal(st)
 	case <-writing.Wait():
 		st = writing.Status()
+		log.Fatal(st)
 	}
 
 	c.close()
 	return st
-}
-
-func (c *conn) close() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if !c.st.OK() {
-		return
-	}
-	c.st = status.New(codeClosed, "connection closed")
-
-	for _, s := range c.streams {
-		s.close()
-	}
-	c.streams = nil
 }
 
 // write loop
@@ -188,12 +219,33 @@ func (c *conn) handleMessage(msg ptcp.Message) status.Status {
 
 // handleOpenStream handles an open stream message.
 func (c *conn) handleOpenStream(msg ptcp.OpenStream) status.Status {
+	// Create stream
+	s, ok, st := c._handleOpenStream(msg)
+	switch {
+	case !st.OK():
+		return st
+	case !ok:
+		return status.OK
+	}
+
+	// Start stream
+	go c.handler.Handle(s)
+
+	// Receive message
+	data := msg.Data()
+	if len(data) > 0 {
+		s.receive(data)
+	}
+	return status.OK
+}
+
+func (c *conn) _handleOpenStream(msg ptcp.OpenStream) (*stream, bool, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	// Check conn open
 	if !c.st.OK() {
-		return status.OK
+		return nil, false, status.OK
 	}
 
 	// Check stream exists
@@ -201,17 +253,13 @@ func (c *conn) handleOpenStream(msg ptcp.OpenStream) status.Status {
 	_, ok := c.streams[id]
 	if ok {
 		// TODO: Send error
-		return status.OK
+		return nil, false, status.OK
 	}
 
 	// Create stream
 	s := newStream(c, id)
 	c.streams[id] = s
-
-	// Receive data
-	data := msg.Data()
-	s.receive(data)
-	return status.OK
+	return s, true, status.OK
 }
 
 // handleCloseStream handles a close stream message.
@@ -284,6 +332,7 @@ func (c *conn) openStream(b []byte) (Stream, status.Status) {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
 
+	// TODO: Close stream on error
 	var msg ptcp.Message
 	{
 		c.writeBuf.Reset()
@@ -308,7 +357,7 @@ func (c *conn) openStream(b []byte) (Stream, status.Status) {
 
 	data := msg.Unwrap().Raw()
 	c.writeQueue.append(data)
-	return nil, status.OK
+	return s, status.OK
 }
 
 // streamClose is called by a stream to signal a close.
