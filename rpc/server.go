@@ -170,6 +170,7 @@ func (s *server) run(cancel <-chan struct{}) status.Status {
 		s.logger.Error("Failed to listen to address", "address", addr, "status", err)
 		return status.WrapError(err)
 	}
+	ln = &loggingListener{ln}
 	defer ln.Close()
 
 	s.address = ln.Addr().String()
@@ -310,4 +311,18 @@ func newErrorResponse(buf *alloc.Buffer, st status.Status) (prpc.Response, statu
 		return prpc.Response{}, status.WrapError(err)
 	}
 	return p, status.OK
+}
+
+type loggingListener struct {
+	net.Listener
+}
+
+// Accept waits for and returns the next connection to the listener.
+func (l *loggingListener) Accept() (net.Conn, error) {
+	conn, err := l.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("Accepted connection", conn.RemoteAddr().String())
+	return conn, nil
 }

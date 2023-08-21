@@ -82,37 +82,7 @@ func BenchmarkRPC(b *testing.B) {
 	t0 := time.Now()
 
 	for i := 0; i < b.N; i++ {
-		// Make request
-		url := fmt.Sprintf("https://%v", s.address)
-		req := NewRequest(url)
-		{
-			call := req.Call("test")
-			args := call.Args()
-			arg := args.Add()
-			arg.Name("msg")
-			arg.Value().String("hello, world")
-			if err := arg.End(); err != nil {
-				b.Fatal(err)
-			}
-			if err := args.End(); err != nil {
-				b.Fatal(err)
-			}
-			if err := call.End(); err != nil {
-				b.Fatal(err)
-			}
-		}
-
-		// Send request
-		resp, st := c.Request(nil, req)
-		if !st.OK() {
-			b.Fatal(st)
-		}
-
-		// Parse response
-		results := resp.Results()
-		require.Equal(b, 2, results.Len())
-
-		req.Free()
+		benchmarkRequest(b, c, s.address)
 	}
 
 	t1 := time.Now()
@@ -188,6 +158,7 @@ func BenchmarkRPC_Parallel(b *testing.B) {
 	case <-time.After(time.Second):
 		b.Fatal("server not listening")
 	}
+	benchmarkRequest(b, c, s.address)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -195,37 +166,7 @@ func BenchmarkRPC_Parallel(b *testing.B) {
 
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			// Make request
-			url := fmt.Sprintf("https://%v", s.address)
-			req := NewRequest(url)
-			{
-				call := req.Call("test")
-				args := call.Args()
-				arg := args.Add()
-				arg.Name("msg")
-				arg.Value().String("hello, world")
-				if err := arg.End(); err != nil {
-					b.Fatal(err)
-				}
-				if err := args.End(); err != nil {
-					b.Fatal(err)
-				}
-				if err := call.End(); err != nil {
-					b.Fatal(err)
-				}
-			}
-
-			// Send request
-			resp, st := c.Request(nil, req)
-			if !st.OK() {
-				b.Fatal(st)
-			}
-
-			// Parse response
-			results := resp.Results()
-			require.Equal(b, 2, results.Len())
-
-			req.Free()
+			benchmarkRequest(b, c, s.address)
 		}
 	})
 
@@ -234,4 +175,39 @@ func BenchmarkRPC_Parallel(b *testing.B) {
 	ops := float64(b.N) / sec
 
 	b.ReportMetric(ops, "ops")
+}
+
+func benchmarkRequest(b *testing.B, c *client, address string) {
+	// Make request
+	url := fmt.Sprintf("https://%v", address)
+	req := NewRequest(url)
+	defer req.Free()
+	{
+		call := req.Call("test")
+		args := call.Args()
+		arg := args.Add()
+		arg.Name("msg")
+		arg.Value().String("hello, world")
+		if err := arg.End(); err != nil {
+			b.Fatal(err)
+		}
+		if err := args.End(); err != nil {
+			b.Fatal(err)
+		}
+		if err := call.End(); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	// Send request
+	resp, st := c.Request(nil, req)
+	if !st.OK() {
+		b.Fatal(st)
+	}
+
+	// Parse response
+	results := resp.Results()
+	require.Equal(b, 2, results.Len())
+
+	req.Free()
 }
