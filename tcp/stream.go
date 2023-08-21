@@ -37,7 +37,7 @@ type stream struct {
 
 	mu        sync.Mutex
 	st        status.Status
-	readQueue *messageBuffer
+	readQueue *queue
 
 	// enforce single reader/writer
 	readMu  sync.Mutex
@@ -50,7 +50,7 @@ func newStream(conn *conn, id bin.Bin128) *stream {
 
 		id:        id,
 		st:        status.OK,
-		readQueue: newMessageBuffer(),
+		readQueue: newQueue(),
 	}
 }
 

@@ -72,7 +72,11 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`"github.com/basecomplextech/baselibrary/status"`)
 	w.line(`"github.com/basecomplextech/spec"`)
 	w.line(`"github.com/basecomplextech/spec/encoding"`)
-	w.line(`"github.com/basecomplextech/spec/rpc"`)
+
+	// TODO: Fix me, this is a hack
+	if file.Package.Name != "prpc" {
+		w.line(`"github.com/basecomplextech/spec/rpc"`)
+	}
 
 	for _, imp := range file.Imports {
 		pkg := importPackage(imp)
@@ -86,7 +90,12 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.Type`)
-	w.line(`_ rpc.Client`)
+
+	// TODO: Fix me, this is a hack
+	if file.Package.Name != "prpc" {
+		w.line(`_ rpc.Client`)
+	}
+
 	w.line(`_ spec.Type`)
 	w.line(`_ status.Status`)
 	w.line(`)`)

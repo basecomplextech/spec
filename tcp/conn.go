@@ -16,8 +16,8 @@ import (
 )
 
 type Conn interface {
-	// Open opens a new stream.
-	Open(cancel <-chan struct{}) (Stream, status.Status)
+	// Open opens a new stream and immediately sends a message.
+	Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status)
 }
 
 // internal
@@ -41,7 +41,7 @@ type conn struct {
 	writeMu    sync.Mutex
 	writeBuf   *alloc.Buffer
 	writeMsg   spec.Writer
-	writeQueue *messageBuffer
+	writeQueue *queue
 }
 
 func newConn(c net.Conn) *conn {
@@ -54,13 +54,13 @@ func newConn(c net.Conn) *conn {
 
 		writeBuf:   buf,
 		writeMsg:   spec.NewWriterBuffer(buf),
-		writeQueue: newMessageBuffer(),
+		writeQueue: newQueue(),
 	}
 }
 
-// Open opens a new stream.
-func (c *conn) Open(cancel <-chan struct{}) (Stream, status.Status) {
-	return nil, status.OK
+// Open opens a new stream and immediately sends a message.
+func (c *conn) Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status) {
+	return c.openStream(msg)
 }
 
 // internal
