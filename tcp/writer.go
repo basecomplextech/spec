@@ -28,8 +28,10 @@ func (w *writer) flush() status.Status {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	err := w.w.Flush()
-	return tcpError(err)
+	if err := w.w.Flush(); err != nil {
+		return tcpError(err)
+	}
+	return status.OK
 }
 
 func (w *writer) write(msg []byte) status.Status {

@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"testing"
+	"time"
 
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,11 @@ func TestTCP(t *testing.T) {
 	server := newServer(address, HandlerFunc(serve))
 	go server.run()
 
-	<-server.listening.Wait()
+	select {
+	case <-server.listening.Wait():
+	case <-time.After(time.Second):
+		t.Fatal("server not listening")
+	}
 	defer server.ln.Close()
 
 	conn, st := newClientCon(address)

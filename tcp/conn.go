@@ -171,13 +171,18 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 	defer c.conn.Close()
 
+loop:
 	for {
 		// Write message
-		msg, ok := c.writeQueue.queue.next()
-		if ok {
+		msg, ok, st := c.writeQueue.queue.next()
+		switch {
+		case !st.OK():
+			return st
+		case ok:
 			if st := c.writer.write(msg); !st.OK() {
 				return st
 			}
+			continue loop
 		}
 
 		// Flush if no more messages

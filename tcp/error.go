@@ -20,6 +20,10 @@ var (
 )
 
 func tcpError(err error) status.Status {
+	if err == nil {
+		return status.OK
+	}
+
 	switch err {
 	case io.EOF:
 		return status.End
@@ -39,4 +43,8 @@ func tcpError(err error) status.Status {
 		return status.Timeout
 	}
 	return status.WrapError(err).WithCode(codeError)
+}
+
+func tcpErrorf(format string, args ...any) status.Status {
+	return status.Newf(codeError, format, args...)
 }

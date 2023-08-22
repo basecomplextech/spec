@@ -67,8 +67,7 @@ func (q *writeQueue) writeOpenStream(id bin.Bin128, data []byte) status.Status {
 	}
 
 	b := msg.Unwrap().Raw()
-	q.queue.append(b)
-	return status.OK
+	return q.queue.append(b)
 }
 
 func (q *writeQueue) writeCloseStream(id bin.Bin128) status.Status {
@@ -98,8 +97,7 @@ func (q *writeQueue) writeCloseStream(id bin.Bin128) status.Status {
 	}
 
 	b := msg.Unwrap().Raw()
-	q.queue.append(b)
-	return status.OK
+	return q.queue.append(b)
 }
 
 func (q *writeQueue) writeStreamMessage(id bin.Bin128, data []byte) status.Status {
@@ -129,6 +127,5 @@ func (q *writeQueue) writeStreamMessage(id bin.Bin128, data []byte) status.Statu
 	}
 
 	b := msg.Unwrap().Raw()
-	q.queue.append(b)
-	return status.OK
+	return q.queue.append(b)
 }

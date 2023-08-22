@@ -70,8 +70,10 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 
 	for {
 		// Try to read next message
-		msg, ok := s.readQueue.next()
+		msg, ok, st := s.readQueue.next()
 		switch {
+		case !st.OK():
+			return nil, st
 		case ok:
 			return msg, status.OK
 		}
