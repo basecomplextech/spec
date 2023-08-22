@@ -23,7 +23,7 @@ func TestTCP(t *testing.T) {
 		}
 	}
 
-	logger := logging.TestLoggerLevel(t, logging.LevelDebug)
+	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", HandlerFunc(serve), logger)
 
 	running, st := server.Run()
