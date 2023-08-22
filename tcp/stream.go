@@ -31,17 +31,16 @@ type Stream interface {
 var _ Stream = (*stream)(nil)
 
 type stream struct {
+	id   bin.Bin128
 	conn *conn
 
-	id bin.Bin128
-
-	mu        sync.Mutex
-	st        status.Status
+	// mutexes are used for single reader/writer
 	readQueue *queue
+	readMu    sync.Mutex
+	writeMu   sync.Mutex
 
-	// enforce single reader/writer
-	readMu  sync.Mutex
-	writeMu sync.Mutex
+	mu sync.Mutex
+	st status.Status
 }
 
 func newStream(conn *conn, id bin.Bin128) *stream {
@@ -66,16 +65,13 @@ func (s *stream) Status() status.Status {
 
 // Read reads a message from the stream, the message is valid until the next iteration.
 func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
-	// Enforce single reader
 	s.readMu.Lock()
 	defer s.readMu.Unlock()
 
 	for {
 		// Try to read next message
-		msg, ok, st := s.read()
+		msg, ok := s.readQueue.next()
 		switch {
-		case !st.OK():
-			return nil, st
 		case ok:
 			return msg, status.OK
 		}
@@ -92,7 +88,6 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 
 // Write writes a message to the stream.
 func (s *stream) Write(msg []byte) status.Status {
-	// Enforce single writer
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 
@@ -106,36 +101,24 @@ func (s *stream) Write(msg []byte) status.Status {
 	s.mu.Unlock()
 
 	// Write message
-	ok, st := s.conn.streamSend(s.id, msg)
-	switch {
-	case !st.OK():
-		return st
-	case ok:
-		return status.OK
-	}
-
-	// Return error if failed
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.st
+	return s.conn.sendMessage(s.id, msg)
 }
 
 // Internal
 
 // Free closes the stream and releases its resources.
 func (s *stream) Free() {
+	defer s.free()
+
 	s.close()
-	s.conn.streamClose(s.id)
-	s.free()
+	s.conn.closeStream(s.id)
 }
 
 // internal
 
 func (s *stream) free() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	s.readQueue.free()
+	s.readQueue = nil
 }
 
 // close closes the stream.
@@ -147,30 +130,46 @@ func (s *stream) close() {
 		return
 	}
 
-	s.st = status.End
+	s.st = statusStreamClosed
 	s.readQueue.close()
 }
 
-func (s *stream) read() ([]byte, bool, status.Status) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+// receive
 
-	msg, ok := s.readQueue.next()
-	if ok {
-		return msg, true, status.OK
-	}
-	return nil, false, s.st
-}
-
-// receive receives a message from a connection.
-func (s *stream) receive(msg []byte) bool {
+// receiveError receives an error from the connection.
+func (s *stream) receiveError(st status.Status) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if !s.st.OK() {
-		return false
+		return
+	}
+
+	s.st = st
+	s.readQueue.closeWithError(st)
+}
+
+// receiveClose receives a close message from the connection.
+func (s *stream) receiveClose() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.st.OK() {
+		return
+	}
+
+	s.st = statusStreamClosed
+	s.readQueue.close()
+}
+
+// receiveMessage receives a message from the connection.
+func (s *stream) receiveMessage(msg []byte) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.st.OK() {
+		return
 	}
 
 	s.readQueue.append(msg)
-	return true
 }

@@ -9,8 +9,14 @@ import (
 )
 
 const (
-	codeError  status.Code = "tcp_error"
-	codeClosed status.Code = "tcp_closed"
+	codeError        status.Code = "tcp_error"
+	codeConnClosed   status.Code = "tcp_conn_closed"
+	codeStreamClosed status.Code = "tcp_stream_closed"
+)
+
+var (
+	statusConnClosed   = status.New(codeConnClosed, "tcp connection closed")
+	statusStreamClosed = status.New(codeStreamClosed, "tcp stream closed")
 )
 
 func tcpError(err error) status.Status {
@@ -22,7 +28,7 @@ func tcpError(err error) status.Status {
 	}
 
 	if errors.Is(err, net.ErrClosed) {
-		return status.WrapError(err).WithCode(codeClosed)
+		return status.WrapError(err).WithCode(codeConnClosed)
 	}
 
 	ne, ok := (err).(net.Error)

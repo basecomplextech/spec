@@ -1,18 +1,12 @@
 package tcp
 
 import (
-	"bufio"
-	"encoding/binary"
-	"io"
-	"log"
 	"net"
 	"sync"
 
-	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/ptcp"
 )
 
@@ -26,44 +20,30 @@ type Conn interface {
 var _ Conn = (*conn)(nil)
 
 type conn struct {
-	conn    net.Conn
+	conn net.Conn
+
 	server  bool
 	handler Handler // only for server connections
 
-	r     *bufio.Reader
-	rhead [4]byte
-	rbody *alloc.Buffer
-
-	w     *bufio.Writer
-	whead [4]byte
+	reader     *reader
+	writer     *writer
+	writeQueue *writeQueue
 
 	mu      sync.RWMutex
 	st      status.Status
 	streams map[bin.Bin128]*stream
-
-	writeMu    sync.Mutex
-	writeBuf   *alloc.Buffer
-	writeMsg   spec.Writer
-	writeQueue *queue
 }
 
 func newConn(c net.Conn) *conn {
-	buf := alloc.NewBuffer()
-
 	return &conn{
 		conn: c,
 
-		r:     bufio.NewReader(c),
-		rbody: alloc.NewBuffer(),
-
-		w: bufio.NewWriter(c),
+		reader:     newReader(c),
+		writer:     newWriter(c),
+		writeQueue: newWriteQueue(),
 
 		st:      status.OK,
 		streams: make(map[bin.Bin128]*stream),
-
-		writeBuf:   buf,
-		writeMsg:   spec.NewWriterBuffer(buf),
-		writeQueue: newQueue(),
 	}
 }
 
@@ -93,284 +73,169 @@ func (c *conn) Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status) 
 
 // internal
 
-func (c *conn) close() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if !c.st.OK() {
-		return
-	}
-	c.st = status.New(codeClosed, "connection closed")
-	c.conn.Close()
-
-	for _, s := range c.streams {
-		s.close()
-	}
-	c.streams = nil
-}
-
-func (c *conn) run(cancel <-chan struct{}) status.Status {
+func (c *conn) run(cancel <-chan struct{}) (st status.Status) {
 	defer c.close() // for panics
 
-	reading := async.Go(c.readLoop)
-	writing := async.Go(c.writeLoop)
-	defer async.CancelWaitAll(reading, writing)
+	handler := async.Go(c.readLoop)
+	writer := async.Go(c.writeLoop)
+	defer async.CancelWaitAll(handler, writer)
 
-	var st status.Status
 	select {
 	case <-cancel:
 		st = status.Cancelled
-	case <-reading.Wait():
-		st = reading.Status()
-		log.Fatal(st)
-	case <-writing.Wait():
-		st = writing.Status()
-		log.Fatal(st)
+
+	case <-handler.Wait():
+		st = handler.Status()
+
+	case <-writer.Wait():
+		st = writer.Status()
 	}
 
 	c.close()
 	return st
 }
 
+// close
+
+func (c *conn) close() {
+	streams, ok, st := c._close()
+	if !ok {
+		return
+	}
+
+	for _, s := range streams {
+		s.receiveError(st)
+	}
+}
+
+func (c *conn) _close() (map[bin.Bin128]*stream, bool, status.Status) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.st.OK() {
+		return nil, false, c.st
+	}
+
+	c.st = statusConnClosed
+	c.conn.Close()
+
+	streams := c.streams
+	c.streams = nil
+	return streams, true, c.st
+}
+
+// read loop
+
+func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
+	defer c.conn.Close()
+
+	for {
+		// Receive message
+		msg, st := c.reader.read()
+		if !st.OK() {
+			return st
+		}
+
+		// Handle message
+		code := msg.Code()
+		switch code {
+		case ptcp.Code_OpenStream:
+			m := msg.Open()
+			id := m.Id()
+			data := m.Data()
+			if st := c.receiveOpenStream(id, data); !st.OK() {
+				return st
+			}
+
+		case ptcp.Code_CloseStream:
+			m := msg.Close()
+			id := m.Id()
+			if st := c.receiveCloseStream(id); !st.OK() {
+				return st
+			}
+
+		case ptcp.Code_StreamMessage:
+			m := msg.Message()
+			id := m.Id()
+			data := m.Data()
+			if st := c.receiveStreamMessage(id, data); !st.OK() {
+				return st
+			}
+		default:
+		}
+	}
+}
+
 // write loop
 
 func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
-	defer c.writeBuf.Free()
-	defer c.writeQueue.free()
-	head := c.whead[:]
+	defer c.conn.Close()
 
 	for {
 		// Write message
-		msg, ok := c.writeQueue.next()
+		msg, ok := c.writeQueue.queue.next()
 		if ok {
-			size := len(msg)
-			binary.BigEndian.PutUint32(head, uint32(size))
-
-			if _, err := c.w.Write(head); err != nil {
-				return tcpError(err)
+			if st := c.writer.write(msg); !st.OK() {
+				return st
 			}
-			if _, err := c.w.Write(msg); err != nil {
-				return tcpError(err)
-			}
-
-			continue
 		}
 
 		// Flush if no more messages
-		if err := c.w.Flush(); err != nil {
-			return status.WrapError(err)
+		if st := c.writer.flush(); !st.OK() {
+			return st
 		}
 
 		// Wait for more messages
 		select {
 		case <-cancel:
 			return status.Cancelled
-		case <-c.writeQueue.wait():
+		case <-c.writeQueue.queue.wait():
 			continue
 		}
 	}
 }
 
-// read loop
-
-func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
-	head := c.rhead[:]
-
-	for {
-		// Read size
-		if _, err := io.ReadFull(c.r, head); err != nil {
-			return tcpError(err)
-		}
-		size := binary.BigEndian.Uint32(head)
-
-		// Read body
-		c.rbody.Reset()
-		body := c.rbody.Grow(int(size))
-		if _, err := io.ReadFull(c.r, body); err != nil {
-			return tcpError(err)
-		}
-
-		// Parse message
-		msg, _, err := ptcp.ParseMessage(body)
-		if err != nil {
-			return tcpError(err)
-		}
-
-		// Handle message
-		if st := c.handleMessage(msg); !st.OK() {
-			return st
-		}
-	}
-}
-
-// handleMessage handles a message.
-func (c *conn) handleMessage(msg ptcp.Message) status.Status {
-	code := msg.Code()
-	switch code {
-	case ptcp.Code_OpenStream:
-		return c.handleOpenStream(msg.Open())
-	case ptcp.Code_CloseStream:
-		return c.handleCloseStream(msg.Close())
-	case ptcp.Code_StreamMessage:
-		return c.handleStreamMessage(msg.Message())
-	}
-	return status.OK
-}
-
-// handleOpenStream handles an open stream message.
-func (c *conn) handleOpenStream(msg ptcp.OpenStream) status.Status {
-	// Create stream
-	s, ok, st := c._handleOpenStream(msg)
-	switch {
-	case !st.OK():
-		return st
-	case !ok:
-		return status.OK
-	}
-
-	// Start stream
-	go c.handler.Handle(s)
-
-	// Receive message
-	data := msg.Data()
-	if len(data) > 0 {
-		s.receive(data)
-	}
-	return status.OK
-}
-
-func (c *conn) _handleOpenStream(msg ptcp.OpenStream) (*stream, bool, status.Status) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Check conn open
-	if !c.st.OK() {
-		return nil, false, status.OK
-	}
-
-	// Check stream exists
-	id := msg.Id()
-	_, ok := c.streams[id]
-	if ok {
-		// TODO: Send error
-		return nil, false, status.OK
-	}
-
-	// Create stream
-	s := newStream(c, id)
-	c.streams[id] = s
-	return s, true, status.OK
-}
-
-// handleCloseStream handles a close stream message.
-func (c *conn) handleCloseStream(msg ptcp.CloseStream) status.Status {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Check conn open
-	if !c.st.OK() {
-		return status.OK
-	}
-
-	// Ignore absent stream
-	id := msg.Id()
-	s, ok := c.streams[id]
-	if !ok {
-		return status.OK
-	}
-
-	// Delete stream
-	delete(c.streams, id)
-
-	// Close stream
-	s.close()
-	return status.OK
-}
-
-// handleStreamMessage handles a stream message.
-func (c *conn) handleStreamMessage(msg ptcp.StreamMessage) status.Status {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	// Check conn open
-	if !c.st.OK() {
-		return status.OK
-	}
-
-	// Check stream exists
-	id := msg.Id()
-	s, ok := c.streams[id]
-	if !ok {
-		// TODO: Send error
-		return status.OK
-	}
-
-	// Receive data
-	data := msg.Data()
-	s.receive(data)
-	return status.OK
-}
-
-// streams
+// internal
 
 // openStream opens a new stream and immediately sends a message.
-func (c *conn) openStream(b []byte) (Stream, status.Status) {
+func (c *conn) openStream(data []byte) (Stream, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Check conn open
+	// Check conn
 	if !c.st.OK() {
 		return nil, c.st
 	}
 
 	// Create stream
+	// TODO: Check duplicates
 	id := bin.Random128()
 	s := newStream(c, id)
 	c.streams[id] = s
 
 	// Write message
-	c.writeMu.Lock()
-	defer c.writeMu.Unlock()
-
-	// TODO: Close stream on error
-	var msg ptcp.Message
-	{
-		c.writeBuf.Reset()
-		c.writeMsg.Reset(c.writeBuf)
-
-		w := ptcp.NewMessageWriterTo(c.writeMsg.Message())
-		w.Code(ptcp.Code_OpenStream)
-
-		w1 := w.Open()
-		w1.Id(id)
-		w1.Data(b)
-		if err := w1.End(); err != nil {
-			return nil, tcpError(err)
-		}
-
-		var err error
-		msg, err = w.Build()
-		if err != nil {
-			return nil, tcpError(err)
-		}
+	st := c.writeQueue.writeOpenStream(id, data)
+	if st.OK() {
+		return s, status.OK
 	}
 
-	data := msg.Unwrap().Raw()
-	c.writeQueue.append(data)
-	return s, status.OK
+	// Close on error
+	defer s.free()
+	delete(c.streams, id)
+	return nil, st
 }
 
-// streamClose is called by a stream to signal a close.
-func (c *conn) streamClose(id bin.Bin128) status.Status {
+// closeStream is called by a stream to signal a close.
+func (c *conn) closeStream(id bin.Bin128) status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Check conn open
+	// Check conn
 	if !c.st.OK() {
 		return c.st
 	}
 
-	// Check stream open
+	// Check stream
 	_, ok := c.streams[id]
 	if !ok {
 		return status.OK
@@ -378,80 +243,122 @@ func (c *conn) streamClose(id bin.Bin128) status.Status {
 
 	// Delete stream
 	delete(c.streams, id)
-
-	// Write message
-	c.writeMu.Lock()
-	defer c.writeMu.Unlock()
-
-	var msg ptcp.Message
-	{
-		c.writeBuf.Reset()
-		c.writeMsg.Reset(c.writeBuf)
-
-		w := ptcp.NewMessageWriterTo(c.writeMsg.Message())
-		w.Code(ptcp.Code_CloseStream)
-
-		w1 := w.Close()
-		w1.Id(id)
-		if err := w1.End(); err != nil {
-			return tcpError(err)
-		}
-
-		var err error
-		msg, err = w.Build()
-		if err != nil {
-			return tcpError(err)
-		}
-	}
-
-	b := msg.Unwrap().Raw()
-	c.writeQueue.append(b)
-	return status.OK
+	return c.writeQueue.writeCloseStream(id)
 }
 
-// streamSend is called by a stream to send a message.
-func (c *conn) streamSend(id bin.Bin128, b []byte) (bool, status.Status) {
+// sendMessage is called by a stream to send a message.
+func (c *conn) sendMessage(id bin.Bin128, b []byte) status.Status {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	// Check conn open
+	// Check conn
 	if !c.st.OK() {
-		return false, c.st
+		return c.st
 	}
 
-	// Check stream closed
+	// Check stream
 	_, ok := c.streams[id]
 	if !ok {
-		return false, status.OK
+		return statusStreamClosed
 	}
 
 	// Write message
-	c.writeMu.Lock()
-	defer c.writeMu.Unlock()
+	return c.writeQueue.writeStreamMessage(id, b)
+}
 
-	var msg ptcp.Message
-	{
-		c.writeBuf.Reset()
-		c.writeMsg.Reset(c.writeBuf)
+// receiveOpenStream
 
-		w := ptcp.NewMessageWriterTo(c.writeMsg.Message())
-		w.Code(ptcp.Code_StreamMessage)
-
-		w1 := w.Message()
-		w1.Id(id)
-		w1.Data(b)
-		if err := w1.End(); err != nil {
-			return false, tcpError(err)
-		}
-
-		var err error
-		msg, err = w.Build()
-		if err != nil {
-			return false, tcpError(err)
-		}
+// receiveOpenStream is called by the handler on an open message.
+func (c *conn) receiveOpenStream(id bin.Bin128, data []byte) status.Status {
+	// Create stream
+	s, st := c._receiveOpenStream(id, data)
+	if !st.OK() {
+		return st
 	}
 
-	data := msg.Unwrap().Raw()
-	c.writeQueue.append(data)
-	return true, status.OK
+	// Maybe pass message
+	if len(data) > 0 {
+		s.receiveMessage(data)
+	}
+	return status.OK
+}
+
+func (c *conn) _receiveOpenStream(id bin.Bin128, data []byte) (*stream, status.Status) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Check conn
+	if !c.st.OK() {
+		return nil, c.st
+	}
+
+	// Create stream
+	// TODO: Check duplicates
+	s := newStream(c, id)
+	c.streams[id] = s
+
+	go c.handler.Handle(s)
+	return s, status.OK
+}
+
+// receiveCloseStream
+
+// receiveCloseStream is called by the handler to close a stream.
+func (c *conn) receiveCloseStream(id bin.Bin128) status.Status {
+	// Delete stream
+	s, ok := c._receiveCloseStream(id)
+	if !ok {
+		return status.OK
+	}
+
+	// Notify stream
+	s.receiveClose()
+	return status.OK
+}
+
+func (c *conn) _receiveCloseStream(id bin.Bin128) (*stream, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Check conn
+	if !c.st.OK() {
+		return nil, false
+	}
+
+	// Check stream
+	s, ok := c.streams[id]
+	if !ok {
+		return nil, false
+	}
+
+	// Delete stream
+	delete(c.streams, id)
+	return s, true
+}
+
+// receiveStreamMessage
+
+// receiveStreamMessage is called by the handler to handle a stream message.
+func (c *conn) receiveStreamMessage(id bin.Bin128, data []byte) status.Status {
+	// Get stream
+	s, ok := c._receiveStreamMessage(id)
+	if !ok {
+		return status.OK
+	}
+
+	// Pass message
+	s.receiveMessage(data)
+	return status.OK
+}
+
+func (c *conn) _receiveStreamMessage(id bin.Bin128) (*stream, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if !c.st.OK() {
+		return nil, false
+	}
+
+	s, ok := c.streams[id]
+	return s, ok
 }

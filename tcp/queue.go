@@ -1,6 +1,10 @@
 package tcp
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/basecomplextech/baselibrary/status"
+)
 
 type queue struct {
 	mu     sync.Mutex
@@ -31,24 +35,8 @@ func (q *queue) len() int {
 	return len(q.items)
 }
 
-// append append a message to the end.
-func (q *queue) append(msg []byte) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+// close
 
-	msg1 := make([]byte, len(msg))
-	copy(msg1, msg)
-	q.items = append(q.items, msg1)
-
-	if q.waitFlag {
-		select {
-		case q.waitChan <- struct{}{}:
-		default:
-		}
-	}
-}
-
-// close closes the buffer for writing.
 func (q *queue) close() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -58,6 +46,29 @@ func (q *queue) close() {
 	}
 
 	q.closed = true
+
+	if q.waitFlag {
+		select {
+		case q.waitChan <- struct{}{}:
+		default:
+		}
+	}
+}
+
+func (q *queue) closeWithError(st status.Status) {
+
+}
+
+// append/next/wait
+
+// append append a message to the end.
+func (q *queue) append(msg []byte) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	msg1 := make([]byte, len(msg))
+	copy(msg1, msg)
+	q.items = append(q.items, msg1)
 
 	if q.waitFlag {
 		select {
@@ -97,3 +108,11 @@ func (q *queue) wait() <-chan struct{} {
 	q.mu.Unlock()
 	return q.waitChan
 }
+
+// util
+
+var closedChan = func() chan struct{} {
+	ch := make(chan struct{})
+	close(ch)
+	return ch
+}()
