@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/async"
+	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/stretchr/testify/assert"
 )
-
-const address = "localhost:9999"
 
 func TestTCP(t *testing.T) {
 	serve := func(s Stream) status.Status {
@@ -23,8 +23,14 @@ func TestTCP(t *testing.T) {
 		}
 	}
 
-	server := newServer(address, HandlerFunc(serve))
-	go server.run()
+	logger := logging.TestLoggerLevel(t, logging.LevelDebug)
+	server := newServer("localhost:0", HandlerFunc(serve), logger)
+
+	running, st := server.Run()
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	defer async.CancelWait(running)
 
 	select {
 	case <-server.listening.Wait():
@@ -33,7 +39,8 @@ func TestTCP(t *testing.T) {
 	}
 	defer server.ln.Close()
 
-	conn, st := newClientCon(address)
+	addr := server.listenAddress()
+	conn, st := newClientCon(addr)
 	if !st.OK() {
 		t.Fatal(st)
 	}

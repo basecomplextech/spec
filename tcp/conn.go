@@ -74,24 +74,21 @@ func (c *conn) Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status) 
 // internal
 
 func (c *conn) run(cancel <-chan struct{}) (st status.Status) {
-	defer c.close() // for panics
+	defer c.close() // double close in case of panic
 
 	handler := async.Go(c.readLoop)
 	writer := async.Go(c.writeLoop)
 	defer async.CancelWaitAll(handler, writer)
+	defer c.close()
 
 	select {
 	case <-cancel:
 		st = status.Cancelled
-
 	case <-handler.Wait():
 		st = handler.Status()
-
 	case <-writer.Wait():
 		st = writer.Status()
 	}
-
-	c.close()
 	return st
 }
 
