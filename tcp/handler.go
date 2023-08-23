@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"github.com/basecomplextech/baselibrary/async"
+	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 )
 
@@ -40,11 +41,15 @@ func (f StreamHandlerFunc) HandleStream(cancel <-chan struct{}, stream Stream) s
 var _ Handler = (*connHandler)(nil)
 
 type connHandler struct {
-	streamHandler StreamHandler
+	handler StreamHandler
+	logger  logging.Logger
 }
 
-func newConnHandler(streamHandler StreamHandler) *connHandler {
-	return &connHandler{streamHandler: streamHandler}
+func newConnHandler(handler StreamHandler, logger logging.Logger) *connHandler {
+	return &connHandler{
+		handler: handler,
+		logger:  logger,
+	}
 }
 
 // HandleConn handles a new connection.
@@ -55,14 +60,33 @@ func (h *connHandler) HandleConn(cancel <-chan struct{}, conn Conn) status.Statu
 			return st
 		}
 
-		h.handleStream(stream)
+		h.handle(stream)
 	}
 }
 
-func (h *connHandler) handleStream(stream Stream) {
+func (h *connHandler) handle(stream Stream) {
 	async.Go(func(cancel <-chan struct{}) status.Status {
+		defer func() {
+			if e := recover(); e != nil {
+				st, stack := status.RecoverStack(e)
+				h.logger.Error("Stream panic", "status", st, "stack", string(stack))
+			}
+		}()
 		defer stream.Free()
 
-		return h.streamHandler.HandleStream(cancel, stream)
+		// Handle stream
+		st := h.handler.HandleStream(cancel, stream)
+		switch st.Code {
+		case status.CodeOK,
+			status.CodeCancelled,
+			status.CodeEnd,
+			codeConnClosed,
+			codeStreamClosed:
+			return st
+		}
+
+		// Log errors
+		h.logger.Debug("Stream error", "status", st)
+		return st
 	})
 }

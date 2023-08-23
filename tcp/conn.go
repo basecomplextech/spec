@@ -6,6 +6,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/ptcp"
 )
@@ -16,6 +17,23 @@ type Conn interface {
 
 	// Open opens a new stream and immediately sends a message.
 	Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status)
+
+	// Internal
+
+	// Free closes and frees the connection.
+	Free()
+}
+
+// Dial dials an address and returns a connection.
+func Dial(address string, logger logging.Logger) (Conn, status.Status) {
+	nc, err := net.Dial("tcp", address)
+	if err != nil {
+		return nil, tcpError(err)
+	}
+
+	c := newConn(nc, logger)
+	c.Run()
+	return c, status.OK
 }
 
 // internal
@@ -23,19 +41,22 @@ type Conn interface {
 var _ Conn = (*conn)(nil)
 
 type conn struct {
-	conn net.Conn
+	conn   net.Conn
+	logger logging.Logger
 
 	acceptQueue *acceptQueue
 	reader      *reader
 	writer      *writer
 	writeQueue  *writeQueue
 
-	mu      sync.RWMutex
-	st      status.Status
+	mu   sync.RWMutex
+	st   status.Status
+	main async.Routine[struct{}]
+
 	streams map[bin.Bin128]*stream
 }
 
-func newConn(c net.Conn) *conn {
+func newConn(c net.Conn, logger logging.Logger) *conn {
 	return &conn{
 		conn: c,
 
@@ -47,18 +68,6 @@ func newConn(c net.Conn) *conn {
 		st:      status.OK,
 		streams: make(map[bin.Bin128]*stream),
 	}
-}
-
-// newClientCon returns a client connection.
-func newClientCon(address string) (*conn, status.Status) {
-	c, err := net.Dial("tcp", address)
-	if err != nil {
-		return nil, tcpError(err)
-	}
-
-	conn := newConn(c)
-	go conn.run(nil)
-	return conn, status.OK
 }
 
 // Accept accepts a new stream, or returns an end status.
@@ -93,61 +102,100 @@ func (c *conn) Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status) 
 	return c.openStream(msg)
 }
 
+// Free closes and frees the connection.
+func (c *conn) Free() {
+	c.close()
+}
+
+// Run starts the connection main goroutine.
+func (c *conn) Run() async.Routine[struct{}] {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.main != nil {
+		return c.main
+	}
+
+	c.main = async.Go(c.run)
+	return c.main
+}
+
 // internal
 
-func (c *conn) run(cancel <-chan struct{}) (st status.Status) {
-	defer c.close() // double close in case of panic
+func (c *conn) run(cancel <-chan struct{}) status.Status {
+	defer func() {
+		if e := recover(); e != nil {
+			st, stack := status.RecoverStack(e)
+			c.logger.Error("Internal connection panic", "status", st, "stack", string(stack))
+		}
+	}()
 
-	handler := async.Go(c.readLoop)
-	writer := async.Go(c.writeLoop)
-	defer async.CancelWaitAll(handler, writer)
+	// Start
+	read := async.Go(c.readLoop)
+	write := async.Go(c.writeLoop)
+	defer async.CancelWaitAll(read, write)
 	defer c.close()
 
+	// Wait
+	var st status.Status
 	select {
 	case <-cancel:
 		st = status.Cancelled
-	case <-handler.Wait():
-		st = handler.Status()
-	case <-writer.Wait():
-		st = writer.Status()
+	case <-read.Wait():
+		st = read.Status()
+	case <-write.Wait():
+		st = write.Status()
 	}
+
+	// Log errors
+	switch st.Code {
+	case status.CodeOK,
+		status.CodeCancelled,
+		status.CodeEnd,
+		codeConnClosed,
+		codeStreamClosed:
+		return st
+	}
+
+	c.logger.Debug("Internal connection error", "status", st)
 	return st
 }
 
 // close
 
 func (c *conn) close() {
-	streams, ok, st := c._close()
+	ok, st := c._close()
 	if !ok {
 		return
 	}
 
-	for _, s := range streams {
-		s.receiveError(st)
-	}
+	c._closeStreams(st)
 }
 
-func (c *conn) _close() (map[bin.Bin128]*stream, bool, status.Status) {
+func (c *conn) _close() (bool, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if !c.st.OK() {
-		return nil, false, c.st
+		return false, c.st
 	}
 
 	c.st = statusConnClosed
 	c.conn.Close()
+	return true, c.st
+}
 
-	streams := c.streams
+func (c *conn) _closeStreams(st status.Status) {
+	for _, s := range c.streams {
+		s.receiveError(st)
+	}
+
 	c.streams = nil
-	return streams, true, c.st
 }
 
 // read loop
 
 func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
-	defer c.conn.Close()
-
 	for {
 		// Receive message
 		msg, st := c.reader.read()
@@ -180,7 +228,9 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			if st := c.receiveStreamMessage(id, data); !st.OK() {
 				return st
 			}
+
 		default:
+			return tcpErrorf("unexpected tpc message code %d", code)
 		}
 	}
 }
@@ -188,9 +238,6 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 // write loop
 
 func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
-	defer c.conn.Close()
-
-loop:
 	for {
 		// Write message
 		msg, ok, st := c.writeQueue.queue.next()
@@ -201,7 +248,7 @@ loop:
 			if st := c.writer.write(msg); !st.OK() {
 				return st
 			}
-			continue loop
+			continue
 		}
 
 		// Flush if no more messages
@@ -292,7 +339,7 @@ func (c *conn) sendMessage(id bin.Bin128, b []byte) status.Status {
 
 // receiveOpenStream
 
-// receiveOpenStream is called by the handler on an open message.
+// receiveOpenStream is called by the reader on an open message.
 func (c *conn) receiveOpenStream(id bin.Bin128, data []byte) status.Status {
 	// Create stream
 	s, st := c._receiveOpenStream(id, data)
@@ -326,7 +373,7 @@ func (c *conn) _receiveOpenStream(id bin.Bin128, data []byte) (*stream, status.S
 
 // receiveCloseStream
 
-// receiveCloseStream is called by the handler to close a stream.
+// receiveCloseStream is called by the reader to close a stream.
 func (c *conn) receiveCloseStream(id bin.Bin128) status.Status {
 	// Delete stream
 	s, ok := c._receiveCloseStream(id)
@@ -361,7 +408,7 @@ func (c *conn) _receiveCloseStream(id bin.Bin128) (*stream, bool) {
 
 // receiveStreamMessage
 
-// receiveStreamMessage is called by the handler to handle a stream message.
+// receiveStreamMessage is called by the reader to handle a stream message.
 func (c *conn) receiveStreamMessage(id bin.Bin128, data []byte) status.Status {
 	// Get stream
 	s, ok := c._receiveStreamMessage(id)

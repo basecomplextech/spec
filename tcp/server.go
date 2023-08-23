@@ -28,6 +28,17 @@ type Server interface {
 	Run() (async.Routine[struct{}], status.Status)
 }
 
+// NewServer creates a new server with a connection handler.
+func NewServer(address string, handler Handler, logger logging.Logger) Server {
+	return newServer(address, handler, logger)
+}
+
+// NewServerStreamHandler creates a new server with a stream handler.
+func NewServerStreamHandler(address string, handler StreamHandler, logger logging.Logger) Server {
+	h := newConnHandler(handler, logger)
+	return newServer(address, h, logger)
+}
+
 // internal
 
 type server struct {
@@ -57,7 +68,7 @@ func newServer(address string, handler Handler, logger logging.Logger) *server {
 }
 
 func newServerStreamHandler(address string, handler StreamHandler, logger logging.Logger) *server {
-	h := newConnHandler(handler)
+	h := newConnHandler(handler, logger)
 	return newServer(address, h, logger)
 }
 
@@ -113,14 +124,13 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 		s.logger.Error("SpecTCP server failed to listen to address", "status", st)
 		return st
 	}
-	defer s.ln.Close()
 
 	// Serve
 	server := async.Go(s.serveLoop)
 	defer async.CancelWait(server)
 	defer s.ln.Close() // double close is OK
 
-	// Await
+	// Wait
 	select {
 	case <-cancel:
 		st = status.Cancelled
@@ -217,40 +227,33 @@ func (s *server) serveLoop(cancel <-chan struct{}) status.Status {
 }
 
 func (s *server) handle(nc net.Conn) {
-	conn := newConn(nc)
-	async.Go(func(cancel <-chan struct{}) (st status.Status) {
+	conn := newConn(nc, s.logger)
+
+	async.Go(func(cancel <-chan struct{}) status.Status {
 		defer func() {
 			if e := recover(); e != nil {
 				st, stack := status.RecoverStack(e)
 				s.logger.Error("Connection panic", "status", st, "stack", string(stack))
 			}
 		}()
-		defer nc.Close()
+		defer conn.Free()
 
-		// Run
-		runner := async.Go(conn.run)
-		handler := async.Go(func(cancel <-chan struct{}) status.Status {
-			return s.handler.HandleConn(cancel, conn)
-		})
-		defer async.CancelWaitAll(runner, handler)
-		defer nc.Close()
+		// Start conn
+		run := conn.Run()
+		defer async.CancelWait(run)
 
-		// Wait
-		select {
-		case <-cancel:
-			st = status.Cancelled
-		case <-runner.Wait():
-			st = runner.Status()
-		case <-handler.Wait():
-			st = handler.Status()
-		}
-
-		// Errors
+		// Handle conn
+		st := s.handler.HandleConn(cancel, conn)
 		switch st.Code {
-		case status.CodeOK, status.CodeCancelled, codeConnClosed:
-		default:
-			s.logger.Debug("Connection error", "status", st)
+		case status.CodeOK,
+			status.CodeCancelled,
+			status.CodeEnd,
+			codeConnClosed:
+			return st
 		}
+
+		// Log errors
+		s.logger.Debug("Connection error", "status", st)
 		return st
 	})
 }

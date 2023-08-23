@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func testServer(t *testing.T, address string, handler StreamHandlerFunc, logger logging.Logger) *server {
+	return newServerStreamHandler(address, handler, logger)
+}
+
 func TestTCP(t *testing.T) {
 	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
 		for {
@@ -24,26 +28,26 @@ func TestTCP(t *testing.T) {
 	}
 
 	logger := logging.TestLogger(t)
-	server := newServerStreamHandler("localhost:0", StreamHandlerFunc(handle), logger)
+	server := testServer(t, "localhost:0", handle, logger)
 
-	running, st := server.Run()
+	run, st := server.Run()
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer async.CancelWait(running)
+	defer async.CancelWait(run)
 
 	select {
 	case <-server.listening.Wait():
 	case <-time.After(time.Second):
 		t.Fatal("server not listening")
 	}
-	defer server.ln.Close()
 
 	addr := server.listenAddress()
-	conn, st := newClientCon(addr)
+	conn, st := Dial(addr, logger)
 	if !st.OK() {
 		t.Fatal(st)
 	}
+	defer conn.Free()
 
 	stream, st := conn.Open(nil, nil)
 	if !st.OK() {
