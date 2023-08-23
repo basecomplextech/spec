@@ -11,6 +11,9 @@ import (
 )
 
 type Conn interface {
+	// Accept accepts a new stream, or returns an end status.
+	Accept(cancel <-chan struct{}) (Stream, status.Status)
+
 	// Open opens a new stream and immediately sends a message.
 	Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status)
 }
@@ -22,12 +25,10 @@ var _ Conn = (*conn)(nil)
 type conn struct {
 	conn net.Conn
 
-	server  bool
-	handler Handler // only for server connections
-
-	reader     *reader
-	writer     *writer
-	writeQueue *writeQueue
+	acceptQueue *acceptQueue
+	reader      *reader
+	writer      *writer
+	writeQueue  *writeQueue
 
 	mu      sync.RWMutex
 	st      status.Status
@@ -38,9 +39,10 @@ func newConn(c net.Conn) *conn {
 	return &conn{
 		conn: c,
 
-		reader:     newReader(c),
-		writer:     newWriter(c),
-		writeQueue: newWriteQueue(),
+		acceptQueue: newAcceptQueue(),
+		reader:      newReader(c),
+		writer:      newWriter(c),
+		writeQueue:  newWriteQueue(),
 
 		st:      status.OK,
 		streams: make(map[bin.Bin128]*stream),
@@ -59,11 +61,31 @@ func newClientCon(address string) (*conn, status.Status) {
 	return conn, status.OK
 }
 
-func newServerConn(c net.Conn, handler Handler) *conn {
-	conn := newConn(c)
-	conn.server = true
-	conn.handler = handler
-	return conn
+// Accept accepts a new stream, or returns an end status.
+func (c *conn) Accept(cancel <-chan struct{}) (Stream, status.Status) {
+	c.mu.Lock()
+	if !c.st.OK() {
+		c.mu.Unlock()
+		return nil, c.st
+	}
+	c.mu.Unlock()
+
+	for {
+		stream, ok, st := c.acceptQueue.poll()
+		switch {
+		case !st.OK():
+			return nil, st
+		case ok:
+			return stream, status.OK
+		}
+
+		select {
+		case <-cancel:
+			return nil, status.Cancelled
+		case <-c.acceptQueue.wait():
+			continue
+		}
+	}
 }
 
 // Open opens a new stream and immediately sends a message.
@@ -298,8 +320,7 @@ func (c *conn) _receiveOpenStream(id bin.Bin128, data []byte) (*stream, status.S
 	// TODO: Check duplicates
 	s := newStream(c, id)
 	c.streams[id] = s
-
-	go c.handler.Handle(s)
+	c.acceptQueue.push(s)
 	return s, status.OK
 }
 

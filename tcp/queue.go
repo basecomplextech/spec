@@ -142,11 +142,3 @@ func (q *queue) wait() <-chan struct{} {
 	q.mu.Unlock()
 	return q.waitChan
 }
-
-// util
-
-var closedChan = func() chan struct{} {
-	ch := make(chan struct{})
-	close(ch)
-	return ch
-}()

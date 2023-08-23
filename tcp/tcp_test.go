@@ -11,20 +11,20 @@ import (
 )
 
 func TestTCP(t *testing.T) {
-	serve := func(s Stream) status.Status {
+	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
 		for {
-			msg, st := s.Read(nil)
+			msg, st := stream.Read(cancel)
 			if !st.OK() {
 				return st
 			}
-			if st := s.Write(msg); !st.OK() {
+			if st := stream.Write(msg); !st.OK() {
 				return st
 			}
 		}
 	}
 
 	logger := logging.TestLogger(t)
-	server := newServer("localhost:0", HandlerFunc(serve), logger)
+	server := newServerStreamHandler("localhost:0", StreamHandlerFunc(handle), logger)
 
 	running, st := server.Run()
 	if !st.OK() {

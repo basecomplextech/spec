@@ -28,6 +28,8 @@ type Server interface {
 	Run() (async.Routine[struct{}], status.Status)
 }
 
+// internal
+
 type server struct {
 	address string
 	handler Handler
@@ -52,6 +54,11 @@ func newServer(address string, handler Handler, logger logging.Logger) *server {
 		stopped:   async.SetFlag(),
 		listening: async.NewFlag(),
 	}
+}
+
+func newServerStreamHandler(address string, handler StreamHandler, logger logging.Logger) *server {
+	h := newConnHandler(handler)
+	return newServer(address, h, logger)
 }
 
 // Running indicates that the server is running.
@@ -168,7 +175,7 @@ func (s *server) serveLoop(cancel <-chan struct{}) status.Status {
 			delay = 0
 			timeout = false
 
-			s.accept(nc)
+			s.handle(nc)
 			continue
 		}
 
@@ -209,17 +216,36 @@ func (s *server) serveLoop(cancel <-chan struct{}) status.Status {
 	}
 }
 
-func (s *server) accept(nc net.Conn) {
-	conn := newServerConn(nc, s.handler)
-	async.Go(func(cancel <-chan struct{}) status.Status {
+func (s *server) handle(nc net.Conn) {
+	conn := newConn(nc)
+	async.Go(func(cancel <-chan struct{}) (st status.Status) {
 		defer func() {
 			if e := recover(); e != nil {
 				st, stack := status.RecoverStack(e)
 				s.logger.Error("Connection panic", "status", st, "stack", string(stack))
 			}
 		}()
+		defer nc.Close()
 
-		st := conn.run(cancel)
+		// Run
+		runner := async.Go(conn.run)
+		handler := async.Go(func(cancel <-chan struct{}) status.Status {
+			return s.handler.HandleConn(cancel, conn)
+		})
+		defer async.CancelWaitAll(runner, handler)
+		defer nc.Close()
+
+		// Wait
+		select {
+		case <-cancel:
+			st = status.Cancelled
+		case <-runner.Wait():
+			st = runner.Status()
+		case <-handler.Wait():
+			st = handler.Status()
+		}
+
+		// Errors
 		switch st.Code {
 		case status.CodeOK, status.CodeCancelled, codeConnClosed:
 		default:
