@@ -1,3 +1,3 @@
 package tcp
 
-const debug = true
+const debug = false

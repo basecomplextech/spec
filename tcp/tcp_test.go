@@ -7,10 +7,11 @@ import (
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
+	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/stretchr/testify/assert"
 )
 
-func testServer(t *testing.T,
+func testServer(t tests.T,
 	address string,
 	handler StreamHandlerFunc,
 	logger logging.Logger,

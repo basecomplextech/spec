@@ -6,7 +6,6 @@ import (
 
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
-	"github.com/basecomplextech/baselibrary/collect/maps"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/ptcp"
@@ -55,8 +54,10 @@ type conn struct {
 	main    async.Routine[struct{}]
 	streams map[bin.Bin128]*stream
 
-	pendingMu   sync.Mutex
-	pending     map[bin.Bin128]struct{}
+	pendingMu sync.Mutex
+	pending   *idset
+	// pending     []bin.Bin128
+	// pendingMap  map[bin.Bin128]struct{}
 	pendingChan chan struct{}
 }
 
@@ -68,9 +69,11 @@ func newConn(c net.Conn, logger logging.Logger) *conn {
 		reader: newReader(c),
 		writer: newWriter(c),
 
-		st:          status.OK,
-		streams:     make(map[bin.Bin128]*stream),
-		pending:     make(map[bin.Bin128]struct{}),
+		st:      status.OK,
+		streams: make(map[bin.Bin128]*stream),
+
+		pending: newIDSet(),
+		// pendingMap:  make(map[bin.Bin128]struct{}),
 		pendingChan: make(chan struct{}, 1),
 	}
 }
@@ -258,14 +261,14 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 
 func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 	active := make(map[bin.Bin128]struct{})
-	pending := make(map[bin.Bin128]struct{})
+	pending := newIDSet()
 
 	for {
 		// Handle active streams
 		for {
 			// Add pending streams
 			pending = c.switchPending(pending)
-			for id := range pending {
+			for _, id := range pending.list {
 				active[id] = struct{}{}
 			}
 
@@ -429,8 +432,12 @@ func (c *conn) notify(id bin.Bin128) {
 	c.pendingMu.Lock()
 	defer c.pendingMu.Unlock()
 
-	c.pending[id] = struct{}{}
-	if len(c.pending) > 1 {
+	ok := c.pending.add(id)
+	if !ok {
+		return
+	}
+
+	if c.pending.len() > 1 {
 		return
 	}
 
@@ -440,18 +447,18 @@ func (c *conn) notify(id bin.Bin128) {
 	}
 }
 
-func (c *conn) switchPending(next map[bin.Bin128]struct{}) map[bin.Bin128]struct{} {
-	maps.Clear(next)
+// switchPending switches the pending idset.
+func (c *conn) switchPending(next *idset) *idset {
+	next.clear()
 
 	c.pendingMu.Lock()
 	defer c.pendingMu.Unlock()
 
+	if c.pending.len() == 0 {
+		return next
+	}
+
 	prev := c.pending
 	c.pending = next
-
-	select {
-	case <-c.pendingChan:
-	default:
-	}
 	return prev
 }

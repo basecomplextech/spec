@@ -30,8 +30,6 @@ type Stream interface {
 
 // internal
 
-const writeQueueSize = 1 << 17 // 128kb
-
 var _ Stream = (*stream)(nil)
 
 type stream struct {
@@ -52,7 +50,7 @@ func newStream(id bin.Bin128, conn *conn) *stream {
 		st:   status.OK,
 
 		readQueue:  alloc.NewBufferQueue(), // unbounded
-		writeQueue: alloc.NewBufferQueueCap(writeQueueSize),
+		writeQueue: alloc.NewBufferQueueCap(streamWiteQueueCap),
 	}
 }
 
@@ -95,7 +93,7 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	for {
 		// Try to write message
-		ok, st := s.writeQueue.Write(msg)
+		ok, wasEmpty, st := s.writeQueue.Write(msg)
 		if debug {
 			fmt.Println("-> write", ok, st, msg)
 		}
@@ -103,7 +101,9 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		case !st.OK():
 			return st
 		case ok:
-			s.notify()
+			if wasEmpty {
+				s.notify()
+			}
 			return status.OK
 		}
 
@@ -159,9 +159,11 @@ func (s *stream) pull() ([]byte, bool, status.Status) {
 
 // push pushes an incoming message to the stream read queue.
 func (s *stream) push(msg []byte) (bool, status.Status) {
-	return s.readQueue.Write(msg)
+	ok, _, st := s.readQueue.Write(msg)
+	return ok, st
 }
 
+// notify adds the stream to the pending connection streams.
 func (s *stream) notify() {
 	s.conn.notify(s.id)
 }

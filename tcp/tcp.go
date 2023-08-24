@@ -9,6 +9,12 @@ import (
 )
 
 const (
+	readBufferSize     = 1 << 15 // 32kb
+	writeBufferSize    = 1 << 15 // 32kb
+	streamWiteQueueCap = 1 << 17 // 128kb, max stream write queue capacity
+)
+
+const (
 	codeError        status.Code = "tcp_error"
 	codeConnClosed   status.Code = "tcp_conn_closed"
 	codeStreamClosed status.Code = "tcp_stream_closed"

@@ -14,8 +14,6 @@ import (
 	"github.com/basecomplextech/spec/proto/ptcp"
 )
 
-const writeBufferSize = 4096
-
 type writer struct {
 	w *bufio.Writer
 

@@ -12,8 +12,6 @@ import (
 	"github.com/basecomplextech/spec/proto/ptcp"
 )
 
-const readBufferSize = 4096
-
 type reader struct {
 	r *bufio.Reader
 
