@@ -16,8 +16,11 @@ type Conn interface {
 	// Accept accepts a new stream, or returns an end status.
 	Accept(cancel <-chan struct{}) (Stream, status.Status)
 
-	// Open opens a new stream and immediately writes a message.
+	// Open opens a new stream.
 	Open(cancel <-chan struct{}) (Stream, status.Status)
+
+	// Request opens a new stream and sends a request message.
+	Request(cancel <-chan struct{}, request []byte) (Stream, status.Status)
 
 	// Internal
 
@@ -106,41 +109,12 @@ func (c *conn) Accept(cancel <-chan struct{}) (Stream, status.Status) {
 
 // Open opens a new stream and immediately writes a message.
 func (c *conn) Open(cancel <-chan struct{}) (Stream, status.Status) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	return c.openStream(nil)
+}
 
-	if !c.st.OK() {
-		return nil, c.st
-	}
-
-	// Get unique id
-	var id bin.Bin128
-	for i := 0; i < 10; i++ {
-		id = bin.Random128()
-		if _, ok := c.streams[id]; !ok {
-			break
-		}
-		id = bin.Bin128{}
-	}
-	if id == (bin.Bin128{}) {
-		return nil, tcpErrorf("failed to generate unique stream id")
-	}
-
-	// Create stream
-	s := newStream(id, c)
-	c.streams[id] = s
-
-	// Write message
-	st := c.writer.writeOpenStream(id)
-	if !st.OK() {
-		s.closeBoth()
-		delete(c.streams, id)
-		if debug {
-			debugPrint(c.client, "open failed\t", id, st)
-		}
-		return nil, st
-	}
-	return s, status.OK
+// Request opens a new stream and sends a request message.
+func (c *conn) Request(cancel <-chan struct{}, request []byte) (Stream, status.Status) {
+	return c.openStream(request)
 }
 
 // Free closes and frees the connection.
@@ -238,7 +212,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 		switch code {
 		case ptcp.Code_OpenStream:
 			m := msg.Open()
-			if st := c.handleNewStream(m); !st.OK() {
+			if st := c.handleOpenStream(m); !st.OK() {
 				return st
 			}
 
@@ -349,6 +323,48 @@ func (c *conn) getStream(id bin.Bin128) (*stream, bool, status.Status) {
 	return s, true, status.OK
 }
 
+// openStream opens a new stream.
+func (c *conn) openStream(request []byte) (*stream, status.Status) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.st.OK() {
+		return nil, c.st
+	}
+
+	// Get unique id
+	var id bin.Bin128
+	for i := 0; i < 10; i++ {
+		id = bin.Random128()
+		if _, ok := c.streams[id]; !ok {
+			break
+		}
+		id = bin.Bin128{}
+	}
+	if id == (bin.Bin128{}) {
+		return nil, tcpErrorf("failed to generate unique stream id")
+	}
+
+	// Create stream
+	s := newStream(id, c)
+	c.streams[id] = s
+
+	// Write message
+	st := c.writer.writeOpenStream(id, request)
+	if st.OK() {
+		return s, status.OK
+	}
+
+	// Write failed, close stream
+	s.closeBoth()
+	delete(c.streams, id)
+
+	if debug {
+		debugPrint(c.client, "open failed\t", id, st)
+	}
+	return nil, st
+}
+
 // closeLocal closes a local stream when all outgoing messages are sent and write queue is ended.
 func (c *conn) closeLocal(id bin.Bin128) {
 	c.mu.Lock()
@@ -376,8 +392,8 @@ func (c *conn) closeLocal(id bin.Bin128) {
 
 // receive
 
-// handleNewStream handles an open stream message, or writes an error on duplicate.
-func (c *conn) handleNewStream(msg ptcp.OpenStream) status.Status {
+// handleOpenStream handles an open stream message, or writes an error on duplicate.
+func (c *conn) handleOpenStream(msg ptcp.OpenStream) status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -394,8 +410,13 @@ func (c *conn) handleNewStream(msg ptcp.OpenStream) status.Status {
 	// Create stream
 	s := newStream(id, c)
 	c.streams[id] = s
-
 	c.accept.push(s)
+
+	// Write data if any
+	data := msg.Data()
+	if len(data) > 0 {
+		_, _ = s.push(data)
+	}
 	return status.OK
 }
 

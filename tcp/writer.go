@@ -53,11 +53,11 @@ func (w *writer) flush() status.Status {
 
 // write
 
-func (w *writer) writeOpenStream(id bin.Bin128) status.Status {
+func (w *writer) writeOpenStream(id bin.Bin128, data []byte) status.Status {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	msg, st := w._openStream(id)
+	msg, st := w._openStream(id, data)
 	if !st.OK() {
 		return st
 	}
@@ -120,7 +120,7 @@ func (w *writer) _write(msg []byte) status.Status {
 
 // build
 
-func (w *writer) _openStream(id bin.Bin128) (msg ptcp.Message, st status.Status) {
+func (w *writer) _openStream(id bin.Bin128, data []byte) (msg ptcp.Message, st status.Status) {
 	w.buf.Reset()
 	w.writer.Reset(w.buf)
 
@@ -129,6 +129,7 @@ func (w *writer) _openStream(id bin.Bin128) (msg ptcp.Message, st status.Status)
 
 	w1 := w0.Open()
 	w1.Id(id)
+	w1.Data(data)
 	if err := w1.End(); err != nil {
 		return msg, tcpError(err)
 	}

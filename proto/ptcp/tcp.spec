@@ -17,6 +17,7 @@ message Message {
 message OpenStream {
     id      bin128  1;
     data    bytes   2; // First message
+    close   bool    3; // Last message
 }
 
 message CloseStream {
@@ -26,4 +27,5 @@ message CloseStream {
 message StreamMessage {
     id      bin128  1;
     data    bytes   2;
+    close   bool    3; // Last message
 }
