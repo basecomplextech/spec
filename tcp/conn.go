@@ -134,7 +134,6 @@ func (c *conn) Open(cancel <-chan struct{}) (Stream, status.Status) {
 	st := c.writer.writeOpenStream(id)
 	if !st.OK() {
 		s.closeBoth()
-
 		delete(c.streams, id)
 		if debug {
 			debugPrint(c.client, "open failed\t", id, st)
@@ -292,20 +291,23 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 				msg, ok, st := s.pull()
 				switch {
 				case !st.OK():
-					if st := c.closeLocal(id); !st.OK() {
+					// Queue end, close stream, write close message
+					delete(active, id)
+					c.closeLocal(id)
+
+					if st := c.writer.writeCloseStream(id); !st.OK() {
 						return st
 					}
-					delete(active, id)
-					continue
 
 				case !ok:
+					// No mesages, remove from active
 					delete(active, id)
-					continue
-				}
 
-				// Write message
-				if st := c.writer.writeStreamMessage(id, msg); !st.OK() {
-					return st
+				case ok:
+					// Write data message
+					if st := c.writer.writeStreamMessage(id, msg); !st.OK() {
+						return st
+					}
 				}
 			}
 
@@ -348,18 +350,18 @@ func (c *conn) getStream(id bin.Bin128) (*stream, bool, status.Status) {
 }
 
 // closeLocal closes a local stream when all outgoing messages are sent and write queue is ended.
-func (c *conn) closeLocal(id bin.Bin128) status.Status {
+func (c *conn) closeLocal(id bin.Bin128) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if !c.st.OK() {
-		return c.st
+		return
 	}
 
 	// Ignore absent
 	s, ok := c.streams[id]
 	if !ok {
-		return status.OK
+		return
 	}
 
 	// Close both queues inside connection, and free the stream.
@@ -370,8 +372,6 @@ func (c *conn) closeLocal(id bin.Bin128) status.Status {
 	// fails to close the stream.
 	s.closeBoth()
 	delete(c.streams, id)
-
-	return c.writer.writeCloseStream(id)
 }
 
 // receive
@@ -444,10 +444,7 @@ func (c *conn) handleStreamMessage(msg ptcp.StreamMessage) status.Status {
 	}
 
 	data := msg.Data()
-	ok, st := s.push(data) // ignore status, stream may be closed
-	if !st.OK() {
-		panic("push error")
-	}
+	_, _ = s.push(data) // ignore status, stream may be closed
 	return status.OK
 }
 

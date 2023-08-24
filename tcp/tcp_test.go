@@ -20,13 +20,13 @@ func testServer(t tests.T,
 }
 
 func TestTCP(t *testing.T) {
-	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
+	handle := func(stream Stream) status.Status {
 		for {
-			msg, st := stream.Read(cancel)
+			msg, st := stream.Read(nil)
 			if !st.OK() {
 				return st
 			}
-			if st := stream.Write(cancel, msg); !st.OK() {
+			if st := stream.Write(nil, msg); !st.OK() {
 				return st
 			}
 		}

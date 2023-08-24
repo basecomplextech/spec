@@ -229,7 +229,9 @@ func (s *server) serveLoop(cancel <-chan struct{}) status.Status {
 func (s *server) handle(nc net.Conn) {
 	conn := newConn(nc, false /* not client */, s.logger)
 
-	async.Go(func(cancel <-chan struct{}) status.Status {
+	// No need to use async.Go here, because we don't need the result,
+	// cancellation, and recover panics manually.
+	go func() {
 		defer func() {
 			if e := recover(); e != nil {
 				st, stack := status.RecoverStack(e)
@@ -243,17 +245,16 @@ func (s *server) handle(nc net.Conn) {
 		defer async.CancelWait(run)
 
 		// Handle conn
-		st := s.handler.HandleConn(cancel, conn)
+		st := s.handler.HandleConn(conn)
 		switch st.Code {
 		case status.CodeOK,
 			status.CodeCancelled,
 			status.CodeEnd,
 			codeConnClosed:
-			return st
+			return
 		}
 
 		// Log errors
-		s.logger.Debug("Connection error", "status", st)
-		return st
-	})
+		s.logger.Error("Connection error", "status", st)
+	}()
 }

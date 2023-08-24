@@ -1,7 +1,6 @@
 package tcp
 
 import (
-	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 )
@@ -9,31 +8,31 @@ import (
 // Handler is a server connection handler.
 type Handler interface {
 	// HandleConn handles a new connection.
-	HandleConn(cancel <-chan struct{}, conn Conn) status.Status
+	HandleConn(conn Conn) status.Status
 }
 
 // StreamHandler is a server stream handler.
 type StreamHandler interface {
 	// HandleStream handles a new stream.
-	HandleStream(cancel <-chan struct{}, stream Stream) status.Status
+	HandleStream(stream Stream) status.Status
 }
 
 // Funcs
 
 // HandlerFunc is a type adapter to allow the use of ordinary functions as handlers.
-type HandlerFunc func(cancel <-chan struct{}, conn Conn) status.Status
+type HandlerFunc func(conn Conn) status.Status
 
 // HandleConn handles a new connection.
-func (f HandlerFunc) HandleConn(cancel <-chan struct{}, conn Conn) status.Status {
-	return f(cancel, conn)
+func (f HandlerFunc) HandleConn(conn Conn) status.Status {
+	return f(conn)
 }
 
 // StreamHandlerFunc is a type adapter to allow the use of ordinary functions as stream handlers.
-type StreamHandlerFunc func(cancel <-chan struct{}, stream Stream) status.Status
+type StreamHandlerFunc func(stream Stream) status.Status
 
 // HandleStream handles a new stream.
-func (f StreamHandlerFunc) HandleStream(cancel <-chan struct{}, stream Stream) status.Status {
-	return f(cancel, stream)
+func (f StreamHandlerFunc) HandleStream(stream Stream) status.Status {
+	return f(stream)
 }
 
 // internal
@@ -53,9 +52,9 @@ func newConnHandler(handler StreamHandler, logger logging.Logger) *connHandler {
 }
 
 // HandleConn handles a new connection.
-func (h *connHandler) HandleConn(cancel <-chan struct{}, conn Conn) status.Status {
+func (h *connHandler) HandleConn(conn Conn) status.Status {
 	for {
-		stream, st := conn.Accept(cancel)
+		stream, st := conn.Accept(nil)
 		if !st.OK() {
 			return st
 		}
@@ -65,7 +64,9 @@ func (h *connHandler) HandleConn(cancel <-chan struct{}, conn Conn) status.Statu
 }
 
 func (h *connHandler) handle(s Stream) {
-	async.Go(func(cancel <-chan struct{}) status.Status {
+	// No need to use async.Go here, because we don't need the result,
+	// cancellation, and recover panics manually.
+	go func() {
 		defer func() {
 			if e := recover(); e != nil {
 				st, stack := status.RecoverStack(e)
@@ -75,18 +76,17 @@ func (h *connHandler) handle(s Stream) {
 		defer s.Free()
 
 		// Handle stream
-		st := h.handler.HandleStream(cancel, s)
+		st := h.handler.HandleStream(s)
 		switch st.Code {
 		case status.CodeOK,
 			status.CodeCancelled,
 			status.CodeEnd,
 			codeConnClosed,
 			codeStreamClosed:
-			return st
+			return
 		}
 
 		// Log errors
-		h.logger.Debug("Stream error", "status", st)
-		return st
-	})
+		h.logger.Error("Stream error", "status", st)
+	}()
 }

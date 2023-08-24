@@ -15,13 +15,13 @@ import (
 // Open/close
 
 func BenchmarkOpenClose(b *testing.B) {
-	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
+	handle := func(stream Stream) status.Status {
 		for {
-			msg, st := stream.Read(cancel)
+			msg, st := stream.Read(nil)
 			if !st.OK() {
 				return st
 			}
-			if st := stream.Write(cancel, msg); !st.OK() {
+			if st := stream.Write(nil, msg); !st.OK() {
 				return st
 			}
 		}
@@ -85,13 +85,13 @@ func BenchmarkOpenClose(b *testing.B) {
 }
 
 func BenchmarkOpenClose_Parallel(b *testing.B) {
-	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
+	handle := func(stream Stream) status.Status {
 		for {
-			msg, st := stream.Read(cancel)
+			msg, st := stream.Read(nil)
 			if !st.OK() {
 				return st
 			}
-			if st := stream.Write(cancel, msg); !st.OK() {
+			if st := stream.Write(nil, msg); !st.OK() {
 				return st
 			}
 		}
@@ -161,13 +161,13 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 // Request/reply
 
 func BenchmarkRequestReply(b *testing.B) {
-	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
+	handle := func(stream Stream) status.Status {
 		for {
-			msg, st := stream.Read(cancel)
+			msg, st := stream.Read(nil)
 			if !st.OK() {
 				return st
 			}
-			if st := stream.Write(cancel, msg); !st.OK() {
+			if st := stream.Write(nil, msg); !st.OK() {
 				return st
 			}
 		}
@@ -229,13 +229,13 @@ func BenchmarkRequestReply(b *testing.B) {
 }
 
 func BenchmarkRequestReply_Parallel(b *testing.B) {
-	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
+	handle := func(stream Stream) status.Status {
 		for {
-			msg, st := stream.Read(cancel)
+			msg, st := stream.Read(nil)
 			if !st.OK() {
 				return st
 			}
-			if st := stream.Write(cancel, msg); !st.OK() {
+			if st := stream.Write(nil, msg); !st.OK() {
 				return st
 			}
 		}
@@ -311,9 +311,9 @@ func BenchmarkRequestReply_Parallel(b *testing.B) {
 // Stream
 
 func BenchmarkStream_Parallel(b *testing.B) {
-	handle := func(cancel <-chan struct{}, stream Stream) status.Status {
+	handle := func(stream Stream) status.Status {
 		for {
-			_, st := stream.Read(cancel)
+			_, st := stream.Read(nil)
 			if !st.OK() {
 				return st
 			}
