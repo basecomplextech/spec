@@ -6,17 +6,19 @@ import (
 
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/baselibrary/collect/maps"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/ptcp"
 )
 
+// Conn is a TCP network connection.
 type Conn interface {
 	// Accept accepts a new stream, or returns an end status.
 	Accept(cancel <-chan struct{}) (Stream, status.Status)
 
-	// Open opens a new stream and immediately sends a message.
-	Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status)
+	// Open opens a new stream and immediately writes a message.
+	Open(cancel <-chan struct{}) (Stream, status.Status)
 
 	// Internal
 
@@ -44,29 +46,32 @@ type conn struct {
 	conn   net.Conn
 	logger logging.Logger
 
-	acceptQueue *acceptQueue
-	reader      *reader
-	writer      *writer
-	writeQueue  *writeQueue
+	accept *acceptQueue
+	reader *reader
+	writer *writer
 
-	mu   sync.RWMutex
-	st   status.Status
-	main async.Routine[struct{}]
-
+	mu      sync.RWMutex
+	st      status.Status
+	main    async.Routine[struct{}]
 	streams map[bin.Bin128]*stream
+
+	pendingMu   sync.Mutex
+	pending     map[bin.Bin128]struct{}
+	pendingChan chan struct{}
 }
 
 func newConn(c net.Conn, logger logging.Logger) *conn {
 	return &conn{
 		conn: c,
 
-		acceptQueue: newAcceptQueue(),
-		reader:      newReader(c),
-		writer:      newWriter(c),
-		writeQueue:  newWriteQueue(),
+		accept: newAcceptQueue(),
+		reader: newReader(c),
+		writer: newWriter(c),
 
-		st:      status.OK,
-		streams: make(map[bin.Bin128]*stream),
+		st:          status.OK,
+		streams:     make(map[bin.Bin128]*stream),
+		pending:     make(map[bin.Bin128]struct{}),
+		pendingChan: make(chan struct{}, 1),
 	}
 }
 
@@ -80,7 +85,7 @@ func (c *conn) Accept(cancel <-chan struct{}) (Stream, status.Status) {
 	c.mu.Unlock()
 
 	for {
-		stream, ok, st := c.acceptQueue.poll()
+		stream, ok, st := c.accept.poll()
 		switch {
 		case !st.OK():
 			return nil, st
@@ -91,15 +96,48 @@ func (c *conn) Accept(cancel <-chan struct{}) (Stream, status.Status) {
 		select {
 		case <-cancel:
 			return nil, status.Cancelled
-		case <-c.acceptQueue.wait():
+		case <-c.accept.wait():
 			continue
 		}
 	}
 }
 
-// Open opens a new stream and immediately sends a message.
-func (c *conn) Open(cancel <-chan struct{}, msg []byte) (Stream, status.Status) {
-	return c.openStream(msg)
+// Open opens a new stream and immediately writes a message.
+func (c *conn) Open(cancel <-chan struct{}) (Stream, status.Status) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.st.OK() {
+		return nil, c.st
+	}
+
+	// Get unique id
+	var id bin.Bin128
+	for i := 0; i < 10; i++ {
+		id = bin.Random128()
+		if _, ok := c.streams[id]; !ok {
+			break
+		}
+		id = bin.Bin128{}
+	}
+	if id == (bin.Bin128{}) {
+		return nil, tcpErrorf("failed to generate unique stream id")
+	}
+
+	// Create stream
+	s := newStream(id, c)
+	c.streams[id] = s
+
+	// Write message
+	st := c.writer.writeOpenStream(id)
+	if st.OK() {
+		return s, status.OK
+	}
+
+	// Delete on error
+	defer s.free()
+	delete(c.streams, id)
+	return nil, st
 }
 
 // Free closes and frees the connection.
@@ -130,13 +168,13 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 		}
 	}()
 
-	// Start
+	// Start loops
 	read := async.Go(c.readLoop)
 	write := async.Go(c.writeLoop)
 	defer async.CancelWaitAll(read, write)
 	defer c.close()
 
-	// Wait
+	// Wait cancel/exit
 	var st status.Status
 	select {
 	case <-cancel:
@@ -147,16 +185,16 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 		st = write.Status()
 	}
 
-	// Log errors
+	// Check status
 	switch st.Code {
 	case status.CodeOK,
 		status.CodeCancelled,
 		status.CodeEnd,
-		codeConnClosed,
-		codeStreamClosed:
+		codeConnClosed:
 		return st
 	}
 
+	// Log internal errors
 	c.logger.Debug("Internal connection error", "status", st)
 	return st
 }
@@ -164,33 +202,19 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 // close
 
 func (c *conn) close() {
-	ok, st := c._close()
-	if !ok {
-		return
-	}
-
-	c._closeStreams(st)
-}
-
-func (c *conn) _close() (bool, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if !c.st.OK() {
-		return false, c.st
+		return
 	}
 
 	c.st = statusConnClosed
-	c.conn.Close()
-	return true, c.st
-}
+	defer c.conn.Close()
 
-func (c *conn) _closeStreams(st status.Status) {
 	for _, s := range c.streams {
-		s.receiveError(st)
+		s.close()
 	}
-
-	c.streams = nil
 }
 
 // read loop
@@ -208,24 +232,19 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 		switch code {
 		case ptcp.Code_OpenStream:
 			m := msg.Open()
-			id := m.Id()
-			data := m.Data()
-			if st := c.receiveOpenStream(id, data); !st.OK() {
+			if st := c.handleOpenStream(m); !st.OK() {
 				return st
 			}
 
 		case ptcp.Code_CloseStream:
 			m := msg.Close()
-			id := m.Id()
-			if st := c.receiveCloseStream(id); !st.OK() {
+			if st := c.handleCloseStream(m); !st.OK() {
 				return st
 			}
 
 		case ptcp.Code_StreamMessage:
 			m := msg.Message()
-			id := m.Id()
-			data := m.Data()
-			if st := c.receiveStreamMessage(id, data); !st.OK() {
+			if st := c.handleStreamMessage(m); !st.OK() {
 				return st
 			}
 
@@ -238,20 +257,57 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 // write loop
 
 func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
+	active := make(map[bin.Bin128]struct{})
+	pending := make(map[bin.Bin128]struct{})
+
 	for {
-		// Write message
-		msg, ok, st := c.writeQueue.queue.next()
-		switch {
-		case !st.OK():
-			return st
-		case ok:
-			if st := c.writer.write(msg); !st.OK() {
-				return st
+		// Handle active streams
+		for {
+			// Add pending streams
+			pending = c.switchPending(pending)
+			for id := range pending {
+				active[id] = struct{}{}
 			}
-			continue
+
+			// Write stream messages
+			for id := range active {
+				s, ok, st := c.getStream(id)
+				switch {
+				case !st.OK():
+					return st
+				case !ok:
+					delete(active, id)
+					continue
+				}
+
+				msg, ok, st := s.pull()
+				switch {
+				case !st.OK():
+					// It's an end status, close stream
+					delete(active, id)
+					if st := c.closeStream(id); !st.OK() {
+						return st
+					}
+
+				case ok:
+					// Write stream message
+					if st := c.writer.writeStreamMessage(id, msg); !st.OK() {
+						return st
+					}
+
+				default:
+					// No more stream messages
+					delete(active, id)
+				}
+			}
+
+			// No more streams, break
+			if len(active) == 0 {
+				break
+			}
 		}
 
-		// Flush if no more messages
+		// Flush buffered writes before waiting
 		if st := c.writer.flush(); !st.OK() {
 			return st
 		}
@@ -260,175 +316,142 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 		select {
 		case <-cancel:
 			return status.Cancelled
-		case <-c.writeQueue.queue.wait():
-			continue
+		case <-c.pendingChan:
 		}
 	}
 }
 
-// internal
+// streams
 
-// openStream opens a new stream and immediately sends a message.
-func (c *conn) openStream(data []byte) (Stream, status.Status) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+// getStream returns a stream by id.
+func (c *conn) getStream(id bin.Bin128) (*stream, bool, status.Status) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
-	// Check conn
 	if !c.st.OK() {
-		return nil, c.st
+		return nil, false, c.st
 	}
 
-	// Create stream
-	// TODO: Check duplicates
-	id := bin.Random128()
-	s := newStream(c, id)
-	c.streams[id] = s
-
-	// Write message
-	st := c.writeQueue.writeOpenStream(id, data)
-	if st.OK() {
-		return s, status.OK
+	s, ok := c.streams[id]
+	if !ok {
+		return nil, false, status.OK
 	}
-
-	// Close on error
-	defer s.free()
-	delete(c.streams, id)
-	return nil, st
+	return s, true, status.OK
 }
 
-// closeStream is called by a stream to signal a close.
+// closeStream closes, deletes a stream and writes a close message.
 func (c *conn) closeStream(id bin.Bin128) status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Check conn
 	if !c.st.OK() {
 		return c.st
 	}
 
-	// Check stream
-	_, ok := c.streams[id]
+	s, ok := c.streams[id]
 	if !ok {
 		return status.OK
 	}
 
-	// Delete stream
+	s.close()
 	delete(c.streams, id)
-	return c.writeQueue.writeCloseStream(id)
+	return c.writer.writeCloseStream(id)
 }
 
-// sendMessage is called by a stream to send a message.
-func (c *conn) sendMessage(id bin.Bin128, b []byte) status.Status {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+// handle
 
-	// Check conn
+// handleOpenStream handles an open stream message, or writes an error on duplicate.
+func (c *conn) handleOpenStream(msg ptcp.OpenStream) status.Status {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if !c.st.OK() {
 		return c.st
 	}
 
-	// Check stream
-	_, ok := c.streams[id]
-	if !ok {
-		return statusStreamClosed
-	}
-
-	// Write message
-	return c.writeQueue.writeStreamMessage(id, b)
-}
-
-// receiveOpenStream
-
-// receiveOpenStream is called by the reader on an open message.
-func (c *conn) receiveOpenStream(id bin.Bin128, data []byte) status.Status {
-	// Create stream
-	s, st := c._receiveOpenStream(id, data)
-	if !st.OK() {
-		return st
-	}
-
-	// Maybe pass message
-	if len(data) > 0 {
-		s.receiveMessage(data)
-	}
-	return status.OK
-}
-
-func (c *conn) _receiveOpenStream(id bin.Bin128, data []byte) (*stream, status.Status) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Check conn
-	if !c.st.OK() {
-		return nil, c.st
+	// Check duplicate
+	id := msg.Id()
+	if _, ok := c.streams[id]; ok {
+		return c.writer.writeCloseStream(id)
 	}
 
 	// Create stream
-	// TODO: Check duplicates
-	s := newStream(c, id)
+	s := newStream(id, c)
 	c.streams[id] = s
-	c.acceptQueue.push(s)
-	return s, status.OK
-}
-
-// receiveCloseStream
-
-// receiveCloseStream is called by the reader to close a stream.
-func (c *conn) receiveCloseStream(id bin.Bin128) status.Status {
-	// Delete stream
-	s, ok := c._receiveCloseStream(id)
-	if !ok {
-		return status.OK
-	}
-
-	// Notify stream
-	s.receiveClose()
+	c.accept.push(s)
 	return status.OK
 }
 
-func (c *conn) _receiveCloseStream(id bin.Bin128) (*stream, bool) {
+// handleCloseStream handles a close stream message, ignores absent streams.
+func (c *conn) handleCloseStream(msg ptcp.CloseStream) status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Check conn
 	if !c.st.OK() {
-		return nil, false
+		return c.st
 	}
 
-	// Check stream
+	id := msg.Id()
 	s, ok := c.streams[id]
-	if !ok {
-		return nil, false
-	}
-
-	// Delete stream
-	delete(c.streams, id)
-	return s, true
-}
-
-// receiveStreamMessage
-
-// receiveStreamMessage is called by the reader to handle a stream message.
-func (c *conn) receiveStreamMessage(id bin.Bin128, data []byte) status.Status {
-	// Get stream
-	s, ok := c._receiveStreamMessage(id)
 	if !ok {
 		return status.OK
 	}
 
-	// Pass message
-	s.receiveMessage(data)
+	delete(c.streams, id)
+	s.close()
 	return status.OK
 }
 
-func (c *conn) _receiveStreamMessage(id bin.Bin128) (*stream, bool) {
+// handleStreamMessage handles a stream message, ignores absent streams.
+func (c *conn) handleStreamMessage(msg ptcp.StreamMessage) status.Status {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	if !c.st.OK() {
-		return nil, false
+		return c.st
 	}
 
+	id := msg.Id()
 	s, ok := c.streams[id]
-	return s, ok
+	if !ok {
+		return status.OK
+	}
+
+	data := msg.Data()
+	_, _ = s.push(data) // ignore status, stream may be closed
+	return status.OK
+}
+
+// notify
+
+// notify adds a stream to the pending list.
+func (c *conn) notify(id bin.Bin128) {
+	c.pendingMu.Lock()
+	defer c.pendingMu.Unlock()
+
+	c.pending[id] = struct{}{}
+	if len(c.pending) > 1 {
+		return
+	}
+
+	select {
+	case c.pendingChan <- struct{}{}:
+	default:
+	}
+}
+
+func (c *conn) switchPending(next map[bin.Bin128]struct{}) map[bin.Bin128]struct{} {
+	maps.Clear(next)
+
+	c.pendingMu.Lock()
+	defer c.pendingMu.Unlock()
+
+	prev := c.pending
+	c.pending = next
+
+	select {
+	case <-c.pendingChan:
+	default:
+	}
+	return prev
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
-// Server is a binary multiplexing SpecTCP server.
+// Server is a binary multiplexing Server.
 type Server interface {
 	// Running indicates that the server is running.
 	Running() <-chan struct{}
@@ -116,12 +116,12 @@ func (s *server) listenAddress() string {
 }
 
 func (s *server) run(cancel <-chan struct{}) (st status.Status) {
-	s.logger.Debug("SpecTCP server started")
+	s.logger.Debug("Server started")
 	defer s.stop()
 
 	// Listen
 	if st := s.listen(); !st.OK() {
-		s.logger.Error("SpecTCP server failed to listen to address", "status", st)
+		s.logger.Error("Server failed to listen to address", "status", st)
 		return st
 	}
 
@@ -134,14 +134,14 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 	select {
 	case <-cancel:
 		st = status.Cancelled
-		s.logger.Debug("SpecTCP server received stop request")
+		s.logger.Debug("Server received stop request")
 
 	case <-server.Wait():
 		st = server.Status()
 		switch st.Code {
 		case status.CodeOK, status.CodeCancelled:
 		default:
-			s.logger.Error("Accept error", "status", st)
+			s.logger.Error("Internal server error", "status", st)
 		}
 	}
 	return st
@@ -155,7 +155,7 @@ func (s *server) stop() {
 	s.running.Reset()
 	s.listening.Reset()
 	s.stopped.Set()
-	s.logger.Debug("SpecTCP server stopped")
+	s.logger.Debug("Server stopped")
 }
 
 func (s *server) listen() status.Status {
@@ -170,7 +170,7 @@ func (s *server) listen() status.Status {
 	addr := ln.Addr().String()
 	s.ln = ln
 	s.listening.Set()
-	s.logger.Debug("SpecTCP server listening", "address", addr)
+	s.logger.Debug("Server listening", "address", addr)
 	return status.OK
 }
 

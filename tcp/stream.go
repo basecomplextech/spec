@@ -1,8 +1,10 @@
 package tcp
 
 import (
+	"fmt"
 	"sync"
 
+	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/status"
 )
@@ -18,7 +20,7 @@ type Stream interface {
 	Read(cancel <-chan struct{}) ([]byte, status.Status)
 
 	// Write writes a message to the stream.
-	Write(msg []byte) status.Status
+	Write(cancel <-chan struct{}, msg []byte) status.Status
 
 	// Internal
 
@@ -28,28 +30,29 @@ type Stream interface {
 
 // internal
 
+const writeQueueSize = 1 << 17 // 128kb
+
 var _ Stream = (*stream)(nil)
 
 type stream struct {
 	id   bin.Bin128
 	conn *conn
 
-	// mutexes are used for single reader/writer
-	readQueue *queue
-	readMu    sync.Mutex
-	writeMu   sync.Mutex
-
 	mu sync.Mutex
 	st status.Status
+
+	readQueue  alloc.BufferQueue
+	writeQueue alloc.BufferQueue
 }
 
-func newStream(conn *conn, id bin.Bin128) *stream {
+func newStream(id bin.Bin128, conn *conn) *stream {
 	return &stream{
+		id:   id,
 		conn: conn,
+		st:   status.OK,
 
-		id:        id,
-		st:        status.OK,
-		readQueue: newQueue(),
+		readQueue:  alloc.NewBufferQueue(), // unbounded
+		writeQueue: alloc.NewBufferQueueCap(writeQueueSize),
 	}
 }
 
@@ -65,12 +68,12 @@ func (s *stream) Status() status.Status {
 
 // Read reads a message from the stream, the message is valid until the next iteration.
 func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
-	s.readMu.Lock()
-	defer s.readMu.Unlock()
-
 	for {
 		// Try to read next message
-		msg, ok, st := s.readQueue.next()
+		msg, ok, st := s.readQueue.Read()
+		if debug {
+			fmt.Println("<- read", ok, st, msg)
+		}
 		switch {
 		case !st.OK():
 			return nil, st
@@ -82,28 +85,35 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 		select {
 		case <-cancel:
 			return nil, status.Cancelled
-		case <-s.readQueue.wait():
+		case <-s.readQueue.Wait():
 			continue
 		}
 	}
 }
 
 // Write writes a message to the stream.
-func (s *stream) Write(msg []byte) status.Status {
-	s.writeMu.Lock()
-	defer s.writeMu.Unlock()
+func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
+	for {
+		// Try to write message
+		ok, st := s.writeQueue.Write(msg)
+		if debug {
+			fmt.Println("-> write", ok, st, msg)
+		}
+		switch {
+		case !st.OK():
+			return st
+		case ok:
+			s.notify()
+			return status.OK
+		}
 
-	// Check status
-	s.mu.Lock()
-	if !s.st.OK() {
-		st := s.st
-		s.mu.Unlock()
-		return st
+		// Wait for more space
+		select {
+		case <-cancel:
+			return status.Cancelled
+		case <-s.writeQueue.WaitCanWrite(len(msg)):
+		}
 	}
-	s.mu.Unlock()
-
-	// Write message
-	return s.conn.sendMessage(s.id, msg)
 }
 
 // Internal
@@ -113,14 +123,17 @@ func (s *stream) Free() {
 	defer s.free()
 
 	s.close()
-	s.conn.closeStream(s.id)
+	s.notify()
 }
 
 // internal
 
 func (s *stream) free() {
-	s.readQueue.free()
-	s.readQueue = nil
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.readQueue.Free()
+	s.writeQueue.Free()
 }
 
 // close closes the stream.
@@ -133,45 +146,22 @@ func (s *stream) close() {
 	}
 
 	s.st = statusStreamClosed
-	s.readQueue.close()
+	s.readQueue.Close()
+	s.writeQueue.Close()
 }
 
-// receive
+// pull/push
 
-// receiveError receives an error from the connection.
-func (s *stream) receiveError(st status.Status) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if !s.st.OK() {
-		return
-	}
-
-	s.st = st
-	s.readQueue.closeWithError(st)
+// pull pulls an outgoing message from the stream write queue.
+func (s *stream) pull() ([]byte, bool, status.Status) {
+	return s.writeQueue.Read()
 }
 
-// receiveClose receives a close message from the connection.
-func (s *stream) receiveClose() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if !s.st.OK() {
-		return
-	}
-
-	s.st = statusStreamClosed
-	s.readQueue.close()
+// push pushes an incoming message to the stream read queue.
+func (s *stream) push(msg []byte) (bool, status.Status) {
+	return s.readQueue.Write(msg)
 }
 
-// receiveMessage receives a message from the connection.
-func (s *stream) receiveMessage(msg []byte) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if !s.st.OK() {
-		return
-	}
-
-	s.readQueue.append(msg)
+func (s *stream) notify() {
+	s.conn.notify(s.id)
 }

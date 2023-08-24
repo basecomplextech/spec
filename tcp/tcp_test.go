@@ -10,7 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testServer(t *testing.T, address string, handler StreamHandlerFunc, logger logging.Logger) *server {
+func testServer(t *testing.T,
+	address string,
+	handler StreamHandlerFunc,
+	logger logging.Logger,
+) *server {
 	return newServerStreamHandler(address, handler, logger)
 }
 
@@ -21,7 +25,7 @@ func TestTCP(t *testing.T) {
 			if !st.OK() {
 				return st
 			}
-			if st := stream.Write(msg); !st.OK() {
+			if st := stream.Write(cancel, msg); !st.OK() {
 				return st
 			}
 		}
@@ -49,13 +53,13 @@ func TestTCP(t *testing.T) {
 	}
 	defer conn.Free()
 
-	stream, st := conn.Open(nil, nil)
+	stream, st := conn.Open(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
 	msg0 := []byte("hello, world")
-	st = stream.Write(msg0)
+	st = stream.Write(nil, msg0)
 	if !st.OK() {
 		t.Fatal(st)
 	}

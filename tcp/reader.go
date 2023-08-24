@@ -3,6 +3,7 @@ package tcp
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"sync"
 
@@ -60,6 +61,20 @@ func (r *reader) read() (ptcp.Message, status.Status) {
 	msg, _, err := ptcp.ParseMessage(buf)
 	if err != nil {
 		return ptcp.Message{}, tcpError(err)
+	}
+
+	if debug {
+		code := msg.Code()
+		switch code {
+		case ptcp.Code_OpenStream:
+			fmt.Println("<- open_stream", msg.Open().Id())
+		case ptcp.Code_CloseStream:
+			fmt.Println("<- close_stream", msg.Close().Id())
+		case ptcp.Code_StreamMessage:
+			fmt.Println("<- stream_message", msg.Message().Id())
+		default:
+			fmt.Println("<- unknown", code)
+		}
 	}
 	return msg, status.OK
 }
