@@ -16,9 +16,6 @@ type Stream interface {
 	// Write writes a message to the stream.
 	Write(cancel <-chan struct{}, msg []byte) status.Status
 
-	// Flush flushes the stream write queue.
-	Flush(cancel <-chan struct{}) status.Status
-
 	// Internal
 
 	// Free closes the stream.
@@ -35,8 +32,9 @@ type stream struct {
 	client bool
 
 	mu     sync.Mutex
-	freed  bool
 	queues *streamQueues
+
+	freed bool
 }
 
 func newStream(id bin.Bin128, conn *conn) *stream {
@@ -79,6 +77,7 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 		if debug {
 			debugPrint(s.client, "stream.read-wait\t", s.id)
 		}
+
 		select {
 		case <-cancel:
 			return nil, status.Cancelled
@@ -116,11 +115,6 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		case <-s.queues.write.WaitCanWrite(len(msg)):
 		}
 	}
-}
-
-// Flush flushes the stream write queue.
-func (s *stream) Flush(cancel <-chan struct{}) status.Status {
-	return status.OK
 }
 
 // internal
@@ -237,7 +231,7 @@ type streamQueues struct {
 func newStreamQueues() *streamQueues {
 	return &streamQueues{
 		read:  alloc.NewBufferQueue(), // unbounded
-		write: alloc.NewBufferQueueCap(streamWiteQueueCap),
+		write: alloc.NewBufferQueueCap(streamWriteQueueCap),
 	}
 }
 

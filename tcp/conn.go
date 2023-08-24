@@ -288,11 +288,11 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 					continue
 				}
 
-				// Pull message from read queue
+				// Pull message from write queue
 				msg, ok, st := s.pull()
 				switch {
 				case !st.OK():
-					if st := c.localClosed(id); !st.OK() {
+					if st := c.closeLocal(id); !st.OK() {
 						return st
 					}
 					delete(active, id)
@@ -347,8 +347,8 @@ func (c *conn) getStream(id bin.Bin128) (*stream, bool, status.Status) {
 	return s, true, status.OK
 }
 
-// localClosed frees, deletes a stream and writes a close message.
-func (c *conn) localClosed(id bin.Bin128) status.Status {
+// closeLocal closes a local stream when all outgoing messages are sent and write queue is ended.
+func (c *conn) closeLocal(id bin.Bin128) status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -362,10 +362,14 @@ func (c *conn) localClosed(id bin.Bin128) status.Status {
 		return status.OK
 	}
 
-	// Delete stream if both queues closed
-	if s.closed() {
-		delete(c.streams, id)
-	}
+	// Close both queues inside connection, and free the stream.
+	// When local queue is closed, it means that the local stream
+	// is out of scope, and has been freed. No need to keep it anymore.
+	//
+	// Also it prevents from leaking streams when the remote side
+	// fails to close the stream.
+	s.closeBoth()
+	delete(c.streams, id)
 
 	return c.writer.writeCloseStream(id)
 }
