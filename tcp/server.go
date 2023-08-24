@@ -227,7 +227,7 @@ func (s *server) serveLoop(cancel <-chan struct{}) status.Status {
 }
 
 func (s *server) handle(nc net.Conn) {
-	conn := newConn(nc, s.logger)
+	conn := newConn(nc, false /* not client */, s.logger)
 
 	async.Go(func(cancel <-chan struct{}) status.Status {
 		defer func() {

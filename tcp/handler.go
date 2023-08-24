@@ -64,7 +64,7 @@ func (h *connHandler) HandleConn(cancel <-chan struct{}, conn Conn) status.Statu
 	}
 }
 
-func (h *connHandler) handle(stream Stream) {
+func (h *connHandler) handle(s Stream) {
 	async.Go(func(cancel <-chan struct{}) status.Status {
 		defer func() {
 			if e := recover(); e != nil {
@@ -72,10 +72,10 @@ func (h *connHandler) handle(stream Stream) {
 				h.logger.Error("Stream panic", "status", st, "stack", string(stack))
 			}
 		}()
-		defer stream.Free()
+		defer s.Free()
 
 		// Handle stream
-		st := h.handler.HandleStream(cancel, stream)
+		st := h.handler.HandleStream(cancel, s)
 		switch st.Code {
 		case status.CodeOK,
 			status.CodeCancelled,

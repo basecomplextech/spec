@@ -1,7 +1,6 @@
 package tcp
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/basecomplextech/baselibrary/alloc"
@@ -11,20 +10,18 @@ import (
 
 // Stream is a single stream in a TCP connection.
 type Stream interface {
-	// Status returns the status of the stream.
-	Status() status.Status
-
-	// Methods
-
 	// Read reads a message from the stream, the message is valid until the next iteration.
 	Read(cancel <-chan struct{}) ([]byte, status.Status)
 
 	// Write writes a message to the stream.
 	Write(cancel <-chan struct{}, msg []byte) status.Status
 
+	// Flush flushes the stream write queue.
+	Flush(cancel <-chan struct{}) status.Status
+
 	// Internal
 
-	// Free closes the stream and releases its resources.
+	// Free closes the stream.
 	Free()
 }
 
@@ -33,33 +30,31 @@ type Stream interface {
 var _ Stream = (*stream)(nil)
 
 type stream struct {
-	id   bin.Bin128
-	conn *conn
+	id     bin.Bin128
+	conn   *conn
+	client bool
 
-	mu sync.Mutex
-	st status.Status
-
-	readQueue  alloc.BufferQueue
-	writeQueue alloc.BufferQueue
+	mu     sync.Mutex
+	freed  bool
+	queues *streamQueues
 }
 
 func newStream(id bin.Bin128, conn *conn) *stream {
-	return &stream{
-		id:   id,
-		conn: conn,
-		st:   status.OK,
+	queues := acquireQueues()
 
-		readQueue:  alloc.NewBufferQueue(), // unbounded
-		writeQueue: alloc.NewBufferQueueCap(streamWiteQueueCap),
+	return &stream{
+		id:     id,
+		conn:   conn,
+		client: conn.client,
+
+		queues: queues,
 	}
 }
 
-// Status returns the status of the stream.
-func (s *stream) Status() status.Status {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return s.st
+// Free closes the stream.
+func (s *stream) Free() {
+	s.closeLocal()
+	s.notify()
 }
 
 // Methods
@@ -68,10 +63,11 @@ func (s *stream) Status() status.Status {
 func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 	for {
 		// Try to read next message
-		msg, ok, st := s.readQueue.Read()
+		msg, ok, st := s.queues.read.Read()
 		if debug {
-			fmt.Println("<- read", ok, st, msg)
+			debugPrint(s.client, "stream.read\t", s.id, ok, st)
 		}
+
 		switch {
 		case !st.OK():
 			return nil, st
@@ -80,11 +76,13 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 		}
 
 		// Wait for next message
+		if debug {
+			debugPrint(s.client, "stream.read-wait\t", s.id)
+		}
 		select {
 		case <-cancel:
 			return nil, status.Cancelled
-		case <-s.readQueue.Wait():
-			continue
+		case <-s.queues.read.Wait():
 		}
 	}
 }
@@ -93,10 +91,11 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	for {
 		// Try to write message
-		ok, wasEmpty, st := s.writeQueue.Write(msg)
+		ok, wasEmpty, st := s.queues.write.Write(msg)
 		if debug {
-			fmt.Println("-> write", ok, st, msg)
+			debugPrint(s.client, "stream.write\t", s.id, ok, st)
 		}
+
 		switch {
 		case !st.OK():
 			return st
@@ -108,62 +107,159 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		}
 
 		// Wait for more space
+		if debug {
+			debugPrint(s.client, "stream.write-wait\t", s.id)
+		}
 		select {
 		case <-cancel:
 			return status.Cancelled
-		case <-s.writeQueue.WaitCanWrite(len(msg)):
+		case <-s.queues.write.WaitCanWrite(len(msg)):
 		}
 	}
 }
 
-// Internal
-
-// Free closes the stream and releases its resources.
-func (s *stream) Free() {
-	defer s.free()
-
-	s.close()
-	s.notify()
+// Flush flushes the stream write queue.
+func (s *stream) Flush(cancel <-chan struct{}) status.Status {
+	return status.OK
 }
 
 // internal
 
-func (s *stream) free() {
+// closed returns true if both queues are closed.
+func (s *stream) closed() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.readQueue.Free()
-	s.writeQueue.Free()
+	ok0 := s.queues.read.Closed()
+	ok1 := s.queues.write.Closed()
+	return ok0 && ok1
 }
 
-// close closes the stream.
-func (s *stream) close() {
+// closeBoth closes both queues.
+func (s *stream) closeBoth() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !s.st.OK() {
+	s.queues.close()
+	s._maybeFree()
+}
+
+// closeLocal closes the write queue.
+func (s *stream) closeLocal() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if debug {
+		debugPrint(s.client, "stream.local-close\t", s.id)
+	}
+
+	s.queues.write.Close()
+	s._maybeFree()
+}
+
+// closeRemote closes the read queue.
+func (s *stream) closeRemote() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if debug {
+		debugPrint(s.client, "stream.remote-close\t", s.id)
+	}
+
+	s.queues.read.Close()
+	s._maybeFree()
+}
+
+// _maybeFree frees the stream if both queues are closed.
+func (s *stream) _maybeFree() {
+	switch {
+	case s.freed:
+		return
+	case !s.queues.read.Closed():
+		return
+	case !s.queues.write.Closed():
 		return
 	}
 
-	s.st = statusStreamClosed
-	s.readQueue.Close()
-	s.writeQueue.Close()
+	if debug {
+		debugPrint(s.client, "stream.free\t", s.id)
+	}
+
+	q := s.queues
+	s.freed = true
+	s.queues = closedQueues
+	releaseQueues(q)
+}
+
+// notify
+
+// notify adds the stream to the pending connection streams.
+func (s *stream) notify() {
+	s.conn.notify(s.id)
 }
 
 // pull/push
 
 // pull pulls an outgoing message from the stream write queue.
 func (s *stream) pull() ([]byte, bool, status.Status) {
-	return s.writeQueue.Read()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.queues.write.Read()
 }
 
 // push pushes an incoming message to the stream read queue.
 func (s *stream) push(msg []byte) (bool, status.Status) {
-	ok, _, st := s.readQueue.Write(msg)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ok, _, st := s.queues.read.Write(msg)
 	return ok, st
 }
 
-// notify adds the stream to the pending connection streams.
-func (s *stream) notify() {
-	s.conn.notify(s.id)
+// queues
+
+var (
+	queuePool = &sync.Pool{}
+
+	closedQueues = func() *streamQueues {
+		q := newStreamQueues()
+		q.close()
+		return q
+	}()
+)
+
+type streamQueues struct {
+	read  alloc.BufferQueue
+	write alloc.BufferQueue
+}
+
+func newStreamQueues() *streamQueues {
+	return &streamQueues{
+		read:  alloc.NewBufferQueue(), // unbounded
+		write: alloc.NewBufferQueueCap(streamWiteQueueCap),
+	}
+}
+
+func acquireQueues() *streamQueues {
+	obj := queuePool.Get()
+	if obj == nil {
+		return newStreamQueues()
+	}
+	return obj.(*streamQueues)
+}
+
+func releaseQueues(q *streamQueues) {
+	q.reset()
+	queuePool.Put(q)
+}
+
+func (q *streamQueues) close() {
+	q.read.Close()
+	q.write.Close()
+}
+
+func (q *streamQueues) reset() {
+	q.read.Reset()
+	q.write.Reset()
 }

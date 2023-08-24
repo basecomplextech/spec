@@ -3,7 +3,6 @@ package tcp
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"sync"
 
@@ -13,16 +12,19 @@ import (
 )
 
 type reader struct {
-	r *bufio.Reader
+	r      *bufio.Reader
+	client bool
 
 	mu   sync.Mutex
 	head [4]byte
 	buf  *alloc.Buffer
 }
 
-func newReader(r io.Reader) *reader {
+func newReader(r io.Reader, client bool) *reader {
 	return &reader{
-		r:   bufio.NewReaderSize(r, readBufferSize),
+		r:      bufio.NewReaderSize(r, readBufferSize),
+		client: client,
+
 		buf: alloc.NewBuffer(),
 	}
 }
@@ -65,13 +67,13 @@ func (r *reader) read() (ptcp.Message, status.Status) {
 		code := msg.Code()
 		switch code {
 		case ptcp.Code_OpenStream:
-			fmt.Println("<- open_stream", msg.Open().Id())
+			debugPrint(r.client, "<- open\t", msg.Open().Id())
 		case ptcp.Code_CloseStream:
-			fmt.Println("<- close_stream", msg.Close().Id())
+			debugPrint(r.client, "<- close\t", msg.Close().Id())
 		case ptcp.Code_StreamMessage:
-			fmt.Println("<- stream_message", msg.Message().Id())
+			debugPrint(r.client, "<- message\t", msg.Message().Id())
 		default:
-			fmt.Println("<- unknown", code)
+			debugPrint(r.client, "<- unknown", code)
 		}
 	}
 	return msg, status.OK

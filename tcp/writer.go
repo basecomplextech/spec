@@ -3,7 +3,6 @@ package tcp
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"sync"
 
@@ -15,7 +14,8 @@ import (
 )
 
 type writer struct {
-	w *bufio.Writer
+	w      *bufio.Writer
+	client bool
 
 	mu   sync.Mutex
 	head [4]byte
@@ -24,11 +24,12 @@ type writer struct {
 	writer spec.Writer
 }
 
-func newWriter(w io.Writer) *writer {
+func newWriter(w io.Writer, client bool) *writer {
 	buf := alloc.NewBuffer()
 
 	return &writer{
-		w: bufio.NewWriterSize(w, writeBufferSize),
+		w:      bufio.NewWriterSize(w, writeBufferSize),
+		client: client,
 
 		buf:    buf,
 		writer: spec.NewWriterBuffer(buf),
@@ -63,7 +64,7 @@ func (w *writer) writeOpenStream(id bin.Bin128) status.Status {
 
 	b := msg.Unwrap().Raw()
 	if debug {
-		fmt.Println("-> open_stream", id)
+		debugPrint(w.client, "-> open\t", id)
 	}
 	return w._write(b)
 }
@@ -78,8 +79,9 @@ func (w *writer) writeCloseStream(id bin.Bin128) status.Status {
 	}
 
 	if debug {
-		fmt.Println("-> close_stream", id)
+		debugPrint(w.client, "-> close\t", id)
 	}
+
 	b := msg.Unwrap().Raw()
 	return w._write(b)
 }
@@ -94,7 +96,7 @@ func (w *writer) writeStreamMessage(id bin.Bin128, data []byte) status.Status {
 	}
 
 	if debug {
-		fmt.Println("-> stream_message", id)
+		debugPrint(w.client, "-> message\t", id)
 	}
 	b := msg.Unwrap().Raw()
 	return w._write(b)
@@ -146,7 +148,7 @@ func (w *writer) _closeStream(id bin.Bin128) (msg ptcp.Message, st status.Status
 	w0 := ptcp.NewMessageWriterTo(w.writer.Message())
 	w0.Code(ptcp.Code_CloseStream)
 
-	w1 := w0.Open()
+	w1 := w0.Close()
 	w1.Id(id)
 	if err := w1.End(); err != nil {
 		return msg, tcpError(err)

@@ -134,7 +134,8 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 
 			st = s.Write(nil, msg)
 			if !st.OK() {
-				b.Fatal(st)
+				s1 := s.(*stream)
+				b.Fatal(st, s1.client, s1.id)
 			}
 
 			msg1, st := s.Read(nil)
