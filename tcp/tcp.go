@@ -19,7 +19,10 @@ const (
 	codeClosed status.Code = "tcp_closed"
 )
 
-var statusClosed = status.New(codeClosed, "connection closed")
+var (
+	statusClosed       = status.New(codeClosed, "connection closed")
+	statusStreamClosed = status.New(codeClosed, "stream closed")
+)
 
 func tcpError(err error) status.Status {
 	if err == nil {

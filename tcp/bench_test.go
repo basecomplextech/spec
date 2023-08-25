@@ -55,26 +55,29 @@ func BenchmarkOpenClose(b *testing.B) {
 	t0 := time.Now()
 
 	for i := 0; i < b.N; i++ {
-		stream, st := conn.Open(nil)
+		s, st := conn.Open(nil)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		st = stream.Write(nil, msg)
+		st = s.Write(nil, msg)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		msg1, st := stream.Read(nil)
+		msg1, st := s.Read(nil)
 		if !st.OK() {
 			b.Fatal(st)
 		}
-
 		if !bytes.Equal(msg, msg1) {
 			b.Fatalf("expected %q, got %q", msg, msg1)
 		}
 
-		stream.Free()
+		if st := s.Close(nil); !st.OK() {
+			b.Fatal(st)
+		}
+
+		s.Free()
 	}
 
 	t1 := time.Now()
@@ -144,6 +147,10 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 
 			if !bytes.Equal(msg, msg1) {
 				b.Fatalf("expected %q, got %q", msg, msg1)
+			}
+
+			if st := s.Close(nil); !st.OK() {
+				b.Fatal(st)
 			}
 
 			s.Free()
