@@ -15,15 +15,11 @@ const (
 )
 
 const (
-	codeError        status.Code = "tcp_error"
-	codeConnClosed   status.Code = "tcp_conn_closed"
-	codeStreamClosed status.Code = "tcp_stream_closed"
+	codeError  status.Code = "tcp_error"
+	codeClosed status.Code = "tcp_closed"
 )
 
-var (
-	statusConnClosed   = status.New(codeConnClosed, "tcp connection closed")
-	statusStreamClosed = status.New(codeStreamClosed, "tcp stream closed")
-)
+var statusClosed = status.New(codeClosed, "connection closed")
 
 func tcpError(err error) status.Status {
 	if err == nil {
@@ -38,7 +34,7 @@ func tcpError(err error) status.Status {
 	}
 
 	if errors.Is(err, net.ErrClosed) {
-		return status.WrapError(err).WithCode(codeConnClosed)
+		return status.WrapError(err).WithCode(codeClosed)
 	}
 
 	ne, ok := (err).(net.Error)

@@ -129,7 +129,9 @@ func (w *writer) _openStream(id bin.Bin128, data []byte) (msg ptcp.Message, st s
 
 	w1 := w0.Open()
 	w1.Id(id)
-	w1.Data(data)
+	if len(data) > 0 {
+		w1.Data(data)
+	}
 	if err := w1.End(); err != nil {
 		return msg, tcpError(err)
 	}

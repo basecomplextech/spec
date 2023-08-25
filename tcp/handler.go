@@ -81,8 +81,7 @@ func (h *connHandler) handle(s Stream) {
 		case status.CodeOK,
 			status.CodeCancelled,
 			status.CodeEnd,
-			codeConnClosed,
-			codeStreamClosed:
+			codeClosed:
 			return
 		}
 

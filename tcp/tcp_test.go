@@ -54,17 +54,17 @@ func TestOpenClose(t *testing.T) {
 	}
 	defer conn.Free()
 
-	stream, st := conn.Open(nil)
+	msg0 := []byte("hello, world")
+	stream, st := conn.Request(nil, msg0)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	defer stream.Free()
 
-	msg0 := []byte("hello, world")
-	st = stream.Write(nil, msg0)
-	if !st.OK() {
-		t.Fatal(st)
-	}
+	// st = stream.Write(nil, msg0)
+	// if !st.OK() {
+	// 	t.Fatal(st)
+	// }
 
 	msg1, st := stream.Read(nil)
 	if !st.OK() {
