@@ -11,12 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testServer(t tests.T,
-	address string,
-	handler StreamHandlerFunc,
-	logger logging.Logger,
-) *server {
-	return newServerStreamHandler(address, handler, logger)
+func testServer(t tests.T, address string, handler HandlerFunc, logger logging.Logger) *server {
+	return newServer(address, handler, logger)
 }
 
 func TestOpenClose(t *testing.T) {

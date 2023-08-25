@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	readBufferSize      = 1 << 15 // 32kb
-	writeBufferSize     = 1 << 15 // 32kb
-	streamWriteQueueCap = 1 << 17 // 128kb, max stream write queue capacity
+	readBufferSize    = 1 << 15 // 32kb
+	writeBufferSize   = 1 << 15 // 32kb
+	connWriteQueueCap = 1 << 20 // 1mb, max connection write queue capacity
 )
 
 const (

@@ -63,7 +63,7 @@ func newConn(c net.Conn, client bool, logger logging.Logger) *conn {
 		client: client,
 
 		acceptQueue: newAcceptQueue(),
-		writeQueue:  alloc.NewBufferQueue(),
+		writeQueue:  alloc.NewBufferQueueCap(connWriteQueueCap),
 
 		reader: newReader(c, client),
 		writer: newWriter(c, client),
@@ -134,7 +134,7 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 	defer func() {
 		if e := recover(); e != nil {
 			st, stack := status.RecoverStack(e)
-			c.logger.Error("Internal connection panic", "status", st, "stack", string(stack))
+			c.logger.Error("Connection panic", "status", st, "stack", string(stack))
 		}
 	}()
 	defer c.close()
@@ -166,7 +166,7 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 	}
 
 	// Log internal errors
-	c.logger.Debug("Internal connection error", "status", st)
+	c.logger.Debug("Connection error", "status", st)
 	return st
 }
 
@@ -184,6 +184,7 @@ func (c *conn) close() {
 	c.st = statusClosed
 	c.acceptQueue.close()
 	c.writeQueue.Close()
+	c.writeQueue.Free()
 	c.conn.Close()
 
 	if debug {
