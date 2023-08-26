@@ -46,7 +46,7 @@ type conn struct {
 	logger logging.Logger
 
 	acceptQueue *acceptQueue
-	writeQueue  alloc.BufferQueue
+	writeQueue  alloc.MessageQueue
 
 	reader *reader
 	writer *writer
@@ -63,7 +63,7 @@ func newConn(c net.Conn, client bool, logger logging.Logger) *conn {
 		client: client,
 
 		acceptQueue: newAcceptQueue(),
-		writeQueue:  alloc.NewBufferQueueCap(connWriteQueueCap),
+		writeQueue:  alloc.NewMessageQueueCap(connWriteQueueCap),
 
 		reader: newReader(c, client),
 		writer: newWriter(c, client),

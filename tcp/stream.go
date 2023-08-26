@@ -236,7 +236,7 @@ func (s *stream) remoteClosed() {
 
 type streamReader struct {
 	mu     sync.Mutex
-	queue  alloc.BufferQueue
+	queue  alloc.MessageQueue
 	freed  bool
 	closed bool
 }
@@ -304,7 +304,7 @@ func (r *streamReader) wait() <-chan struct{} {
 	return q.Wait()
 }
 
-func (r *streamReader) get() (alloc.BufferQueue, status.Status) {
+func (r *streamReader) get() (alloc.MessageQueue, status.Status) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -454,15 +454,15 @@ func (w *streamWriter) writeClose(id bin.Bin128) status.Status {
 
 var queuePool = &sync.Pool{}
 
-func acquireQueue() alloc.BufferQueue {
+func acquireQueue() alloc.MessageQueue {
 	obj := queuePool.Get()
 	if obj == nil {
-		return alloc.NewBufferQueue()
+		return alloc.NewMessageQueue()
 	}
-	return obj.(alloc.BufferQueue)
+	return obj.(alloc.MessageQueue)
 }
 
-func releaseQueue(q alloc.BufferQueue) {
+func releaseQueue(q alloc.MessageQueue) {
 	q.Reset()
 	queuePool.Put(q)
 }
