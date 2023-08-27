@@ -14,9 +14,6 @@ import (
 
 // Conn is a TCP network connection.
 type Conn interface {
-	// Accept accepts a new stream, or returns an end status.
-	Accept(cancel <-chan struct{}) (Stream, status.Status)
-
 	// Open opens a new stream.
 	Open(cancel <-chan struct{}) (Stream, status.Status)
 
@@ -33,7 +30,7 @@ func Dial(address string, logger logging.Logger) (Conn, status.Status) {
 		return nil, tcpError(err)
 	}
 
-	c := newConn(nc, true /* client */, logger)
+	c := newConn(nc, true /* client */, nil /* no handler */, logger)
 	c.Run()
 	return c, status.OK
 }
@@ -41,15 +38,14 @@ func Dial(address string, logger logging.Logger) (Conn, status.Status) {
 // internal
 
 type conn struct {
-	conn   net.Conn
-	client bool
-	logger logging.Logger
+	conn    net.Conn
+	client  bool
+	handler Handler
+	logger  logging.Logger
 
-	acceptQueue *acceptQueue
-	writeQueue  alloc.MessageQueue
-
-	reader *reader
-	writer *writer
+	reader     *reader
+	writer     *writer
+	writeQueue alloc.MessageQueue
 
 	mu      sync.RWMutex
 	st      status.Status
@@ -57,39 +53,19 @@ type conn struct {
 	streams map[bin.Bin128]*stream
 }
 
-func newConn(c net.Conn, client bool, logger logging.Logger) *conn {
+func newConn(c net.Conn, client bool, handlerNil Handler, logger logging.Logger) *conn {
 	return &conn{
-		conn:   c,
-		client: client,
+		conn:    c,
+		client:  client,
+		handler: handlerNil,
+		logger:  logger,
 
-		acceptQueue: newAcceptQueue(),
-		writeQueue:  alloc.NewMessageQueueCap(connWriteQueueCap),
-
-		reader: newReader(c, client),
-		writer: newWriter(c, client),
+		reader:     newReader(c, client),
+		writer:     newWriter(c, client),
+		writeQueue: alloc.NewMessageQueueCap(connWriteQueueCap),
 
 		st:      status.OK,
 		streams: make(map[bin.Bin128]*stream),
-	}
-}
-
-// Accept accepts a new stream, or returns an end status.
-func (c *conn) Accept(cancel <-chan struct{}) (Stream, status.Status) {
-	for {
-		s, ok, st := c.acceptQueue.poll()
-		switch {
-		case !st.OK():
-			return nil, st
-		case ok:
-			return s, status.OK
-		}
-
-		select {
-		case <-cancel:
-			return nil, status.Cancelled
-		case <-c.acceptQueue.wait():
-			continue
-		}
 	}
 }
 
@@ -182,9 +158,7 @@ func (c *conn) close() {
 	defer c.closeStreams()
 
 	c.st = statusClosed
-	c.acceptQueue.close()
 	c.writeQueue.Close()
-	c.writeQueue.Free()
 	c.conn.Close()
 
 	if debug {
@@ -249,7 +223,6 @@ func (c *conn) handleOpened(msg ptcp.Message) status.Status {
 
 	s := openedStream(id, c)
 	c.streams[id] = s
-	c.acceptQueue.push(s)
 	return status.OK
 }
 
@@ -275,8 +248,38 @@ func (c *conn) handleMessage(msg ptcp.Message) status.Status {
 		return status.OK
 	}
 
+	if !s.started {
+		s.started = true
+		go c.handleStream(s)
+	}
+
 	s.receive(msg)
 	return status.OK
+}
+
+func (c *conn) handleStream(s *stream) {
+	// No need to use async.Go here, because we don't need the result,
+	// cancellation, and recover panics manually.
+	defer func() {
+		if e := recover(); e != nil {
+			st, stack := status.RecoverStack(e)
+			c.logger.Error("Stream panic", "status", st, "stack", string(stack))
+		}
+	}()
+	defer s.Free()
+
+	// Handle stream
+	st := c.handler.HandleStream(s)
+	switch st.Code {
+	case status.CodeOK,
+		status.CodeCancelled,
+		status.CodeEnd,
+		codeClosed:
+		return
+	}
+
+	// Log errors
+	c.logger.Error("Stream error", "status", st)
 }
 
 // write loop

@@ -124,6 +124,7 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
+	b.SetParallelism(10)
 	t0 := time.Now()
 
 	b.RunParallel(func(p *testing.PB) {

@@ -226,15 +226,15 @@ func (s *server) handle(nc net.Conn) {
 	}()
 	defer nc.Close()
 
-	conn := newConn(nc, false /* not client */, s.logger)
+	conn := newConn(nc, false /* not client */, s.handler, s.logger)
 	defer conn.Free()
 
-	// Start conn
 	run := conn.Run()
 	defer async.CancelWait(run)
 
-	// Handle conn
-	st := s.handleConn(conn)
+	<-run.Wait()
+
+	st := run.Status()
 	switch st.Code {
 	case status.CodeOK,
 		status.CodeCancelled,
@@ -245,40 +245,4 @@ func (s *server) handle(nc net.Conn) {
 
 	// Log errors
 	s.logger.Error("Connection error", "status", st)
-}
-
-func (s *server) handleConn(conn Conn) status.Status {
-	for {
-		stream, st := conn.Accept(nil)
-		if !st.OK() {
-			return st
-		}
-
-		go s.handleStream(stream)
-	}
-}
-
-func (s *server) handleStream(stream Stream) {
-	// No need to use async.Go here, because we don't need the result,
-	// cancellation, and recover panics manually.
-	defer func() {
-		if e := recover(); e != nil {
-			st, stack := status.RecoverStack(e)
-			s.logger.Error("Stream panic", "status", st, "stack", string(stack))
-		}
-	}()
-	defer stream.Free()
-
-	// Handle stream
-	st := s.handler.HandleStream(stream)
-	switch st.Code {
-	case status.CodeOK,
-		status.CodeCancelled,
-		status.CodeEnd,
-		codeClosed:
-		return
-	}
-
-	// Log errors
-	s.logger.Error("Stream error", "status", st)
 }

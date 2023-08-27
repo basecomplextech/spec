@@ -42,6 +42,7 @@ type stream struct {
 	mu       sync.RWMutex
 	freed    bool
 	closed   bool
+	started  bool
 	openSent bool
 }
 
@@ -57,6 +58,8 @@ func openStream(id bin.Bin128, conn *conn) *stream {
 
 		reader: newStreamReader(),
 		writer: newStreamWriter(conn),
+
+		started: true,
 	}
 }
 
@@ -74,6 +77,7 @@ func openedStream(id bin.Bin128, conn *conn) *stream {
 		writer: newStreamWriter(conn),
 
 		openSent: true,
+		started:  false,
 	}
 }
 
@@ -466,3 +470,11 @@ func releaseQueue(q alloc.MessageQueue) {
 	q.Reset()
 	queuePool.Put(q)
 }
+
+// closed chan
+
+var closedChan = func() chan struct{} {
+	ch := make(chan struct{})
+	close(ch)
+	return ch
+}()
