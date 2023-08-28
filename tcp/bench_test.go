@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basecomplextech/baselibrary/async"
-	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 )
 
@@ -27,27 +25,12 @@ func BenchmarkOpenClose(b *testing.B) {
 		}
 	}
 
-	logger := logging.TestLogger(b)
-	server := testServer(b, "localhost:0", handle, logger)
+	server, cleanup := testServer(b, handle)
+	defer cleanup()
 
-	run, st := server.Run()
-	if !st.OK() {
-		b.Fatal(st)
-	}
-	defer async.CancelWait(run)
-
-	select {
-	case <-server.listening.Wait():
-	case <-time.After(time.Second):
-		b.Fatal("server not listening")
-	}
-
-	addr := server.listenAddress()
-	conn, st := Dial(addr, logger)
-	if !st.OK() {
-		b.Fatal(st)
-	}
+	conn := testConnect(b, server)
 	defer conn.Free()
+
 	msg := bytes.Repeat([]byte("a"), msgSize)
 
 	b.ReportAllocs()
@@ -100,26 +83,10 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 		}
 	}
 
-	logger := logging.TestLogger(b)
-	server := testServer(b, "localhost:0", handle, logger)
+	server, cleanup := testServer(b, handle)
+	defer cleanup()
 
-	run, st := server.Run()
-	if !st.OK() {
-		b.Fatal(st)
-	}
-	defer async.CancelWait(run)
-
-	select {
-	case <-server.listening.Wait():
-	case <-time.After(time.Second):
-		b.Fatal("server not listening")
-	}
-
-	addr := server.listenAddress()
-	conn, st := Dial(addr, logger)
-	if !st.OK() {
-		b.Fatal(st)
-	}
+	conn := testConnect(b, server)
 	defer conn.Free()
 
 	b.ReportAllocs()
@@ -168,35 +135,31 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 // Stream
 
 func BenchmarkStream_Parallel(b *testing.B) {
-	handle := func(stream Stream) status.Status {
+	close := []byte("close")
+	handle := func(s Stream) status.Status {
 		for {
-			_, st := stream.Read(nil)
+			msg, st := s.Read(nil)
 			if !st.OK() {
 				return st
 			}
+			if !bytes.Equal(msg, close) {
+				continue
+			}
+
+			break
 		}
+
+		st := s.Write(nil, close)
+		if !st.OK() {
+			return st
+		}
+		return s.Close(nil)
 	}
 
-	logger := logging.TestLogger(b)
-	server := testServer(b, "localhost:0", handle, logger)
+	server, cleanup := testServer(b, handle)
+	defer cleanup()
 
-	run, st := server.Run()
-	if !st.OK() {
-		b.Fatal(st)
-	}
-	defer async.CancelWait(run)
-
-	select {
-	case <-server.listening.Wait():
-	case <-time.After(time.Second):
-		b.Fatal("server not listening")
-	}
-
-	addr := server.listenAddress()
-	conn, st := Dial(addr, logger)
-	if !st.OK() {
-		b.Fatal(st)
-	}
+	conn := testConnect(b, server)
 	defer conn.Free()
 
 	b.ReportAllocs()
@@ -217,6 +180,84 @@ func BenchmarkStream_Parallel(b *testing.B) {
 			if !st.OK() {
 				b.Fatal(st)
 			}
+		}
+
+		st = s.Write(nil, close)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+
+		_, st = s.Read(nil)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+	})
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+}
+
+func BenchmarkStream_16kb_Parallel(b *testing.B) {
+	close := []byte("close")
+	msgSize := 16 * 1024
+
+	handle := func(s Stream) status.Status {
+		for {
+			msg, st := s.Read(nil)
+			if !st.OK() {
+				return st
+			}
+			if !bytes.Equal(msg, close) {
+				continue
+			}
+
+			break
+		}
+
+		st := s.Write(nil, close)
+		if !st.OK() {
+			return st
+		}
+		return s.Close(nil)
+	}
+
+	server, cleanup := testServer(b, handle)
+	defer cleanup()
+
+	conn := testConnect(b, server)
+	defer conn.Free()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	t0 := time.Now()
+
+	b.RunParallel(func(p *testing.PB) {
+		s, st := conn.Open(nil)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+		defer s.Free()
+
+		msg := bytes.Repeat([]byte("a"), msgSize)
+
+		for p.Next() {
+			st = s.Write(nil, msg)
+			if !st.OK() {
+				b.Fatal(st)
+			}
+		}
+
+		st = s.Write(nil, close)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+
+		_, st = s.Read(nil)
+		if !st.OK() {
+			b.Fatal(st)
 		}
 	})
 

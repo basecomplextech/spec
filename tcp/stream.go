@@ -101,7 +101,7 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 		}
 
 		if debug {
-			debugPrint(s.client, "stream.read\t", s.id, ok, st)
+			// debugPrint(s.client, "stream.read\t", s.id, ok, st)
 		}
 
 		msg, _, err := ptcp.ParseMessage(b)
@@ -135,7 +135,7 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	}
 
 	if debug {
-		debugPrint(s.client, "stream.write\t", s.id)
+		// debugPrint(s.client, "stream.write\t", s.id)
 	}
 
 	if !s.openSent {
@@ -240,7 +240,7 @@ func (s *stream) remoteClosed() {
 
 type streamReader struct {
 	mu     sync.Mutex
-	queue  alloc.MessageQueue
+	queue  alloc.MQueue
 	freed  bool
 	closed bool
 }
@@ -297,7 +297,7 @@ func (r *streamReader) write(msg []byte) {
 		return
 	}
 
-	_, _, _ = r.queue.Write(msg) // ignore status
+	_, _ = r.queue.Write(msg) // ignore status
 }
 
 func (r *streamReader) wait() <-chan struct{} {
@@ -305,10 +305,10 @@ func (r *streamReader) wait() <-chan struct{} {
 	if !st.OK() {
 		return closedChan
 	}
-	return q.Wait()
+	return q.ReadWait()
 }
 
-func (r *streamReader) get() (alloc.MessageQueue, status.Status) {
+func (r *streamReader) get() (alloc.MQueue, status.Status) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -458,15 +458,15 @@ func (w *streamWriter) writeClose(id bin.Bin128) status.Status {
 
 var queuePool = &sync.Pool{}
 
-func acquireQueue() alloc.MessageQueue {
+func acquireQueue() alloc.MQueue {
 	obj := queuePool.Get()
 	if obj == nil {
-		return alloc.NewMessageQueue()
+		return alloc.NewMQueue()
 	}
-	return obj.(alloc.MessageQueue)
+	return obj.(alloc.MQueue)
 }
 
-func releaseQueue(q alloc.MessageQueue) {
+func releaseQueue(q alloc.MQueue) {
 	q.Reset()
 	queuePool.Put(q)
 }

@@ -23,14 +23,18 @@ type Conn interface {
 	Free()
 }
 
-// Dial dials an address and returns a connection.
-func Dial(address string, logger logging.Logger) (Conn, status.Status) {
+// Connect dials an address and returns a connection.
+func Connect(address string, logger logging.Logger) (Conn, status.Status) {
 	nc, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, tcpError(err)
 	}
 
-	c := newConn(nc, true /* client */, nil /* no handler */, logger)
+	h := HandlerFunc(func(s Stream) status.Status {
+		return s.Close(nil)
+	})
+
+	c := newConn(nc, true /* client */, h, logger)
 	c.Run()
 	return c, status.OK
 }
@@ -45,7 +49,7 @@ type conn struct {
 
 	reader     *reader
 	writer     *writer
-	writeQueue alloc.MessageQueue
+	writeQueue alloc.MQueue
 
 	mu      sync.RWMutex
 	st      status.Status
@@ -62,7 +66,7 @@ func newConn(c net.Conn, client bool, handlerNil Handler, logger logging.Logger)
 
 		reader:     newReader(c, client),
 		writer:     newWriter(c, client),
-		writeQueue: alloc.NewMessageQueueCap(connWriteQueueCap),
+		writeQueue: alloc.NewMQueueCap(connWriteQueueCap),
 
 		st:      status.OK,
 		streams: make(map[bin.Bin128]*stream),
@@ -306,7 +310,7 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 		select {
 		case <-cancel:
 			return status.Cancelled
-		case <-c.writeQueue.Wait():
+		case <-c.writeQueue.ReadWait():
 		}
 	}
 }
@@ -378,7 +382,7 @@ func (c *conn) remove(id bin.Bin128) (*stream, bool) {
 // write writes an outgoing message, or returns a connection closed error.
 func (c *conn) write(msg ptcp.Message) status.Status {
 	b := msg.Unwrap().Raw()
-	_, _, st := c.writeQueue.Write(b)
+	_, st := c.writeQueue.Write(b)
 	if !st.OK() {
 		return statusClosed
 	}

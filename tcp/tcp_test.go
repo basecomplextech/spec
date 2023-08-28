@@ -4,16 +4,50 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/stretchr/testify/assert"
 )
 
-func testServer(t tests.T, address string, handler HandlerFunc, logger logging.Logger) *server {
-	return newServer(address, handler, logger)
+func testServer(t tests.T, handle HandlerFunc) (*server, func()) {
+	logger := logging.TestLogger(t)
+	server := newServer("localhost:0", handle, logger)
+
+	run, st := server.Run()
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	cleanup := func() {
+		run.Cancel()
+
+		select {
+		case <-run.Wait():
+		case <-time.After(time.Second):
+			t.Fatal("server not stopped")
+		}
+	}
+
+	select {
+	case <-server.listening.Wait():
+	case <-time.After(time.Second):
+		t.Fatal("server not listening")
+	}
+
+	return server, cleanup
 }
+
+func testConnect(t tests.T, s *server) *conn {
+	addr := s.listenAddress()
+
+	c, st := Connect(addr, s.logger)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	return c.(*conn)
+}
+
+// Open/Close
 
 func TestOpenClose(t *testing.T) {
 	handle := func(stream Stream) status.Status {
@@ -28,26 +62,10 @@ func TestOpenClose(t *testing.T) {
 		}
 	}
 
-	logger := logging.TestLogger(t)
-	server := testServer(t, "localhost:0", handle, logger)
+	server, cleanup := testServer(t, handle)
+	defer cleanup()
 
-	run, st := server.Run()
-	if !st.OK() {
-		t.Fatal(st)
-	}
-	defer async.CancelWait(run)
-
-	select {
-	case <-server.listening.Wait():
-	case <-time.After(time.Second):
-		t.Fatal("server not listening")
-	}
-
-	addr := server.listenAddress()
-	conn, st := Dial(addr, logger)
-	if !st.OK() {
-		t.Fatal(st)
-	}
+	conn := testConnect(t, server)
 	defer conn.Free()
 
 	msg0 := []byte("hello, world")
