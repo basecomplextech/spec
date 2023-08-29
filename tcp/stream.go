@@ -100,13 +100,13 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 			}
 		}
 
-		if debug {
-			// debugPrint(s.client, "stream.read\t", s.id, ok, st)
+		if debug && debugStream {
+			debugPrint(s.client, "stream.read\t", s.id, ok, st)
 		}
 
 		msg, _, err := ptcp.ParseMessage(b)
 		if err != nil {
-			s.close()
+			s.close(cancel)
 			return nil, tcpError(err)
 		}
 
@@ -134,38 +134,38 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		return statusStreamClosed
 	}
 
-	if debug {
-		// debugPrint(s.client, "stream.write\t", s.id)
+	if debug && debugStream {
+		debugPrint(s.client, "stream.write\t", s.id)
 	}
 
 	if !s.openSent {
-		if st := s.writer.writeOpen(s.id); !st.OK() {
+		if st := s.writer.writeOpen(cancel, s.id); !st.OK() {
 			return st
 		}
 		s.openSent = true
 	}
 
-	return s.writer.writeMessage(s.id, msg)
+	return s.writer.writeMessage(cancel, s.id, msg)
 }
 
 // Close closes the stream and sends the close message.
 func (s *stream) Close(cancel <-chan struct{}) status.Status {
-	return s.close()
+	return s.close(cancel)
 }
 
 // Internal
 
 // Free closes the stream and releases its resources.
 func (s *stream) Free() {
-	s.close()
+	s.close(nil)
 	s.free()
 }
 
 // internal
 
-func (s *stream) receive(msg ptcp.Message) {
+func (s *stream) receive(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	b := msg.Unwrap().Raw()
-	s.reader.write(b)
+	return s.reader.write(cancel, b)
 }
 
 // private
@@ -187,7 +187,7 @@ func (s *stream) free() {
 	}
 }
 
-func (s *stream) close() status.Status {
+func (s *stream) close(cancel <-chan struct{}) status.Status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -201,7 +201,7 @@ func (s *stream) close() status.Status {
 	if debug {
 		debugPrint(s.client, "stream.close\t", s.id)
 	}
-	return s.writer.writeClose(s.id)
+	return s.writer.writeClose(cancel, s.id)
 }
 
 func (s *stream) connClosed() {
@@ -289,15 +289,31 @@ func (r *streamReader) read() ([]byte, bool, status.Status) {
 	return q.Read()
 }
 
-func (r *streamReader) write(msg []byte) {
+func (r *streamReader) write(cancel <-chan struct{}, msg []byte) status.Status {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if r.closed {
-		return
+		return status.OK
 	}
 
-	_, _ = r.queue.Write(msg) // ignore status
+	for {
+		ok, st := r.queue.Write(msg)
+		switch {
+		case !st.OK():
+			return status.OK // ignore end
+		case ok:
+			return status.OK
+		}
+
+		// Wait for space
+		select {
+		case <-cancel:
+			return status.Cancelled
+		case <-r.queue.WriteWait(len(msg)):
+			continue
+		}
+	}
 }
 
 func (r *streamReader) wait() <-chan struct{} {
@@ -357,7 +373,7 @@ func (w *streamWriter) free() {
 	w.buf = nil
 }
 
-func (w *streamWriter) writeOpen(id bin.Bin128) status.Status {
+func (w *streamWriter) writeOpen(cancel <-chan struct{}, id bin.Bin128) status.Status {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -386,10 +402,10 @@ func (w *streamWriter) writeOpen(id bin.Bin128) status.Status {
 		}
 	}
 
-	return w.conn.write(msg)
+	return w.conn.write(cancel, msg)
 }
 
-func (w *streamWriter) writeMessage(id bin.Bin128, data []byte) status.Status {
+func (w *streamWriter) writeMessage(cancel <-chan struct{}, id bin.Bin128, data []byte) status.Status {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -419,10 +435,10 @@ func (w *streamWriter) writeMessage(id bin.Bin128, data []byte) status.Status {
 		}
 	}
 
-	return w.conn.write(msg)
+	return w.conn.write(cancel, msg)
 }
 
-func (w *streamWriter) writeClose(id bin.Bin128) status.Status {
+func (w *streamWriter) writeClose(cancel <-chan struct{}, id bin.Bin128) status.Status {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -451,7 +467,7 @@ func (w *streamWriter) writeClose(id bin.Bin128) status.Status {
 		}
 	}
 
-	return w.conn.write(msg)
+	return w.conn.write(cancel, msg)
 }
 
 // queue

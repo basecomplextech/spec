@@ -2,7 +2,11 @@ package tcp
 
 import "fmt"
 
-const debug = false
+const (
+	debug       = false
+	debugClose  = false
+	debugStream = false
+)
 
 func debugPrint(client bool, a ...any) {
 	if !debug {

@@ -195,12 +195,12 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			}
 
 		case ptcp.Code_CloseStream:
-			if st := c.handleClosed(msg); !st.OK() {
+			if st := c.handleClosed(cancel, msg); !st.OK() {
 				return st
 			}
 
 		case ptcp.Code_StreamMessage:
-			if st := c.handleMessage(msg); !st.OK() {
+			if st := c.handleMessage(cancel, msg); !st.OK() {
 				return st
 			}
 
@@ -230,7 +230,7 @@ func (c *conn) handleOpened(msg ptcp.Message) status.Status {
 	return status.OK
 }
 
-func (c *conn) handleClosed(msg ptcp.Message) status.Status {
+func (c *conn) handleClosed(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	m := msg.Close()
 	id := m.Id()
 
@@ -239,11 +239,10 @@ func (c *conn) handleClosed(msg ptcp.Message) status.Status {
 		return status.OK
 	}
 
-	s.receive(msg)
-	return status.OK
+	return s.receive(cancel, msg)
 }
 
-func (c *conn) handleMessage(msg ptcp.Message) status.Status {
+func (c *conn) handleMessage(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	m := msg.Message()
 	id := m.Id()
 
@@ -257,8 +256,7 @@ func (c *conn) handleMessage(msg ptcp.Message) status.Status {
 		go c.handleStream(s)
 	}
 
-	s.receive(msg)
-	return status.OK
+	return s.receive(cancel, msg)
 }
 
 func (c *conn) handleStream(s *stream) {
@@ -380,11 +378,24 @@ func (c *conn) remove(id bin.Bin128) (*stream, bool) {
 }
 
 // write writes an outgoing message, or returns a connection closed error.
-func (c *conn) write(msg ptcp.Message) status.Status {
+func (c *conn) write(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	b := msg.Unwrap().Raw()
-	_, st := c.writeQueue.Write(b)
-	if !st.OK() {
-		return statusClosed
+
+	for {
+		ok, st := c.writeQueue.Write(b)
+		switch {
+		case !st.OK():
+			return statusClosed
+		case ok:
+			return status.OK
+		}
+
+		// Wait for space
+		select {
+		case <-cancel:
+			return status.Cancelled
+		case <-c.writeQueue.WriteWait(len(b)):
+			continue
+		}
 	}
-	return status.OK
 }
