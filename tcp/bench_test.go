@@ -8,7 +8,7 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
-const msgSize = 16
+const benchMsgSize = 16
 
 // Open/close
 
@@ -25,13 +25,11 @@ func BenchmarkOpenClose(b *testing.B) {
 		}
 	}
 
-	server, cleanup := testServer(b, handle)
-	defer cleanup()
-
+	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
 
-	msg := bytes.Repeat([]byte("a"), msgSize)
+	msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -56,7 +54,7 @@ func BenchmarkOpenClose(b *testing.B) {
 			b.Fatalf("expected %q, got %q", msg, msg1)
 		}
 
-		if st := s.Close(nil); !st.OK() {
+		if st := s.Close(); !st.OK() {
 			b.Fatal(st)
 		}
 
@@ -83,9 +81,7 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 		}
 	}
 
-	server, cleanup := testServer(b, handle)
-	defer cleanup()
-
+	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
 
@@ -95,7 +91,7 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 	t0 := time.Now()
 
 	b.RunParallel(func(p *testing.PB) {
-		msg := bytes.Repeat([]byte("a"), msgSize)
+		msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 		for p.Next() {
 			s, st := conn.Open(nil)
@@ -112,12 +108,11 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 			if !st.OK() {
 				b.Fatal(st)
 			}
-
 			if !bytes.Equal(msg, msg1) {
 				b.Fatalf("expected %q, got %q", msg, msg1)
 			}
 
-			if st := s.Close(nil); !st.OK() {
+			if st := s.Close(); !st.OK() {
 				b.Fatal(st)
 			}
 
@@ -153,15 +148,14 @@ func BenchmarkStream_Parallel(b *testing.B) {
 		if !st.OK() {
 			return st
 		}
-		return s.Close(nil)
+		return s.Close()
 	}
 
-	server, cleanup := testServer(b, handle)
-	defer cleanup()
-
+	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
 
+	b.SetBytes(int64(benchMsgSize))
 	b.ReportAllocs()
 	b.ResetTimer()
 	t0 := time.Now()
@@ -173,7 +167,7 @@ func BenchmarkStream_Parallel(b *testing.B) {
 		}
 		defer s.Free()
 
-		msg := bytes.Repeat([]byte("a"), msgSize)
+		msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 		for p.Next() {
 			st = s.Write(nil, msg)
@@ -202,7 +196,7 @@ func BenchmarkStream_Parallel(b *testing.B) {
 
 func BenchmarkStream_16kb_Parallel(b *testing.B) {
 	close := []byte("close")
-	msgSize := 16 * 1024
+	benchMsgSize := 16 * 1024
 
 	handle := func(s Stream) status.Status {
 		for {
@@ -221,15 +215,14 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 		if !st.OK() {
 			return st
 		}
-		return s.Close(nil)
+		return s.Close()
 	}
 
-	server, cleanup := testServer(b, handle)
-	defer cleanup()
-
+	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
 
+	b.SetBytes(int64(benchMsgSize))
 	b.ReportAllocs()
 	b.ResetTimer()
 	t0 := time.Now()
@@ -241,7 +234,7 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 		}
 		defer s.Free()
 
-		msg := bytes.Repeat([]byte("a"), msgSize)
+		msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 		for p.Next() {
 			st = s.Write(nil, msg)

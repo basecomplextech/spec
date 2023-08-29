@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/binary"
 	"io"
 	"sync"
@@ -72,14 +71,7 @@ func (r *reader) read() (ptcp.Message, status.Status) {
 		case ptcp.Code_CloseStream:
 			debugPrint(r.client, "<- close\t", msg.Close().Id())
 		case ptcp.Code_StreamMessage:
-			if !debugClose {
-				debugPrint(r.client, "<- message\t", msg.Message().Id())
-			} else {
-				data := msg.Message().Data()
-				if bytes.Equal(data, []byte("close")) {
-					debugPrint(r.client, "<- message-close\t", msg.Message().Id())
-				}
-			}
+			debugPrint(r.client, "<- message\t", msg.Message().Id())
 		default:
 			debugPrint(r.client, "<- unknown", code)
 		}

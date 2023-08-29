@@ -4,7 +4,6 @@ import "fmt"
 
 const (
 	debug       = false
-	debugClose  = false
 	debugStream = false
 )
 

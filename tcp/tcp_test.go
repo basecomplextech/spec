@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testServer(t tests.T, handle HandlerFunc) (*server, func()) {
+func testServer(t tests.T, handle HandlerFunc) *server {
 	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", handle, logger)
 
@@ -18,6 +18,7 @@ func testServer(t tests.T, handle HandlerFunc) (*server, func()) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
+
 	cleanup := func() {
 		run.Cancel()
 
@@ -27,6 +28,7 @@ func testServer(t tests.T, handle HandlerFunc) (*server, func()) {
 			t.Fatal("server not stopped")
 		}
 	}
+	t.Cleanup(cleanup)
 
 	select {
 	case <-server.listening.Wait():
@@ -34,7 +36,22 @@ func testServer(t tests.T, handle HandlerFunc) (*server, func()) {
 		t.Fatal("server not listening")
 	}
 
-	return server, cleanup
+	return server
+}
+
+func testRequestServer(t tests.T) *server {
+	handle := func(stream Stream) status.Status {
+		msg, st := stream.Read(nil)
+		if !st.OK() {
+			return st
+		}
+		if st := stream.Write(nil, msg); !st.OK() {
+			return st
+		}
+		return stream.Close()
+	}
+
+	return testServer(t, handle)
 }
 
 func testConnect(t tests.T, s *server) *conn {
@@ -45,6 +62,14 @@ func testConnect(t tests.T, s *server) *conn {
 		t.Fatal(st)
 	}
 	return c.(*conn)
+}
+
+func testOpen(t tests.T, c Conn) *stream {
+	s, st := c.Open(nil)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	return s.(*stream)
 }
 
 // Open/Close
@@ -62,9 +87,7 @@ func TestOpenClose(t *testing.T) {
 		}
 	}
 
-	server, cleanup := testServer(t, handle)
-	defer cleanup()
-
+	server := testServer(t, handle)
 	conn := testConnect(t, server)
 	defer conn.Free()
 
@@ -84,7 +107,7 @@ func TestOpenClose(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	if st := stream.Close(nil); !st.OK() {
+	if st := stream.Close(); !st.OK() {
 		t.Fatal(st)
 	}
 

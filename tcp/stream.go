@@ -19,7 +19,7 @@ type Stream interface {
 	Write(cancel <-chan struct{}, msg []byte) status.Status
 
 	// Close closes the stream and sends the close message.
-	Close(cancel <-chan struct{}) status.Status
+	Close() status.Status
 
 	// Internal
 
@@ -106,7 +106,7 @@ func (s *stream) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 
 		msg, _, err := ptcp.ParseMessage(b)
 		if err != nil {
-			s.close(cancel)
+			s.close()
 			return nil, tcpError(err)
 		}
 
@@ -134,10 +134,6 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		return statusStreamClosed
 	}
 
-	if debug && debugStream {
-		debugPrint(s.client, "stream.write\t", s.id)
-	}
-
 	if !s.openSent {
 		if st := s.writer.writeOpen(cancel, s.id); !st.OK() {
 			return st
@@ -145,24 +141,28 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		s.openSent = true
 	}
 
+	if debug && debugStream {
+		debugPrint(s.client, "stream.write\t", s.id)
+	}
 	return s.writer.writeMessage(cancel, s.id, msg)
 }
 
 // Close closes the stream and sends the close message.
-func (s *stream) Close(cancel <-chan struct{}) status.Status {
-	return s.close(cancel)
+func (s *stream) Close() status.Status {
+	return s.close()
 }
 
 // Internal
 
 // Free closes the stream and releases its resources.
 func (s *stream) Free() {
-	s.close(nil)
+	s.close()
 	s.free()
 }
 
 // internal
 
+// receive receives a message from the connection.
 func (s *stream) receive(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	b := msg.Unwrap().Raw()
 	return s.reader.write(cancel, b)
@@ -187,7 +187,7 @@ func (s *stream) free() {
 	}
 }
 
-func (s *stream) close(cancel <-chan struct{}) status.Status {
+func (s *stream) close() status.Status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -201,7 +201,7 @@ func (s *stream) close(cancel <-chan struct{}) status.Status {
 	if debug {
 		debugPrint(s.client, "stream.close\t", s.id)
 	}
-	return s.writer.writeClose(cancel, s.id)
+	return s.writer.writeClose(nil /* no cancel */, s.id)
 }
 
 func (s *stream) connClosed() {

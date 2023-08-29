@@ -31,7 +31,7 @@ func Connect(address string, logger logging.Logger) (Conn, status.Status) {
 	}
 
 	h := HandlerFunc(func(s Stream) status.Status {
-		return s.Close(nil)
+		return s.Close()
 	})
 
 	c := newConn(nc, true /* client */, h, logger)
@@ -92,6 +92,7 @@ func (c *conn) Free() {
 		c.close()
 	} else {
 		main.Cancel()
+		<-main.Wait()
 	}
 }
 
@@ -118,6 +119,7 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 		}
 	}()
 	defer c.close()
+	defer c.reader.free()
 
 	// Start loops
 	read := async.Go(c.readLoop)
