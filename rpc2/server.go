@@ -93,6 +93,7 @@ func (s *server) HandleStream(stream tcp.Stream) status.Status {
 	if !st.OK() {
 		return st
 	}
+	defer resp.Free()
 
 	// Build response
 	presp, st := resp.build()

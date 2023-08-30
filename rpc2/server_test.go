@@ -1,15 +1,15 @@
 package rpc
 
 import (
-	"testing"
 	"time"
 
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
+	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/basecomplextech/spec/proto/prpc"
 )
 
-func testServer(t *testing.T, handle HandleFunc) *server {
+func testServer(t tests.T, handle HandleFunc) *server {
 	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", handle, logger)
 
@@ -38,7 +38,7 @@ func testServer(t *testing.T, handle HandleFunc) *server {
 	return server
 }
 
-func testEchoServer(t *testing.T) *server {
+func testEchoServer(t tests.T) *server {
 	return testServer(t, func(cancel <-chan struct{}, req prpc.Request) (*Response, status.Status) {
 		call := req.Calls().Get(0)
 		arg := call.Args().Get(0)
@@ -56,7 +56,7 @@ func testEchoServer(t *testing.T) *server {
 	})
 }
 
-func testEchoRequest(t *testing.T, msg string) *Request {
+func testEchoRequest(t tests.T, msg string) *Request {
 	req := NewRequest()
 	call := req.Call("echo")
 	args := call.Args()
