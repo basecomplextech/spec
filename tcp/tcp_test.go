@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testServer(t tests.T, handle HandlerFunc) *server {
+func testServer(t tests.T, handle HandleFunc) *server {
 	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", handle, logger)
 
@@ -55,7 +55,7 @@ func testRequestServer(t tests.T) *server {
 }
 
 func testConnect(t tests.T, s *server) *conn {
-	addr := s.listenAddress()
+	addr := s.Address()
 
 	c, st := Connect(addr, s.logger)
 	if !st.OK() {

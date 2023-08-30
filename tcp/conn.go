@@ -30,7 +30,7 @@ func Connect(address string, logger logging.Logger) (Conn, status.Status) {
 		return nil, tcpError(err)
 	}
 
-	h := HandlerFunc(func(s Stream) status.Status {
+	h := HandleFunc(func(s Stream) status.Status {
 		return s.Close()
 	})
 

@@ -10,10 +10,10 @@ type Handler interface {
 	HandleStream(stream Stream) status.Status
 }
 
-// HandlerFunc is a type adapter to allow use of ordinary functions as stream handlers.
-type HandlerFunc func(stream Stream) status.Status
+// HandleFunc is a type adapter to allow use of ordinary functions as stream handlers.
+type HandleFunc func(stream Stream) status.Status
 
 // HandleStream handles a new stream.
-func (f HandlerFunc) HandleStream(stream Stream) status.Status {
+func (f HandleFunc) HandleStream(stream Stream) status.Status {
 	return f(stream)
 }

@@ -10,6 +10,9 @@ import (
 
 // Server is an RCP server.
 type Server interface {
+	// Address returns the address the server is listening to.
+	Address() string
+
 	// Running indicates that the server is running.
 	Running() <-chan struct{}
 
@@ -25,12 +28,6 @@ type Server interface {
 	Run() (async.Routine[struct{}], status.Status)
 }
 
-// Handler is an RCP handler.
-type Handler interface {
-	// Handle handles a request and returns a response.
-	Handle(cancel <-chan struct{}, req prpc.Request) (*Response, status.Status)
-}
-
 // internal
 
 type server struct {
@@ -39,13 +36,18 @@ type server struct {
 	server  tcp.Server
 }
 
-func newServer(address string, handler Handler, logger logging.Logger) Server {
+func newServer(address string, handler Handler, logger logging.Logger) *server {
 	s := &server{
 		handler: handler,
 		logger:  logger,
 	}
 	s.server = tcp.NewServer(address, s, logger)
 	return s
+}
+
+// Address returns the address the server is listening to.
+func (s *server) Address() string {
+	return s.server.Address()
 }
 
 // Running indicates that the server is running.

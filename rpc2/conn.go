@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/prpc"
@@ -21,14 +22,29 @@ type Conn interface {
 	Free()
 }
 
+// Connect dials the given address and returns a connection.
+func Connect(address string, logger logging.Logger) (Conn, status.Status) {
+	c, st := tcp.Connect(address, logger)
+	if !st.OK() {
+		return nil, st
+	}
+
+	conn := newConn(c, logger)
+	return conn, status.OK
+}
+
 // internal
 
 type conn struct {
-	conn tcp.Conn
+	conn   tcp.Conn
+	logger logging.Logger
 }
 
-func newConn(c tcp.Conn) Conn {
-	return &conn{conn: c}
+func newConn(c tcp.Conn, logger logging.Logger) Conn {
+	return &conn{
+		conn:   c,
+		logger: logger,
+	}
 }
 
 // Close closes the connection.
@@ -84,6 +100,7 @@ func (c *conn) Request(cancel <-chan struct{}, req *Request) (*ref.Box[prpc.Resp
 
 	// Box response and stream
 	box := ref.NewBox(presp, stream)
+	ok = true
 	return box, status.OK
 }
 

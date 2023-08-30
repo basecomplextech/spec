@@ -13,6 +13,9 @@ import (
 
 // Server is a binary multiplexing Server.
 type Server interface {
+	// Address returns the address the server is listening to.
+	Address() string
+
 	// Running indicates that the server is running.
 	Running() <-chan struct{}
 
@@ -61,6 +64,16 @@ func newServer(address string, handler Handler, logger logging.Logger) *server {
 	}
 }
 
+// Address returns the address the server is listening to.
+func (s *server) Address() string {
+	// TODO: Lock
+	ln := s.ln
+	if ln == nil {
+		return s.address
+	}
+	return ln.Addr().String()
+}
+
 // Running indicates that the server is running.
 func (s *server) Running() <-chan struct{} {
 	return s.running.Wait()
@@ -94,15 +107,6 @@ func (s *server) Run() (async.Routine[struct{}], status.Status) {
 }
 
 // internal
-
-// listenAddress is used in tests.
-func (s *server) listenAddress() string {
-	ln := s.ln
-	if ln == nil {
-		return ""
-	}
-	return ln.Addr().String()
-}
 
 func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 	s.logger.Debug("Server started")
