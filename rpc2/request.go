@@ -19,7 +19,7 @@ type Request struct {
 
 // NewRequest returns a new request.
 func NewRequest() *Request {
-	buf := alloc.NewBuffer()
+	buf := acquireBuffer()
 	req := prpc.NewRequestWriterBuffer(buf)
 	calls := req.Calls()
 
@@ -42,7 +42,7 @@ func (r *Request) Free() {
 	r.calls = spec.MessageListWriter[prpc.CallWriter]{}
 	r.req = prpc.RequestWriter{}
 
-	r.buf.Free()
+	releaseBuffer(r.buf)
 	r.buf = nil
 }
 

@@ -348,7 +348,7 @@ type streamWriter struct {
 }
 
 func newStreamWriter(c *conn) streamWriter {
-	buf := alloc.NewBuffer()
+	buf := acquireBuffer()
 
 	return streamWriter{
 		conn:   c,
@@ -369,7 +369,7 @@ func (w *streamWriter) free() {
 	w.writer.Free()
 	w.writer = nil
 
-	w.buf.Free()
+	releaseBuffer(w.buf)
 	w.buf = nil
 }
 

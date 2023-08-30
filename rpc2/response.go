@@ -19,7 +19,7 @@ type Response struct {
 
 // NewResponse returns a new response.
 func NewResponse() *Response {
-	buf := alloc.NewBuffer()
+	buf := acquireBuffer()
 	resp := prpc.NewResponseWriterBuffer(buf)
 	results := resp.Results()
 
@@ -42,7 +42,7 @@ func (r *Response) Free() {
 	r.results = spec.MessageListWriter[prpc.ResultWriter]{}
 	r.resp = prpc.ResponseWriter{}
 
-	r.buf.Free()
+	releaseBuffer(r.buf)
 	r.buf = nil
 }
 
