@@ -3,6 +3,7 @@ package compiler
 import (
 	"testing"
 
+	"github.com/basecomplextech/spec/internal/lang/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -133,7 +134,7 @@ func TestCompiler__should_compile_options(t *testing.T) {
 	assert.Equal(t, "github.com/basecomplextech/spec/internal/tests/pkg1", gopkg.Value)
 }
 
-// Definitions
+// model.Definitions
 
 func TestCompiler__should_compile_file_definitions(t *testing.T) {
 	c := testCompiler(t)
@@ -177,7 +178,7 @@ func TestCompiler__should_compile_enum(t *testing.T) {
 	}
 
 	def := pkg.Files[0].Definitions[0]
-	assert.Equal(t, DefinitionEnum, def.Type)
+	assert.Equal(t, model.DefinitionEnum, def.Type)
 	assert.NotNil(t, def.Enum)
 	assert.Len(t, def.Enum.Values, 5)
 }
@@ -191,7 +192,7 @@ func TestCompiler__should_compile_enum_values(t *testing.T) {
 	}
 
 	def := pkg.Files[0].Definitions[0]
-	require.Equal(t, DefinitionEnum, def.Type)
+	require.Equal(t, model.DefinitionEnum, def.Type)
 
 	enum := def.Enum
 	assert.Contains(t, enum.ValueNumbers, 0)
@@ -210,7 +211,7 @@ func TestCompiler__should_compile_enum_value_names(t *testing.T) {
 	}
 
 	def := pkg.Files[0].Definitions[0]
-	require.Equal(t, DefinitionEnum, def.Type)
+	require.Equal(t, model.DefinitionEnum, def.Type)
 
 	enum := def.Enum
 	assert.Contains(t, enum.ValueNames, "UNDEFINED")
@@ -231,7 +232,7 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	}
 
 	def := pkg.Files[1].Definitions[0]
-	assert.Equal(t, DefinitionMessage, def.Type)
+	assert.Equal(t, model.DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
 	assert.Len(t, def.Message.Fields, 26)
 }
@@ -245,7 +246,7 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	}
 
 	def := pkg.Files[1].Definitions[0]
-	require.Equal(t, DefinitionMessage, def.Type)
+	require.Equal(t, model.DefinitionMessage, def.Type)
 
 	msg := def.Message
 	require.Len(t, def.Message.FieldNames, 26)
@@ -263,7 +264,7 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	}
 
 	def := pkg.Files[1].Definitions[0]
-	require.Equal(t, DefinitionMessage, def.Type)
+	require.Equal(t, model.DefinitionMessage, def.Type)
 
 	msg := def.Message
 	require.Len(t, def.Message.FieldTags, 26)
@@ -283,7 +284,7 @@ func TestCompiler__should_compile_struct(t *testing.T) {
 	}
 
 	def := pkg.Files[1].DefinitionNames["Struct"]
-	assert.Equal(t, DefinitionStruct, def.Type)
+	assert.Equal(t, model.DefinitionStruct, def.Type)
 	assert.NotNil(t, def.Struct)
 	assert.Len(t, def.Struct.Fields, 2)
 }
@@ -297,7 +298,7 @@ func TestCompiler__should_compile_struct_field_names(t *testing.T) {
 	}
 
 	def := pkg.Files[1].DefinitionNames["Struct"]
-	assert.Equal(t, DefinitionStruct, def.Type)
+	assert.Equal(t, model.DefinitionStruct, def.Type)
 
 	str := def.Struct
 	require.NotNil(t, str)
@@ -325,7 +326,7 @@ func TestCompiler__should_compile_builtin_type(t *testing.T) {
 
 	type_ := field.Type
 	assert.Equal(t, "bool", type_.Name)
-	assert.Equal(t, KindBool, type_.Kind)
+	assert.Equal(t, model.KindBool, type_.Kind)
 }
 
 func TestCompiler__should_compile_reference_type(t *testing.T) {
@@ -345,7 +346,7 @@ func TestCompiler__should_compile_reference_type(t *testing.T) {
 	// Resolved
 	type_ := field.Type
 	assert.Equal(t, "Submessage", type_.Name)
-	assert.Equal(t, KindMessage, type_.Kind)
+	assert.Equal(t, model.KindMessage, type_.Kind)
 	assert.NotNil(t, type_.Ref)
 	assert.Equal(t, "Submessage", type_.Ref.Name)
 }
@@ -368,7 +369,7 @@ func TestCompiler__should_compile_imported_type(t *testing.T) {
 	type_ := field.Type
 	assert.Equal(t, "Submessage", type_.Name)
 	assert.Equal(t, "pkg2", type_.ImportName)
-	assert.Equal(t, KindMessage, type_.Kind)
+	assert.Equal(t, model.KindMessage, type_.Kind)
 	assert.NotNil(t, type_.Ref)
 	assert.NotNil(t, type_.Import)
 }
@@ -389,12 +390,12 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 
 	// List
 	type_ := field.Type
-	assert.Equal(t, KindList, type_.Kind)
+	assert.Equal(t, model.KindList, type_.Kind)
 
 	// Element
 	elem := type_.Element
 	require.NotNil(t, elem)
-	assert.Equal(t, KindStruct, elem.Kind)
+	assert.Equal(t, model.KindStruct, elem.Kind)
 }
 
 func TestCompiler__should_compile_list_reference_type(t *testing.T) {
@@ -413,12 +414,12 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 
 	// List
 	type_ := field.Type
-	assert.Equal(t, KindList, type_.Kind)
+	assert.Equal(t, model.KindList, type_.Kind)
 
 	// Element
 	elem := type_.Element
 	require.NotNil(t, elem)
-	assert.Equal(t, KindMessage, elem.Kind)
+	assert.Equal(t, model.KindMessage, elem.Kind)
 	assert.Equal(t, "Submessage", elem.Name)
 	assert.NotNil(t, elem.Ref)
 }
@@ -439,12 +440,12 @@ func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 
 	// List
 	type_ := field.Type
-	assert.Equal(t, KindList, type_.Kind)
+	assert.Equal(t, model.KindList, type_.Kind)
 	require.NotNil(t, type_.Element)
 
 	// Element
 	elem := type_.Element
-	assert.Equal(t, KindMessage, elem.Kind)
+	assert.Equal(t, model.KindMessage, elem.Kind)
 	assert.Equal(t, "Submessage", elem.Name)
 	assert.Equal(t, "pkg2", elem.ImportName)
 	assert.NotNil(t, elem.Ref)

@@ -3,68 +3,68 @@ package generator
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
 // typeName returns a type name.
-func typeName(typ *compiler.Type) string {
+func typeName(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindAny:
+	case model.KindAny:
 		return "spec.Value"
 
-	case compiler.KindBool:
+	case model.KindBool:
 		return "bool"
-	case compiler.KindByte:
+	case model.KindByte:
 		return "byte"
 
-	case compiler.KindInt16:
+	case model.KindInt16:
 		return "int16"
-	case compiler.KindInt32:
+	case model.KindInt32:
 		return "int32"
-	case compiler.KindInt64:
+	case model.KindInt64:
 		return "int64"
 
-	case compiler.KindUint16:
+	case model.KindUint16:
 		return "uint16"
-	case compiler.KindUint32:
+	case model.KindUint32:
 		return "uint32"
-	case compiler.KindUint64:
+	case model.KindUint64:
 		return "uint64"
 
-	case compiler.KindFloat32:
+	case model.KindFloat32:
 		return "float32"
-	case compiler.KindFloat64:
+	case model.KindFloat64:
 		return "float64"
 
-	case compiler.KindBin64:
+	case model.KindBin64:
 		return "bin.Bin64"
-	case compiler.KindBin128:
+	case model.KindBin128:
 		return "bin.Bin128"
-	case compiler.KindBin256:
+	case model.KindBin256:
 		return "bin.Bin256"
 
-	case compiler.KindBytes:
+	case model.KindBytes:
 		return "[]byte"
-	case compiler.KindString:
+	case model.KindString:
 		return "string"
-	case compiler.KindAnyMessage:
+	case model.KindAnyMessage:
 		return "spec.Message"
 
-	case compiler.KindList:
+	case model.KindList:
 		elem := typeName(typ.Element)
 		return fmt.Sprintf("spec.TypedList[%v]", elem)
 
-	case compiler.KindEnum,
-		compiler.KindMessage,
-		compiler.KindStruct:
+	case model.KindEnum,
+		model.KindMessage,
+		model.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
 		}
 		return typ.Name
 
-	case compiler.KindService:
+	case model.KindService:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.%v", typ.ImportName, typ.Name)
 		}
@@ -74,16 +74,16 @@ func typeName(typ *compiler.Type) string {
 	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
 }
 
-func typeRefName(typ *compiler.Type) string {
+func typeRefName(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindBytes:
+	case model.KindBytes:
 		return "spec.Bytes"
-	case compiler.KindString:
+	case model.KindString:
 		return "spec.String"
 
-	case compiler.KindList:
+	case model.KindList:
 		elem := typeRefName(typ.Element)
 		return fmt.Sprintf("spec.TypedList[%v]", elem)
 	}
@@ -91,28 +91,28 @@ func typeRefName(typ *compiler.Type) string {
 	return typeName(typ)
 }
 
-func inTypeName(typ *compiler.Type) string {
+func inTypeName(typ *model.Type) string {
 	kind := typ.Kind
 	switch kind {
-	case compiler.KindBytes:
+	case model.KindBytes:
 		return "[]byte"
-	case compiler.KindString:
+	case model.KindString:
 		return "string"
 	}
 	return typeName(typ)
 }
 
-func typeNewFunc(typ *compiler.Type) string {
+func typeNewFunc(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindList:
+	case model.KindList:
 		elem := typeName(typ.Element)
 		return "spec.List[]" + elem
 
-	case compiler.KindEnum,
-		compiler.KindMessage,
-		compiler.KindStruct:
+	case model.KindEnum,
+		model.KindMessage,
+		model.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.New%v", typ.ImportName, typ.Name)
 		}
@@ -121,17 +121,17 @@ func typeNewFunc(typ *compiler.Type) string {
 	return ""
 }
 
-func typeParseFunc(typ *compiler.Type) string {
+func typeParseFunc(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindList:
+	case model.KindList:
 		elem := typeName(typ.Element)
 		return "spec.List[]" + elem
 
-	case compiler.KindEnum,
-		compiler.KindMessage,
-		compiler.KindStruct:
+	case model.KindEnum,
+		model.KindMessage,
+		model.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
 		}
@@ -140,58 +140,58 @@ func typeParseFunc(typ *compiler.Type) string {
 	return ""
 }
 
-func typeDecodeFunc(typ *compiler.Type) string {
+func typeDecodeFunc(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindAny:
+	case model.KindAny:
 		return "spec.ParseValue"
 
-	case compiler.KindBool:
+	case model.KindBool:
 		return "encoding.DecodeBool"
-	case compiler.KindByte:
+	case model.KindByte:
 		return "encoding.DecodeByte"
 
-	case compiler.KindInt16:
+	case model.KindInt16:
 		return "encoding.DecodeInt16"
-	case compiler.KindInt32:
+	case model.KindInt32:
 		return "encoding.DecodeInt32"
-	case compiler.KindInt64:
+	case model.KindInt64:
 		return "encoding.DecodeInt64"
 
-	case compiler.KindUint16:
+	case model.KindUint16:
 		return "encoding.DecodeUint16"
-	case compiler.KindUint32:
+	case model.KindUint32:
 		return "encoding.DecodeUint32"
-	case compiler.KindUint64:
+	case model.KindUint64:
 		return "encoding.DecodeUint64"
 
-	case compiler.KindBin64:
+	case model.KindBin64:
 		return "encoding.DecodeBin64"
-	case compiler.KindBin128:
+	case model.KindBin128:
 		return "encoding.DecodeBin128"
-	case compiler.KindBin256:
+	case model.KindBin256:
 		return "encoding.DecodeBin256"
 
-	case compiler.KindFloat32:
+	case model.KindFloat32:
 		return "encoding.DecodeFloat32"
-	case compiler.KindFloat64:
+	case model.KindFloat64:
 		return "encoding.DecodeFloat64"
 
-	case compiler.KindBytes:
+	case model.KindBytes:
 		return "encoding.DecodeBytes"
-	case compiler.KindString:
+	case model.KindString:
 		return "encoding.DecodeString"
-	case compiler.KindAnyMessage:
+	case model.KindAnyMessage:
 		return "spec.ParseMessage"
 
-	case compiler.KindList:
+	case model.KindList:
 		elem := typeName(typ.Element)
 		return fmt.Sprintf("spec.ParseTypedList[%v]", elem)
 
-	case compiler.KindEnum,
-		compiler.KindMessage,
-		compiler.KindStruct:
+	case model.KindEnum,
+		model.KindMessage,
+		model.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
 		}
@@ -201,16 +201,16 @@ func typeDecodeFunc(typ *compiler.Type) string {
 	return ""
 }
 
-func typeDecodeRefFunc(typ *compiler.Type) string {
+func typeDecodeRefFunc(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindBytes:
+	case model.KindBytes:
 		return "encoding.DecodeBytes"
-	case compiler.KindString:
+	case model.KindString:
 		return "encoding.DecodeString"
 
-	case compiler.KindList:
+	case model.KindList:
 		elem := typeRefName(typ.Element)
 		return fmt.Sprintf("spec.ParseTypedList[%v]", elem)
 	}
@@ -218,71 +218,71 @@ func typeDecodeRefFunc(typ *compiler.Type) string {
 	return typeDecodeFunc(typ)
 }
 
-func typeWriteFunc(typ *compiler.Type) string {
+func typeWriteFunc(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindAny:
+	case model.KindAny:
 		return "spec.WriteValue"
 
-	case compiler.KindBool:
+	case model.KindBool:
 		return "encoding.EncodeBool"
-	case compiler.KindByte:
+	case model.KindByte:
 		return "encoding.EncodeByte"
 
-	case compiler.KindInt16:
+	case model.KindInt16:
 		return "encoding.EncodeInt16"
-	case compiler.KindInt32:
+	case model.KindInt32:
 		return "encoding.EncodeInt32"
-	case compiler.KindInt64:
+	case model.KindInt64:
 		return "encoding.EncodeInt64"
 
-	case compiler.KindUint16:
+	case model.KindUint16:
 		return "encoding.EncodeUint16"
-	case compiler.KindUint32:
+	case model.KindUint32:
 		return "encoding.EncodeUint32"
-	case compiler.KindUint64:
+	case model.KindUint64:
 		return "encoding.EncodeUint64"
 
-	case compiler.KindBin64:
+	case model.KindBin64:
 		return "encoding.EncodeBin64"
-	case compiler.KindBin128:
+	case model.KindBin128:
 		return "encoding.EncodeBin128"
-	case compiler.KindBin256:
+	case model.KindBin256:
 		return "encoding.EncodeBin256"
 
-	case compiler.KindFloat32:
+	case model.KindFloat32:
 		return "encoding.EncodeFloat32"
-	case compiler.KindFloat64:
+	case model.KindFloat64:
 		return "encoding.EncodeFloat64"
 
-	case compiler.KindBytes:
+	case model.KindBytes:
 		return "encoding.EncodeBytes"
-	case compiler.KindString:
+	case model.KindString:
 		return "encoding.EncodeString"
-	case compiler.KindAnyMessage:
+	case model.KindAnyMessage:
 		return "spec.WriteMessage"
 
-	case compiler.KindEnum:
+	case model.KindEnum:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.Write%v", typ.ImportName, typ.Name)
 		}
 		return fmt.Sprintf("Write%v", typ.Name)
 
-	case compiler.KindList:
+	case model.KindList:
 		elem := typ.Element
-		if elem.Kind == compiler.KindMessage {
+		if elem.Kind == model.KindMessage {
 			return fmt.Sprintf("spec.NewMessageListWriter")
 		}
 		return fmt.Sprintf("spec.NewValueListWriter")
 
-	case compiler.KindMessage:
+	case model.KindMessage:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.New%vWriterTo", typ.ImportName, typ.Name)
 		}
 		return fmt.Sprintf("New%vWriterTo", typ.Name)
 
-	case compiler.KindStruct:
+	case model.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.Write%v", typ.ImportName, typ.Name)
 		}
@@ -292,13 +292,13 @@ func typeWriteFunc(typ *compiler.Type) string {
 	return ""
 }
 
-func typeWriter(typ *compiler.Type) string {
+func typeWriter(typ *model.Type) string {
 	kind := typ.Kind
 
 	switch kind {
-	case compiler.KindList:
+	case model.KindList:
 		elem := typ.Element
-		if elem.Kind == compiler.KindMessage {
+		if elem.Kind == model.KindMessage {
 			encoder := typeWriter(elem)
 			return fmt.Sprintf("spec.MessageListWriter[%v]", encoder)
 		}
@@ -306,7 +306,7 @@ func typeWriter(typ *compiler.Type) string {
 		elemName := inTypeName(elem)
 		return fmt.Sprintf("spec.ValueListWriter[%v]", elemName)
 
-	case compiler.KindMessage:
+	case model.KindMessage:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.%vWriter", typ.ImportName, typ.Name)
 		}

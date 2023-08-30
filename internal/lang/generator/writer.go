@@ -6,7 +6,7 @@ import (
 	"go/format"
 	"strings"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 )
 
 // WriteFile writes a golang file.
-func WriteFile(file *compiler.File, skipRPC bool) ([]byte, error) {
+func WriteFile(file *model.File, skipRPC bool) ([]byte, error) {
 	w := newWriter(skipRPC)
 	if err := w.file(file); err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (w *writer) writef(format string, args ...interface{}) {
 
 // file
 
-func (w *writer) file(file *compiler.File) error {
+func (w *writer) file(file *model.File) error {
 	// Package
 	w.line("package ", file.Package.Name)
 	w.line()
@@ -108,22 +108,22 @@ func (w *writer) file(file *compiler.File) error {
 	return w.definitions(file)
 }
 
-func (w *writer) definitions(file *compiler.File) error {
+func (w *writer) definitions(file *model.File) error {
 	for _, def := range file.Definitions {
 		switch def.Type {
-		case compiler.DefinitionEnum:
+		case model.DefinitionEnum:
 			if err := w.enum(def); err != nil {
 				return err
 			}
-		case compiler.DefinitionMessage:
+		case model.DefinitionMessage:
 			if err := w.message(def); err != nil {
 				return err
 			}
-		case compiler.DefinitionStruct:
+		case model.DefinitionStruct:
 			if err := w.struct_(def); err != nil {
 				return err
 			}
-		case compiler.DefinitionService:
+		case model.DefinitionService:
 			if !w.skipRPC {
 				if err := w.service(def); err != nil {
 					return err
@@ -134,7 +134,7 @@ func (w *writer) definitions(file *compiler.File) error {
 
 	for _, def := range file.Definitions {
 		switch def.Type {
-		case compiler.DefinitionMessage:
+		case model.DefinitionMessage:
 			if err := w.messageWriter(def); err != nil {
 				return err
 			}
@@ -145,7 +145,7 @@ func (w *writer) definitions(file *compiler.File) error {
 
 // internal
 
-func importPackage(imp *compiler.Import) string {
+func importPackage(imp *model.Import) string {
 	pkg, ok := imp.Package.OptionNames[OptionPackage]
 	if ok {
 		return pkg.Value

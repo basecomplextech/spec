@@ -1,4 +1,4 @@
-package compiler
+package model
 
 import "github.com/basecomplextech/spec/internal/lang/ast"
 

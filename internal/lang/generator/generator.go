@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
 type Generator interface {
 	// Package generates a go package.
-	Package(pkg *compiler.Package, out string) error
+	Package(pkg *model.Package, out string) error
 }
 
 // New returns a new generator.
@@ -28,7 +28,7 @@ func newGenerator(skipRPC bool) *generator {
 }
 
 // Package generates a go package.
-func (g *generator) Package(pkg *compiler.Package, out string) error {
+func (g *generator) Package(pkg *model.Package, out string) error {
 	for _, file := range pkg.Files {
 		if err := g.file(file, out); err != nil {
 			return err
@@ -37,7 +37,7 @@ func (g *generator) Package(pkg *compiler.Package, out string) error {
 	return nil
 }
 
-func (g *generator) file(file *compiler.File, out string) error {
+func (g *generator) file(file *model.File, out string) error {
 	// Generate file
 	w := newWriter(g.skipRPC)
 	if err := w.file(file); err != nil {
@@ -57,7 +57,7 @@ func (g *generator) file(file *compiler.File, out string) error {
 
 // private
 
-func (g *generator) createFile(file *compiler.File, out string, bytes []byte) error {
+func (g *generator) createFile(file *model.File, out string, bytes []byte) error {
 	filename := filenameWithoutExt(file.Name) + "_generated.go"
 	path := filepath.Join(out, filename)
 

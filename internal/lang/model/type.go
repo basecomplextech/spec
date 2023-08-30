@@ -1,4 +1,4 @@
-package compiler
+package model
 
 import (
 	"fmt"
@@ -92,7 +92,7 @@ func (t *Type) builtin() bool {
 	return ok
 }
 
-func (t *Type) resolve(def *Definition, impOrNil *Import) {
+func (t *Type) Resolve(def *Definition, impOrNil *Import) {
 	if t.Kind != KindReference {
 		panic("type already resolved")
 	}

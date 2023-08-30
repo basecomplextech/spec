@@ -1,4 +1,4 @@
-package compiler
+package model
 
 import (
 	"fmt"
@@ -41,7 +41,7 @@ func newService(def *Definition, psrv *ast.Service) (*Service, error) {
 	return srv, nil
 }
 
-func (s *Service) resolved() error {
+func (s *Service) Resolved() error {
 	for _, m := range s.Methods {
 		if err := m.resolved(); err != nil {
 			return fmt.Errorf("%v.%v: %w", s.Def.Name, m.Name, err)

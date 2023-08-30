@@ -1,4 +1,4 @@
-package compiler
+package model
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ type Package struct {
 	DefinitionNames map[string]*Definition
 }
 
-func newPackage(id string, path string, pfiles []*ast.File) (*Package, error) {
+func NewPackage(id string, path string, pfiles []*ast.File) (*Package, error) {
 	name := filepath.Base(id)
 	if name == "" || name == "." {
 		return nil, fmt.Errorf("empty package name, id=%v, path=%v", id, path)
@@ -94,7 +94,7 @@ func (p *Package) getType(name string) (*Definition, error) {
 	return def, nil
 }
 
-func (p *Package) lookupType(name string) (*Definition, bool) {
+func (p *Package) LookupType(name string) (*Definition, bool) {
 	def, ok := p.DefinitionNames[name]
 	return def, ok
 }

@@ -1,10 +1,8 @@
 package generator
 
-import (
-	"github.com/basecomplextech/spec/internal/lang/compiler"
-)
+import "github.com/basecomplextech/spec/internal/lang/model"
 
-func (w *writer) service(def *compiler.Definition) error {
+func (w *writer) service(def *model.Definition) error {
 	if err := w.iface(def); err != nil {
 		return err
 	}
@@ -17,7 +15,7 @@ func (w *writer) service(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) iface(def *compiler.Definition) error {
+func (w *writer) iface(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef(`type %v interface {`, def.Name)
@@ -33,7 +31,7 @@ func (w *writer) iface(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) ifaceMethod(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) ifaceMethod(def *model.Definition, m *model.Method) error {
 	if err := w.ifaceMethod_args(def, m); err != nil {
 		return err
 	}
@@ -44,7 +42,7 @@ func (w *writer) ifaceMethod(def *compiler.Definition, m *compiler.Method) error
 	return nil
 }
 
-func (w *writer) ifaceMethod_args(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) ifaceMethod_args(def *model.Definition, m *model.Method) error {
 	methodName := toUpperCamelCase(m.Name)
 
 	w.writef(`%v`, methodName)
@@ -69,7 +67,7 @@ func (w *writer) ifaceMethod_args(def *compiler.Definition, m *compiler.Method) 
 	return nil
 }
 
-func (w *writer) ifaceMethod_results(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) ifaceMethod_results(def *model.Definition, m *model.Method) error {
 	if len(m.Results) > 1 {
 		w.linef(`(`)
 	} else {

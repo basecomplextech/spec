@@ -1,4 +1,4 @@
-package compiler
+package model
 
 import (
 	"fmt"
@@ -88,14 +88,14 @@ func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 	return f, nil
 }
 
+func (f *File) LookupImport(name string) (*Import, bool) {
+	imp, ok := f.ImportMap[name]
+	return imp, ok
+}
+
 func (f *File) lookupType(name string) (*Definition, bool) {
 	def, ok := f.DefinitionNames[name]
 	return def, ok
-}
-
-func (f *File) lookupImport(name string) (*Import, bool) {
-	imp, ok := f.ImportMap[name]
-	return imp, ok
 }
 
 func (f *File) validate() error {
@@ -138,7 +138,15 @@ func newImport(file *File, pimp *ast.Import) (*Import, error) {
 	return imp, nil
 }
 
-func (imp *Import) resolve(pkg *Package) error {
+func (imp *Import) LookupType(name string) (*Definition, bool) {
+	if !imp.Resolved {
+		panic("import not resolved")
+	}
+
+	return imp.Package.LookupType(name)
+}
+
+func (imp *Import) Resolve(pkg *Package) error {
 	if imp.Resolved {
 		return fmt.Errorf("import already resolved: %v", imp.ID)
 	}
@@ -146,12 +154,4 @@ func (imp *Import) resolve(pkg *Package) error {
 	imp.Package = pkg
 	imp.Resolved = true
 	return nil
-}
-
-func (imp *Import) lookupType(name string) (*Definition, bool) {
-	if !imp.Resolved {
-		panic("import not resolved")
-	}
-
-	return imp.Package.lookupType(name)
 }

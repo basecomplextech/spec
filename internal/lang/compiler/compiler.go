@@ -5,12 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/basecomplextech/spec/internal/lang/model"
 	"github.com/basecomplextech/spec/internal/lang/parser"
 )
 
 type Compiler interface {
 	// Compile parses, compiles and returns a package from a directory.
-	Compile(path string) (*Package, error)
+	Compile(path string) (*model.Package, error)
 }
 
 type Options struct {
@@ -26,8 +27,8 @@ type compiler struct {
 	opts   Options
 	parser parser.Parser
 
-	packages map[string]*Package // compiled packages by ids
-	paths    []string            // import paths
+	packages map[string]*model.Package // compiled packages by ids
+	paths    []string                  // import paths
 }
 
 func newCompiler(opts Options) (*compiler, error) {
@@ -47,14 +48,14 @@ func newCompiler(opts Options) (*compiler, error) {
 		opts:   opts,
 		parser: parser,
 
-		packages: make(map[string]*Package),
+		packages: make(map[string]*model.Package),
 		paths:    paths,
 	}
 	return c, nil
 }
 
 // Compile parses, compiles and returns a package from a directory.
-func (c *compiler) Compile(dir string) (*Package, error) {
+func (c *compiler) Compile(dir string) (*model.Package, error) {
 	// Clean directory path
 	dir = filepath.Clean(dir)
 
@@ -78,11 +79,11 @@ func (c *compiler) Compile(dir string) (*Package, error) {
 
 // private
 
-func (c *compiler) getPackage(id string) (*Package, error) {
+func (c *compiler) getPackage(id string) (*model.Package, error) {
 	// Try to get existing package
 	pkg, ok := c.packages[id]
 	if ok {
-		if pkg.State != PackageCompiled {
+		if pkg.State != model.PackageCompiled {
 			return nil, fmt.Errorf("circular import: %v", id)
 		}
 		return pkg, nil
@@ -106,7 +107,7 @@ func (c *compiler) getPackage(id string) (*Package, error) {
 	return nil, fmt.Errorf("package not found: %v", id)
 }
 
-func (c *compiler) compilePackage(id string, path string) (*Package, error) {
+func (c *compiler) compilePackage(id string, path string) (*model.Package, error) {
 	// Return if already exists
 	pkg, ok := c.packages[id]
 	if ok {
@@ -123,7 +124,7 @@ func (c *compiler) compilePackage(id string, path string) (*Package, error) {
 	}
 
 	// Create package in compiling state
-	pkg, err = newPackage(id, path, files)
+	pkg, err = model.NewPackage(id, path, files)
 	if err != nil {
 		return nil, err
 	}
@@ -140,11 +141,11 @@ func (c *compiler) compilePackage(id string, path string) (*Package, error) {
 	}
 
 	// Done
-	pkg.State = PackageCompiled
+	pkg.State = model.PackageCompiled
 	return pkg, nil
 }
 
-func (c *compiler) _resolveImports(pkg *Package) error {
+func (c *compiler) _resolveImports(pkg *model.Package) error {
 	for _, file := range pkg.Files {
 		for _, imp := range file.Imports {
 			if err := c._resolveImport(imp); err != nil {
@@ -155,7 +156,7 @@ func (c *compiler) _resolveImports(pkg *Package) error {
 	return nil
 }
 
-func (c *compiler) _resolveImport(imp *Import) error {
+func (c *compiler) _resolveImport(imp *model.Import) error {
 	id := imp.ID
 
 	pkg, err := c.getPackage(id)
@@ -163,10 +164,10 @@ func (c *compiler) _resolveImport(imp *Import) error {
 		return err
 	}
 
-	return imp.resolve(pkg)
+	return imp.Resolve(pkg)
 }
 
-func (c *compiler) _resolveTypes(pkg *Package) error {
+func (c *compiler) _resolveTypes(pkg *model.Package) error {
 	for _, file := range pkg.Files {
 		for _, def := range file.Definitions {
 			if err := c._resolveDefinition(file, def); err != nil {
@@ -177,19 +178,19 @@ func (c *compiler) _resolveTypes(pkg *Package) error {
 	return nil
 }
 
-func (c *compiler) _resolveDefinition(file *File, def *Definition) error {
+func (c *compiler) _resolveDefinition(file *model.File, def *model.Definition) error {
 	switch def.Type {
-	case DefinitionMessage:
+	case model.DefinitionMessage:
 		return c._resolveMessage(file, def)
-	case DefinitionStruct:
+	case model.DefinitionStruct:
 		return c._resolveStruct(file, def)
-	case DefinitionService:
+	case model.DefinitionService:
 		return c._resolveService(file, def)
 	}
 	return nil
 }
 
-func (c *compiler) _resolveMessage(file *File, def *Definition) error {
+func (c *compiler) _resolveMessage(file *model.File, def *model.Definition) error {
 	for _, field := range def.Message.Fields {
 		if err := c._resolveType(file, field.Type); err != nil {
 			return fmt.Errorf("%v.%v: %w", def.Name, field.Name, err)
@@ -198,7 +199,7 @@ func (c *compiler) _resolveMessage(file *File, def *Definition) error {
 	return nil
 }
 
-func (c *compiler) _resolveStruct(file *File, def *Definition) error {
+func (c *compiler) _resolveStruct(file *model.File, def *model.Definition) error {
 	for _, field := range def.Struct.Fields {
 		if err := c._resolveType(file, field.Type); err != nil {
 			return fmt.Errorf("%v.%v: %w", def.Name, field.Name, err)
@@ -207,7 +208,7 @@ func (c *compiler) _resolveStruct(file *File, def *Definition) error {
 	return nil
 }
 
-func (c *compiler) _resolveService(file *File, def *Definition) error {
+func (c *compiler) _resolveService(file *model.File, def *model.Definition) error {
 	for _, method := range def.Service.Methods {
 		for _, arg := range method.Args {
 			if err := c._resolveType(file, arg.Type); err != nil {
@@ -223,34 +224,34 @@ func (c *compiler) _resolveService(file *File, def *Definition) error {
 	return nil
 }
 
-func (c *compiler) _resolveType(file *File, type_ *Type) error {
+func (c *compiler) _resolveType(file *model.File, type_ *model.Type) error {
 	switch type_.Kind {
-	case KindList:
+	case model.KindList:
 		return c._resolveType(file, type_.Element)
 
-	case KindReference:
+	case model.KindReference:
 		if type_.ImportName == "" {
 			// Local type
 
 			pkg := file.Package
-			def, ok := pkg.lookupType(type_.Name)
+			def, ok := pkg.LookupType(type_.Name)
 			if !ok {
 				return fmt.Errorf("type not found: %v", type_.Name)
 			}
-			type_.resolve(def, nil)
+			type_.Resolve(def, nil)
 
 		} else {
 			// Imported type
 
-			imp, ok := file.lookupImport(type_.ImportName)
+			imp, ok := file.LookupImport(type_.ImportName)
 			if !ok {
 				return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
 			}
-			def, ok := imp.lookupType(type_.Name)
+			def, ok := imp.LookupType(type_.Name)
 			if !ok {
 				return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
 			}
-			type_.resolve(def, imp)
+			type_.Resolve(def, imp)
 		}
 	}
 	return nil
@@ -258,12 +259,12 @@ func (c *compiler) _resolveType(file *File, type_ *Type) error {
 
 // resolved
 
-func (c *compiler) _resolved(pkg *Package) error {
+func (c *compiler) _resolved(pkg *model.Package) error {
 	for _, file := range pkg.Files {
 		for _, def := range file.Definitions {
 			switch def.Type {
-			case DefinitionService:
-				if err := def.Service.resolved(); err != nil {
+			case model.DefinitionService:
+				if err := def.Service.Resolved(); err != nil {
 					return fmt.Errorf("%v/%v: %w", pkg.Name, file.Name, err)
 				}
 			}

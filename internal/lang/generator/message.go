@@ -3,10 +3,10 @@ package generator
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) message(def *compiler.Definition) error {
+func (w *writer) message(def *model.Definition) error {
 	if err := w.messageDef(def); err != nil {
 		return err
 	}
@@ -28,7 +28,7 @@ func (w *writer) message(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageDef(def *compiler.Definition) error {
+func (w *writer) messageDef(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef(`type %v struct {`, def.Name)
@@ -38,7 +38,7 @@ func (w *writer) messageDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) newMessage(def *compiler.Definition) error {
+func (w *writer) newMessage(def *model.Definition) error {
 	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`msg := spec.NewMessage(b)`)
 	w.linef(`return %v{msg}`, def.Name)
@@ -47,7 +47,7 @@ func (w *writer) newMessage(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) parseMessage(def *compiler.Definition) error {
+func (w *writer) parseMessage(def *model.Definition) error {
 	w.linef(`func Parse%v(b []byte) (_ %v, size int, err error) {`, def.Name, def.Name)
 	w.linef(`msg, size, err := spec.ParseMessage(b)`)
 	w.line(`if err != nil || size == 0 {
@@ -59,7 +59,7 @@ func (w *writer) parseMessage(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageFields(def *compiler.Definition) error {
+func (w *writer) messageFields(def *model.Definition) error {
 	for _, field := range def.Message.Fields {
 		if err := w.messageField(def, field); err != nil {
 			return err
@@ -70,7 +70,7 @@ func (w *writer) messageFields(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageField) error {
+func (w *writer) messageField(def *model.Definition, field *model.MessageField) error {
 	fieldName := messageFieldName(field)
 	typeName := typeRefName(field.Type)
 
@@ -82,52 +82,52 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
 
 		switch kind {
-		case compiler.KindBool:
+		case model.KindBool:
 			w.writef(`return m.msg.Field(%d).Bool()`, tag)
-		case compiler.KindByte:
+		case model.KindByte:
 			w.writef(`return m.msg.Field(%d).Byte()`, tag)
 
-		case compiler.KindInt16:
+		case model.KindInt16:
 			w.writef(`return m.msg.Field(%d).Int16()`, tag)
-		case compiler.KindInt32:
+		case model.KindInt32:
 			w.writef(`return m.msg.Field(%d).Int32()`, tag)
-		case compiler.KindInt64:
+		case model.KindInt64:
 			w.writef(`return m.msg.Field(%d).Int64()`, tag)
 
-		case compiler.KindUint16:
+		case model.KindUint16:
 			w.writef(`return m.msg.Field(%d).Uint16()`, tag)
-		case compiler.KindUint32:
+		case model.KindUint32:
 			w.writef(`return m.msg.Field(%d).Uint32()`, tag)
-		case compiler.KindUint64:
+		case model.KindUint64:
 			w.writef(`return m.msg.Field(%d).Uint64()`, tag)
 
-		case compiler.KindBin64:
+		case model.KindBin64:
 			w.writef(`return m.msg.Field(%d).Bin64()`, tag)
-		case compiler.KindBin128:
+		case model.KindBin128:
 			w.writef(`return m.msg.Field(%d).Bin128()`, tag)
-		case compiler.KindBin256:
+		case model.KindBin256:
 			w.writef(`return m.msg.Field(%d).Bin256()`, tag)
 
-		case compiler.KindFloat32:
+		case model.KindFloat32:
 			w.writef(`return m.msg.Field(%d).Float32()`, tag)
-		case compiler.KindFloat64:
+		case model.KindFloat64:
 			w.writef(`return m.msg.Field(%d).Float64()`, tag)
 
-		case compiler.KindBytes:
+		case model.KindBytes:
 			w.writef(`return m.msg.Field(%d).Bytes()`, tag)
-		case compiler.KindString:
+		case model.KindString:
 			w.writef(`return m.msg.Field(%d).String()`, tag)
 
-		case compiler.KindAny:
+		case model.KindAny:
 			w.writef(`return m.msg.Field(%d)`, tag)
-		case compiler.KindAnyMessage:
+		case model.KindAnyMessage:
 			w.writef(`return m.msg.Field(%d).Message()`, tag)
 		}
 
 		w.writef(`}`)
 		w.line()
 
-	case compiler.KindList:
+	case model.KindList:
 		decodeFunc := typeDecodeRefFunc(field.Type.Element)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
@@ -135,9 +135,9 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 		w.writef(`}`)
 		w.line()
 
-	case compiler.KindEnum,
-		compiler.KindMessage,
-		compiler.KindStruct:
+	case model.KindEnum,
+		model.KindMessage,
+		model.KindStruct:
 		newFunc := typeNewFunc(field.Type)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
@@ -148,7 +148,7 @@ func (w *writer) messageField(def *compiler.Definition, field *compiler.MessageF
 	return nil
 }
 
-func (w *writer) messageHasFields(def *compiler.Definition) error {
+func (w *writer) messageHasFields(def *model.Definition) error {
 	for _, field := range def.Message.Fields {
 		if err := w.messageHasField(def, field); err != nil {
 			return err
@@ -159,7 +159,7 @@ func (w *writer) messageHasFields(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageHasField(def *compiler.Definition, field *compiler.MessageField) error {
+func (w *writer) messageHasField(def *model.Definition, field *model.MessageField) error {
 	fieldName := messageFieldName(field)
 	tag := field.Tag
 
@@ -170,7 +170,7 @@ func (w *writer) messageHasField(def *compiler.Definition, field *compiler.Messa
 	return nil
 }
 
-func (w *writer) messageMethods(def *compiler.Definition) error {
+func (w *writer) messageMethods(def *model.Definition) error {
 	w.writef(`func (m %v) IsEmpty() bool {`, def.Name)
 	w.writef(`return m.msg.Empty()`)
 	w.writef(`}`)
@@ -190,7 +190,7 @@ func (w *writer) messageMethods(def *compiler.Definition) error {
 
 // writer
 
-func (w *writer) messageWriter(def *compiler.Definition) error {
+func (w *writer) messageWriter(def *model.Definition) error {
 	if err := w.messageWriterDef(def); err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (w *writer) messageWriter(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterDef(def *compiler.Definition) error {
+func (w *writer) messageWriterDef(def *model.Definition) error {
 	w.linef(`// %vWriter`, def.Name)
 	w.line()
 	w.linef(`type %vWriter struct {`, def.Name)
@@ -216,7 +216,7 @@ func (w *writer) messageWriterDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) newMessageWriter(def *compiler.Definition) error {
+func (w *writer) newMessageWriter(def *model.Definition) error {
 	w.linef(`func New%vWriter() %vWriter {`, def.Name, def.Name)
 	w.linef(`w := spec.NewMessageWriter()`)
 	w.linef(`return %vWriter{w}`, def.Name)
@@ -236,7 +236,7 @@ func (w *writer) newMessageWriter(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterBuild(def *compiler.Definition) error {
+func (w *writer) messageWriterBuild(def *model.Definition) error {
 	w.linef(`func (w %vWriter) End() error {`, def.Name)
 	w.linef(`return w.w.End()`)
 	w.linef(`}`)
@@ -258,7 +258,7 @@ func (w *writer) messageWriterBuild(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterFields(def *compiler.Definition) error {
+func (w *writer) messageWriterFields(def *model.Definition) error {
 	for _, field := range def.Message.Fields {
 		if err := w.messageWriterField(def, field); err != nil {
 			return err
@@ -269,7 +269,7 @@ func (w *writer) messageWriterFields(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.MessageField) error {
+func (w *writer) messageWriterField(def *model.Definition, field *model.MessageField) error {
 	fname := messageFieldName(field)
 	tname := inTypeName(field.Type)
 	wname := fmt.Sprintf("%vWriter", def.Name)
@@ -282,40 +282,40 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`func (w %vWriter) %v(v %v) %v {`, def.Name, fname, tname, wname)
 
 		switch kind {
-		case compiler.KindBool:
+		case model.KindBool:
 			w.linef(`w.w.Field(%d).Bool(v)`, tag)
-		case compiler.KindByte:
+		case model.KindByte:
 			w.linef(`w.w.Field(%d).Byte(v)`, tag)
 
-		case compiler.KindInt16:
+		case model.KindInt16:
 			w.linef(`w.w.Field(%d).Int16(v)`, tag)
-		case compiler.KindInt32:
+		case model.KindInt32:
 			w.linef(`w.w.Field(%d).Int32(v)`, tag)
-		case compiler.KindInt64:
+		case model.KindInt64:
 			w.linef(`w.w.Field(%d).Int64(v)`, tag)
 
-		case compiler.KindUint16:
+		case model.KindUint16:
 			w.linef(`w.w.Field(%d).Uint16(v)`, tag)
-		case compiler.KindUint32:
+		case model.KindUint32:
 			w.linef(`w.w.Field(%d).Uint32(v)`, tag)
-		case compiler.KindUint64:
+		case model.KindUint64:
 			w.linef(`w.w.Field(%d).Uint64(v)`, tag)
 
-		case compiler.KindBin64:
+		case model.KindBin64:
 			w.linef(`w.w.Field(%d).Bin64(v)`, tag)
-		case compiler.KindBin128:
+		case model.KindBin128:
 			w.linef(`w.w.Field(%d).Bin128(v)`, tag)
-		case compiler.KindBin256:
+		case model.KindBin256:
 			w.linef(`w.w.Field(%d).Bin256(v)`, tag)
 
-		case compiler.KindFloat32:
+		case model.KindFloat32:
 			w.linef(`w.w.Field(%d).Float32(v)`, tag)
-		case compiler.KindFloat64:
+		case model.KindFloat64:
 			w.linef(`w.w.Field(%d).Float64(v)`, tag)
 
-		case compiler.KindBytes:
+		case model.KindBytes:
 			w.linef(`w.w.Field(%d).Bytes(v)`, tag)
-		case compiler.KindString:
+		case model.KindString:
 			w.linef(`w.w.Field(%d).String(v)`, tag)
 		}
 
@@ -323,7 +323,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`}`)
 		w.line()
 
-	case compiler.KindAny:
+	case model.KindAny:
 		w.linef(`func (w %v) %v() spec.FieldWriter {`, wname, fname)
 		w.linef(`return w.w.Field(%d)`, tag)
 		w.linef(`}`)
@@ -334,7 +334,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`}`)
 		w.line()
 
-	case compiler.KindAnyMessage:
+	case model.KindAnyMessage:
 		w.linef(`func (w %v) %v() spec.MessageWriter {`, wname, fname)
 		w.linef(`return w.w.Field(%d).Message()`, tag)
 		w.linef(`}`)
@@ -345,7 +345,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`}`)
 		w.line()
 
-	case compiler.KindEnum:
+	case model.KindEnum:
 		writeFunc := typeWriteFunc(field.Type)
 
 		w.linef(`func (w %v) %v(v %v) %v {`, wname, fname, tname, wname)
@@ -354,7 +354,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`}`)
 		w.line()
 
-	case compiler.KindStruct:
+	case model.KindStruct:
 		writeFunc := typeWriteFunc(field.Type)
 
 		w.linef(`func (w %v) %v(v %v) %v {`, wname, fname, tname, wname)
@@ -363,7 +363,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`}`)
 		w.line()
 
-	case compiler.KindList:
+	case model.KindList:
 		writer := typeWriter(field.Type)
 		buildList := typeWriteFunc(field.Type)
 		encodeElement := typeWriteFunc(field.Type.Element)
@@ -374,7 +374,7 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 		w.linef(`}`)
 		w.line()
 
-	case compiler.KindMessage:
+	case model.KindMessage:
 		writer := typeWriter(field.Type)
 		newMessageWriter := typeWriteFunc(field.Type)
 		w.linef(`func (w %v) %v() %v {`, wname, fname, writer)
@@ -394,6 +394,6 @@ func (w *writer) messageWriterField(def *compiler.Definition, field *compiler.Me
 
 // util
 
-func messageFieldName(field *compiler.MessageField) string {
+func messageFieldName(field *model.MessageField) string {
 	return toUpperCamelCase(field.Name)
 }

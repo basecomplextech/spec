@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) enum(def *compiler.Definition) error {
+func (w *writer) enum(def *model.Definition) error {
 	if err := w.enumDef(def); err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (w *writer) enum(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) enumDef(def *compiler.Definition) error {
+func (w *writer) enumDef(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef("type %v int32", def.Name)
@@ -37,7 +37,7 @@ func (w *writer) enumDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) enumValues(def *compiler.Definition) error {
+func (w *writer) enumValues(def *model.Definition) error {
 	w.line("const (")
 
 	for _, val := range def.Enum.Values {
@@ -51,7 +51,7 @@ func (w *writer) enumValues(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) newEnum(def *compiler.Definition) error {
+func (w *writer) newEnum(def *model.Definition) error {
 	name := def.Name
 	w.linef(`func New%v(b []byte) %v {`, name, name)
 	w.linef(`v, _, _ := encoding.DecodeInt32(b)`)
@@ -61,7 +61,7 @@ func (w *writer) newEnum(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) parseEnum(def *compiler.Definition) error {
+func (w *writer) parseEnum(def *model.Definition) error {
 	name := def.Name
 	w.linef(`func Parse%v(b []byte) (result %v, size int, err error) {`, name, name)
 	w.linef(`v, size, err := encoding.DecodeInt32(b)`)
@@ -75,7 +75,7 @@ func (w *writer) parseEnum(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) writeEnum(def *compiler.Definition) error {
+func (w *writer) writeEnum(def *model.Definition) error {
 	w.linef(`func Write%v(b buffer.Buffer, v %v) (int, error) {`, def.Name, def.Name)
 	w.linef(`return encoding.EncodeInt32(b, int32(v))`)
 	w.linef(`}`)
@@ -83,7 +83,7 @@ func (w *writer) writeEnum(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) enumString(def *compiler.Definition) error {
+func (w *writer) enumString(def *model.Definition) error {
 	w.linef("func (e %v) String() string {", def.Name)
 	w.line("switch e {")
 
@@ -100,7 +100,7 @@ func (w *writer) enumString(def *compiler.Definition) error {
 	return nil
 }
 
-func enumValueName(val *compiler.EnumValue) string {
+func enumValueName(val *model.EnumValue) string {
 	name := toUpperCamelCase(val.Name)
 	return fmt.Sprintf("%v_%v", val.Enum.Def.Name, name)
 }

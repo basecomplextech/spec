@@ -3,10 +3,10 @@ package generator
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) struct_(def *compiler.Definition) error {
+func (w *writer) struct_(def *model.Definition) error {
 	if err := w.structDef(def); err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func (w *writer) struct_(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) structDef(def *compiler.Definition) error {
+func (w *writer) structDef(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef("type %v struct {", def.Name)
@@ -39,7 +39,7 @@ func (w *writer) structDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) newStruct(def *compiler.Definition) error {
+func (w *writer) newStruct(def *model.Definition) error {
 	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`s, _, _ := Parse%v(b)`, def.Name)
 	w.line(`return s`)
@@ -48,7 +48,7 @@ func (w *writer) newStruct(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) parseStruct(def *compiler.Definition) error {
+func (w *writer) parseStruct(def *model.Definition) error {
 	w.linef(`func Parse%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
 	w.line(`dataSize, size, err := encoding.DecodeStruct(b)`)
 	w.line(`if err != nil || size == 0 {
@@ -85,7 +85,7 @@ func (w *writer) parseStruct(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) writeStruct(def *compiler.Definition) error {
+func (w *writer) writeStruct(def *model.Definition) error {
 	w.linef(`func Write%v(b buffer.Buffer, s %v) (int, error) {`, def.Name, def.Name)
 	w.line(`var dataSize, n int`)
 	w.line(`var err error`)
@@ -113,6 +113,6 @@ func (w *writer) writeStruct(def *compiler.Definition) error {
 	return nil
 }
 
-func structFieldName(field *compiler.StructField) string {
+func structFieldName(field *model.StructField) string {
 	return toUpperCamelCase(field.Name)
 }

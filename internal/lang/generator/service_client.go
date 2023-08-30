@@ -3,10 +3,10 @@ package generator
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) client(def *compiler.Definition) error {
+func (w *writer) client(def *model.Definition) error {
 	if err := w.clientDef(def); err != nil {
 		return err
 	}
@@ -16,7 +16,7 @@ func (w *writer) client(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) clientDef(def *compiler.Definition) error {
+func (w *writer) clientDef(def *model.Definition) error {
 	if def.Service.Sub {
 		w.linef(`// %vClient`, def.Name)
 		w.line()
@@ -51,7 +51,7 @@ func (w *writer) clientDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) clientMethods(def *compiler.Definition) error {
+func (w *writer) clientMethods(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
 		if err := w.clientMethod(def, m); err != nil {
 			return err
@@ -60,7 +60,7 @@ func (w *writer) clientMethods(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) clientMethod(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) clientMethod(def *model.Definition, m *model.Method) error {
 	methodName := toUpperCamelCase(m.Name)
 	w.writef(`func (_c *%vClient) %v`, def.Name, methodName)
 
@@ -91,7 +91,7 @@ func (w *writer) clientMethod(def *compiler.Definition, m *compiler.Method) erro
 	return nil
 }
 
-func (w *writer) clientMethod_args(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) clientMethod_args(def *model.Definition, m *model.Method) error {
 	w.write(`(cancel <-chan struct{}`)
 
 	for _, arg := range m.Args {
@@ -113,7 +113,7 @@ func (w *writer) clientMethod_args(def *compiler.Definition, m *compiler.Method)
 	return nil
 }
 
-func (w *writer) clientMethod_results(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) clientMethod_results(def *model.Definition, m *model.Method) error {
 	if len(m.Results) > 1 {
 		w.linef(`(`)
 	} else {
@@ -124,7 +124,7 @@ func (w *writer) clientMethod_results(def *compiler.Definition, m *compiler.Meth
 		resName := toLowerCameCase(res.Name)
 		typeName := typeRefName(res.Type)
 
-		if res.Type.Kind == compiler.KindService {
+		if res.Type.Kind == model.KindService {
 			typeName = fmt.Sprintf("*%vClient", typeName)
 		}
 
@@ -144,7 +144,7 @@ func (w *writer) clientMethod_results(def *compiler.Definition, m *compiler.Meth
 	return nil
 }
 
-func (w *writer) clientMethod_call(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) clientMethod_call(def *model.Definition, m *model.Method) error {
 	return_ := methodReturn(m)
 
 	// Make request
@@ -186,56 +186,56 @@ func (w *writer) clientMethod_call(def *compiler.Definition, m *compiler.Method)
 		w.linef(`_arg.Name("%v")`, arg.Name)
 
 		switch kind {
-		case compiler.KindBool:
+		case model.KindBool:
 			w.linef(`_arg.Value().Bool(%v)`, name)
-		case compiler.KindByte:
+		case model.KindByte:
 			w.linef(`_arg.Value().Byte(%v)`, name)
 
-		case compiler.KindInt16:
+		case model.KindInt16:
 			w.linef(`_arg.Value().Int16(%v)`, name)
-		case compiler.KindInt32:
+		case model.KindInt32:
 			w.linef(`_arg.Value().Int32(%v)`, name)
-		case compiler.KindInt64:
+		case model.KindInt64:
 			w.linef(`_arg.Value().Int64(%v)`, name)
 
-		case compiler.KindUint16:
+		case model.KindUint16:
 			w.linef(`_arg.Value().Uint16(%v)`, name)
-		case compiler.KindUint32:
+		case model.KindUint32:
 			w.linef(`_arg.Value().Uint32(%v)`, name)
-		case compiler.KindUint64:
+		case model.KindUint64:
 			w.linef(`_arg.Value().Uint64(%v)`, name)
 
-		case compiler.KindBin64:
+		case model.KindBin64:
 			w.linef(`_arg.Value().Bin64(%v)`, name)
-		case compiler.KindBin128:
+		case model.KindBin128:
 			w.linef(`_arg.Value().Bin128(%v)`, name)
-		case compiler.KindBin256:
+		case model.KindBin256:
 			w.linef(`_arg.Value().Bin256(%v)`, name)
 
-		case compiler.KindFloat32:
+		case model.KindFloat32:
 			w.linef(`_arg.Value().Float32(%v)`, name)
-		case compiler.KindFloat64:
+		case model.KindFloat64:
 			w.linef(`_arg.Value().Float64(%v)`, name)
 
-		case compiler.KindBytes:
+		case model.KindBytes:
 			w.linef(`_arg.Value().Bytes(%v)`, name)
-		case compiler.KindString:
+		case model.KindString:
 			w.linef(`_arg.Value().String(%v)`, name)
 
-		case compiler.KindEnum:
+		case model.KindEnum:
 			writeFunc := typeWriteFunc(arg.Type)
 			w.linef(`spec.WriteField(_arg.Value(), %v, %v)`, name, writeFunc)
-		case compiler.KindList:
+		case model.KindList:
 			w.linef(`_arg.Value().Any(%v.Raw())`, name)
-		case compiler.KindMessage:
+		case model.KindMessage:
 			w.linef(`_arg.Value().Any(%v.Unwrap().Raw())`, name)
-		case compiler.KindStruct:
+		case model.KindStruct:
 			writeFunc := typeWriteFunc(arg.Type)
 			w.linef(`spec.WriteField(_arg.Value(), %v, %v)`, name, writeFunc)
 
-		case compiler.KindAny:
+		case model.KindAny:
 			w.linef(`_arg.Value().Any(%v)`, name)
-		case compiler.KindAnyMessage:
+		case model.KindAnyMessage:
 			w.linef(`_arg.Value().Any(%v.Raw())`, name)
 
 		default:
@@ -262,7 +262,7 @@ func (w *writer) clientMethod_call(def *compiler.Definition, m *compiler.Method)
 	return nil
 }
 
-func (w *writer) clientMethod_request(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) clientMethod_request(def *model.Definition, m *model.Method) error {
 	return_ := methodReturn(m)
 
 	// Send request
@@ -306,59 +306,59 @@ func (w *writer) clientMethod_request(def *compiler.Definition, m *compiler.Meth
 		w.linef(`case "%v":`, res.Name)
 
 		switch kind {
-		case compiler.KindBool:
+		case model.KindBool:
 			w.linef(`%v, _err = _res.Value().BoolErr()`, name)
-		case compiler.KindByte:
+		case model.KindByte:
 			w.linef(`%v, _err = _res.Value().ByteErr()`, name)
 
-		case compiler.KindInt16:
+		case model.KindInt16:
 			w.linef(`%v, _err = _res.Value().Int16Err()`, name)
-		case compiler.KindInt32:
+		case model.KindInt32:
 			w.linef(`%v, _err = _res.Value().Int32Err()`, name)
-		case compiler.KindInt64:
+		case model.KindInt64:
 			w.linef(`%v, _err = _res.Value().Int64Err()`, name)
 
-		case compiler.KindUint16:
+		case model.KindUint16:
 			w.linef(`%v, _err = _res.Value().Uint16Err()`, name)
-		case compiler.KindUint32:
+		case model.KindUint32:
 			w.linef(`%v, _err = _res.Value().Uint32Err()`, name)
-		case compiler.KindUint64:
+		case model.KindUint64:
 			w.linef(`%v, _err = _res.Value().Uint64Err()`, name)
 
-		case compiler.KindBin64:
+		case model.KindBin64:
 			w.linef(`%v, _err = _res.Value().Bin64Err()`, name)
-		case compiler.KindBin128:
+		case model.KindBin128:
 			w.linef(`%v, _err = _res.Value().Bin128Err()`, name)
-		case compiler.KindBin256:
+		case model.KindBin256:
 			w.linef(`%v, _err = _res.Value().Bin256Err()`, name)
 
-		case compiler.KindFloat32:
+		case model.KindFloat32:
 			w.linef(`%v, _err = _res.Value().Float32Err()`, name)
-		case compiler.KindFloat64:
+		case model.KindFloat64:
 			w.linef(`%v, _err = _res.Value().Float64Err()`, name)
 
-		case compiler.KindBytes:
+		case model.KindBytes:
 			w.linef(`%v, _err = _res.Value().BytesErr()`, name)
-		case compiler.KindString:
+		case model.KindString:
 			w.linef(`%v, _err = _res.Value().StringErr()`, name)
 
-		case compiler.KindList:
+		case model.KindList:
 			decodeFunc := typeDecodeRefFunc(res.Type.Element)
 
 			w.writef(`%v, _, _err = spec.ParseTypedList(_res.Value(), %v)`, name, decodeFunc)
 			w.line()
 
-		case compiler.KindEnum,
-			compiler.KindMessage,
-			compiler.KindStruct:
+		case model.KindEnum,
+			model.KindMessage,
+			model.KindStruct:
 			parseFunc := typeParseFunc(res.Type)
 
 			w.writef(`%v, _, _err = %v(_res.Value())`, name, parseFunc)
 			w.line()
 
-		case compiler.KindAny:
+		case model.KindAny:
 			w.linef(`%v = _res.Value()`, name)
-		case compiler.KindAnyMessage:
+		case model.KindAnyMessage:
 			w.linef(`%v, _err = _res.Value().MessageErr()`, name)
 
 		default:
@@ -379,7 +379,7 @@ func (w *writer) clientMethod_request(def *compiler.Definition, m *compiler.Meth
 	return nil
 }
 
-func (w *writer) clientMethod_subservice(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) clientMethod_subservice(def *model.Definition, m *model.Method) error {
 	// Call subservice
 	res := m.Results[0]
 	resName := toLowerCameCase(res.Name) + "_"
@@ -392,7 +392,7 @@ func (w *writer) clientMethod_subservice(def *compiler.Definition, m *compiler.M
 	return nil
 }
 
-func methodReturn(m *compiler.Method) string {
+func methodReturn(m *model.Method) string {
 	s := ""
 	for _, res := range m.Results {
 		s += toLowerCameCase(res.Name) + "_, "

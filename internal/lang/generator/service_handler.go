@@ -3,10 +3,10 @@ package generator
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/compiler"
+	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) handler(def *compiler.Definition) error {
+func (w *writer) handler(def *model.Definition) error {
 	if err := w.handlerDef(def); err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func (w *writer) handler(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) handlerDef(def *compiler.Definition) error {
+func (w *writer) handlerDef(def *model.Definition) error {
 	w.linef(`// %vHandler`, def.Name)
 	w.line()
 	w.linef(`type %vHandler struct {`, def.Name)
@@ -33,7 +33,7 @@ func (w *writer) handlerDef(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) handlerHandle(def *compiler.Definition) error {
+func (w *writer) handlerHandle(def *model.Definition) error {
 	if def.Service.Sub {
 		w.linef(`func (h *%vHandler) Handle(cancel <-chan struct{},
 			req *rpc.ServerRequest,
@@ -70,7 +70,7 @@ func (w *writer) handlerHandle(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) handlerMethods(def *compiler.Definition) error {
+func (w *writer) handlerMethods(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
 		if err := w.handlerMethod(def, m); err != nil {
 			return err
@@ -79,7 +79,7 @@ func (w *writer) handlerMethods(def *compiler.Definition) error {
 	return nil
 }
 
-func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) error {
+func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 	methodName := toLowerCameCase(m.Name)
 	// Declare method
 	w.linef(`func (h *%vHandler) _%v(cancel <-chan struct{},
@@ -131,59 +131,59 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 				w.linef(`case "%v":`, arg.Name)
 
 				switch kind {
-				case compiler.KindBool:
+				case model.KindBool:
 					w.linef(`%v, err = arg.Value().BoolErr()`, name)
-				case compiler.KindByte:
+				case model.KindByte:
 					w.linef(`%v, err = arg.Value().ByteErr()`, name)
 
-				case compiler.KindInt16:
+				case model.KindInt16:
 					w.linef(`%v, err = arg.Value().Int16Err()`, name)
-				case compiler.KindInt32:
+				case model.KindInt32:
 					w.linef(`%v, err = arg.Value().Int32Err()`, name)
-				case compiler.KindInt64:
+				case model.KindInt64:
 					w.linef(`%v, err = arg.Value().Int64Err()`, name)
 
-				case compiler.KindUint16:
+				case model.KindUint16:
 					w.linef(`%v, err = arg.Value().Uint16Err()`, name)
-				case compiler.KindUint32:
+				case model.KindUint32:
 					w.linef(`%v, err = arg.Value().Uint32Err()`, name)
-				case compiler.KindUint64:
+				case model.KindUint64:
 					w.linef(`%v, err = arg.Value().Uint64Err()`, name)
 
-				case compiler.KindBin64:
+				case model.KindBin64:
 					w.linef(`%v, err = arg.Value().Bin64Err()`, name)
-				case compiler.KindBin128:
+				case model.KindBin128:
 					w.linef(`%v, err = arg.Value().Bin128Err()`, name)
-				case compiler.KindBin256:
+				case model.KindBin256:
 					w.linef(`%v, err = arg.Value().Bin256Err()`, name)
 
-				case compiler.KindFloat32:
+				case model.KindFloat32:
 					w.linef(`%v, err = arg.Value().Float32Err()`, name)
-				case compiler.KindFloat64:
+				case model.KindFloat64:
 					w.linef(`%v, err = arg.Value().Float64Err()`, name)
 
-				case compiler.KindBytes:
+				case model.KindBytes:
 					w.linef(`%v, err = arg.Value().BytesErr()`, name)
-				case compiler.KindString:
+				case model.KindString:
 					w.linef(`%v, err = arg.Value().StringErr()`, name)
 
-				case compiler.KindList:
+				case model.KindList:
 					decodeFunc := typeDecodeRefFunc(arg.Type.Element)
 
 					w.writef(`%v, _, err = spec.ParseTypedList(arg.Value(), %v)`, name, decodeFunc)
 					w.line()
 
-				case compiler.KindEnum,
-					compiler.KindMessage,
-					compiler.KindStruct:
+				case model.KindEnum,
+					model.KindMessage,
+					model.KindStruct:
 					parseFunc := typeParseFunc(arg.Type)
 
 					w.writef(`%v, _, err = %v(arg.Value())`, name, parseFunc)
 					w.line()
 
-				case compiler.KindAny:
+				case model.KindAny:
 					w.linef(`%v = arg.Value()`, name)
-				case compiler.KindAnyMessage:
+				case model.KindAnyMessage:
 					w.linef(`%v, err = arg.Value().MessageErr()`, name)
 
 				default:
@@ -256,56 +256,56 @@ func (w *writer) handlerMethod(def *compiler.Definition, m *compiler.Method) err
 			w.linef(`res.Name("%v")`, res.Name)
 
 			switch kind {
-			case compiler.KindBool:
+			case model.KindBool:
 				w.linef(`res.Value().Bool(%v_)`, name)
-			case compiler.KindByte:
+			case model.KindByte:
 				w.linef(`res.Value().Byte(%v_)`, name)
 
-			case compiler.KindInt16:
+			case model.KindInt16:
 				w.linef(`res.Value().Int16(%v_)`, name)
-			case compiler.KindInt32:
+			case model.KindInt32:
 				w.linef(`res.Value().Int32(%v_)`, name)
-			case compiler.KindInt64:
+			case model.KindInt64:
 				w.linef(`res.Value().Int64(%v_)`, name)
 
-			case compiler.KindUint16:
+			case model.KindUint16:
 				w.linef(`res.Value().Uint16(%v_)`, name)
-			case compiler.KindUint32:
+			case model.KindUint32:
 				w.linef(`res.Value().Uint32(%v_)`, name)
-			case compiler.KindUint64:
+			case model.KindUint64:
 				w.linef(`res.Value().Uint64(%v_)`, name)
 
-			case compiler.KindBin64:
+			case model.KindBin64:
 				w.linef(`res.Value().Bin64(%v_)`, name)
-			case compiler.KindBin128:
+			case model.KindBin128:
 				w.linef(`res.Value().Bin128(%v_)`, name)
-			case compiler.KindBin256:
+			case model.KindBin256:
 				w.linef(`res.Value().Bin256(%v_)`, name)
 
-			case compiler.KindFloat32:
+			case model.KindFloat32:
 				w.linef(`res.Value().Float32(%v_)`, name)
-			case compiler.KindFloat64:
+			case model.KindFloat64:
 				w.linef(`res.Value().Float64(%v_)`, name)
 
-			case compiler.KindBytes:
+			case model.KindBytes:
 				w.linef(`res.Value().Bytes(%v_)`, name)
-			case compiler.KindString:
+			case model.KindString:
 				w.linef(`res.Value().String(%v_)`, name)
 
-			case compiler.KindEnum:
+			case model.KindEnum:
 				writeFunc := typeWriteFunc(res.Type)
 				w.linef(`spec.WriteField(res.Value(), %v_, %v)`, name, writeFunc)
-			case compiler.KindList:
+			case model.KindList:
 				w.linef(`res.Value().Any(%v_.Raw())`, name)
-			case compiler.KindMessage:
+			case model.KindMessage:
 				w.linef(`res.Value().Any(%v_.Unwrap().Raw())`, name)
-			case compiler.KindStruct:
+			case model.KindStruct:
 				writeFunc := typeWriteFunc(res.Type)
 				w.linef(`spec.WriteField(res.Value(), %v_, %v)`, name, writeFunc)
 
-			case compiler.KindAny:
+			case model.KindAny:
 				w.linef(`res.Value().Any(%v_)`, name)
-			case compiler.KindAnyMessage:
+			case model.KindAnyMessage:
 				w.linef(`res.Value().Any(%v_.Raw())`, name)
 
 			default:
