@@ -1,4 +1,4 @@
-package golang
+package generator
 
 import (
 	"github.com/basecomplextech/spec/internal/lang/compiler"

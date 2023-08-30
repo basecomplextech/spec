@@ -1,3 +1,3 @@
-//go:generate spec generate-go .
+//go:generate spec generate --skip-rpc .
 
 package prpc

@@ -1,51 +1,72 @@
 package generator
 
 import (
+	"go/format"
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/basecomplextech/spec/internal/lang/compiler"
-	"github.com/basecomplextech/spec/internal/lang/generator/golang"
 )
 
 type Generator interface {
-	// Golang generates a go package.
-	Golang(pkg *compiler.Package, out string) error
+	// Package generates a go package.
+	Package(pkg *compiler.Package, out string) error
 }
 
 // New returns a new generator.
-func New() Generator {
-	return newGenerator()
+func New(skipRPC bool) Generator {
+	return newGenerator(skipRPC)
 }
 
-type generator struct{}
-
-func newGenerator() *generator {
-	return &generator{}
+type generator struct {
+	skipRPC bool
 }
 
-// Golang generates a go package.
-func (g *generator) Golang(pkg *compiler.Package, out string) error {
+func newGenerator(skipRPC bool) *generator {
+	return &generator{skipRPC: skipRPC}
+}
+
+// Package generates a go package.
+func (g *generator) Package(pkg *compiler.Package, out string) error {
 	for _, file := range pkg.Files {
-		if err := g.golangFile(file, out); err != nil {
+		if err := g.file(file, out); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (g *generator) golangFile(file *compiler.File, out string) error {
-	bytes, err := golang.WriteFile(file)
+func (g *generator) file(file *compiler.File, out string) error {
+	// Generate file
+	w := newWriter(g.skipRPC)
+	if err := w.file(file); err != nil {
+		return err
+	}
+
+	// Format file
+	bytes := w.b.Bytes()
+	bytes, err := format.Source(bytes)
 	if err != nil {
 		return err
 	}
 
+	// Create file
+	return g.createFile(file, out, bytes)
+}
+
+// private
+
+func (g *generator) createFile(file *compiler.File, out string, bytes []byte) error {
 	filename := filenameWithoutExt(file.Name) + "_generated.go"
 	path := filepath.Join(out, filename)
 
-	f, err := g.createFile(path)
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		return err
+	}
+
+	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -55,26 +76,6 @@ func (g *generator) golangFile(file *compiler.File, out string) error {
 		return err
 	}
 	return f.Sync()
-}
-
-// private
-
-func (g *generator) generate(path string, template *template.Template, data interface{}) error {
-	f, err := g.createFile(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	return template.Execute(f, data)
-}
-
-func (g *generator) createFile(path string) (*os.File, error) {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0777); err != nil {
-		return nil, err
-	}
-	return os.Create(path)
 }
 
 // filenameWithoutExt returns a filename without an extension.

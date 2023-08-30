@@ -1,4 +1,4 @@
-package golang
+package generator
 
 import (
 	"bytes"
@@ -14,8 +14,8 @@ const (
 )
 
 // WriteFile writes a golang file.
-func WriteFile(file *compiler.File) ([]byte, error) {
-	w := newWriter()
+func WriteFile(file *compiler.File, skipRPC bool) ([]byte, error) {
+	w := newWriter(skipRPC)
 	if err := w.file(file); err != nil {
 		return nil, err
 	}
@@ -26,10 +26,16 @@ func WriteFile(file *compiler.File) ([]byte, error) {
 
 type writer struct {
 	b bytes.Buffer
+
+	skipRPC bool
 }
 
-func newWriter() *writer {
-	return &writer{b: bytes.Buffer{}}
+func newWriter(skipRPC bool) *writer {
+	return &writer{
+		b: bytes.Buffer{},
+
+		skipRPC: skipRPC,
+	}
 }
 
 func (w *writer) line(args ...string) {
@@ -73,8 +79,7 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`"github.com/basecomplextech/spec"`)
 	w.line(`"github.com/basecomplextech/spec/encoding"`)
 
-	// TODO: Fix me, this is a hack
-	if file.Package.Name != "prpc" {
+	if !w.skipRPC {
 		w.line(`"github.com/basecomplextech/spec/rpc"`)
 	}
 
@@ -91,8 +96,7 @@ func (w *writer) file(file *compiler.File) error {
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.Type`)
 
-	// TODO: Fix me, this is a hack
-	if file.Package.Name != "prpc" {
+	if !w.skipRPC {
 		w.line(`_ rpc.Client`)
 	}
 
@@ -120,8 +124,10 @@ func (w *writer) definitions(file *compiler.File) error {
 				return err
 			}
 		case compiler.DefinitionService:
-			if err := w.service(def); err != nil {
-				return err
+			if !w.skipRPC {
+				if err := w.service(def); err != nil {
+					return err
+				}
 			}
 		}
 	}

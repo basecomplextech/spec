@@ -10,9 +10,10 @@ import (
 
 func main() {
 	var importPath []string
+	var skipRPC bool
 
-	generateGo := &cobra.Command{
-		Use:   "generate-go [-i import-paths] [src-dir] [dst-dir]",
+	generate := &cobra.Command{
+		Use:   "generate [-i import-dirs] [--skip-rpc] [src-dir] [dst-dir]",
 		Short: "Generates a Go package",
 		Long:  `Generates a Go package`,
 		Args:  cobra.MaximumNArgs(2),
@@ -32,16 +33,18 @@ func main() {
 				log.Fatal("Invalid src/dir paths")
 			}
 
-			spec := lang.New()
-			if err := spec.GenerateGo(srcPath, dstPath, importPath); err != nil {
+			spec := lang.New(importPath, skipRPC)
+			if err := spec.Generate(srcPath, dstPath); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
-	generateGo.Flags().StringArrayVarP(&importPath, "import", "i", nil, "import paths")
-	generateGo.MarkFlagRequired("out")
+
+	generate.Flags().StringArrayVarP(&importPath, "import", "i", nil, "import dirs")
+	generate.Flags().BoolVar(&skipRPC, "skip-rpc", false, "skip generating RPC code")
+	generate.MarkFlagRequired("out")
 
 	var cmd = &cobra.Command{Use: "spec"}
-	cmd.AddCommand(generateGo)
+	cmd.AddCommand(generate)
 	cmd.Execute()
 }

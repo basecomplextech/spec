@@ -5,19 +5,25 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/generator"
 )
 
-type Spec struct{}
-
-func New() *Spec {
-	return &Spec{}
+type Spec struct {
+	importPath []string
+	skipRPC    bool
 }
 
-func (s *Spec) GenerateGo(srcPath string, dstPath string, importPath []string) error {
+func New(importPath []string, skipRPC bool) *Spec {
+	return &Spec{
+		importPath: importPath,
+		skipRPC:    skipRPC,
+	}
+}
+
+func (s *Spec) Generate(srcPath string, dstPath string) error {
 	if dstPath == "" {
 		dstPath = srcPath
 	}
 
 	compiler, err := compiler.New(compiler.Options{
-		ImportPath: importPath,
+		ImportPath: s.importPath,
 	})
 	if err != nil {
 		return err
@@ -28,6 +34,6 @@ func (s *Spec) GenerateGo(srcPath string, dstPath string, importPath []string) e
 		return err
 	}
 
-	gen := generator.New()
-	return gen.Golang(pkg, dstPath)
+	gen := generator.New(s.skipRPC)
+	return gen.Package(pkg, dstPath)
 }
