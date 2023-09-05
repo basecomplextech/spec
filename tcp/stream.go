@@ -164,6 +164,8 @@ func (s *stream) Free() {
 
 // receive receives a message from the connection.
 func (s *stream) receive(cancel <-chan struct{}, msg ptcp.Message) status.Status {
+	s.maybeStart()
+
 	b := msg.Unwrap().Raw()
 	return s.reader.write(cancel, b)
 }
@@ -234,6 +236,45 @@ func (s *stream) remoteClosed() {
 	if debug {
 		debugPrint(s.client, "stream.remote-closed\t", s.id)
 	}
+}
+
+// handler
+
+func (s *stream) maybeStart() {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.started {
+		return
+	}
+	s.started = true
+
+	go s.handleLoop()
+}
+
+func (s *stream) handleLoop() {
+	// No need to use async.Go here, because we don't need the result/cancellation,
+	// and recover panics manually.
+	defer func() {
+		if e := recover(); e != nil {
+			st, stack := status.RecoverStack(e)
+			s.conn.logger.Error("Stream panic", "status", st, "stack", string(stack))
+		}
+	}()
+	defer s.Free()
+
+	// Handle stream
+	st := s.conn.handler.HandleStream(s)
+	switch st.Code {
+	case status.CodeOK,
+		status.CodeCancelled,
+		status.CodeEnd,
+		status.CodeClosed:
+		return
+	}
+
+	// Log errors
+	s.conn.logger.Error("Stream error", "status", st)
 }
 
 // reader

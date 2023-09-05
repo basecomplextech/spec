@@ -19,8 +19,8 @@ const (
 )
 
 var (
-	statusClosed       = status.Closedf("connection closed")
 	statusClientClosed = status.Closedf("client closed")
+	statusConnClosed   = status.Closedf("connection closed")
 	statusStreamClosed = status.Closedf("stream closed")
 )
 

@@ -130,21 +130,21 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 // Stream
 
 func BenchmarkStream_Parallel(b *testing.B) {
-	close := []byte("close")
+	closeMsg := []byte("close")
 	handle := func(s Stream) status.Status {
 		for {
 			msg, st := s.Read(nil)
 			if !st.OK() {
 				return st
 			}
-			if !bytes.Equal(msg, close) {
+			if !bytes.Equal(msg, closeMsg) {
 				continue
 			}
 
 			break
 		}
 
-		st := s.Write(nil, close)
+		st := s.Write(nil, closeMsg)
 		if !st.OK() {
 			return st
 		}
@@ -176,7 +176,7 @@ func BenchmarkStream_Parallel(b *testing.B) {
 			}
 		}
 
-		st = s.Write(nil, close)
+		st = s.Write(nil, closeMsg)
 		if !st.OK() {
 			b.Fatal(st)
 		}

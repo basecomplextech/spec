@@ -33,7 +33,7 @@ func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {
 	conn.Free()
 
 	_, st := conn.Stream(nil)
-	assert.Equal(t, statusClosed, st)
+	assert.Equal(t, statusConnClosed, st)
 }
 
 // Free
@@ -43,7 +43,7 @@ func TestConn_Free__should_close_connection(t *testing.T) {
 	conn := testConnect(t, server)
 	conn.Free()
 
-	assert.Equal(t, statusClosed, conn.st)
+	assert.Equal(t, statusConnClosed, conn.socket.st)
 	assert.True(t, conn.writeQueue.Closed())
 }
 

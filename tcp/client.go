@@ -73,7 +73,7 @@ func (c *client) Connect(cancel <-chan struct{}) (Conn, status.Status) {
 			return nil, st
 		}
 
-		closed := conn.Unwrap().isClosed()
+		closed := conn.Unwrap().closed()
 		if closed {
 			conn.Unwrap().Free()
 			continue
@@ -100,7 +100,7 @@ func (c *client) connect(cancel <-chan struct{}) (*ref.R[*conn], status.Status) 
 
 	// Check existing connection
 	if c.conn != nil {
-		closed := c.conn.Unwrap().isClosed()
+		closed := c.conn.Unwrap().closed()
 		if !closed {
 			return ref.Retain(c.conn), status.OK
 		}
@@ -131,6 +131,12 @@ type clientConn struct {
 
 func newClientConn(conn *ref.R[*conn]) *clientConn {
 	return &clientConn{conn: conn}
+}
+
+// Close closes the connection.
+func (c *clientConn) Close() status.Status {
+	// Ignore, the connection will be closed on release.
+	return status.OK
 }
 
 // Stream opens a new stream.

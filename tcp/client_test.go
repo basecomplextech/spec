@@ -40,7 +40,7 @@ func TestClient_Close__should_close_connection(t *testing.T) {
 	conn := client.conn.Unwrap()
 	client.Close()
 
-	assert.Equal(t, statusClosed, conn.st)
+	assert.Equal(t, statusConnClosed, conn.socket.st)
 }
 
 // Connect

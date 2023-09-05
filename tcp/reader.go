@@ -14,6 +14,7 @@ import (
 type reader struct {
 	r      *bufio.Reader
 	client bool
+	freed  bool
 
 	mu   sync.Mutex
 	head [4]byte
@@ -32,6 +33,11 @@ func newReader(r io.Reader, client bool) *reader {
 func (r *reader) free() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	if r.freed {
+		return
+	}
+	r.freed = true
 
 	r.buf.Free()
 	r.buf = nil
