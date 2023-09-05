@@ -202,7 +202,7 @@ func (s *server) handle(nc net.Conn) {
 	case status.CodeOK,
 		status.CodeCancelled,
 		status.CodeEnd,
-		codeClosed:
+		status.CodeClosed:
 		return
 	}
 

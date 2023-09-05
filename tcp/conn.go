@@ -3,6 +3,7 @@ package tcp
 import (
 	"net"
 	"sync"
+	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
@@ -25,18 +26,12 @@ type Conn interface {
 
 // Connect dials an address and returns a connection.
 func Connect(address string, logger logging.Logger) (Conn, status.Status) {
-	nc, err := net.Dial("tcp", address)
-	if err != nil {
-		return nil, tcpError(err)
-	}
+	return connect(address, logger)
+}
 
-	h := HandleFunc(func(s Stream) status.Status {
-		return s.Close()
-	})
-
-	c := newConn(nc, true /* client */, h, logger)
-	c.Run()
-	return c, status.OK
+// ConnectTimeout dials an address and returns a connection.
+func ConnectTimeout(address string, logger logging.Logger, timeout time.Duration) (Conn, status.Status) {
+	return connectTimeout(address, logger, timeout)
 }
 
 // internal
@@ -55,6 +50,36 @@ type conn struct {
 	st      status.Status
 	main    async.Routine[struct{}]
 	streams map[bin.Bin128]*stream
+}
+
+func connect(address string, logger logging.Logger) (*conn, status.Status) {
+	nc, err := net.Dial("tcp", address)
+	if err != nil {
+		return nil, tcpError(err)
+	}
+
+	h := HandleFunc(func(s Stream) status.Status {
+		return s.Close()
+	})
+
+	c := newConn(nc, true /* client */, h, logger)
+	c.Run()
+	return c, status.OK
+}
+
+func connectTimeout(address string, logger logging.Logger, timeout time.Duration) (*conn, status.Status) {
+	nc, err := net.DialTimeout("tcp", address, timeout)
+	if err != nil {
+		return nil, tcpError(err)
+	}
+
+	h := HandleFunc(func(s Stream) status.Status {
+		return s.Close()
+	})
+
+	c := newConn(nc, true /* client */, h, logger)
+	c.Run()
+	return c, status.OK
 }
 
 func newConn(c net.Conn, client bool, handlerNil Handler, logger logging.Logger) *conn {
@@ -143,7 +168,7 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 	case status.CodeOK,
 		status.CodeCancelled,
 		status.CodeEnd,
-		codeClosed:
+		status.CodeClosed:
 		return st
 	}
 
@@ -176,6 +201,13 @@ func (c *conn) closeStreams() {
 	for _, s := range c.streams {
 		s.connClosed()
 	}
+}
+
+func (c *conn) isClosed() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return !c.st.OK()
 }
 
 // readLoop
@@ -278,7 +310,7 @@ func (c *conn) handleStream(s *stream) {
 	case status.CodeOK,
 		status.CodeCancelled,
 		status.CodeEnd,
-		codeClosed:
+		status.CodeClosed:
 		return
 	}
 

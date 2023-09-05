@@ -9,19 +9,19 @@ import (
 )
 
 const (
-	readBufferSize    = 1 << 15 // 32kb
-	writeBufferSize   = 1 << 15 // 32kb
-	connWriteQueueCap = 1 << 23 // 1mb, max connection write queue capacity
+	readBufferSize    = 32 * 1024
+	writeBufferSize   = 32 * 1024
+	connWriteQueueCap = 1024 * 1024 // max connection write queue capacity
 )
 
 const (
-	codeError  status.Code = "tcp_error"
-	codeClosed status.Code = "tcp_closed"
+	codeError status.Code = "tcp_error"
 )
 
 var (
-	statusClosed       = status.New(codeClosed, "connection closed")
-	statusStreamClosed = status.New(codeClosed, "stream closed")
+	statusClosed       = status.Closedf("connection closed")
+	statusClientClosed = status.Closedf("client closed")
+	statusStreamClosed = status.Closedf("stream closed")
 )
 
 func tcpError(err error) status.Status {
@@ -37,7 +37,7 @@ func tcpError(err error) status.Status {
 	}
 
 	if errors.Is(err, net.ErrClosed) {
-		return status.WrapError(err).WithCode(codeClosed)
+		return status.WrapError(err).WithCode(status.CodeClosed)
 	}
 
 	ne, ok := (err).(net.Error)
