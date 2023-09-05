@@ -13,22 +13,13 @@ import (
 
 // Server is a binary multiplexing Server.
 type Server interface {
+	async.Service
+
 	// Address returns the address the server is listening to.
 	Address() string
 
-	// Running indicates that the server is running.
-	Running() <-chan struct{}
-
 	// Listening indicates that the server is listening.
 	Listening() <-chan struct{}
-
-	// Stopped indicates that the server is stopped.
-	Stopped() <-chan struct{}
-
-	// Run
-
-	// Run runs the server.
-	Run() (async.Routine[struct{}], status.Status)
 }
 
 // NewServer creates a new server with a connection handler.
@@ -39,71 +30,45 @@ func NewServer(address string, handler Handler, logger logging.Logger) Server {
 // internal
 
 type server struct {
+	async.Service
+
 	address string
 	handler Handler
 	logger  logging.Logger
 
-	running   *async.Flag
-	stopped   *async.Flag
 	listening *async.Flag
 
-	mu   sync.Mutex
-	main async.Routine[struct{}]
-	ln   net.Listener
+	mu sync.Mutex
+	ln net.Listener
 }
 
 func newServer(address string, handler Handler, logger logging.Logger) *server {
-	return &server{
+	s := &server{
 		address: address,
 		handler: handler,
 		logger:  logger,
 
-		running:   async.NewFlag(),
-		stopped:   async.SetFlag(),
 		listening: async.NewFlag(),
 	}
+
+	s.Service = async.NewService(s.run)
+	return s
 }
 
 // Address returns the address the server is listening to.
 func (s *server) Address() string {
-	// TODO: Lock
-	ln := s.ln
-	if ln == nil {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.ln == nil {
 		return s.address
 	}
-	return ln.Addr().String()
-}
-
-// Running indicates that the server is running.
-func (s *server) Running() <-chan struct{} {
-	return s.running.Wait()
+	return s.ln.Addr().String()
 }
 
 // Listening indicates that the server is listening.
 func (s *server) Listening() <-chan struct{} {
 	return s.listening.Wait()
-}
-
-// Stopped indicates that the server is stopped.
-func (s *server) Stopped() <-chan struct{} {
-	return s.stopped.Wait()
-}
-
-// Run
-
-// Run runs the server.
-func (s *server) Run() (async.Routine[struct{}], status.Status) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.main != nil {
-		return s.main, status.OK
-	}
-
-	s.main = async.Go(s.run)
-	s.running.Set()
-	s.stopped.Reset()
-	return s.main, status.OK
 }
 
 // internal
@@ -119,7 +84,7 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 	}
 
 	// Serve
-	server := async.Go(s.serveLoop)
+	server := async.Go(s.serve)
 	defer async.CancelWait(server)
 	defer s.ln.Close() // double close is OK
 
@@ -141,13 +106,7 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 }
 
 func (s *server) stop() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.main = nil
-	s.running.Reset()
 	s.listening.Reset()
-	s.stopped.Set()
 	s.logger.Debug("Server stopped")
 }
 
@@ -167,7 +126,7 @@ func (s *server) listen() status.Status {
 	return status.OK
 }
 
-func (s *server) serveLoop(cancel <-chan struct{}) status.Status {
+func (s *server) serve(cancel <-chan struct{}) status.Status {
 	delay := time.Duration(0)
 	timeout := false
 

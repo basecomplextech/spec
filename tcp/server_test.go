@@ -3,13 +3,10 @@ package tcp
 import (
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestServer_Run__should_start_server(t *testing.T) {
 	server := testRequestServer(t)
-	assert.NotNil(t, server.main)
 
 	select {
 	case <-server.Running():
@@ -26,7 +23,6 @@ func TestServer_Run__should_start_server(t *testing.T) {
 
 func TestServer_Cancel__should_stop_server(t *testing.T) {
 	server := testRequestServer(t)
-	assert.NotNil(t, server.main)
 
 	select {
 	case <-server.Listening():
@@ -34,8 +30,9 @@ func TestServer_Cancel__should_stop_server(t *testing.T) {
 		t.Fatal("server not listening")
 	}
 
-	main := server.main
+	main := server.Routine()
 	main.Cancel()
+
 	select {
 	case <-main.Wait():
 	case <-time.After(time.Second):

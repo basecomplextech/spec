@@ -10,30 +10,22 @@ import (
 
 // Server is an RCP server.
 type Server interface {
+	async.Service
+
 	// Address returns the address the server is listening to.
 	Address() string
 
-	// Running indicates that the server is running.
-	Running() <-chan struct{}
-
 	// Listening indicates that the server is listening.
 	Listening() <-chan struct{}
-
-	// Stopped indicates that the server is stopped.
-	Stopped() <-chan struct{}
-
-	// Run
-
-	// Run runs the server.
-	Run() (async.Routine[struct{}], status.Status)
 }
 
 // internal
 
 type server struct {
+	tcp.Server
+
 	handler Handler
 	logger  logging.Logger
-	server  tcp.Server
 }
 
 func newServer(address string, handler Handler, logger logging.Logger) *server {
@@ -41,38 +33,9 @@ func newServer(address string, handler Handler, logger logging.Logger) *server {
 		handler: handler,
 		logger:  logger,
 	}
-	s.server = tcp.NewServer(address, s, logger)
+	s.Server = tcp.NewServer(address, s, logger)
 	return s
 }
-
-// Address returns the address the server is listening to.
-func (s *server) Address() string {
-	return s.server.Address()
-}
-
-// Running indicates that the server is running.
-func (s *server) Running() <-chan struct{} {
-	return s.server.Running()
-}
-
-// Listening indicates that the server is listening.
-func (s *server) Listening() <-chan struct{} {
-	return s.server.Listening()
-}
-
-// Stopped indicates that the server is stopped.
-func (s *server) Stopped() <-chan struct{} {
-	return s.server.Stopped()
-}
-
-// Run
-
-// Run runs the server.
-func (s *server) Run() (async.Routine[struct{}], status.Status) {
-	return s.server.Run()
-}
-
-// Handler
 
 // HandleStream handles an incoming TCP stream.
 func (s *server) HandleStream(stream tcp.Stream) status.Status {
