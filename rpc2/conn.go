@@ -49,8 +49,7 @@ func newConn(c tcp.Conn, logger logging.Logger) Conn {
 
 // Close closes the connection.
 func (c *conn) Close() status.Status {
-	// return c.conn.Close()
-	return status.OK
+	return c.conn.Close()
 }
 
 // Request sends a request and returns a response.

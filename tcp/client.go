@@ -75,7 +75,7 @@ func (c *client) Connect(cancel <-chan struct{}) (Conn, status.Status) {
 
 		closed := conn.Unwrap().closed()
 		if closed {
-			conn.Unwrap().Free()
+			conn.Release()
 			continue
 		}
 
