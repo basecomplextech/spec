@@ -64,8 +64,8 @@ func testConnect(t tests.T, s *server) *conn {
 	return c.(*conn)
 }
 
-func testOpen(t tests.T, c Conn) *stream {
-	s, st := c.Open(nil)
+func testStream(t tests.T, c Conn) *stream {
+	s, st := c.Stream(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -92,7 +92,7 @@ func TestOpenClose(t *testing.T) {
 	defer conn.Free()
 
 	msg0 := []byte("hello, world")
-	stream, st := conn.Open(nil)
+	stream, st := conn.Stream(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}

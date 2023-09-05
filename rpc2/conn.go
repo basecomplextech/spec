@@ -62,7 +62,7 @@ func (c *conn) Request(cancel <-chan struct{}, req *Request) (*ref.Box[prpc.Resp
 	}
 
 	// Open stream
-	stream, st := c.conn.Open(cancel)
+	stream, st := c.conn.Stream(cancel)
 	if !st.OK() {
 		return nil, st
 	}

@@ -12,7 +12,7 @@ func TestConn_Open__should_open_new_stream(t *testing.T) {
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testOpen(t, conn)
+	stream := testStream(t, conn)
 	defer stream.Free()
 
 	st := stream.Write(nil, []byte("hello, world"))
@@ -24,7 +24,7 @@ func TestConn_Open__should_open_new_stream(t *testing.T) {
 	assert.False(t, stream.freed)
 	assert.False(t, stream.closed)
 	assert.True(t, stream.started)
-	assert.True(t, stream.openSent)
+	assert.True(t, stream.newSent)
 }
 
 func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {
@@ -32,7 +32,7 @@ func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {
 	conn := testConnect(t, server)
 	conn.Free()
 
-	_, st := conn.Open(nil)
+	_, st := conn.Stream(nil)
 	assert.Equal(t, statusClosed, st)
 }
 
@@ -52,7 +52,7 @@ func TestConn_Free__should_close_streams(t *testing.T) {
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testOpen(t, conn)
+	stream := testStream(t, conn)
 	conn.Free()
 
 	_, st := stream.Read(nil)
@@ -68,7 +68,7 @@ func TestConn_handleStream__should_log_stream_panics(t *testing.T) {
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testOpen(t, conn)
+	stream := testStream(t, conn)
 	defer stream.Free()
 
 	st := stream.Write(nil, []byte("hello, server"))
@@ -87,7 +87,7 @@ func TestConn_handleStream__should_log_stream_errors(t *testing.T) {
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testOpen(t, conn)
+	stream := testStream(t, conn)
 	defer stream.Free()
 
 	st := stream.Write(nil, []byte("hello, server"))

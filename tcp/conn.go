@@ -15,8 +15,8 @@ import (
 
 // Conn is a TCP network connection.
 type Conn interface {
-	// Open opens a new stream.
-	Open(cancel <-chan struct{}) (Stream, status.Status)
+	// Stream opens a new stream.
+	Stream(cancel <-chan struct{}) (Stream, status.Status)
 
 	// Internal
 
@@ -98,8 +98,8 @@ func newConn(c net.Conn, client bool, handlerNil Handler, logger logging.Logger)
 	}
 }
 
-// Open opens a new stream.
-func (c *conn) Open(cancel <-chan struct{}) (Stream, status.Status) {
+// Stream opens a new stream.
+func (c *conn) Stream(cancel <-chan struct{}) (Stream, status.Status) {
 	return c.open()
 }
 
@@ -223,18 +223,18 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 		// Handle message
 		code := msg.Code()
 		switch code {
-		case ptcp.Code_OpenStream:
-			if st := c.handleOpened(msg); !st.OK() {
+		case ptcp.Code_NewStream:
+			if st := c.handleNewStream(msg); !st.OK() {
 				return st
 			}
 
 		case ptcp.Code_CloseStream:
-			if st := c.handleClosed(cancel, msg); !st.OK() {
+			if st := c.handleCloseStream(cancel, msg); !st.OK() {
 				return st
 			}
 
 		case ptcp.Code_StreamMessage:
-			if st := c.handleMessage(cancel, msg); !st.OK() {
+			if st := c.handleStreamMessage(cancel, msg); !st.OK() {
 				return st
 			}
 
@@ -244,11 +244,11 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 	}
 }
 
-func (c *conn) handleOpened(msg ptcp.Message) status.Status {
+func (c *conn) handleNewStream(msg ptcp.Message) status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	m := msg.Open()
+	m := msg.New()
 	id := m.Id()
 	_, ok := c.streams[id]
 	if ok {
@@ -264,7 +264,7 @@ func (c *conn) handleOpened(msg ptcp.Message) status.Status {
 	return status.OK
 }
 
-func (c *conn) handleClosed(cancel <-chan struct{}, msg ptcp.Message) status.Status {
+func (c *conn) handleCloseStream(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	m := msg.Close()
 	id := m.Id()
 
@@ -276,7 +276,7 @@ func (c *conn) handleClosed(cancel <-chan struct{}, msg ptcp.Message) status.Sta
 	return s.receive(cancel, msg)
 }
 
-func (c *conn) handleMessage(cancel <-chan struct{}, msg ptcp.Message) status.Status {
+func (c *conn) handleStreamMessage(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	m := msg.Message()
 	id := m.Id()
 

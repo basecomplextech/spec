@@ -39,11 +39,11 @@ type stream struct {
 	reader streamReader
 	writer streamWriter
 
-	mu       sync.RWMutex
-	freed    bool
-	closed   bool
-	started  bool
-	openSent bool
+	mu      sync.RWMutex
+	freed   bool
+	closed  bool
+	started bool
+	newSent bool
 }
 
 func openStream(id bin.Bin128, conn *conn) *stream {
@@ -76,8 +76,8 @@ func openedStream(id bin.Bin128, conn *conn) *stream {
 		reader: newStreamReader(),
 		writer: newStreamWriter(conn),
 
-		openSent: true,
-		started:  false,
+		newSent: true,
+		started: false,
 	}
 }
 
@@ -134,11 +134,11 @@ func (s *stream) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		return statusStreamClosed
 	}
 
-	if !s.openSent {
-		if st := s.writer.writeOpen(cancel, s.id); !st.OK() {
+	if !s.newSent {
+		if st := s.writer.writeNew(cancel, s.id); !st.OK() {
 			return st
 		}
-		s.openSent = true
+		s.newSent = true
 	}
 
 	if debug && debugStream {
@@ -373,7 +373,7 @@ func (w *streamWriter) free() {
 	w.buf = nil
 }
 
-func (w *streamWriter) writeOpen(cancel <-chan struct{}, id bin.Bin128) status.Status {
+func (w *streamWriter) writeNew(cancel <-chan struct{}, id bin.Bin128) status.Status {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -387,9 +387,9 @@ func (w *streamWriter) writeOpen(cancel <-chan struct{}, id bin.Bin128) status.S
 		w.writer.Reset(w.buf)
 
 		w0 := ptcp.NewMessageWriterTo(w.writer.Message())
-		w0.Code(ptcp.Code_OpenStream)
+		w0.Code(ptcp.Code_NewStream)
 
-		w1 := w0.Open()
+		w1 := w0.New()
 		w1.Id(id)
 		if err := w1.End(); err != nil {
 			return tcpError(err)

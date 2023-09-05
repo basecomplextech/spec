@@ -133,9 +133,9 @@ func newClientConn(conn *ref.R[*conn]) *clientConn {
 	return &clientConn{conn: conn}
 }
 
-// Open opens a new stream.
-func (c *clientConn) Open(cancel <-chan struct{}) (Stream, status.Status) {
-	return c.conn.Unwrap().Open(cancel)
+// Stream opens a new stream.
+func (c *clientConn) Stream(cancel <-chan struct{}) (Stream, status.Status) {
+	return c.conn.Unwrap().Stream(cancel)
 }
 
 // Free closes and frees the connection.
