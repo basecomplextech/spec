@@ -48,7 +48,7 @@ func newServer(address string, handler Handler, logger logging.Logger) *server {
 		handler: handler,
 		logger:  logger,
 
-		listening: async.NewFlag(),
+		listening: async.UnsetFlag(),
 	}
 
 	s.Service = async.NewService(s.run)
@@ -106,7 +106,7 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 }
 
 func (s *server) stop() {
-	s.listening.Reset()
+	s.listening.Unset()
 	s.logger.Debug("Server stopped")
 }
 

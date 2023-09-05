@@ -70,9 +70,9 @@ func newServer(config *ServerConfig, logger logging.Logger, handlers map[string]
 		config: config,
 		logger: logger,
 
-		running:   async.NewFlag(),
+		running:   async.UnsetFlag(),
 		stopped:   async.SetFlag(),
-		listening: async.NewFlag(),
+		listening: async.UnsetFlag(),
 
 		handlers: make(map[string]Handler),
 	}
@@ -139,11 +139,11 @@ func (s *server) checkConfig() status.Status {
 }
 
 func (s *server) run(cancel <-chan struct{}) status.Status {
-	s.stopped.Reset()
+	s.stopped.Unset()
 	s.running.Set()
 	defer s.stopped.Set()
-	defer s.running.Reset()
-	defer s.listening.Reset()
+	defer s.running.Unset()
+	defer s.listening.Unset()
 
 	// Make server
 	srv := &http.Server{
