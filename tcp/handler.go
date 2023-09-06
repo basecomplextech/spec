@@ -4,16 +4,16 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
-// Handler is a server stream handler.
+// Handler is a server channel handler.
 type Handler interface {
-	// HandleStream handles a new stream.
-	HandleStream(stream Stream) status.Status
+	// HandleChannel handles an incoming channel.
+	HandleChannel(ch Channel) status.Status
 }
 
-// HandleFunc is a type adapter to allow use of ordinary functions as stream handlers.
-type HandleFunc func(stream Stream) status.Status
+// HandleFunc is a type adapter to allow use of ordinary functions as channel handlers.
+type HandleFunc func(ch Channel) status.Status
 
-// HandleStream handles a new stream.
-func (f HandleFunc) HandleStream(stream Stream) status.Status {
-	return f(stream)
+// HandleChannel handles an incoming channel.
+func (f HandleFunc) HandleChannel(ch Channel) status.Status {
+	return f(ch)
 }

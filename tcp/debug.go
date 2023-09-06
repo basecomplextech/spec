@@ -3,8 +3,8 @@ package tcp
 import "fmt"
 
 const (
-	debug       = false
-	debugStream = false
+	debug        = false
+	debugChannel = false
 )
 
 func debugPrint(client bool, a ...any) {

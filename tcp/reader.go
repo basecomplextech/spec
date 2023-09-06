@@ -72,11 +72,11 @@ func (r *reader) read() (ptcp.Message, status.Status) {
 	if debug {
 		code := msg.Code()
 		switch code {
-		case ptcp.Code_NewStream:
-			debugPrint(r.client, "<- stream\t", msg.New().Id())
-		case ptcp.Code_CloseStream:
+		case ptcp.Code_NewChannel:
+			debugPrint(r.client, "<- ch\t", msg.New().Id())
+		case ptcp.Code_CloseChannel:
 			debugPrint(r.client, "<- close\t", msg.Close().Id())
-		case ptcp.Code_StreamMessage:
+		case ptcp.Code_ChannelMessage:
 			debugPrint(r.client, "<- message\t", msg.Message().Id())
 		default:
 			debugPrint(r.client, "<- unknown", code)

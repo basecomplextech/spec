@@ -37,10 +37,10 @@ func newServer(address string, handler Handler, logger logging.Logger) *server {
 	return s
 }
 
-// HandleStream handles an incoming TCP stream.
-func (s *server) HandleStream(stream tcp.Stream) status.Status {
+// HandleChannel handles an incoming TCP channel.
+func (s *server) HandleChannel(ch tcp.Channel) status.Status {
 	// Request request
-	msg, st := stream.Read(nil)
+	msg, st := ch.Read(nil)
 	if !st.OK() {
 		return st
 	}
@@ -66,7 +66,7 @@ func (s *server) HandleStream(stream tcp.Stream) status.Status {
 
 	// Write response
 	msg1 := presp.Unwrap().Raw()
-	if st := stream.Write(nil, msg1); !st.OK() {
+	if st := ch.Write(nil, msg1); !st.OK() {
 		return st
 	}
 	return status.OK

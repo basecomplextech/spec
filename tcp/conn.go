@@ -18,8 +18,8 @@ type Conn interface {
 	// Close closes the connection.
 	Close() status.Status
 
-	// Stream opens a new stream.
-	Stream(cancel <-chan struct{}) (Stream, status.Status)
+	// Channel opens a new ch.
+	Channel(cancel <-chan struct{}) (Channel, status.Status)
 
 	// Internal
 
@@ -43,9 +43,9 @@ type conn struct {
 	handler Handler
 	logger  logging.Logger
 
-	client  bool
-	socket  connSocket
-	streams connStreams
+	client   bool
+	socket   connSocket
+	channels connChannels
 
 	reader     *reader
 	writer     *writer
@@ -64,8 +64,8 @@ func connectTimeout(address string, logger logging.Logger, timeout time.Duration
 		return nil, tcpError(err)
 	}
 
-	h := HandleFunc(func(s Stream) status.Status {
-		return s.Close()
+	h := HandleFunc(func(c Channel) status.Status {
+		return c.Close()
 	})
 
 	c := newConn(nc, true /* client */, h, logger)
@@ -78,9 +78,9 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger) *c
 		handler: handler,
 		logger:  logger,
 
-		client:  client,
-		socket:  newConnSocket(client, c),
-		streams: newConnStreams(client),
+		client:   client,
+		socket:   newConnSocket(client, c),
+		channels: newConnChannels(client),
 
 		reader:     newReader(c, client),
 		writer:     newWriter(c, client),
@@ -97,9 +97,9 @@ func (c *conn) Close() status.Status {
 	return status.OK
 }
 
-// Stream opens a new stream.
-func (c *conn) Stream(cancel <-chan struct{}) (Stream, status.Status) {
-	return c.streams.open(c)
+// Channel opens a new ch.
+func (c *conn) Channel(cancel <-chan struct{}) (Channel, status.Status) {
+	return c.channels.open(c)
 }
 
 // Internal
@@ -157,7 +157,7 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 // close
 
 func (c *conn) close() {
-	defer c.streams.close()
+	defer c.channels.close()
 	defer c.writeQueue.Close()
 
 	c.socket.close()
@@ -180,37 +180,37 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 		// Handle message
 		code := msg.Code()
 		switch code {
-		case ptcp.Code_NewStream:
+		case ptcp.Code_NewChannel:
 			m := msg.New()
 			id := m.Id()
 
-			if st := c.streams.opened(c, id); !st.OK() {
+			if st := c.channels.opened(c, id); !st.OK() {
 				return st
 			}
 
-		case ptcp.Code_CloseStream:
+		case ptcp.Code_CloseChannel:
 			m := msg.Close()
 			id := m.Id()
 
-			s, ok := c.streams.remove(id)
+			c, ok := c.channels.remove(id)
 			if !ok {
 				continue
 			}
 
-			if st := s.receive(cancel, msg); !st.OK() {
+			if st := c.receive(cancel, msg); !st.OK() {
 				return st
 			}
 
-		case ptcp.Code_StreamMessage:
+		case ptcp.Code_ChannelMessage:
 			m := msg.Message()
 			id := m.Id()
 
-			s, ok := c.streams.get(id)
+			c, ok := c.channels.get(id)
 			if !ok {
 				continue
 			}
 
-			if st := s.receive(cancel, msg); !st.OK() {
+			if st := c.receive(cancel, msg); !st.OK() {
 				return st
 			}
 
@@ -233,9 +233,9 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 			msg := ptcp.NewMessage(b)
 			code := msg.Code()
 
-			if code == ptcp.Code_CloseStream {
+			if code == ptcp.Code_CloseChannel {
 				id := msg.Close().Id()
-				c.streams.remove(id)
+				c.channels.remove(id)
 			}
 
 			if st := c.writer.write(b); !st.OK() {
@@ -299,86 +299,86 @@ func newConnSocket(client bool, conn net.Conn) connSocket {
 	}
 }
 
-func (s *connSocket) close() status.Status {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (c *connSocket) close() status.Status {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if !s.st.OK() {
+	if !c.st.OK() {
 		return status.OK
 	}
 
-	s.st = statusConnClosed
-	s.conn.Close()
+	c.st = statusConnClosed
+	c.conn.Close()
 
 	if debug {
-		debugPrint(s.client, "conn.close\t", s.st)
+		debugPrint(c.client, "conn.close\t", c.st)
 	}
-	return s.st
+	return c.st
 }
 
-func (s *connSocket) closed() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (c *connSocket) closed() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	return !s.st.OK()
+	return !c.st.OK()
 }
 
-func (s *connSocket) status() status.Status {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (c *connSocket) status() status.Status {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	return s.st
+	return c.st
 }
 
-// streams
+// channels
 
-type connStreams struct {
-	mu      sync.Mutex
-	client  bool
-	closed  bool
-	streams map[bin.Bin128]*stream
+type connChannels struct {
+	mu       sync.Mutex
+	client   bool
+	closed   bool
+	channels map[bin.Bin128]*channel
 }
 
-func newConnStreams(client bool) connStreams {
-	return connStreams{
-		client:  client,
-		streams: make(map[bin.Bin128]*stream),
+func newConnChannels(client bool) connChannels {
+	return connChannels{
+		client:   client,
+		channels: make(map[bin.Bin128]*channel),
 	}
 }
 
-func (s *connStreams) close() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (c *connChannels) close() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if s.closed {
+	if c.closed {
 		return
 	}
-	s.closed = true
+	c.closed = true
 
-	for _, s := range s.streams {
-		s.connClosed()
+	for _, ch := range c.channels {
+		ch.connClosed()
 	}
 }
 
-func (s *connStreams) get(id bin.Bin128) (*stream, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (c *connChannels) get(id bin.Bin128) (*channel, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if s.closed {
+	if c.closed {
 		return nil, false
 	}
 
-	st, ok := s.streams[id]
+	st, ok := c.channels[id]
 	return st, ok
 }
 
-func (s *connStreams) open(c *conn) (*stream, status.Status) {
+func (c *connChannels) open(conn *conn) (*channel, status.Status) {
 	id := bin.Random128()
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if s.closed {
+	if c.closed {
 		return nil, statusConnClosed
 	}
 
@@ -386,50 +386,50 @@ func (s *connStreams) open(c *conn) (*stream, status.Status) {
 		debugPrint(c.client, "conn.open\t", id)
 	}
 
-	stream := openStream(id, c)
-	s.streams[stream.id] = stream
-	return stream, status.OK
+	ch := openChannel(id, conn)
+	c.channels[ch.id] = ch
+	return ch, status.OK
 }
 
-func (s *connStreams) opened(c *conn, id bin.Bin128) status.Status {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (c *connChannels) opened(conn *conn, id bin.Bin128) status.Status {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if s.closed {
+	if c.closed {
 		return statusConnClosed
 	}
 
-	_, ok := s.streams[id]
+	_, ok := c.channels[id]
 	if ok {
-		return tcpErrorf("stream %v already exists", id) // impossible
+		return tcpErrorf("ch %v already exists", id) // impossible
 	}
 
 	if debug {
 		debugPrint(c.client, "conn.opened\t", id)
 	}
 
-	stream := openedStream(id, c)
-	s.streams[id] = stream
+	ch := openedChannel(id, conn)
+	c.channels[id] = ch
 	return status.OK
 }
 
-func (s *connStreams) remove(id bin.Bin128) (*stream, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (c *connChannels) remove(id bin.Bin128) (*channel, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if s.closed {
+	if c.closed {
 		return nil, false
 	}
 
-	st, ok := s.streams[id]
+	st, ok := c.channels[id]
 	if !ok {
 		return nil, false
 	}
 
-	delete(s.streams, id)
+	delete(c.channels, id)
 
 	if debug {
-		debugPrint(s.client, "conn.remove\t", id)
+		debugPrint(c.client, "conn.remove\t", id)
 	}
 	return st, true
 }

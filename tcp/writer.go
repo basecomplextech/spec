@@ -47,11 +47,11 @@ func (w *writer) write(msg []byte) status.Status {
 		m := ptcp.NewMessage(msg)
 		code := m.Code()
 		switch code {
-		case ptcp.Code_NewStream:
-			debugPrint(w.client, "-> stream\t", m.New().Id())
-		case ptcp.Code_CloseStream:
+		case ptcp.Code_NewChannel:
+			debugPrint(w.client, "-> ch\t", m.New().Id())
+		case ptcp.Code_CloseChannel:
 			debugPrint(w.client, "-> close\t", m.Close().Id())
-		case ptcp.Code_StreamMessage:
+		case ptcp.Code_ChannelMessage:
 			debugPrint(w.client, "-> message\t", m.Message().Id())
 		default:
 			debugPrint(w.client, "-> unknown", code)

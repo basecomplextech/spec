@@ -60,34 +60,34 @@ func (c *conn) Request(cancel <-chan struct{}, req *Request) (*ref.R[prpc.Respon
 		return nil, st
 	}
 
-	// Open stream
-	stream, st := c.conn.Stream(cancel)
+	// Open channel
+	ch, st := c.conn.Channel(cancel)
 	if !st.OK() {
 		return nil, st
 	}
 
-	// Free stream on error
+	// Free channel on error
 	ok := false
 	defer func() {
 		if ok {
 			return
 		}
-		stream.Free()
+		ch.Free()
 	}()
 
 	// Write request
-	if st := stream.Write(cancel, preq.Unwrap().Raw()); !st.OK() {
+	if st := ch.Write(cancel, preq.Unwrap().Raw()); !st.OK() {
 		return nil, st
 	}
 
 	// Read response
-	msg, st := stream.Read(cancel)
+	msg, st := ch.Read(cancel)
 	if !st.OK() {
 		return nil, st
 	}
 
-	// Close stream
-	if st := stream.Close(); !st.OK() {
+	// Close channel
+	if st := ch.Close(); !st.OK() {
 		return nil, st
 	}
 
@@ -97,8 +97,8 @@ func (c *conn) Request(cancel <-chan struct{}, req *Request) (*ref.R[prpc.Respon
 		return nil, WrapError(err)
 	}
 
-	// Box response and stream
-	box := ref.NewFreer(presp, stream)
+	// Box response and channel
+	box := ref.NewFreer(presp, ch)
 	ok = true
 	return box, status.OK
 }

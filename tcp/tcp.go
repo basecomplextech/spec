@@ -19,9 +19,9 @@ const (
 )
 
 var (
-	statusClientClosed = status.Closedf("client closed")
-	statusConnClosed   = status.Closedf("connection closed")
-	statusStreamClosed = status.Closedf("stream closed")
+	statusClientClosed  = status.Closedf("client closed")
+	statusConnClosed    = status.Closedf("connection closed")
+	statusChannelClosed = status.Closedf("ch closed")
 )
 
 func tcpError(err error) status.Status {

@@ -40,15 +40,15 @@ func testServer(t tests.T, handle HandleFunc) *server {
 }
 
 func testRequestServer(t tests.T) *server {
-	handle := func(stream Stream) status.Status {
-		msg, st := stream.Read(nil)
+	handle := func(ch Channel) status.Status {
+		msg, st := ch.Read(nil)
 		if !st.OK() {
 			return st
 		}
-		if st := stream.Write(nil, msg); !st.OK() {
+		if st := ch.Write(nil, msg); !st.OK() {
 			return st
 		}
-		return stream.Close()
+		return ch.Close()
 	}
 
 	return testServer(t, handle)
@@ -64,24 +64,24 @@ func testConnect(t tests.T, s *server) *conn {
 	return c.(*conn)
 }
 
-func testStream(t tests.T, c Conn) *stream {
-	s, st := c.Stream(nil)
+func testChannel(t tests.T, c Conn) *channel {
+	ch, st := c.Channel(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	return s.(*stream)
+	return ch.(*channel)
 }
 
 // Open/Close
 
 func TestOpenClose(t *testing.T) {
-	handle := func(stream Stream) status.Status {
+	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := stream.Read(nil)
+			msg, st := ch.Read(nil)
 			if !st.OK() {
 				return st
 			}
-			if st := stream.Write(nil, msg); !st.OK() {
+			if st := ch.Write(nil, msg); !st.OK() {
 				return st
 			}
 		}
@@ -92,22 +92,22 @@ func TestOpenClose(t *testing.T) {
 	defer conn.Free()
 
 	msg0 := []byte("hello, world")
-	stream, st := conn.Stream(nil)
+	ch, st := conn.Channel(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer stream.Free()
+	defer ch.Free()
 
-	st = stream.Write(nil, msg0)
+	st = ch.Write(nil, msg0)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg1, st := stream.Read(nil)
+	msg1, st := ch.Read(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	if st := stream.Close(); !st.OK() {
+	if st := ch.Close(); !st.OK() {
 		t.Fatal(st)
 	}
 

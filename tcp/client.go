@@ -139,9 +139,9 @@ func (c *clientConn) Close() status.Status {
 	return status.OK
 }
 
-// Stream opens a new stream.
-func (c *clientConn) Stream(cancel <-chan struct{}) (Stream, status.Status) {
-	return c.conn.Unwrap().Stream(cancel)
+// Channel opens a new ch.
+func (c *clientConn) Channel(cancel <-chan struct{}) (Channel, status.Status) {
+	return c.conn.Unwrap().Channel(cancel)
 }
 
 // Free closes and frees the connection.

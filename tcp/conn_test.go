@@ -7,24 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConn_Open__should_open_new_stream(t *testing.T) {
+func TestConn_Open__should_open_new_ch(t *testing.T) {
 	server := testRequestServer(t)
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testStream(t, conn)
-	defer stream.Free()
+	ch := testChannel(t, conn)
+	defer ch.Free()
 
-	st := stream.Write(nil, []byte("hello, world"))
+	st := ch.Write(nil, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	assert.True(t, stream.client)
-	assert.False(t, stream.freed)
-	assert.False(t, stream.closed)
-	assert.True(t, stream.started)
-	assert.True(t, stream.newSent)
+	assert.True(t, ch.client)
+	assert.False(t, ch.freed)
+	assert.False(t, ch.closed)
+	assert.True(t, ch.started)
+	assert.True(t, ch.newSent)
 }
 
 func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {
@@ -32,7 +32,7 @@ func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {
 	conn := testConnect(t, server)
 	conn.Free()
 
-	_, st := conn.Stream(nil)
+	_, st := conn.Channel(nil)
 	assert.Equal(t, statusConnClosed, st)
 }
 
@@ -47,54 +47,54 @@ func TestConn_Free__should_close_connection(t *testing.T) {
 	assert.True(t, conn.writeQueue.Closed())
 }
 
-func TestConn_Free__should_close_streams(t *testing.T) {
+func TestConn_Free__should_close_chs(t *testing.T) {
 	server := testRequestServer(t)
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testStream(t, conn)
+	ch := testChannel(t, conn)
 	conn.Free()
 
-	_, st := stream.Read(nil)
+	_, st := ch.Read(nil)
 	assert.Equal(t, status.End, st)
 }
 
-// HandleStream
+// HandleChannel
 
-func TestConn_handleStream__should_log_stream_panics(t *testing.T) {
-	server := testServer(t, func(stream Stream) status.Status {
+func TestConn_handleChannel__should_log_ch_panics(t *testing.T) {
+	server := testServer(t, func(ch Channel) status.Status {
 		panic("test")
 	})
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testStream(t, conn)
-	defer stream.Free()
+	ch := testChannel(t, conn)
+	defer ch.Free()
 
-	st := stream.Write(nil, []byte("hello, server"))
+	st := ch.Write(nil, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	_, st = stream.Read(nil)
+	_, st = ch.Read(nil)
 	assert.Equal(t, status.End, st)
 }
 
-func TestConn_handleStream__should_log_stream_errors(t *testing.T) {
-	server := testServer(t, func(stream Stream) status.Status {
-		return status.Errorf("test stream error")
+func TestConn_handleChannel__should_log_ch_errors(t *testing.T) {
+	server := testServer(t, func(ch Channel) status.Status {
+		return status.Errorf("test ch error")
 	})
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	stream := testStream(t, conn)
-	defer stream.Free()
+	ch := testChannel(t, conn)
+	defer ch.Free()
 
-	st := stream.Write(nil, []byte("hello, server"))
+	st := ch.Write(nil, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	_, st = stream.Read(nil)
+	_, st = ch.Read(nil)
 	assert.Equal(t, status.End, st)
 }
