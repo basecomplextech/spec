@@ -14,7 +14,7 @@ type Conn interface {
 	Close() status.Status
 
 	// Request sends a request and returns a response.
-	Request(cancel <-chan struct{}, req *Request) (*ref.Box[prpc.Response], status.Status)
+	Request(cancel <-chan struct{}, req *Request) (*ref.R[prpc.Response], status.Status)
 
 	// Internal
 
@@ -53,7 +53,7 @@ func (c *conn) Close() status.Status {
 }
 
 // Request sends a request and returns a response.
-func (c *conn) Request(cancel <-chan struct{}, req *Request) (*ref.Box[prpc.Response], status.Status) {
+func (c *conn) Request(cancel <-chan struct{}, req *Request) (*ref.R[prpc.Response], status.Status) {
 	// Build request
 	preq, st := req.build()
 	if !st.OK() {
@@ -98,7 +98,7 @@ func (c *conn) Request(cancel <-chan struct{}, req *Request) (*ref.Box[prpc.Resp
 	}
 
 	// Box response and stream
-	box := ref.NewBox(presp, stream)
+	box := ref.NewFreer(presp, stream)
 	ok = true
 	return box, status.OK
 }

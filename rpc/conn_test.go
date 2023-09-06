@@ -33,7 +33,7 @@ func TestConn_Request__should_request_response(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer resp.Free()
+	defer resp.Release()
 
 	result := resp.Unwrap().Results().Get(0)
 	msg1 := result.Value().String().Unwrap()

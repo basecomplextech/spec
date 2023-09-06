@@ -32,7 +32,7 @@ func BenchmarkRequest(b *testing.B) {
 		}
 
 		req.Free()
-		resp.Free()
+		resp.Release()
 	}
 
 	t1 := time.Now()
@@ -71,7 +71,7 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 			}
 
 			req.Free()
-			resp.Free()
+			resp.Release()
 		}
 	})
 
