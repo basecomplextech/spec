@@ -3,7 +3,6 @@ package tcp
 import (
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
-	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 )
 
@@ -12,8 +11,8 @@ type Client interface {
 	// Close closes the client.
 	Close() status.Status
 
-	// Connect connects to the server and returns a connection.
-	Connect(cancel <-chan struct{}) (Conn, status.Status)
+	// Channel returns a new channel.
+	Channel(cancel <-chan struct{}) (Channel, status.Status)
 }
 
 // NewClient returns a new client.
@@ -30,7 +29,7 @@ type client struct {
 	logger  logging.Logger
 
 	lock   async.Lock
-	conn   *ref.R[*conn]
+	conn   *conn
 	closed bool
 }
 
@@ -56,36 +55,14 @@ func (c *client) Close() status.Status {
 
 	// Close connection
 	if c.conn != nil {
-		conn := c.conn.Unwrap()
-		conn.close()
-
-		c.conn.Release()
+		c.conn.close()
 		c.conn = nil
 	}
 	return status.OK
 }
 
-// Connect connects to the server and returns a connection.
-func (c *client) Connect(cancel <-chan struct{}) (Conn, status.Status) {
-	for {
-		conn, st := c.connect(cancel)
-		if !st.OK() {
-			return nil, st
-		}
-
-		closed := conn.Unwrap().closed()
-		if closed {
-			conn.Release()
-			continue
-		}
-
-		return newClientConn(conn), status.OK
-	}
-}
-
-// private
-
-func (c *client) connect(cancel <-chan struct{}) (*ref.R[*conn], status.Status) {
+// Channel returns a new channel.
+func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 	select {
 	case <-c.lock:
 	case <-cancel:
@@ -93,6 +70,16 @@ func (c *client) connect(cancel <-chan struct{}) (*ref.R[*conn], status.Status) 
 	}
 	defer c.lock.Unlock()
 
+	conn, st := c.connect(cancel)
+	if !st.OK() {
+		return nil, st
+	}
+	return conn.Channel(cancel)
+}
+
+// private
+
+func (c *client) connect(cancel <-chan struct{}) (*conn, status.Status) {
 	// Check closed
 	if c.closed {
 		return nil, statusClientClosed
@@ -100,12 +87,12 @@ func (c *client) connect(cancel <-chan struct{}) (*ref.R[*conn], status.Status) 
 
 	// Check existing connection
 	if c.conn != nil {
-		closed := c.conn.Unwrap().closed()
+		closed := c.conn.closed()
 		if !closed {
-			return ref.Retain(c.conn), status.OK
+			return c.conn, status.OK
 		}
 
-		c.conn.Release()
+		c.conn.Free()
 		c.conn = nil
 	}
 
@@ -115,42 +102,7 @@ func (c *client) connect(cancel <-chan struct{}) (*ref.R[*conn], status.Status) 
 		return nil, st
 	}
 
-	c.conn = ref.New(conn)
+	c.conn = conn
 	c.logger.Debug("Connected", "address", c.address)
-	return ref.Retain(c.conn), status.OK
-}
-
-// client conn
-
-var _ Conn = (*clientConn)(nil)
-
-type clientConn struct {
-	conn  *ref.R[*conn]
-	freed bool
-}
-
-func newClientConn(conn *ref.R[*conn]) *clientConn {
-	return &clientConn{conn: conn}
-}
-
-// Close closes the connection.
-func (c *clientConn) Close() status.Status {
-	// Ignore, the connection will be closed on release.
-	return status.OK
-}
-
-// Channel opens a new ch.
-func (c *clientConn) Channel(cancel <-chan struct{}) (Channel, status.Status) {
-	return c.conn.Unwrap().Channel(cancel)
-}
-
-// Free closes and frees the connection.
-func (c *clientConn) Free() {
-	if c.freed {
-		return
-	}
-
-	c.freed = true
-	c.conn.Release()
-	c.conn = nil
+	return conn, status.OK
 }

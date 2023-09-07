@@ -129,7 +129,7 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *alloc
 	time := time.Since(start)
 	if st.OK() {
 		if s.logger.DebugEnabled() {
-			s.logger.Info("Request ok", "method", method, "time", time)
+			s.logger.Debug("Request ok", "method", method, "time", time)
 		}
 	} else {
 		s.logger.Error("Request error", "method", method, "time", time, "status", st)

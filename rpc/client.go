@@ -43,7 +43,7 @@ func (c *client) Close() status.Status {
 
 // Channel opens a new channel.
 func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
-	tc, st := c.client.Connect(cancel)
+	tch, st := c.client.Channel(cancel)
 	if !st.OK() {
 		return nil, st
 	}
@@ -51,21 +51,11 @@ func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 	ok := false
 	defer func() {
 		if !ok {
-			tc.Close()
-		}
-	}()
-
-	tch, st := tc.Channel(cancel)
-	if !st.OK() {
-		return nil, st
-	}
-	defer func() {
-		if !ok {
 			tch.Close()
 		}
 	}()
 
-	ch := newChannel(tc, tch)
+	ch := newChannel(tch)
 	ok = true
 	return ch, status.OK
 }

@@ -30,8 +30,7 @@ type Channel interface {
 var _ Channel = (*channel)(nil)
 
 type channel struct {
-	tconn tcp.Conn
-	tchan tcp.Channel
+	tch tcp.Channel
 
 	freed bool
 	*channelState
@@ -46,12 +45,11 @@ type channelState struct {
 	rlock async.Lock
 }
 
-func newChannel(tconn tcp.Conn, tchan tcp.Channel) Channel {
+func newChannel(tch tcp.Channel) Channel {
 	s := acquireState()
 
 	return &channel{
-		tconn: tconn,
-		tchan: tchan,
+		tch: tch,
 
 		channelState: s,
 	}
@@ -90,7 +88,7 @@ func (ch *channel) Request(cancel <-chan struct{}, req prpc.Request) status.Stat
 
 	// Send request
 	ch.wreq = true
-	return ch.tchan.Write(cancel, bytes)
+	return ch.tch.Write(cancel, bytes)
 }
 
 // Response receives a response and returns its status and result if status is OK.
@@ -103,7 +101,7 @@ func (ch *channel) Response(cancel <-chan struct{}) (*alloc.Buffer, status.Statu
 	defer ch.rlock.Unlock()
 
 	// Read message
-	bytes, st := ch.tchan.Read(cancel)
+	bytes, st := ch.tch.Read(cancel)
 	if !st.OK() {
 		return nil, st
 	}
@@ -139,8 +137,7 @@ func (ch *channel) Response(cancel <-chan struct{}) (*alloc.Buffer, status.Statu
 
 // Free frees the channel.
 func (ch *channel) Free() {
-	defer ch.tconn.Free()
-	defer ch.tchan.Free()
+	defer ch.tch.Free()
 
 	s := ch.channelState
 	ch.channelState = nil
