@@ -1,4 +1,20 @@
 
+// Message
+
+enum MessageType {
+    UNDEFINED = 0;
+    REQUEST = 1;
+    RESPONSE = 2;
+    MESSAGE = 3;
+}
+
+message Message {
+    type    MessageType 1;
+    req     Request     2;
+    resp    Response    3;
+    msg     Message     4;
+}
+
 // Request
 
 message Request {
@@ -7,27 +23,17 @@ message Request {
 
 message Call {
     method  string  1;
-    args    []Arg   2;
-}
-
-message Arg {
-    name    string  1;
-    value   any     2;
+    args    bytes   2;
 }
 
 // Response
 
 message Response {
-    status  Status      1;
-    results []Result    2;
+    status  Status  1;
+    result  bytes   2;
 }
 
 message Status {
     code    string  1;
     message string  2;
-}
-
-message Result {
-    name    string  1;
-    value   any     2;
 }

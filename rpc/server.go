@@ -1,6 +1,10 @@
 package rpc
 
 import (
+	"strings"
+	"time"
+
+	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
@@ -8,7 +12,7 @@ import (
 	"github.com/basecomplextech/spec/tcp"
 )
 
-// Server is an RCP server.
+// Server is an RPC server.
 type Server interface {
 	async.Service
 
@@ -38,36 +42,114 @@ func newServer(address string, handler Handler, logger logging.Logger) *server {
 }
 
 // HandleChannel handles an incoming TCP channel.
-func (s *server) HandleChannel(ch tcp.Channel) status.Status {
-	// Request request
-	msg, st := ch.Read(nil)
+func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
+	// Read message
+	b, st := tch.Read(nil)
 	if !st.OK() {
 		return st
 	}
 
-	// Parse request
-	preq, _, err := prpc.ParseRequest(msg)
+	// Parse message
+	msg, _, err := prpc.ParseMessage(b)
 	if err != nil {
-		return status.WrapError(err)
+		return WrapErrorf(err, "failed to parse request message")
+	}
+
+	// Check request
+	typ := msg.Type()
+	if typ != prpc.MessageType_Request {
+		return Errorf("unexpected request message type %d, expected %d",
+			typ, prpc.MessageType_Request)
 	}
 
 	// Handle request
-	resp, st := s.handler.Handle(nil, preq)
-	if !st.OK() {
-		return st
+	result, st := s.handleRequest(tch, msg.Req())
+	if result != nil {
+		defer result.Free()
 	}
-	defer resp.Free()
 
-	// Build response
-	presp, st := resp.build()
-	if !st.OK() {
-		return st
+	// Make response
+	var resp []byte
+	{
+		buf := acquireBuffer()
+		defer releaseBuffer(buf)
+
+		w := prpc.NewMessageWriterBuffer(buf)
+		w.Type(prpc.MessageType_Response)
+		{
+			w1 := w.Resp()
+			w2 := w1.Status()
+			w2.Code(string(st.Code))
+			w2.Message(st.Message)
+			if err := w2.End(); err != nil {
+				return WrapError(err)
+			}
+			if result != nil {
+				w1.Result(result.Bytes())
+			}
+			if err := w1.End(); err != nil {
+				return WrapError(err)
+			}
+		}
+
+		msg, err := w.Build()
+		if err != nil {
+			return WrapError(err)
+		}
+		resp = msg.Unwrap().Raw()
 	}
 
 	// Write response
-	msg1 := presp.Unwrap().Raw()
-	if st := ch.Write(nil, msg1); !st.OK() {
-		return st
+	return tch.Write(nil, resp)
+}
+
+// private
+
+func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *alloc.Buffer, st status.Status) {
+	start := time.Now()
+	method := requestMethod(req)
+
+	// Handle panic
+	defer func() {
+		e := recover()
+		if e == nil {
+			return
+		}
+
+		var stack []byte
+		st, stack = status.RecoverStack(e)
+		s.logger.Error("Request panic", "method", method, "status", st, "stack", string(stack))
+	}()
+
+	// Handle request
+	ch := newServerChannel(tch)
+	result, st = s.handler.Handle(nil, ch, req)
+
+	// Log request
+	time := time.Since(start)
+	if st.OK() {
+		if s.logger.DebugEnabled() {
+			s.logger.Info("Request ok", "method", method, "time", time)
+		}
+	} else {
+		s.logger.Error("Request error", "method", method, "time", time, "status", st)
 	}
-	return status.OK
+	return result, st
+}
+
+func requestMethod(req prpc.Request) string {
+	var b strings.Builder
+	calls := req.Calls()
+
+	n := calls.Len()
+	for i := 0; i < n; i++ {
+		call := calls.Get(i)
+
+		if i > 0 {
+			b.WriteString("/")
+		}
+		b.WriteString(call.Method().Unwrap())
+	}
+
+	return b.String()
 }

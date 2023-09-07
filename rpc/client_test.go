@@ -24,28 +24,23 @@ func TestClient_Close__should_close_client(t *testing.T) {
 	}
 }
 
-// Connect
+// Request
 
-func TestClient_Connect__should_return_connection(t *testing.T) {
+func TestClient_Request__should_send_request_receive_response(t *testing.T) {
 	server := testEchoServer(t)
 
 	client := testClient(t, server)
 	defer client.Close()
 
-	conn := testConnect(t, server)
-	defer conn.Free()
-
 	msg := "hello, world"
 	req := testEchoRequest(t, msg)
-	defer req.Free()
 
-	resp, st := conn.Request(nil, req)
+	buf, st := client.Request(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer resp.Release()
+	defer buf.Free()
 
-	result := resp.Unwrap().Results().Get(0)
-	msg1 := result.Value().String().Unwrap()
+	msg1 := string(buf.Bytes())
 	assert.Equal(t, msg, msg1)
 }

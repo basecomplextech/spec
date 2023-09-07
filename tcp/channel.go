@@ -18,12 +18,12 @@ type Channel interface {
 	// Write writes a message to the ch.
 	Write(cancel <-chan struct{}, msg []byte) status.Status
 
-	// Close closes the ch and sends the close message.
+	// Close closes the channel and sends the close message.
 	Close() status.Status
 
 	// Internal
 
-	// Free closes the ch and releases its resources.
+	// Free closes the channel and releases its resources.
 	Free()
 }
 
@@ -147,14 +147,14 @@ func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	return ch.writer.writeMessage(cancel, ch.id, msg)
 }
 
-// Close closes the ch and sends the close message.
+// Close closes the channel and sends the close message.
 func (ch *channel) Close() status.Status {
 	return ch.close()
 }
 
 // Internal
 
-// Free closes the ch and releases its resources.
+// Free closes the channel and releases its resources.
 func (ch *channel) Free() {
 	ch.close()
 	ch.free()

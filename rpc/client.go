@@ -1,8 +1,10 @@
 package rpc
 
 import (
+	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
+	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/basecomplextech/spec/tcp"
 )
 
@@ -11,8 +13,11 @@ type Client interface {
 	// Close closes the client.
 	Close() status.Status
 
-	// Connect connects to an address.
-	Connect(cancel <-chan struct{}) (Conn, status.Status)
+	// Channel opens a new channel.
+	Channel(cancel <-chan struct{}) (Channel, status.Status)
+
+	// Request sends a request and returns status and result if status is OK.
+	Request(cancel <-chan struct{}, req prpc.Request) (*alloc.Buffer, status.Status)
 }
 
 // internal
@@ -36,13 +41,47 @@ func (c *client) Close() status.Status {
 	return c.client.Close()
 }
 
-// Connect connects to an address.
-func (c *client) Connect(cancel <-chan struct{}) (Conn, status.Status) {
+// Channel opens a new channel.
+func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 	tc, st := c.client.Connect(cancel)
 	if !st.OK() {
 		return nil, st
 	}
 
-	conn := newConn(tc, c.logger)
-	return conn, status.OK
+	ok := false
+	defer func() {
+		if !ok {
+			tc.Close()
+		}
+	}()
+
+	tch, st := tc.Channel(cancel)
+	if !st.OK() {
+		return nil, st
+	}
+	defer func() {
+		if !ok {
+			tch.Close()
+		}
+	}()
+
+	ch := newChannel(tc, tch)
+	ok = true
+	return ch, status.OK
+}
+
+// Request sends a request and returns status and result if status is OK.
+func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*alloc.Buffer, status.Status) {
+	ch, st := c.Channel(cancel)
+	if !st.OK() {
+		return nil, st
+	}
+	defer ch.Free()
+
+	st = ch.Request(cancel, req)
+	if !st.OK() {
+		return nil, st
+	}
+
+	return ch.Response(cancel)
 }

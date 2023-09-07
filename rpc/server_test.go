@@ -3,6 +3,7 @@ package rpc
 import (
 	"time"
 
+	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
@@ -39,40 +40,36 @@ func testServer(t tests.T, handle HandleFunc) *server {
 }
 
 func testEchoServer(t tests.T) *server {
-	return testServer(t, func(cancel <-chan struct{}, req prpc.Request) (*Response, status.Status) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel, req prpc.Request) (*alloc.Buffer, status.Status) {
 		call := req.Calls().Get(0)
-		arg := call.Args().Get(0)
-		name := arg.Name().Unwrap()
-		value := arg.Value().String().Unwrap()
+		msg := string(call.Args().Unwrap())
 
-		resp := NewResponse()
-		result := resp.Add()
-		result.Name(name)
-		result.Value().String(value)
-		if err := result.End(); err != nil {
-			return nil, status.WrapError(err)
-		}
-		return resp, status.OK
-	})
+		buf := alloc.NewBuffer()
+		buf.WriteString(msg)
+		return buf, status.OK
+	}
+
+	return testServer(t, handle)
 }
 
-func testEchoRequest(t tests.T, msg string) *Request {
-	req := NewRequest()
-	call := req.Call("echo")
-	args := call.Args()
-
-	arg := args.Add()
-	arg.Name("msg")
-	arg.Value().String("hello, world")
-	if err := arg.End(); err != nil {
+func testEchoRequest(t tests.T, msg string) prpc.Request {
+	w := prpc.NewRequestWriter()
+	calls := w.Calls()
+	{
+		call := calls.Add()
+		call.Method("echo")
+		call.Args([]byte(msg))
+		if err := call.End(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := calls.End(); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := args.End(); err != nil {
+	preq, err := w.Build()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := call.End(); err != nil {
-		t.Fatal(err)
-	}
-	return req
+	return preq
 }

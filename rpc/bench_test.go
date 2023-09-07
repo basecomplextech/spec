@@ -8,31 +8,23 @@ import (
 func BenchmarkRequest(b *testing.B) {
 	server := testEchoServer(b)
 
-	conn := testConnect(b, server)
-	defer conn.Free()
+	client := testClient(b, server)
+	defer client.Close()
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	t0 := time.Now()
 
 	msg := "hello, world"
+	req := testEchoRequest(b, msg)
 
 	for i := 0; i < b.N; i++ {
-		req := testEchoRequest(b, msg)
-
-		resp, st := conn.Request(nil, req)
+		result, st := client.Request(nil, req)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		result := resp.Unwrap().Results().Get(0)
-		msg1 := result.Value().String().Unwrap()
-		if msg != msg1 {
-			b.Fatal(msg1)
-		}
-
-		req.Free()
-		resp.Release()
+		result.Free()
 	}
 
 	t1 := time.Now()
@@ -45,8 +37,8 @@ func BenchmarkRequest(b *testing.B) {
 func BenchmarkRequest_Parallel(b *testing.B) {
 	server := testEchoServer(b)
 
-	conn := testConnect(b, server)
-	defer conn.Free()
+	client := testClient(b, server)
+	defer client.Close()
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -56,22 +48,15 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 	msg := "hello, world"
 
 	b.RunParallel(func(p *testing.PB) {
-		for p.Next() {
-			req := testEchoRequest(b, msg)
+		req := testEchoRequest(b, msg)
 
-			resp, st := conn.Request(nil, req)
+		for p.Next() {
+			result, st := client.Request(nil, req)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 
-			result := resp.Unwrap().Results().Get(0)
-			msg1 := result.Value().String().Unwrap()
-			if msg != msg1 {
-				b.Fatal(msg1)
-			}
-
-			req.Free()
-			resp.Release()
+			result.Free()
 		}
 	})
 
