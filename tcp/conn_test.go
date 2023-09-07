@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConn_Open__should_open_new_ch(t *testing.T) {
+func TestConn_Open__should_open_new_channel(t *testing.T) {
 	server := testRequestServer(t)
 	conn := testConnect(t, server)
 	defer conn.Free()
@@ -21,10 +21,9 @@ func TestConn_Open__should_open_new_ch(t *testing.T) {
 	}
 
 	assert.True(t, ch.client)
-	assert.False(t, ch.freed)
-	assert.False(t, ch.closed)
-	assert.True(t, ch.started)
-	assert.True(t, ch.newSent)
+	assert.False(t, ch.state.closed)
+	assert.True(t, ch.state.started)
+	assert.True(t, ch.state.newSent)
 }
 
 func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {

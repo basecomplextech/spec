@@ -127,13 +127,13 @@ func BenchmarkOpenClose_Parallel(b *testing.B) {
 	b.ReportMetric(ops, "ops")
 }
 
-// Channel
+// Stream
 
-func BenchmarkChannel_Parallel(b *testing.B) {
+func BenchmarkStream_Parallel(b *testing.B) {
 	closeMsg := []byte("close")
-	handle := func(s Channel) status.Status {
+	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := s.Read(nil)
+			msg, st := ch.Read(nil)
 			if !st.OK() {
 				return st
 			}
@@ -144,11 +144,11 @@ func BenchmarkChannel_Parallel(b *testing.B) {
 			break
 		}
 
-		st := s.Write(nil, closeMsg)
+		st := ch.Write(nil, closeMsg)
 		if !st.OK() {
 			return st
 		}
-		return s.Close()
+		return ch.Close()
 	}
 
 	server := testServer(b, handle)
@@ -194,13 +194,13 @@ func BenchmarkChannel_Parallel(b *testing.B) {
 	b.ReportMetric(ops, "ops")
 }
 
-func BenchmarkChannel_16kb_Parallel(b *testing.B) {
+func BenchmarkStream_16kb_Parallel(b *testing.B) {
 	close := []byte("close")
 	benchMsgSize := 16 * 1024
 
-	handle := func(s Channel) status.Status {
+	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := s.Read(nil)
+			msg, st := ch.Read(nil)
 			if !st.OK() {
 				return st
 			}
@@ -211,11 +211,11 @@ func BenchmarkChannel_16kb_Parallel(b *testing.B) {
 			break
 		}
 
-		st := s.Write(nil, close)
+		st := ch.Write(nil, close)
 		if !st.OK() {
 			return st
 		}
-		return s.Close()
+		return ch.Close()
 	}
 
 	server := testServer(b, handle)

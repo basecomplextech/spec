@@ -192,27 +192,21 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			m := msg.Close()
 			id := m.Id()
 
-			c, ok := c.channels.remove(id)
+			ch, ok := c.channels.remove(id)
 			if !ok {
 				continue
 			}
-
-			if st := c.receive(cancel, msg); !st.OK() {
-				return st
-			}
+			ch.connReceived(cancel, msg)
 
 		case ptcp.Code_ChannelMessage:
 			m := msg.Message()
 			id := m.Id()
 
-			c, ok := c.channels.get(id)
+			ch, ok := c.channels.get(id)
 			if !ok {
 				continue
 			}
-
-			if st := c.receive(cancel, msg); !st.OK() {
-				return st
-			}
+			ch.connReceived(cancel, msg)
 
 		default:
 			return tcpErrorf("unexpected tpc message code %d", code)

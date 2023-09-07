@@ -39,7 +39,7 @@ func TestChannel_Read__should_read_message(t *testing.T) {
 	assert.Equal(t, []byte("hello, ch"), msg)
 }
 
-func TestChannel_Read__should_return_end_when_ch_closed(t *testing.T) {
+func TestChannel_Read__should_return_end_when_channel_closed(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		st := s.Write(nil, []byte("hello, ch"))
 		if !st.OK() {
@@ -63,7 +63,7 @@ func TestChannel_Read__should_read_pending_messages_even_when_closed(t *testing.
 	server := testServer(t, func(s Channel) status.Status {
 		defer close(sent)
 
-		st := s.Write(nil, []byte("hello, ch"))
+		st := s.Write(nil, []byte("hello, channel"))
 		if !st.OK() {
 			return st
 		}
@@ -95,7 +95,7 @@ func TestChannel_Read__should_read_pending_messages_even_when_closed(t *testing.
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	assert.Equal(t, []byte("hello, ch"), msg)
+	assert.Equal(t, []byte("hello, channel"), msg)
 
 	msg, st = ch.Read(nil)
 	if !st.OK() {
@@ -154,14 +154,14 @@ func TestChannel_Write__should_send_new_message_if_not_sent(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	assert.False(t, ch.newSent)
+	assert.False(t, ch.state.newSent)
 
 	st := ch.Write(nil, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	assert.True(t, ch.newSent)
+	assert.True(t, ch.state.newSent)
 }
 
 func TestChannel_Write__should_return_error_when_ch_closed(t *testing.T) {
@@ -224,7 +224,7 @@ func TestChannel_Close__should_close_incoming_queue(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.True(t, ch.reader.queue.Closed())
+	assert.True(t, ch.state.readq.Closed())
 }
 
 func TestChannel_Close__should_ignore_when_already_closed(t *testing.T) {
