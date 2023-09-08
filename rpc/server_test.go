@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"testing"
 	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
@@ -8,6 +9,7 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/basecomplextech/spec/proto/prpc"
+	"github.com/stretchr/testify/assert"
 )
 
 func testServer(t tests.T, handle HandleFunc) *server {
@@ -72,4 +74,46 @@ func testEchoRequest(t tests.T, msg string) prpc.Request {
 		t.Fatal(err)
 	}
 	return preq
+}
+
+// handleRequest
+
+func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *testing.T) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel, req prpc.Request) (*alloc.Buffer, status.Status) {
+		panic("test panic")
+	}
+
+	server := testServer(t, handle)
+	client := testClient(t, server)
+	defer client.Close()
+
+	req := testEchoRequest(t, "request")
+	ch, st := client.Request(nil, req)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	_, st = ch.Response(nil)
+	assert.Equal(t, status.CodeError, st.Code)
+	assert.Equal(t, "test panic", st.Message)
+}
+
+func TestServer_handleRequest__should_handle_errors(t *testing.T) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel, req prpc.Request) (*alloc.Buffer, status.Status) {
+		return nil, status.Unauthorized("test unauthorized")
+	}
+
+	server := testServer(t, handle)
+	client := testClient(t, server)
+	defer client.Close()
+
+	req := testEchoRequest(t, "request")
+	ch, st := client.Request(nil, req)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	_, st = ch.Response(nil)
+	assert.Equal(t, status.CodeUnauthorized, st.Code)
+	assert.Equal(t, "test unauthorized", st.Message)
 }
