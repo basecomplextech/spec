@@ -6,13 +6,14 @@ enum MessageType {
     REQUEST = 1;
     RESPONSE = 2;
     MESSAGE = 3;
+    END = 4;
 }
 
 message Message {
     type    MessageType 1;
     req     Request     2;
     resp    Response    3;
-    msg     Message     4;
+    msg     bytes       4;
 }
 
 // Request

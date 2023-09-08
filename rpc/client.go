@@ -43,6 +43,28 @@ func (c *client) Close() status.Status {
 
 // Channel opens a new channel.
 func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
+	return c.channel(cancel)
+}
+
+// Request sends a request and returns status and result if status is OK.
+func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*alloc.Buffer, status.Status) {
+	ch, st := c.channel(cancel)
+	if !st.OK() {
+		return nil, st
+	}
+	defer ch.Free()
+
+	st = ch.Request(cancel, req)
+	if !st.OK() {
+		return nil, st
+	}
+
+	return ch.Response(cancel)
+}
+
+// private
+
+func (c *client) channel(cancel <-chan struct{}) (*channel, status.Status) {
 	tch, st := c.client.Channel(cancel)
 	if !st.OK() {
 		return nil, st
@@ -58,20 +80,4 @@ func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 	ch := newChannel(tch)
 	ok = true
 	return ch, status.OK
-}
-
-// Request sends a request and returns status and result if status is OK.
-func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*alloc.Buffer, status.Status) {
-	ch, st := c.Channel(cancel)
-	if !st.OK() {
-		return nil, st
-	}
-	defer ch.Free()
-
-	st = ch.Request(cancel, req)
-	if !st.OK() {
-		return nil, st
-	}
-
-	return ch.Response(cancel)
 }

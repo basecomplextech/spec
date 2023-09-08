@@ -13,8 +13,15 @@ import (
 
 // Channel is a client RPC channel.
 type Channel interface {
-	// Request sends a request to the server.
-	Request(cancel <-chan struct{}, req prpc.Request) status.Status
+	// End sends an end message to the channel.
+	End(cancel <-chan struct{}) status.Status
+
+	// Send sends a message to the channel.
+	Send(cancel <-chan struct{}, message []byte) status.Status
+
+	// Receive receives a message from the channel, or an end.
+	// The message is valid until the next call to Receive or Response.
+	Receive(cancel <-chan struct{}) ([]byte, status.Status)
 
 	// Response receives a response and returns its status and result if status is OK.
 	Response(cancel <-chan struct{}) (*alloc.Buffer, status.Status)
@@ -30,123 +37,337 @@ type Channel interface {
 var _ Channel = (*channel)(nil)
 
 type channel struct {
-	tch tcp.Channel
+	ch tcp.Channel
 
-	freed bool
-	*channelState
+	stateMu sync.RWMutex
+	state   *channelState
 }
 
-type channelState struct {
-	wlock  async.Lock
-	wreq   bool // request sent
-	wbuf   *alloc.Buffer
-	writer spec.Writer
-
-	rlock async.Lock
-}
-
-func newChannel(tch tcp.Channel) Channel {
+func newChannel(ch tcp.Channel) *channel {
 	s := acquireState()
 
 	return &channel{
-		tch: tch,
+		ch: ch,
 
-		channelState: s,
+		state: s,
 	}
 }
 
 // Request sends a request to the server.
 func (ch *channel) Request(cancel <-chan struct{}, req prpc.Request) status.Status {
+	s, ok := ch.rlock()
+	if !ok {
+		return status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Write lock
 	select {
-	case <-ch.wlock:
+	case <-s.writeLock:
 	case <-cancel:
 		return status.Cancelled
 	}
-	defer ch.wlock.Unlock()
+	defer s.writeLock.Unlock()
 
-	if ch.wreq {
+	if s.writeReq {
 		return Error("request already sent")
 	}
 
 	// Make request
-	var bytes []byte
+	var msg []byte
 	{
-		ch.wbuf.Reset()
-		ch.writer.Reset(ch.wbuf)
+		s.writeBuf.Reset()
+		s.writeMsg.Reset(s.writeBuf)
 
-		w := prpc.NewMessageWriterTo(ch.writer.Message())
+		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
 		w.Type(prpc.MessageType_Request)
 		w.CopyReq(req)
 
-		msg, err := w.Build()
+		p, err := w.Build()
 		if err != nil {
 			return WrapError(err)
 		}
 
-		bytes = msg.Unwrap().Raw()
+		msg = p.Unwrap().Raw()
 	}
 
 	// Send request
-	ch.wreq = true
-	return ch.tch.Write(cancel, bytes)
+	s.writeReq = true
+	return ch.ch.Write(cancel, msg)
+}
+
+// End sends an end message to the channel.
+func (ch *channel) End(cancel <-chan struct{}) status.Status {
+	s, ok := ch.rlock()
+	if !ok {
+		return status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Write lock
+	select {
+	case <-s.writeLock:
+	case <-cancel:
+		return status.Cancelled
+	}
+	defer s.writeLock.Unlock()
+
+	if s.writeEnd {
+		return Error("end already sent")
+	}
+
+	// Make message
+	var msg []byte
+	{
+		s.writeBuf.Reset()
+		s.writeMsg.Reset(s.writeBuf)
+
+		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
+		w.Type(prpc.MessageType_End)
+
+		p, err := w.Build()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		msg = p.Unwrap().Raw()
+	}
+
+	// Send message
+	s.writeEnd = true
+	return ch.ch.Write(cancel, msg)
+}
+
+// Send sends a message to the channel.
+func (ch *channel) Send(cancel <-chan struct{}, message []byte) status.Status {
+	s, ok := ch.rlock()
+	if !ok {
+		return status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Write lock
+	select {
+	case <-s.writeLock:
+	case <-cancel:
+		return status.Cancelled
+	}
+	defer s.writeLock.Unlock()
+
+	if s.writeEnd {
+		return Error("end already sent")
+	}
+
+	// Make message
+	var msg []byte
+	{
+		s.writeBuf.Reset()
+		s.writeMsg.Reset(s.writeBuf)
+
+		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
+		w.Type(prpc.MessageType_Message)
+		w.Msg(message)
+
+		p, err := w.Build()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		msg = p.Unwrap().Raw()
+	}
+
+	// Send message
+	return ch.ch.Write(cancel, msg)
+}
+
+// Receive receives a message from the channel, or an end.
+// The message is valid until the next call to Receive or Response.
+func (ch *channel) Receive(cancel <-chan struct{}) ([]byte, status.Status) {
+	s, ok := ch.rlock()
+	if !ok {
+		return nil, status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Read lock
+	select {
+	case <-s.readLock:
+	case <-cancel:
+		return nil, status.Cancelled
+	}
+	defer s.readLock.Unlock()
+
+	// Check state
+	switch {
+	case s.readFailed:
+		return nil, s.readError
+	case s.readEnd:
+		return nil, status.End
+	}
+
+	// Read message
+	msg, st := ch.read(cancel)
+	if !st.OK() {
+		s.readFail(st)
+		return nil, st
+	}
+
+	// Handle message
+	typ := msg.Type()
+	switch typ {
+	case prpc.MessageType_Message:
+		return msg.Msg(), status.OK
+
+	case prpc.MessageType_End:
+		s.readEnd = true
+		return nil, status.End
+
+	case prpc.MessageType_Response:
+		s.readEnd = true
+		s.readResp = true
+
+		result, st := parseResult(msg.Resp())
+		s.result = result
+		s.resultOK = true
+		s.resultSt = st
+		return nil, status.End
+	}
+
+	st = Errorf("unexpected message type %d", typ)
+	s.readFail(st)
+	return nil, st
 }
 
 // Response receives a response and returns its status and result if status is OK.
 func (ch *channel) Response(cancel <-chan struct{}) (*alloc.Buffer, status.Status) {
+	s, ok := ch.rlock()
+	if !ok {
+		return nil, status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Read lock
 	select {
-	case <-ch.rlock:
+	case <-s.readLock:
 	case <-cancel:
 		return nil, status.Cancelled
 	}
-	defer ch.rlock.Unlock()
+	defer s.readLock.Unlock()
 
-	// Read message
-	bytes, st := ch.tch.Read(cancel)
-	if !st.OK() {
-		return nil, st
+	// Check state
+	switch {
+	case s.readFailed:
+		return nil, s.readError
+
+	case s.readResp:
+		if !s.resultOK {
+			return nil, Error("response already received")
+		}
+
+		st := s.resultSt
+		result := s.result
+
+		s.result = nil
+		s.resultOK = false
+		return result, st
 	}
 
-	// Parse message
-	msg, _, err := prpc.ParseMessage(bytes)
+	// Read messages
+	for {
+		msg, st := ch.read(cancel)
+		if !st.OK() {
+			s.readFail(st)
+			return nil, st
+		}
+
+		// Handle message
+		typ := msg.Type()
+		switch typ {
+		case prpc.MessageType_Message:
+			continue // Skip messages until response
+
+		case prpc.MessageType_End:
+			s.readEnd = true
+			continue // Skip messages until response
+
+		case prpc.MessageType_Response:
+			s.readResp = true
+			return parseResult(msg.Resp())
+		}
+
+		st = Errorf("unexpected message type %d", typ)
+		s.readFail(st)
+		return nil, st
+	}
+}
+
+// read reads, parses and returns the next message.
+func (ch *channel) read(cancel <-chan struct{}) (prpc.Message, status.Status) {
+	b, st := ch.ch.Read(cancel)
+	if !st.OK() {
+		return prpc.Message{}, st
+	}
+
+	msg, _, err := prpc.ParseMessage(b)
 	if err != nil {
-		return nil, WrapError(err)
+		return prpc.Message{}, WrapError(err)
 	}
-
-	// Check response
-	typ := msg.Type()
-	if typ != prpc.MessageType_Response {
-		return nil, Errorf("unexpected message type %d, expected response type %d",
-			typ, prpc.MessageType_Response)
-	}
-	resp := msg.Resp()
-
-	// Parse status
-	st = parseStatus(resp.Status())
-	if !st.OK() {
-		return nil, st
-	}
-
-	// Copy result
-	res := resp.Result()
-	buf := alloc.NewBufferSize(len(res))
-	buf.Write(res)
-	return buf, st
+	return msg, status.OK
 }
 
 // Internal
 
 // Free frees the channel.
 func (ch *channel) Free() {
-	defer ch.tch.Free()
+	ch.stateMu.Lock()
+	defer ch.stateMu.Unlock()
 
-	s := ch.channelState
-	ch.channelState = nil
+	if ch.state == nil {
+		return
+	}
+	defer ch.ch.Free()
+
+	s := ch.state
+	ch.state = nil
 	releaseState(s)
 }
 
-// state pool
+// private
+
+func (ch *channel) rlock() (*channelState, bool) {
+	ch.stateMu.RLock()
+
+	if ch.state == nil {
+		ch.stateMu.RUnlock()
+		return nil, false
+	}
+
+	return ch.state, true
+}
+
+// state
 
 var statePool = &sync.Pool{}
+
+type channelState struct {
+	writeLock async.Lock
+	writeReq  bool // request sent
+	writeEnd  bool // end sent
+	writeBuf  *alloc.Buffer
+	writeMsg  spec.Writer
+
+	readLock async.Lock
+	readEnd  bool // end received
+	readResp bool // response received
+
+	readFailed bool
+	readError  status.Status
+
+	// temp result stores result until Response is called
+	result   *alloc.Buffer
+	resultOK bool
+	resultSt status.Status
+}
 
 func acquireState() *channelState {
 	v := statePool.Get()
@@ -163,27 +384,55 @@ func releaseState(s *channelState) {
 }
 
 func newChannelState() *channelState {
-	wbuf := alloc.NewBuffer()
+	writeBuf := alloc.NewBuffer()
+
 	return &channelState{
-		wlock:  async.NewLock(),
-		wbuf:   wbuf,
-		writer: spec.NewWriterBuffer(wbuf),
-		rlock:  async.NewLock(),
+		writeLock: async.NewLock(),
+		writeBuf:  writeBuf,
+		writeMsg:  spec.NewWriterBuffer(writeBuf),
+
+		readLock: async.NewLock(),
 	}
 }
 
 func (s *channelState) reset() {
 	select {
-	case s.wlock <- struct{}{}:
+	case s.writeLock <- struct{}{}:
 	default:
 	}
-
 	select {
-	case s.rlock <- struct{}{}:
+	case s.readLock <- struct{}{}:
 	default:
 	}
 
-	s.wreq = false
-	s.wbuf.Reset()
-	s.writer.Reset(s.wbuf)
+	s.writeReq = false
+	s.writeEnd = false
+	s.writeBuf.Reset()
+	s.writeMsg.Reset(s.writeBuf)
+
+	s.readEnd = false
+	s.readResp = false
+
+	if s.result != nil {
+		s.result.Free()
+		s.result = nil
+	}
+}
+
+func (s *channelState) readFail(st status.Status) {
+	s.readFailed = true
+	s.readError = st
+}
+
+// util
+
+func parseResult(resp prpc.Response) (*alloc.Buffer, status.Status) {
+	st := parseStatus(resp.Status())
+	if !st.OK() {
+		return nil, st
+	}
+
+	buf := alloc.NewBuffer()
+	buf.Write(resp.Result())
+	return buf, status.OK
 }
