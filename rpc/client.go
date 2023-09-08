@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/prpc"
@@ -17,7 +16,7 @@ type Client interface {
 	Channel(cancel <-chan struct{}) (Channel, status.Status)
 
 	// Request sends a request and returns status and result if status is OK.
-	Request(cancel <-chan struct{}, req prpc.Request) (*alloc.Buffer, status.Status)
+	Request(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status)
 }
 
 // internal
@@ -47,19 +46,26 @@ func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 }
 
 // Request sends a request and returns status and result if status is OK.
-func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*alloc.Buffer, status.Status) {
+func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status) {
 	ch, st := c.channel(cancel)
 	if !st.OK() {
 		return nil, st
 	}
-	defer ch.Free()
+
+	ok := false
+	defer func() {
+		if !ok {
+			ch.Free()
+		}
+	}()
 
 	st = ch.Request(cancel, req)
 	if !st.OK() {
 		return nil, st
 	}
 
-	return ch.Response(cancel)
+	ok = true
+	return ch, status.OK
 }
 
 // private

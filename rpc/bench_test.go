@@ -19,12 +19,18 @@ func BenchmarkRequest(b *testing.B) {
 	req := testEchoRequest(b, msg)
 
 	for i := 0; i < b.N; i++ {
-		result, st := client.Request(nil, req)
+		ch, st := client.Request(nil, req)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+
+		result, st := ch.Response(nil)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
 		result.Free()
+		ch.Free()
 	}
 
 	t1 := time.Now()
@@ -51,12 +57,18 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 		req := testEchoRequest(b, msg)
 
 		for p.Next() {
-			result, st := client.Request(nil, req)
+			ch, st := client.Request(nil, req)
+			if !st.OK() {
+				b.Fatal(st)
+			}
+
+			result, st := ch.Response(nil)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 
 			result.Free()
+			ch.Free()
 		}
 	})
 

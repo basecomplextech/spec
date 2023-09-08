@@ -47,8 +47,7 @@ func newChannel(ch tcp.Channel) *channel {
 	s := acquireState()
 
 	return &channel{
-		ch: ch,
-
+		ch:    ch,
 		state: s,
 	}
 }
@@ -412,10 +411,14 @@ func (s *channelState) reset() {
 
 	s.readEnd = false
 	s.readResp = false
+	s.readFailed = false
+	s.readError = status.None
 
 	if s.result != nil {
 		s.result.Free()
 		s.result = nil
+		s.resultOK = false
+		s.resultSt = status.None
 	}
 }
 

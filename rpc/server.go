@@ -123,6 +123,8 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *alloc
 
 	// Handle request
 	ch := newServerChannel(tch)
+	defer ch.Free()
+
 	result, st = s.handler.Handle(nil, ch, req)
 
 	// Log request
