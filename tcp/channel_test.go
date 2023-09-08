@@ -13,7 +13,7 @@ import (
 
 func TestChannel_Read__should_read_message(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
-		st := s.Write(nil, []byte("hello, ch"))
+		st := s.Write(nil, []byte("hello, channel"))
 		if !st.OK() {
 			return st
 		}
@@ -36,15 +36,11 @@ func TestChannel_Read__should_read_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.Equal(t, []byte("hello, ch"), msg)
+	assert.Equal(t, []byte("hello, channel"), msg)
 }
 
 func TestChannel_Read__should_return_end_when_channel_closed(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
-		st := s.Write(nil, []byte("hello, ch"))
-		if !st.OK() {
-			return st
-		}
 		return s.Close()
 	})
 

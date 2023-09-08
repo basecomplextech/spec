@@ -47,9 +47,9 @@ type conn struct {
 	socket   connSocket
 	channels connChannels
 
-	reader     *reader
-	writer     *writer
-	writeQueue alloc.MQueue
+	reader *reader
+	writer *writer
+	writeq alloc.MQueue
 
 	routine async.Routine[struct{}]
 }
@@ -82,9 +82,9 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger) *c
 		socket:   newConnSocket(client, c),
 		channels: newConnChannels(client),
 
-		reader:     newReader(c, client),
-		writer:     newWriter(c, client),
-		writeQueue: alloc.NewMQueueCap(connWriteQueueCap),
+		reader: newReader(c, client),
+		writer: newWriter(c, client),
+		writeq: alloc.NewMQueueCap(connWriteQueueCap),
 	}
 }
 
@@ -107,7 +107,7 @@ func (c *conn) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 // Free closes and frees the connection.
 func (c *conn) Free() {
 	defer c.reader.free()
-	defer c.writeQueue.Free()
+	defer c.writeq.Free()
 
 	c.Close()
 }
@@ -158,7 +158,7 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 
 func (c *conn) close() {
 	defer c.channels.close()
-	defer c.writeQueue.Close()
+	defer c.writeq.Close()
 
 	c.socket.close()
 }
@@ -218,7 +218,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 
 func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 	for {
-		b, ok, st := c.writeQueue.Read()
+		b, ok, st := c.writeq.Read()
 		switch {
 		case !st.OK():
 			return st
@@ -248,7 +248,7 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 		select {
 		case <-cancel:
 			return status.Cancelled
-		case <-c.writeQueue.ReadWait():
+		case <-c.writeq.ReadWait():
 		}
 	}
 }
@@ -258,7 +258,7 @@ func (c *conn) write(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 	b := msg.Unwrap().Raw()
 
 	for {
-		ok, st := c.writeQueue.Write(b)
+		ok, st := c.writeq.Write(b)
 		switch {
 		case !st.OK():
 			return statusConnClosed
@@ -270,7 +270,7 @@ func (c *conn) write(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 		select {
 		case <-cancel:
 			return status.Cancelled
-		case <-c.writeQueue.WriteWait(len(b)):
+		case <-c.writeq.WriteWait(len(b)):
 			continue
 		}
 	}

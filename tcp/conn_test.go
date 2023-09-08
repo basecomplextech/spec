@@ -43,7 +43,7 @@ func TestConn_Free__should_close_connection(t *testing.T) {
 	conn.Free()
 
 	assert.Equal(t, statusConnClosed, conn.socket.st)
-	assert.True(t, conn.writeQueue.Closed())
+	assert.True(t, conn.writeq.Closed())
 }
 
 func TestConn_Free__should_close_chs(t *testing.T) {
