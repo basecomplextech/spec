@@ -12,10 +12,7 @@ type Client interface {
 	// Close closes the client.
 	Close() status.Status
 
-	// Channel opens a new channel.
-	Channel(cancel <-chan struct{}) (Channel, status.Status)
-
-	// Request sends a request and returns status and result if status is OK.
+	// Request sends a request and returns a channel.
 	Request(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status)
 }
 
@@ -40,12 +37,7 @@ func (c *client) Close() status.Status {
 	return c.client.Close()
 }
 
-// Channel opens a new channel.
-func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
-	return c.channel(cancel)
-}
-
-// Request sends a request and returns status and result if status is OK.
+// Request sends a request and returns a channel.
 func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status) {
 	ch, st := c.channel(cancel)
 	if !st.OK() {
