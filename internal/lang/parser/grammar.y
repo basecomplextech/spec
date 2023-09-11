@@ -47,8 +47,6 @@ import (
     service         *ast.Service
     method          *ast.Method
     methods         []*ast.Method
-    method_result   *ast.MethodResult
-    method_results  []*ast.MethodResult
 	method_field	*ast.MethodField
 	method_fields	[]*ast.MethodField
 }
@@ -111,9 +109,7 @@ import (
 %type <methods>         methods
 %type <method>          method
 %type <method_fields>   method_args
-%type <method_results>  method_result_list
-%type <method_results>  method_results
-%type <method_result>   method_result
+%type <method_fields>   method_results
 %type <method_field>	method_field
 %type <method_fields>	method_fields
 
@@ -534,7 +530,7 @@ methods:
 		$$ = append($1, $2)
 	};
 
-method: field_name method_args method_result_list ';'
+method: field_name method_args method_results ';'
 	{
 		if debugParser {
 			fmt.Println("method", $1, $2, $3)
@@ -546,14 +542,24 @@ method: field_name method_args method_result_list ';'
 		}
 	};
 
-
-// method args	
-
 method_args:
 	'(' method_fields comma_opt ')'
 	{
 		if debugParser {
 			fmt.Println("method_args", $2)
+		}
+		$$ = $2
+	};
+
+method_results:
+	// Empty
+	{
+		$$ = nil
+	}
+	| '(' method_fields comma_opt ')'
+	{
+		if debugParser {
+			fmt.Println("method_results", $2)
 		}
 		$$ = $2
 	};
@@ -591,44 +597,6 @@ method_field:
 		}
 	};
 
-
-// method results
-
-method_result_list:
-	// Empty
-	{
-		$$ = nil
-	}
-	| '(' method_results ')'
-	{
-		$$ = $2
-	};
-
-method_results:
-	// Empty
-	{
-		$$ = nil
-	}
-	| method_result
-	{
-		$$ = []*ast.MethodResult{$1}
-	}
-	| method_results ',' method_result
-	{
-		$$ = append($1, $3)
-	};
-
-method_result:
-	field_name type
-	{
-		if debugParser {
-			fmt.Println("method result", $1, $2)
-		}
-		$$ = &ast.MethodResult{
-			Name: $1,
-			Type: $2,
-		}
-	};
 
 // util
 
