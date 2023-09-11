@@ -456,7 +456,7 @@ func TestParser_Parse__should_parse_method_input_reference(t *testing.T) {
 	assert.IsType(t, &ast.Type{}, input)
 }
 
-func TestParser_Parse__should_parse_method_results(t *testing.T) {
+func TestParser_Parse__should_parse_method_output_fields(t *testing.T) {
 	p := newParser()
 	s := `service Service {
 		method() (a bool 1, b int64 2, c string 3);
@@ -474,10 +474,10 @@ func TestParser_Parse__should_parse_method_results(t *testing.T) {
 	require.Len(t, srv.Methods, 1)
 
 	method := srv.Methods[0]
-	assert.Len(t, method.Result, 3)
+	assert.Len(t, method.Output, 3)
 }
 
-func TestParser_Parse__should_parse_method_result_reference(t *testing.T) {
+func TestParser_Parse__should_parse_method_output_reference(t *testing.T) {
 	p := newParser()
 	s := `service Service {
 		method() (Response);
@@ -495,7 +495,7 @@ func TestParser_Parse__should_parse_method_result_reference(t *testing.T) {
 	require.Len(t, srv.Methods, 1)
 
 	method := srv.Methods[0]
-	result := method.Result
-	assert.NotNil(t, result)
-	assert.IsType(t, &ast.Type{}, result)
+	output := method.Output
+	assert.NotNil(t, output)
+	assert.IsType(t, &ast.Type{}, output)
 }

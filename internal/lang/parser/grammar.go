@@ -48,7 +48,7 @@ type yySymType struct {
 	method        *ast.Method
 	methods       []*ast.Method
 	method_input  ast.MethodInput
-	method_result ast.MethodResult
+	method_output ast.MethodOutput
 	method_field  *ast.MethodField
 	method_fields ast.MethodFields
 }
@@ -955,12 +955,12 @@ yydefault:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_input, yyDollar[3].method_result)
+				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_input, yyDollar[3].method_output)
 			}
 			yyVAL.method = &ast.Method{
 				Name:   yyDollar[1].ident,
 				Input:  yyDollar[2].method_input,
-				Result: yyDollar[3].method_result,
+				Output: yyDollar[3].method_output,
 			}
 		}
 	case 53:
@@ -982,23 +982,23 @@ yydefault:
 	case 55:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.method_result = nil
+			yyVAL.method_output = nil
 		}
 	case 56:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method result", yyDollar[2].type_)
+				fmt.Println("method output", yyDollar[2].type_)
 			}
-			yyVAL.method_result = yyDollar[2].type_
+			yyVAL.method_output = yyDollar[2].type_
 		}
 	case 57:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method result", yyDollar[2].method_fields)
+				fmt.Println("method output", yyDollar[2].method_fields)
 			}
-			yyVAL.method_result = yyDollar[2].method_fields
+			yyVAL.method_output = yyDollar[2].method_fields
 		}
 	case 58:
 		yyDollar = yyS[yypt-2 : yypt+1]

@@ -8,7 +8,7 @@ type Service struct {
 type Method struct {
 	Name   string
 	Input  MethodInput
-	Result MethodResult
+	Output MethodOutput
 }
 
 type MethodField struct {
@@ -27,10 +27,10 @@ type MethodFields []*MethodField
 //	| nil
 type MethodInput interface{}
 
-// MethodResult is a union type for method results.
+// MethodOutput is a union type for method outputs.
 //
-//	MethodResult:
+//	MethodOutput:
 //	| Reference
 //	| MethodFields
 //	| nil
-type MethodResult interface{}
+type MethodOutput interface{}

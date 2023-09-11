@@ -48,7 +48,7 @@ import (
     method          *ast.Method
     methods         []*ast.Method
 	method_input	ast.MethodInput
-	method_result	ast.MethodResult
+	method_output	ast.MethodOutput
 	method_field	*ast.MethodField
 	method_fields	ast.MethodFields
 }
@@ -111,7 +111,7 @@ import (
 %type <methods>         methods
 %type <method>          method
 %type <method_input>    method_input
-%type <method_result>   method_result
+%type <method_output>   method_output
 %type <method_field>	method_field
 %type <method_fields>	method_fields
 %type <method_fields>	method_field_list
@@ -533,7 +533,7 @@ methods:
 		$$ = append($1, $2)
 	};
 
-method: field_name method_input method_result ';'
+method: field_name method_input method_output ';'
 	{
 		if debugParser {
 			fmt.Println("method", $1, $2, $3)
@@ -541,7 +541,7 @@ method: field_name method_input method_result ';'
 		$$ = &ast.Method{
 			Name: $1,
 			Input: $2,
-			Result: $3,
+			Output: $3,
 		}
 	};
 
@@ -561,7 +561,7 @@ method_input:
 		$$ = $2
 	};
 
-method_result:
+method_output:
 	// Empty
 	{
 		$$ = nil
@@ -569,14 +569,14 @@ method_result:
 	| '(' base_type ')'
 	{
 		if debugParser {
-			fmt.Println("method result", $2)
+			fmt.Println("method output", $2)
 		}
 		$$ = $2
 	}
 	| '(' method_field_list ')'
 	{
 		if debugParser {
-			fmt.Println("method result", $2)
+			fmt.Println("method output", $2)
 		}
 		$$ = $2
 	};
