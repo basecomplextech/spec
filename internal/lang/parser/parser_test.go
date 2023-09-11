@@ -362,7 +362,7 @@ message TestMessage {
 
 // service
 
-func TestParse_Parse__should_parse_service_file(t *testing.T) {
+func TestParser_Parse__should_parse_service_file(t *testing.T) {
 	p := newParser()
 	s := testServiceFile(t)
 
@@ -374,7 +374,7 @@ func TestParse_Parse__should_parse_service_file(t *testing.T) {
 	require.NotNil(t, file)
 }
 
-func TestParse_Parse__should_parse_empty_service(t *testing.T) {
+func TestParser_Parse__should_parse_empty_service(t *testing.T) {
 	p := newParser()
 	s := `service Service {}`
 
@@ -393,7 +393,7 @@ func TestParse_Parse__should_parse_empty_service(t *testing.T) {
 
 // method
 
-func TestParse_Parse__should_parse_empty_method(t *testing.T) {
+func TestParser_Parse__should_parse_empty_method(t *testing.T) {
 	p := newParser()
 	s := `service Service {
 		method0();
@@ -412,7 +412,7 @@ func TestParse_Parse__should_parse_empty_method(t *testing.T) {
 	assert.Len(t, srv.Methods, 2)
 }
 
-func TestParse_Parse__should_parse_method_args(t *testing.T) {
+func TestParser_Parse__should_parse_method_args(t *testing.T) {
 	p := newParser()
 	s := `service Service {
 		method(a bool 1, b int64 2, c string 3);
@@ -430,10 +430,33 @@ func TestParse_Parse__should_parse_method_args(t *testing.T) {
 	require.Len(t, srv.Methods, 1)
 
 	method := srv.Methods[0]
-	assert.Len(t, method.Args, 3)
+	assert.Len(t, method.Input, 3)
 }
 
-func TestParse_Parse__should_parse_method_results(t *testing.T) {
+func TestParser_Parse__should_parse_method_input_reference(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method(Request);
+	}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+
+	srv := def.Service
+	require.Len(t, srv.Methods, 1)
+
+	method := srv.Methods[0]
+	input := method.Input
+	assert.NotNil(t, input)
+	assert.IsType(t, &ast.Type{}, input)
+}
+
+func TestParser_Parse__should_parse_method_results(t *testing.T) {
 	p := newParser()
 	s := `service Service {
 		method() (a bool 1, b int64 2, c string 3);
@@ -451,5 +474,28 @@ func TestParse_Parse__should_parse_method_results(t *testing.T) {
 	require.Len(t, srv.Methods, 1)
 
 	method := srv.Methods[0]
-	assert.Len(t, method.Results, 3)
+	assert.Len(t, method.Result, 3)
+}
+
+func TestParser_Parse__should_parse_method_result_reference(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method() (Response);
+	}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+
+	srv := def.Service
+	require.Len(t, srv.Methods, 1)
+
+	method := srv.Methods[0]
+	result := method.Result
+	assert.NotNil(t, result)
+	assert.IsType(t, &ast.Type{}, result)
 }

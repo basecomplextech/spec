@@ -47,8 +47,10 @@ type yySymType struct {
 	service       *ast.Service
 	method        *ast.Method
 	methods       []*ast.Method
+	method_input  ast.MethodInput
+	method_result ast.MethodResult
 	method_field  *ast.MethodField
-	method_fields []*ast.MethodField
+	method_fields ast.MethodFields
 }
 
 const ANY = 57346
@@ -100,59 +102,70 @@ var yyExca = [...]int8{
 	-1, 1,
 	1, -1,
 	-2, 0,
+	-1, 93,
+	16, 24,
+	-2, 1,
+	-1, 94,
+	16, 26,
+	-2, 3,
+	-1, 95,
+	16, 27,
+	-2, 5,
 }
 
 const yyPrivate = 57344
 
-const yyLast = 141
+const yyLast = 153
 
 var yyAct = [...]int8{
-	92, 97, 63, 91, 64, 93, 43, 47, 55, 48,
-	49, 50, 51, 52, 53, 45, 47, 98, 48, 49,
-	50, 51, 52, 53, 45, 75, 104, 95, 94, 88,
-	62, 77, 39, 47, 72, 48, 49, 50, 51, 52,
-	53, 45, 44, 38, 37, 36, 35, 60, 56, 67,
-	81, 69, 68, 80, 25, 76, 24, 66, 23, 101,
-	71, 74, 74, 65, 40, 90, 33, 84, 44, 78,
-	31, 8, 6, 47, 82, 48, 49, 50, 51, 52,
-	53, 45, 16, 103, 17, 86, 18, 19, 20, 67,
-	57, 58, 68, 34, 96, 85, 99, 66, 100, 102,
-	47, 79, 48, 49, 50, 51, 52, 53, 45, 87,
-	30, 29, 28, 27, 26, 5, 3, 61, 1, 89,
-	83, 73, 15, 14, 54, 70, 13, 42, 12, 41,
-	59, 11, 7, 10, 4, 21, 32, 2, 9, 22,
-	46,
+	97, 63, 64, 92, 98, 43, 47, 55, 48, 49,
+	50, 51, 52, 53, 45, 47, 106, 48, 49, 50,
+	51, 52, 53, 45, 75, 109, 100, 99, 88, 62,
+	77, 39, 47, 72, 48, 49, 50, 51, 52, 53,
+	45, 44, 38, 37, 36, 35, 60, 56, 67, 81,
+	69, 68, 80, 25, 76, 24, 66, 23, 108, 71,
+	74, 74, 65, 40, 104, 33, 103, 44, 78, 31,
+	90, 84, 47, 82, 48, 49, 50, 51, 52, 53,
+	45, 8, 6, 86, 57, 34, 111, 91, 67, 85,
+	58, 68, 79, 101, 102, 87, 66, 16, 30, 17,
+	107, 18, 19, 20, 5, 29, 47, 110, 48, 49,
+	50, 51, 52, 53, 45, 94, 28, 48, 95, 50,
+	51, 52, 53, 93, 27, 26, 3, 105, 61, 1,
+	96, 89, 83, 73, 15, 14, 54, 70, 13, 42,
+	12, 41, 59, 11, 7, 10, 4, 21, 32, 2,
+	9, 22, 46,
 }
 
 var yyPact = [...]int16{
-	110, -1000, 107, 57, -1000, 56, -1000, 77, -1000, 42,
-	-1000, -1000, -1000, -1000, -1000, -1000, 102, 101, 100, 99,
-	98, 54, -1000, -1000, -1000, 79, 25, 24, 23, 22,
-	11, -1000, -1000, 47, -1000, -1000, 96, -1000, -1000, -1000,
-	76, 69, 7, -1000, 45, -1000, -1000, -1000, -1000, -1000,
-	-1000, -1000, -1000, -1000, 29, 12, 3, -1000, -1000, -1000,
-	38, 9, 96, 88, -1000, 34, 30, -1000, -1000, -1000,
-	-1000, 45, -1000, -1000, 52, -1000, 82, -1000, -1000, -1000,
-	85, 97, 6, 50, 96, 5, -1000, -1000, -1000, 4,
-	96, -7, -1000, 45, -1000, -1000, -7, 43, 96, 70,
-	10, -1000, -1000, -1000, -1000,
+	120, -1000, 96, 67, -1000, 66, -1000, 92, -1000, 41,
+	-1000, -1000, -1000, -1000, -1000, -1000, 113, 112, 104, 93,
+	86, 53, -1000, -1000, -1000, 71, 24, 23, 22, 21,
+	10, -1000, -1000, 46, -1000, -1000, 102, -1000, -1000, -1000,
+	70, 68, 6, -1000, 44, -1000, -1000, -1000, -1000, -1000,
+	-1000, -1000, -1000, -1000, 28, 11, 2, -1000, -1000, -1000,
+	37, 8, 102, 79, -1000, 33, 29, -1000, -1000, -1000,
+	-1000, 44, -1000, -1000, 56, -1000, 76, -1000, -1000, -1000,
+	84, 83, 5, 55, 111, 4, -1000, -1000, -1000, 3,
+	111, 50, 48, 29, -1000, -1000, -8, -1000, 44, -1000,
+	-1000, 42, 9, -1000, -1000, -1000, 102, 73, -1000, -1000,
+	-1000, -1000,
 }
 
 var yyPgo = [...]uint8{
-	0, 140, 5, 139, 138, 137, 136, 135, 134, 2,
-	4, 133, 132, 131, 130, 129, 128, 6, 127, 126,
-	125, 124, 123, 122, 8, 121, 120, 119, 0, 3,
-	118, 117, 1,
+	0, 152, 4, 151, 150, 149, 148, 147, 146, 1,
+	2, 145, 144, 143, 142, 141, 140, 5, 139, 138,
+	137, 136, 135, 134, 7, 133, 132, 131, 0, 130,
+	3, 129, 128, 127,
 }
 
 var yyR1 = [...]int8{
 	0, 2, 2, 1, 1, 1, 1, 1, 1, 1,
-	30, 3, 3, 4, 4, 5, 5, 8, 8, 7,
+	31, 3, 3, 4, 4, 5, 5, 8, 8, 7,
 	7, 6, 9, 9, 10, 10, 10, 10, 11, 11,
 	11, 11, 11, 12, 12, 13, 14, 15, 15, 16,
 	17, 18, 18, 18, 19, 20, 21, 21, 22, 23,
-	24, 24, 25, 26, 27, 27, 29, 29, 29, 28,
-	32, 32, 31, 31,
+	24, 24, 25, 26, 26, 27, 27, 27, 30, 29,
+	29, 29, 28, 33, 33, 32, 32,
 }
 
 var yyR2 = [...]int8{
@@ -161,22 +174,23 @@ var yyR2 = [...]int8{
 	2, 3, 1, 3, 1, 3, 1, 1, 1, 1,
 	1, 1, 1, 0, 2, 5, 4, 0, 2, 6,
 	3, 0, 1, 3, 5, 3, 0, 2, 5, 5,
-	0, 2, 4, 4, 0, 4, 0, 1, 3, 3,
-	0, 1, 0, 1,
+	0, 2, 4, 3, 3, 0, 3, 3, 2, 0,
+	1, 3, 3, 0, 1, 0, 1,
 }
 
 var yyChk = [...]int16{
-	-1000, -30, -5, 6, -8, 8, 15, -12, 15, -4,
+	-1000, -31, -5, 6, -8, 8, 15, -12, 15, -4,
 	-11, -13, -16, -19, -22, -23, 5, 7, 9, 10,
 	11, -7, -3, 16, 14, 12, 12, 12, 12, 12,
 	12, 16, -6, 12, 14, 21, 21, 21, 21, 21,
 	17, -15, -18, -17, -2, 12, -1, 4, 6, 7,
 	8, 9, 10, 11, -21, -24, -24, 14, 22, -14,
-	-2, -31, 23, -9, -10, 18, 12, 4, 7, 22,
+	-2, -32, 23, -9, -10, 18, 12, 4, 7, 22,
 	-20, -2, 22, -25, -2, 22, 17, 22, -17, 13,
 	19, 20, -9, -26, 15, 13, -10, 12, 23, -27,
-	15, -29, -28, -2, 23, 23, -29, -32, 24, -9,
-	-32, 16, -28, 13, 16,
+	15, -10, -30, 12, 4, 7, -29, -28, -2, 23,
+	23, -10, -30, 16, 16, -33, 24, -9, 16, 16,
+	-28, 13,
 }
 
 var yyDef = [...]int8{
@@ -184,13 +198,14 @@ var yyDef = [...]int8{
 	34, 28, 29, 30, 31, 32, 0, 0, 0, 0,
 	0, 0, 14, 16, 11, 0, 0, 0, 0, 0,
 	0, 18, 20, 0, 12, 37, 41, 46, 50, 50,
-	0, 0, 62, 42, 0, 1, 2, 3, 4, 5,
+	0, 0, 65, 42, 0, 1, 2, 3, 4, 5,
 	6, 7, 8, 9, 0, 0, 0, 21, 35, 38,
-	0, 0, 63, 0, 22, 0, 24, 26, 27, 44,
+	0, 0, 66, 0, 22, 0, 24, 26, 27, 44,
 	47, 0, 48, 51, 0, 49, 0, 39, 43, 40,
-	0, 0, 0, 54, 56, 0, 23, 25, 45, 0,
-	56, 60, 57, 0, 36, 52, 60, 0, 61, 0,
-	0, 53, 58, 59, 55,
+	0, 0, 0, 55, 59, 0, 23, 25, 45, 0,
+	59, 0, 0, -2, -2, -2, 63, 60, 0, 36,
+	52, 0, 0, 53, 54, 58, 64, 0, 56, 57,
+	61, 62,
 }
 
 var yyTok1 = [...]int8{
@@ -940,41 +955,65 @@ yydefault:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_fields, yyDollar[3].method_fields)
+				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_input, yyDollar[3].method_result)
 			}
 			yyVAL.method = &ast.Method{
-				Name:    yyDollar[1].ident,
-				Args:    yyDollar[2].method_fields,
-				Results: yyDollar[3].method_fields,
+				Name:   yyDollar[1].ident,
+				Input:  yyDollar[2].method_input,
+				Result: yyDollar[3].method_result,
 			}
 		}
 	case 53:
-		yyDollar = yyS[yypt-4 : yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method_args", yyDollar[2].method_fields)
+				fmt.Println("method input", yyDollar[2].type_)
 			}
-			yyVAL.method_fields = yyDollar[2].method_fields
+			yyVAL.method_input = yyDollar[2].type_
 		}
 	case 54:
-		yyDollar = yyS[yypt-0 : yypt+1]
-		{
-			yyVAL.method_fields = nil
-		}
-	case 55:
-		yyDollar = yyS[yypt-4 : yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method_results", yyDollar[2].method_fields)
+				fmt.Println("method input", yyDollar[2].method_fields)
 			}
-			yyVAL.method_fields = yyDollar[2].method_fields
+			yyVAL.method_input = yyDollar[2].method_fields
+		}
+	case 55:
+		yyDollar = yyS[yypt-0 : yypt+1]
+		{
+			yyVAL.method_result = nil
 		}
 	case 56:
+		yyDollar = yyS[yypt-3 : yypt+1]
+		{
+			if debugParser {
+				fmt.Println("method result", yyDollar[2].type_)
+			}
+			yyVAL.method_result = yyDollar[2].type_
+		}
+	case 57:
+		yyDollar = yyS[yypt-3 : yypt+1]
+		{
+			if debugParser {
+				fmt.Println("method result", yyDollar[2].method_fields)
+			}
+			yyVAL.method_result = yyDollar[2].method_fields
+		}
+	case 58:
+		yyDollar = yyS[yypt-2 : yypt+1]
+		{
+			if debugParser {
+				fmt.Println("method field list", yyDollar[1].method_fields)
+			}
+			yyVAL.method_fields = yyDollar[1].method_fields
+		}
+	case 59:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 			yyVAL.method_fields = nil
 		}
-	case 57:
+	case 60:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 			if debugParser {
@@ -982,7 +1021,7 @@ yydefault:
 			}
 			yyVAL.method_fields = []*ast.MethodField{yyDollar[1].method_field}
 		}
-	case 58:
+	case 61:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
@@ -990,7 +1029,7 @@ yydefault:
 			}
 			yyVAL.method_fields = append(yyDollar[1].method_fields, yyDollar[3].method_field)
 		}
-	case 59:
+	case 62:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
@@ -1002,19 +1041,19 @@ yydefault:
 				Tag:  yyDollar[3].integer,
 			}
 		}
-	case 60:
+	case 63:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 		}
-	case 61:
+	case 64:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 		}
-	case 62:
+	case 65:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
 		}
-	case 63:
+	case 66:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 		}

@@ -6,9 +6,9 @@ type Service struct {
 }
 
 type Method struct {
-	Name    string
-	Args    []*MethodField
-	Results []*MethodField
+	Name   string
+	Input  MethodInput
+	Result MethodResult
 }
 
 type MethodField struct {
@@ -16,3 +16,21 @@ type MethodField struct {
 	Type *Type
 	Tag  int
 }
+
+type MethodFields []*MethodField
+
+// MethodInput is a union type for method inputs.
+//
+//	MethodInput:
+//	| Reference
+//	| MethodFields
+//	| nil
+type MethodInput interface{}
+
+// MethodResult is a union type for method results.
+//
+//	MethodResult:
+//	| Reference
+//	| MethodFields
+//	| nil
+type MethodResult interface{}

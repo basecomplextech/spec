@@ -15,8 +15,11 @@ service TestService {
         c bool      3,
     );
 
+    // Method2 doc comment.
+    method2(Request) (Response);
+
     // Subservice doc comment.
-    subservice(id bin128 1) (sub TestSubservice 1);
+    subservice(id bin128 1) (TestSubservice);
 }
 
 subservice TestSubservice {
