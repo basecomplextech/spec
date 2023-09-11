@@ -6,9 +6,10 @@ type Service struct {
 }
 
 type Method struct {
-	Name   string
-	Input  MethodInput
-	Output MethodOutput
+	Name    string
+	Input   MethodInput
+	Output  MethodOutput
+	Channel *MethodChannel // Maybe nil
 }
 
 type MethodField struct {
@@ -34,3 +35,9 @@ type MethodInput interface{}
 //	| MethodFields
 //	| nil
 type MethodOutput interface{}
+
+// MethodChannel defines method in/out messages, at least one field must be set.
+type MethodChannel struct {
+	In  *Type
+	Out *Type
+}

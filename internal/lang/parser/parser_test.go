@@ -499,3 +499,42 @@ func TestParser_Parse__should_parse_method_output_reference(t *testing.T) {
 	assert.NotNil(t, output)
 	assert.IsType(t, &ast.Type{}, output)
 }
+
+func TestParser_Parse__should_parse_method_channel(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method0() () ();
+		method1() () (->In);
+		method2() () (<-Out);
+		method3() () (->In <-Out);
+	}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+
+	srv := def.Service
+	require.Len(t, srv.Methods, 4)
+
+	method0 := srv.Methods[0]
+	assert.Nil(t, method0.Channel)
+
+	method1 := srv.Methods[1]
+	require.NotNil(t, method1.Channel)
+	assert.NotNil(t, method1.Channel.In)
+	assert.Nil(t, method1.Channel.Out)
+
+	method2 := srv.Methods[2]
+	require.NotNil(t, method2.Channel)
+	assert.Nil(t, method2.Channel.In)
+	assert.NotNil(t, method2.Channel.Out)
+
+	method3 := srv.Methods[3]
+	require.NotNil(t, method3.Channel)
+	assert.NotNil(t, method3.Channel.In)
+	assert.NotNil(t, method3.Channel.Out)
+}

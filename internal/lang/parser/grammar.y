@@ -49,6 +49,7 @@ import (
     methods         []*ast.Method
 	method_input	ast.MethodInput
 	method_output	ast.MethodOutput
+	method_channel	*ast.MethodChannel
 	method_field	*ast.MethodField
 	method_fields	ast.MethodFields
 }
@@ -112,9 +113,14 @@ import (
 %type <method>          method
 %type <method_input>    method_input
 %type <method_output>   method_output
+%type <method_channel>  method_channel
+%type <type_>  			method_channel_in
+%type <type_>  			method_channel_out
 %type <method_field>	method_field
 %type <method_fields>	method_fields
 %type <method_fields>	method_field_list
+
+%left METHOD_OUTPUT
 
 // start
 %start file
@@ -533,7 +539,18 @@ methods:
 		$$ = append($1, $2)
 	};
 
-method: field_name method_input method_output ';'
+method:
+	field_name method_input ';'
+	{
+		if debugParser {
+			fmt.Println("method", $1, $2)
+		}
+		$$ = &ast.Method{
+			Name: $1,
+			Input: $2,
+		}
+	}
+	| field_name method_input method_output ';'
 	{
 		if debugParser {
 			fmt.Println("method", $1, $2, $3)
@@ -542,6 +559,18 @@ method: field_name method_input method_output ';'
 			Name: $1,
 			Input: $2,
 			Output: $3,
+		}
+	}
+	| field_name method_input method_output method_channel ';'
+	{
+		if debugParser {
+			fmt.Println("method", $1, $2, $3, $4)
+		}
+		$$ = &ast.Method{
+			Name: $1,
+			Input: $2,
+			Output: $3,
+			Channel: $4,
 		}
 	};
 
@@ -562,11 +591,7 @@ method_input:
 	};
 
 method_output:
-	// Empty
-	{
-		$$ = nil
-	}
-	| '(' base_type ')'
+	'(' base_type ')'
 	{
 		if debugParser {
 			fmt.Println("method output", $2)
@@ -579,6 +604,46 @@ method_output:
 			fmt.Println("method output", $2)
 		}
 		$$ = $2
+	};
+
+method_channel:
+	'(' method_channel_in method_channel_out ')'
+	{
+		if debugParser {
+			fmt.Println("method channel", $2, $3)
+		}
+
+		in := $2
+		out := $3
+		
+		if in == nil && out == nil {
+			$$ = nil
+		} else {
+			$$ = &ast.MethodChannel{
+				In: $2,
+				Out: $3,
+			}
+		}
+	};
+
+method_channel_in:
+	// Empty
+	{
+		$$ = nil
+	}
+	| '-' '>' type
+	{
+		$$ = $3
+	};
+
+method_channel_out:
+	// Empty
+	{
+		$$ = nil
+	}
+	| '<' '-' type
+	{
+		$$ = $3
 	};
 
 method_field_list:
