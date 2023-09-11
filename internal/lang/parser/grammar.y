@@ -47,10 +47,10 @@ import (
     service         *ast.Service
     method          *ast.Method
     methods         []*ast.Method
-    method_arg      *ast.MethodArg
-    method_args     []*ast.MethodArg
     method_result   *ast.MethodResult
     method_results  []*ast.MethodResult
+	method_field	*ast.MethodField
+	method_fields	[]*ast.MethodField
 }
 
 // keywords
@@ -110,12 +110,12 @@ import (
 %type <definition>      subservice
 %type <methods>         methods
 %type <method>          method
-%type <method_args>     method_arg_list
-%type <method_args>     method_args
-%type <method_arg>      method_arg
+%type <method_fields>   method_args
 %type <method_results>  method_result_list
 %type <method_results>  method_results
 %type <method_result>   method_result
+%type <method_field>	method_field
+%type <method_fields>	method_fields
 
 // start
 %start file
@@ -534,7 +534,7 @@ methods:
 		$$ = append($1, $2)
 	};
 
-method: field_name method_arg_list method_result_list ';'
+method: field_name method_args method_result_list ';'
 	{
 		if debugParser {
 			fmt.Println("method", $1, $2, $3)
@@ -549,8 +549,8 @@ method: field_name method_arg_list method_result_list ';'
 
 // method args	
 
-method_arg_list:
-	'(' method_args comma_opt ')'
+method_args:
+	'(' method_fields comma_opt ')'
 	{
 		if debugParser {
 			fmt.Println("method_args", $2)
@@ -558,29 +558,36 @@ method_arg_list:
 		$$ = $2
 	};
 
-method_args:
+method_fields:
 	// Empty
 	{
 		$$ = nil
 	}
-	| method_arg
+	| method_field
 	{
-		$$ = []*ast.MethodArg{$1}
+		if debugParser {
+			fmt.Println("method fields", $1)
+		}
+		$$ = []*ast.MethodField{$1}
 	}
-	| method_args ',' method_arg
+	| method_fields ',' method_field
 	{
+		if debugParser {
+			fmt.Println("method fields", $1, $3)
+		}
 		$$ = append($1, $3)
 	};
 
-method_arg:
-	field_name type
+method_field:
+	field_name type INTEGER
 	{
 		if debugParser {
-			fmt.Println("method arg", $1, $2)
+			fmt.Println("method field", $1, $2, $3)
 		}
-		$$ = &ast.MethodArg {
+		$$ = &ast.MethodField{
 			Name: $1,
 			Type: $2,
+			Tag: $3,
 		}
 	};
 

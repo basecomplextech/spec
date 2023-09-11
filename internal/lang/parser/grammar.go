@@ -47,10 +47,10 @@ type yySymType struct {
 	service        *ast.Service
 	method         *ast.Method
 	methods        []*ast.Method
-	method_arg     *ast.MethodArg
-	method_args    []*ast.MethodArg
 	method_result  *ast.MethodResult
 	method_results []*ast.MethodResult
+	method_field   *ast.MethodField
+	method_fields  []*ast.MethodField
 }
 
 const ANY = 57346
@@ -106,7 +106,7 @@ var yyExca = [...]int8{
 
 const yyPrivate = 57344
 
-const yyLast = 145
+const yyLast = 146
 
 var yyAct = [...]int8{
 	44, 97, 92, 63, 43, 64, 55, 47, 100, 48,
@@ -117,34 +117,34 @@ var yyAct = [...]int8{
 	81, 69, 103, 66, 35, 71, 74, 74, 47, 65,
 	48, 49, 50, 51, 52, 53, 45, 78, 25, 40,
 	24, 105, 23, 33, 90, 82, 58, 31, 84, 8,
-	6, 67, 57, 34, 68, 93, 86, 85, 16, 66,
-	17, 98, 18, 19, 20, 79, 87, 101, 30, 29,
-	28, 93, 104, 106, 98, 107, 47, 27, 48, 49,
-	50, 51, 52, 53, 45, 26, 5, 3, 99, 61,
-	1, 96, 89, 91, 83, 73, 15, 14, 54, 70,
-	13, 42, 12, 41, 59, 11, 7, 10, 4, 21,
-	32, 2, 9, 22, 46,
+	6, 67, 57, 34, 68, 93, 86, 107, 16, 66,
+	17, 98, 18, 19, 20, 85, 87, 101, 79, 30,
+	29, 93, 104, 106, 98, 108, 47, 28, 48, 49,
+	50, 51, 52, 53, 45, 27, 26, 5, 3, 99,
+	61, 1, 91, 96, 89, 83, 73, 15, 14, 54,
+	70, 13, 42, 12, 41, 59, 11, 7, 10, 4,
+	21, 32, 2, 9, 22, 46,
 }
 
 var yyPact = [...]int16{
-	111, -1000, 108, 65, -1000, 64, -1000, 83, -1000, 56,
-	-1000, -1000, -1000, -1000, -1000, -1000, 103, 95, 88, 87,
-	86, 61, -1000, -1000, -1000, 69, 33, 26, 22, 11,
+	112, -1000, 109, 65, -1000, 64, -1000, 83, -1000, 56,
+	-1000, -1000, -1000, -1000, -1000, -1000, 104, 103, 95, 88,
+	87, 61, -1000, -1000, -1000, 69, 33, 26, 22, 11,
 	10, -1000, -1000, 52, -1000, -1000, 102, -1000, -1000, -1000,
 	68, 54, 6, -1000, 41, -1000, -1000, -1000, -1000, -1000,
 	-1000, -1000, -1000, -1000, 29, 12, 3, -1000, -1000, -1000,
-	32, 8, 102, 82, -1000, 7, 30, -1000, -1000, -1000,
-	-1000, 41, -1000, -1000, 63, -1000, 74, -1000, -1000, -1000,
+	32, 8, 102, 85, -1000, 7, 30, -1000, -1000, -1000,
+	-1000, 41, -1000, -1000, 63, -1000, 82, -1000, -1000, -1000,
 	77, 84, 5, 59, 102, 4, -1000, -1000, -1000, -6,
 	102, -16, -1000, 41, -1000, -1000, 28, -1000, 41, 55,
-	102, -1000, -1000, 102, -1000, -1000, -1000, -1000,
+	102, 74, -1000, 102, -1000, -1000, -1000, -1000, -1000,
 }
 
 var yyPgo = [...]uint8{
-	0, 144, 0, 143, 142, 141, 140, 139, 138, 3,
-	5, 137, 136, 135, 134, 133, 132, 4, 131, 130,
-	129, 128, 127, 126, 6, 125, 124, 123, 2, 122,
-	121, 1, 120, 119, 118,
+	0, 145, 0, 144, 143, 142, 141, 140, 139, 3,
+	5, 138, 137, 136, 135, 134, 133, 4, 132, 131,
+	130, 129, 128, 127, 6, 126, 125, 124, 123, 1,
+	2, 122, 121, 120, 119,
 }
 
 var yyR1 = [...]int8{
@@ -153,8 +153,8 @@ var yyR1 = [...]int8{
 	7, 6, 9, 9, 10, 10, 10, 10, 11, 11,
 	11, 11, 11, 12, 12, 13, 14, 15, 15, 16,
 	17, 18, 18, 18, 19, 20, 21, 21, 22, 23,
-	24, 24, 25, 26, 27, 27, 27, 28, 29, 29,
-	30, 30, 30, 31, 34, 34, 33, 33,
+	24, 24, 25, 26, 31, 31, 31, 30, 27, 27,
+	28, 28, 28, 29, 34, 34, 33, 33,
 }
 
 var yyR2 = [...]int8{
@@ -163,7 +163,7 @@ var yyR2 = [...]int8{
 	2, 3, 1, 3, 1, 3, 1, 1, 1, 1,
 	1, 1, 1, 0, 2, 5, 4, 0, 2, 6,
 	3, 0, 1, 3, 5, 3, 0, 2, 5, 5,
-	0, 2, 4, 4, 0, 1, 3, 2, 0, 3,
+	0, 2, 4, 4, 0, 1, 3, 3, 0, 3,
 	0, 1, 3, 2, 0, 1, 0, 1,
 }
 
@@ -176,9 +176,9 @@ var yyChk = [...]int16{
 	8, 9, 10, 11, -21, -24, -24, 14, 22, -14,
 	-2, -33, 23, -9, -10, 18, 12, 4, 7, 22,
 	-20, -2, 22, -25, -2, 22, 17, 22, -17, 13,
-	19, 20, -9, -26, 15, 13, -10, 12, 23, -29,
-	15, -27, -28, -2, 23, 23, -30, -31, -2, -34,
-	24, -9, 16, 24, -9, 16, -28, -31,
+	19, 20, -9, -26, 15, 13, -10, 12, 23, -27,
+	15, -31, -30, -2, 23, 23, -28, -29, -2, -34,
+	24, -9, 16, 24, -9, 16, -30, 13, -29,
 }
 
 var yyDef = [...]int8{
@@ -192,7 +192,7 @@ var yyDef = [...]int8{
 	47, 0, 48, 51, 0, 49, 0, 39, 43, 40,
 	0, 0, 0, 58, 54, 0, 23, 25, 45, 0,
 	60, 64, 55, 0, 36, 52, 0, 61, 0, 0,
-	65, 57, 59, 0, 63, 53, 56, 62,
+	65, 0, 59, 0, 63, 53, 56, 57, 62,
 }
 
 var yyTok1 = [...]int8{
@@ -942,11 +942,11 @@ yydefault:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_args, yyDollar[3].method_results)
+				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_fields, yyDollar[3].method_results)
 			}
 			yyVAL.method = &ast.Method{
 				Name:    yyDollar[1].ident,
-				Args:    yyDollar[2].method_args,
+				Args:    yyDollar[2].method_fields,
 				Results: yyDollar[3].method_results,
 			}
 		}
@@ -954,34 +954,41 @@ yydefault:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method_args", yyDollar[2].method_args)
+				fmt.Println("method_args", yyDollar[2].method_fields)
 			}
-			yyVAL.method_args = yyDollar[2].method_args
+			yyVAL.method_fields = yyDollar[2].method_fields
 		}
 	case 54:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.method_args = nil
+			yyVAL.method_fields = nil
 		}
 	case 55:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.method_args = []*ast.MethodArg{yyDollar[1].method_arg}
+			if debugParser {
+				fmt.Println("method fields", yyDollar[1].method_field)
+			}
+			yyVAL.method_fields = []*ast.MethodField{yyDollar[1].method_field}
 		}
 	case 56:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			yyVAL.method_args = append(yyDollar[1].method_args, yyDollar[3].method_arg)
+			if debugParser {
+				fmt.Println("method fields", yyDollar[1].method_fields, yyDollar[3].method_field)
+			}
+			yyVAL.method_fields = append(yyDollar[1].method_fields, yyDollar[3].method_field)
 		}
 	case 57:
-		yyDollar = yyS[yypt-2 : yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method arg", yyDollar[1].ident, yyDollar[2].type_)
+				fmt.Println("method field", yyDollar[1].ident, yyDollar[2].type_, yyDollar[3].integer)
 			}
-			yyVAL.method_arg = &ast.MethodArg{
+			yyVAL.method_field = &ast.MethodField{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
+				Tag:  yyDollar[3].integer,
 			}
 		}
 	case 58:

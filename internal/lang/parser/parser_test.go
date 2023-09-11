@@ -415,7 +415,7 @@ func TestParse_Parse__should_parse_empty_method(t *testing.T) {
 func TestParse_Parse__should_parse_method_args(t *testing.T) {
 	p := newParser()
 	s := `service Service {
-		method(a bool, b int64, c string);
+		method(a bool 1, b int64 2, c string 3);
 	}`
 
 	file, err := p.Parse(s)

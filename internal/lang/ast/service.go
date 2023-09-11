@@ -7,16 +7,17 @@ type Service struct {
 
 type Method struct {
 	Name    string
-	Args    []*MethodArg
+	Args    []*MethodField
 	Results []*MethodResult
-}
-
-type MethodArg struct {
-	Name string
-	Type *Type
 }
 
 type MethodResult struct {
 	Name string
 	Type *Type
+}
+
+type MethodField struct {
+	Name string
+	Type *Type
+	Tag  int
 }
