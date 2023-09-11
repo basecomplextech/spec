@@ -12,19 +12,11 @@ type Method struct {
 	Channel *MethodChannel // Maybe nil
 }
 
-type MethodField struct {
-	Name string
-	Type *Type
-	Tag  int
-}
-
-type MethodFields []*MethodField
-
 // MethodInput is a union type for method inputs.
 //
 //	MethodInput:
 //	| Reference
-//	| MethodFields
+//	| Fields
 //	| nil
 type MethodInput interface{}
 
@@ -32,7 +24,7 @@ type MethodInput interface{}
 //
 //	MethodOutput:
 //	| Reference
-//	| MethodFields
+//	| Fields
 //	| nil
 type MethodOutput interface{}
 

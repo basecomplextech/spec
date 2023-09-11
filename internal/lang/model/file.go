@@ -98,6 +98,35 @@ func (f *File) lookupType(name string) (*Definition, bool) {
 	return def, ok
 }
 
+// internal
+
+func (f *File) resolveImports(getPackage func(string) (*Package, error)) error {
+	for _, imp := range f.Imports {
+		if err := imp.resolve(getPackage); err != nil {
+			return fmt.Errorf("%v: %w", f.Name, err)
+		}
+	}
+	return nil
+}
+
+func (f *File) resolve() error {
+	for _, def := range f.Definitions {
+		if err := def.resolve(f); err != nil {
+			return fmt.Errorf("%v: %w", f.Name, err)
+		}
+	}
+	return nil
+}
+
+func (f *File) resolved() error {
+	for _, def := range f.Definitions {
+		if err := def.resolved(); err != nil {
+			return fmt.Errorf("%v: %w", f.Name, err)
+		}
+	}
+	return nil
+}
+
 func (f *File) validate() error {
 	for _, def := range f.Definitions {
 		if err := def.validate(); err != nil {
@@ -146,9 +175,16 @@ func (imp *Import) LookupType(name string) (*Definition, bool) {
 	return imp.Package.LookupType(name)
 }
 
-func (imp *Import) Resolve(pkg *Package) error {
+// internal
+
+func (imp *Import) resolve(getPackage func(string) (*Package, error)) error {
 	if imp.Resolved {
 		return fmt.Errorf("import already resolved: %v", imp.ID)
+	}
+
+	pkg, err := getPackage(imp.ID)
+	if err != nil {
+		return err
 	}
 
 	imp.Package = pkg

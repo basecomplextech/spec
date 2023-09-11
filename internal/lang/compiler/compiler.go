@@ -130,147 +130,19 @@ func (c *compiler) compilePackage(id string, path string) (*model.Package, error
 	}
 	c.packages[id] = pkg
 
-	if err := c._resolveImports(pkg); err != nil {
+	if err := pkg.ResolveImports(c.getPackage); err != nil {
 		return nil, err
 	}
-	if err := c._resolveTypes(pkg); err != nil {
+	if err := pkg.ResolveTypes(); err != nil {
 		return nil, err
 	}
-	if err := c._resolved(pkg); err != nil {
+	if err := pkg.Resolved(); err != nil {
 		return nil, err
 	}
 
 	// Done
 	pkg.State = model.PackageCompiled
 	return pkg, nil
-}
-
-func (c *compiler) _resolveImports(pkg *model.Package) error {
-	for _, file := range pkg.Files {
-		for _, imp := range file.Imports {
-			if err := c._resolveImport(imp); err != nil {
-				return fmt.Errorf("%v/%v: %w", pkg.Name, file.Name, err)
-			}
-		}
-	}
-	return nil
-}
-
-func (c *compiler) _resolveImport(imp *model.Import) error {
-	id := imp.ID
-
-	pkg, err := c.getPackage(id)
-	if err != nil {
-		return err
-	}
-
-	return imp.Resolve(pkg)
-}
-
-func (c *compiler) _resolveTypes(pkg *model.Package) error {
-	for _, file := range pkg.Files {
-		for _, def := range file.Definitions {
-			if err := c._resolveDefinition(file, def); err != nil {
-				return fmt.Errorf("%v/%v: %w", pkg.Name, file.Name, err)
-			}
-		}
-	}
-	return nil
-}
-
-func (c *compiler) _resolveDefinition(file *model.File, def *model.Definition) error {
-	switch def.Type {
-	case model.DefinitionMessage:
-		return c._resolveMessage(file, def)
-	case model.DefinitionStruct:
-		return c._resolveStruct(file, def)
-	case model.DefinitionService:
-		return c._resolveService(file, def)
-	}
-	return nil
-}
-
-func (c *compiler) _resolveMessage(file *model.File, def *model.Definition) error {
-	for _, field := range def.Message.Fields {
-		if err := c._resolveType(file, field.Type); err != nil {
-			return fmt.Errorf("%v.%v: %w", def.Name, field.Name, err)
-		}
-	}
-	return nil
-}
-
-func (c *compiler) _resolveStruct(file *model.File, def *model.Definition) error {
-	for _, field := range def.Struct.Fields {
-		if err := c._resolveType(file, field.Type); err != nil {
-			return fmt.Errorf("%v.%v: %w", def.Name, field.Name, err)
-		}
-	}
-	return nil
-}
-
-func (c *compiler) _resolveService(file *model.File, def *model.Definition) error {
-	for _, method := range def.Service.Methods {
-		for _, arg := range method.Args {
-			if err := c._resolveType(file, arg.Type); err != nil {
-				return fmt.Errorf("%v.%v %v: %w", def.Name, method.Name, arg.Name, err)
-			}
-		}
-		for _, result := range method.Results {
-			if err := c._resolveType(file, result.Type); err != nil {
-				return fmt.Errorf("%v.%v %v: %w", def.Name, method.Name, result.Name, err)
-			}
-		}
-	}
-	return nil
-}
-
-func (c *compiler) _resolveType(file *model.File, type_ *model.Type) error {
-	switch type_.Kind {
-	case model.KindList:
-		return c._resolveType(file, type_.Element)
-
-	case model.KindReference:
-		if type_.ImportName == "" {
-			// Local type
-
-			pkg := file.Package
-			def, ok := pkg.LookupType(type_.Name)
-			if !ok {
-				return fmt.Errorf("type not found: %v", type_.Name)
-			}
-			type_.Resolve(def, nil)
-
-		} else {
-			// Imported type
-
-			imp, ok := file.LookupImport(type_.ImportName)
-			if !ok {
-				return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
-			}
-			def, ok := imp.LookupType(type_.Name)
-			if !ok {
-				return fmt.Errorf("type not found: %v.%v", type_.ImportName, type_.Name)
-			}
-			type_.Resolve(def, imp)
-		}
-	}
-	return nil
-}
-
-// resolved
-
-func (c *compiler) _resolved(pkg *model.Package) error {
-	for _, file := range pkg.Files {
-		for _, def := range file.Definitions {
-			switch def.Type {
-			case model.DefinitionService:
-				if err := def.Service.Resolved(); err != nil {
-					return fmt.Errorf("%v/%v: %w", pkg.Name, file.Name, err)
-				}
-			}
-		}
-	}
-	return nil
 }
 
 // private

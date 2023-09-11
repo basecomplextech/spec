@@ -35,9 +35,9 @@ import (
 	enum_value  *ast.EnumValue
 	enum_values []*ast.EnumValue
 
-	// Message
-	message_field  *ast.MessageField
-	message_fields []*ast.MessageField
+	// Field
+	field  *ast.Field
+	fields ast.Fields
 
 	// Struct
 	struct_field  *ast.StructField
@@ -50,8 +50,8 @@ import (
 	method_input	ast.MethodInput
 	method_output	ast.MethodOutput
 	method_channel	*ast.MethodChannel
-	method_field	*ast.MethodField
-	method_fields	ast.MethodFields
+	method_field	*ast.Field
+	method_fields	ast.Fields
 }
 
 // keywords
@@ -97,9 +97,11 @@ import (
 %type <enum_values> enum_values
 
 // message
-%type <definition>      message
-%type <message_field>   message_field
-%type <message_fields> 	message_fields
+%type <definition>	message
+
+// field
+%type <field>	field
+%type <fields> 	fields
 
 // struct
 %type <definition>      struct
@@ -116,9 +118,9 @@ import (
 %type <method_channel>  method_channel
 %type <type_>  			method_channel_in
 %type <type_>  			method_channel_out
-%type <method_field>	method_field
-%type <method_fields>	method_fields
-%type <method_fields>	method_field_list
+%type <field>			method_field
+%type <fields>			method_fields
+%type <fields>			method_field_list
 
 %left METHOD_OUTPUT
 
@@ -402,7 +404,7 @@ enum_values:
 
 // message
 
-message: MESSAGE IDENT '{' message_fields semi_opt '}' 
+message: MESSAGE IDENT '{' fields semi_opt '}' 
 	{ 
 		if debugParser {
 			fmt.Println("message", $2, $4)
@@ -417,31 +419,31 @@ message: MESSAGE IDENT '{' message_fields semi_opt '}'
 		}
 	};
 
-message_field: field_name type INTEGER
+field: field_name type INTEGER
 	{
 		if debugParser {
 			fmt.Println("message field", $1, $2, $3)
 		}
-		$$ = &ast.MessageField{
+		$$ = &ast.Field{
 			Name: $1,
 			Type: $2,
 			Tag: $3,
 		}
 	};
 
-message_fields:
+fields:
 	// Empty
 	{
 		$$ = nil
 	}
-	| message_field
+	| field
 	{
 		if debugParser {
 			fmt.Println("message fields", $1)
 		}
-		$$ = []*ast.MessageField{$1}
+		$$ = []*ast.Field{$1}
 	}
-	| message_fields ';' message_field
+	| fields ';' field
 	{
 		if debugParser {
 			fmt.Println("message fields", $1, $3)
@@ -665,7 +667,7 @@ method_fields:
 		if debugParser {
 			fmt.Println("method fields", $1)
 		}
-		$$ = []*ast.MethodField{$1}
+		$$ = []*ast.Field{$1}
 	}
 	| method_fields ',' method_field
 	{
@@ -681,7 +683,7 @@ method_field:
 		if debugParser {
 			fmt.Println("method field", $1, $2, $3)
 		}
-		$$ = &ast.MethodField{
+		$$ = &ast.Field{
 			Name: $1,
 			Type: $2,
 			Tag: $3,

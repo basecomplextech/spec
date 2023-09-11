@@ -234,7 +234,7 @@ func TestCompiler__should_compile_message(t *testing.T) {
 	def := pkg.Files[1].Definitions[0]
 	assert.Equal(t, model.DefinitionMessage, def.Type)
 	assert.NotNil(t, def.Message)
-	assert.Len(t, def.Message.Fields, 26)
+	assert.Len(t, def.Message.Fields.List, 26)
 }
 
 func TestCompiler__should_compile_message_field_names(t *testing.T) {
@@ -249,10 +249,10 @@ func TestCompiler__should_compile_message_field_names(t *testing.T) {
 	require.Equal(t, model.DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldNames, 26)
-	assert.Contains(t, msg.FieldNames, "bool")
-	assert.Contains(t, msg.FieldNames, "enum1")
-	assert.Contains(t, msg.FieldNames, "byte")
+	require.Len(t, def.Message.Fields.List, 26)
+	assert.Contains(t, msg.Fields.Names, "bool")
+	assert.Contains(t, msg.Fields.Names, "enum1")
+	assert.Contains(t, msg.Fields.Names, "byte")
 }
 
 func TestCompiler__should_compile_message_field_tags(t *testing.T) {
@@ -267,10 +267,10 @@ func TestCompiler__should_compile_message_field_tags(t *testing.T) {
 	require.Equal(t, model.DefinitionMessage, def.Type)
 
 	msg := def.Message
-	require.Len(t, def.Message.FieldTags, 26)
-	assert.Contains(t, msg.FieldTags, 1)
-	assert.Contains(t, msg.FieldTags, 2)
-	assert.Contains(t, msg.FieldTags, 10)
+	require.Len(t, def.Message.Fields.Tags, 26)
+	assert.Contains(t, msg.Fields.Tags, 1)
+	assert.Contains(t, msg.Fields.Tags, 2)
+	assert.Contains(t, msg.Fields.Tags, 10)
 }
 
 // Structs
@@ -286,7 +286,7 @@ func TestCompiler__should_compile_struct(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Struct"]
 	assert.Equal(t, model.DefinitionStruct, def.Type)
 	assert.NotNil(t, def.Struct)
-	assert.Len(t, def.Struct.Fields, 2)
+	assert.Equal(t, def.Struct.Fields.Len(), 2)
 }
 
 func TestCompiler__should_compile_struct_field_names(t *testing.T) {
@@ -302,10 +302,10 @@ func TestCompiler__should_compile_struct_field_names(t *testing.T) {
 
 	str := def.Struct
 	require.NotNil(t, str)
-	require.Len(t, str.Fields, 2)
+	require.Equal(t, str.Fields.Len(), 2)
 
-	assert.Contains(t, str.FieldNames, "key")
-	assert.Contains(t, str.FieldNames, "value")
+	assert.True(t, str.Fields.Contains("key"))
+	assert.True(t, str.Fields.Contains("value"))
 }
 
 // Types
@@ -321,7 +321,7 @@ func TestCompiler__should_compile_builtin_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["bool"]
+	field := def.Message.Fields.Names["bool"]
 	require.NotNil(t, field)
 
 	type_ := field.Type
@@ -340,7 +340,7 @@ func TestCompiler__should_compile_reference_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["submessage"]
+	field := def.Message.Fields.Names["submessage"]
 	require.NotNil(t, field)
 
 	// Resolved
@@ -362,7 +362,7 @@ func TestCompiler__should_compile_imported_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["submessage1"]
+	field := def.Message.Fields.Names["submessage1"]
 	require.NotNil(t, field)
 
 	// Resolved
@@ -385,7 +385,7 @@ func TestCompiler__should_compile_list_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["structs"]
+	field := def.Message.Fields.Names["structs"]
 	require.NotNil(t, field)
 
 	// List
@@ -409,7 +409,7 @@ func TestCompiler__should_compile_list_reference_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["submessages"]
+	field := def.Message.Fields.Names["submessages"]
 	require.NotNil(t, field)
 
 	// List
@@ -435,7 +435,7 @@ func TestCompiler__should_compile_list_imported_type(t *testing.T) {
 	def := pkg.Files[1].DefinitionNames["Message"]
 	require.NotNil(t, def.Message)
 
-	field := def.Message.FieldNames["submessages1"]
+	field := def.Message.Fields.Names["submessages1"]
 	require.NotNil(t, field)
 
 	// List

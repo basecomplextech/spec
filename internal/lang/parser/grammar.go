@@ -35,9 +35,9 @@ type yySymType struct {
 	enum_value  *ast.EnumValue
 	enum_values []*ast.EnumValue
 
-	// Message
-	message_field  *ast.MessageField
-	message_fields []*ast.MessageField
+	// Field
+	field  *ast.Field
+	fields ast.Fields
 
 	// Struct
 	struct_field  *ast.StructField
@@ -50,8 +50,8 @@ type yySymType struct {
 	method_input   ast.MethodInput
 	method_output  ast.MethodOutput
 	method_channel *ast.MethodChannel
-	method_field   *ast.MethodField
-	method_fields  ast.MethodFields
+	method_field   *ast.Field
+	method_fields  ast.Fields
 }
 
 const ANY = 57346
@@ -839,14 +839,14 @@ yydefault:
 		yyDollar = yyS[yypt-6 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("message", yyDollar[2].ident, yyDollar[4].message_fields)
+				fmt.Println("message", yyDollar[2].ident, yyDollar[4].fields)
 			}
 			yyVAL.definition = &ast.Definition{
 				Type: ast.DefinitionMessage,
 				Name: yyDollar[2].ident,
 
 				Message: &ast.Message{
-					Fields: yyDollar[4].message_fields,
+					Fields: yyDollar[4].fields,
 				},
 			}
 		}
@@ -856,7 +856,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("message field", yyDollar[1].ident, yyDollar[2].type_, yyDollar[3].integer)
 			}
-			yyVAL.message_field = &ast.MessageField{
+			yyVAL.field = &ast.Field{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
 				Tag:  yyDollar[3].integer,
@@ -865,23 +865,23 @@ yydefault:
 	case 41:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.message_fields = nil
+			yyVAL.fields = nil
 		}
 	case 42:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("message fields", yyDollar[1].message_field)
+				fmt.Println("message fields", yyDollar[1].field)
 			}
-			yyVAL.message_fields = []*ast.MessageField{yyDollar[1].message_field}
+			yyVAL.fields = []*ast.Field{yyDollar[1].field}
 		}
 	case 43:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("message fields", yyDollar[1].message_fields, yyDollar[3].message_field)
+				fmt.Println("message fields", yyDollar[1].fields, yyDollar[3].field)
 			}
-			yyVAL.message_fields = append(yyVAL.message_fields, yyDollar[3].message_field)
+			yyVAL.fields = append(yyVAL.fields, yyDollar[3].field)
 		}
 	case 44:
 		yyDollar = yyS[yypt-5 : yypt+1]
@@ -1011,9 +1011,9 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method input", yyDollar[2].method_fields)
+				fmt.Println("method input", yyDollar[2].fields)
 			}
-			yyVAL.method_input = yyDollar[2].method_fields
+			yyVAL.method_input = yyDollar[2].fields
 		}
 	case 57:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -1027,9 +1027,9 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method output", yyDollar[2].method_fields)
+				fmt.Println("method output", yyDollar[2].fields)
 			}
-			yyVAL.method_output = yyDollar[2].method_fields
+			yyVAL.method_output = yyDollar[2].fields
 		}
 	case 59:
 		yyDollar = yyS[yypt-4 : yypt+1]
@@ -1074,30 +1074,30 @@ yydefault:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method field list", yyDollar[1].method_fields)
+				fmt.Println("method field list", yyDollar[1].fields)
 			}
-			yyVAL.method_fields = yyDollar[1].method_fields
+			yyVAL.fields = yyDollar[1].fields
 		}
 	case 65:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.method_fields = nil
+			yyVAL.fields = nil
 		}
 	case 66:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method fields", yyDollar[1].method_field)
+				fmt.Println("method fields", yyDollar[1].field)
 			}
-			yyVAL.method_fields = []*ast.MethodField{yyDollar[1].method_field}
+			yyVAL.fields = []*ast.Field{yyDollar[1].field}
 		}
 	case 67:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			if debugParser {
-				fmt.Println("method fields", yyDollar[1].method_fields, yyDollar[3].method_field)
+				fmt.Println("method fields", yyDollar[1].fields, yyDollar[3].field)
 			}
-			yyVAL.method_fields = append(yyDollar[1].method_fields, yyDollar[3].method_field)
+			yyVAL.fields = append(yyDollar[1].fields, yyDollar[3].field)
 		}
 	case 68:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -1105,7 +1105,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("method field", yyDollar[1].ident, yyDollar[2].type_, yyDollar[3].integer)
 			}
-			yyVAL.method_field = &ast.MethodField{
+			yyVAL.field = &ast.Field{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
 				Tag:  yyDollar[3].integer,

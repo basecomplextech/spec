@@ -86,15 +86,44 @@ func NewPackage(id string, path string, pfiles []*ast.File) (*Package, error) {
 	return pkg, nil
 }
 
+func (p *Package) ResolveImports(getPackage func(string) (*Package, error)) error {
+	for _, file := range p.Files {
+		if err := file.resolveImports(getPackage); err != nil {
+			return fmt.Errorf("%v: %w", p.Name, err)
+		}
+	}
+	return nil
+}
+
+func (p *Package) ResolveTypes() error {
+	for _, file := range p.Files {
+		if err := file.resolve(); err != nil {
+			return fmt.Errorf("%v: %w", p.Name, err)
+		}
+	}
+	return nil
+}
+
+func (p *Package) Resolved() error {
+	for _, file := range p.Files {
+		if err := file.resolved(); err != nil {
+			return fmt.Errorf("%v: %w", p.Name, err)
+		}
+	}
+	return nil
+}
+
+func (p *Package) LookupType(name string) (*Definition, bool) {
+	def, ok := p.DefinitionNames[name]
+	return def, ok
+}
+
+// internal
+
 func (p *Package) getType(name string) (*Definition, error) {
 	def, ok := p.DefinitionNames[name]
 	if !ok {
 		return nil, fmt.Errorf("type not found: %v", name)
 	}
 	return def, nil
-}
-
-func (p *Package) LookupType(name string) (*Definition, bool) {
-	def, ok := p.DefinitionNames[name]
-	return def, ok
 }

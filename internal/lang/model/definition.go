@@ -91,6 +91,30 @@ func newDefinition(pkg *Package, file *File, pdef *ast.Definition) (*Definition,
 	return def, nil
 }
 
+func (d *Definition) resolve(file *File) error {
+	switch d.Type {
+	case DefinitionMessage:
+		return d.Message.resolve(file)
+	case DefinitionStruct:
+		return d.Struct.resolve(file)
+	case DefinitionService:
+		return d.Service.resolve(file)
+	}
+	return nil
+}
+
+func (d *Definition) resolved() error {
+	switch d.Type {
+	case DefinitionMessage:
+		return d.Message.resolved()
+	case DefinitionStruct:
+		return d.Struct.resolved()
+	case DefinitionService:
+		return d.Service.resolved()
+	}
+	return nil
+}
+
 func (d *Definition) validate() error {
 	switch d.Type {
 	case DefinitionEnum:

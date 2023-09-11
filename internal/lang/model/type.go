@@ -92,7 +92,40 @@ func (t *Type) builtin() bool {
 	return ok
 }
 
-func (t *Type) Resolve(def *Definition, impOrNil *Import) {
+func (t *Type) resolve(file *File) error {
+	switch t.Kind {
+	case KindList:
+		return t.Element.resolve(file)
+
+	case KindReference:
+		if t.ImportName == "" {
+			// Local type
+
+			pkg := file.Package
+			def, ok := pkg.LookupType(t.Name)
+			if !ok {
+				return fmt.Errorf("type not found: %v", t.Name)
+			}
+			t._resolve(def, nil)
+
+		} else {
+			// Imported type
+
+			imp, ok := file.LookupImport(t.ImportName)
+			if !ok {
+				return fmt.Errorf("type not found: %v.%v", t.ImportName, t.Name)
+			}
+			def, ok := imp.LookupType(t.Name)
+			if !ok {
+				return fmt.Errorf("type not found: %v.%v", t.ImportName, t.Name)
+			}
+			t._resolve(def, imp)
+		}
+	}
+	return nil
+}
+
+func (t *Type) _resolve(def *Definition, impOrNil *Import) {
 	if t.Kind != KindReference {
 		panic("type already resolved")
 	}

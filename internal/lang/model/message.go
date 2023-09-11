@@ -9,67 +9,35 @@ import (
 type Message struct {
 	Def *Definition
 
-	Fields     []*MessageField
-	FieldTags  map[int]*MessageField
-	FieldNames map[string]*MessageField
+	Fields *Fields
 }
 
 func newMessage(def *Definition, pmsg *ast.Message) (*Message, error) {
 	msg := &Message{
 		Def: def,
-
-		FieldNames: make(map[string]*MessageField),
-		FieldTags:  make(map[int]*MessageField),
 	}
 
-	// Create fields
-	for _, pfield := range pmsg.Fields {
-		field, err := newMessageField(pfield)
-		if err != nil {
-			return nil, fmt.Errorf("invalid field %q: %w", pfield.Name, err)
-		}
-
-		_, ok := msg.FieldTags[field.Tag]
-		if ok {
-			return nil, fmt.Errorf("invalid field %q: duplicate tag %d", field.Name, field.Tag)
-		}
-
-		_, ok = msg.FieldNames[field.Name]
-		if ok {
-			return nil, fmt.Errorf("duplicate field %q", field.Name)
-		}
-
-		msg.Fields = append(msg.Fields, field)
-		msg.FieldNames[field.Name] = field
-		msg.FieldTags[field.Tag] = field
+	var err error
+	msg.Fields, err = newFields(pmsg.Fields)
+	if err != nil {
+		return nil, err
 	}
 
 	return msg, nil
 }
 
-// Field
+// internal
 
-type MessageField struct {
-	Name string
-	Tag  int
-	Type *Type
+func (m *Message) resolve(file *File) error {
+	if err := m.Fields.resolve(file); err != nil {
+		return fmt.Errorf("%v.%w", m.Def.Name, err)
+	}
+	return nil
 }
 
-func newMessageField(pfield *ast.MessageField) (*MessageField, error) {
-	tag := pfield.Tag
-	if tag == 0 {
-		return nil, fmt.Errorf("zero tag")
+func (m *Message) resolved() error {
+	if err := m.Fields.resolved(); err != nil {
+		return fmt.Errorf("%v.%w", m.Def.Name, err)
 	}
-
-	type_, err := newType(pfield.Type)
-	if err != nil {
-		return nil, err
-	}
-
-	f := &MessageField{
-		Name: pfield.Name,
-		Tag:  pfield.Tag,
-		Type: type_,
-	}
-	return f, nil
+	return nil
 }
