@@ -397,7 +397,7 @@ enum_values:
 
 // message
 
-message: MESSAGE IDENT '{' message_fields '}' 
+message: MESSAGE IDENT '{' message_fields semi_opt '}' 
 	{ 
 		if debugParser {
 			fmt.Println("message", $2, $4)
@@ -412,7 +412,7 @@ message: MESSAGE IDENT '{' message_fields '}'
 		}
 	};
 
-message_field: field_name type INTEGER ';'
+message_field: field_name type INTEGER
 	{
 		if debugParser {
 			fmt.Println("message field", $1, $2, $3)
@@ -429,13 +429,21 @@ message_fields:
 	{
 		$$ = nil
 	}
-	| message_fields message_field
+	| message_field
 	{
 		if debugParser {
-			fmt.Println("message fields", $1, $2)
+			fmt.Println("message fields", $1)
 		}
-		$$ = append($$, $2)
+		$$ = []*ast.MessageField{$1}
+	}
+	| message_fields ';' message_field
+	{
+		if debugParser {
+			fmt.Println("message fields", $1, $3)
+		}
+		$$ = append($$, $3)
 	};
+
 
 // struct
 
@@ -542,7 +550,7 @@ method: field_name method_arg_list method_result_list ';'
 // method args	
 
 method_arg_list:
-	'(' method_args ')'
+	'(' method_args comma_opt ')'
 	{
 		if debugParser {
 			fmt.Println("method_args", $2)
@@ -614,3 +622,19 @@ method_result:
 			Type: $2,
 		}
 	};
+
+// util
+
+comma_opt:
+	// Empty
+	{}
+	| ','
+	{}
+	;
+
+semi_opt:
+	// Empty
+	{}
+	| ';'
+	{}
+	;
