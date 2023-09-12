@@ -60,7 +60,9 @@ func (w *writer) parseMessage(def *model.Definition) error {
 }
 
 func (w *writer) messageFields(def *model.Definition) error {
-	for _, field := range def.Message.Fields {
+	fields := def.Message.Fields.List
+
+	for _, field := range fields {
 		if err := w.messageField(def, field); err != nil {
 			return err
 		}
@@ -70,7 +72,7 @@ func (w *writer) messageFields(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageField(def *model.Definition, field *model.MessageField) error {
+func (w *writer) messageField(def *model.Definition, field *model.Field) error {
 	fieldName := messageFieldName(field)
 	typeName := typeRefName(field.Type)
 
@@ -149,7 +151,9 @@ func (w *writer) messageField(def *model.Definition, field *model.MessageField) 
 }
 
 func (w *writer) messageHasFields(def *model.Definition) error {
-	for _, field := range def.Message.Fields {
+	fields := def.Message.Fields.List
+
+	for _, field := range fields {
 		if err := w.messageHasField(def, field); err != nil {
 			return err
 		}
@@ -159,7 +163,7 @@ func (w *writer) messageHasFields(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageHasField(def *model.Definition, field *model.MessageField) error {
+func (w *writer) messageHasField(def *model.Definition, field *model.Field) error {
 	fieldName := messageFieldName(field)
 	tag := field.Tag
 
@@ -259,7 +263,9 @@ func (w *writer) messageWriterBuild(def *model.Definition) error {
 }
 
 func (w *writer) messageWriterFields(def *model.Definition) error {
-	for _, field := range def.Message.Fields {
+	fields := def.Message.Fields.List
+
+	for _, field := range fields {
 		if err := w.messageWriterField(def, field); err != nil {
 			return err
 		}
@@ -269,7 +275,7 @@ func (w *writer) messageWriterFields(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterField(def *model.Definition, field *model.MessageField) error {
+func (w *writer) messageWriterField(def *model.Definition, field *model.Field) error {
 	fname := messageFieldName(field)
 	tname := inTypeName(field.Type)
 	wname := fmt.Sprintf("%vWriter", def.Name)
@@ -394,6 +400,6 @@ func (w *writer) messageWriterField(def *model.Definition, field *model.MessageF
 
 // util
 
-func messageFieldName(field *model.MessageField) string {
+func messageFieldName(field *model.Field) string {
 	return toUpperCamelCase(field.Name)
 }

@@ -27,7 +27,8 @@ func (w *writer) structDef(def *model.Definition) error {
 	w.line()
 	w.linef("type %v struct {", def.Name)
 
-	for _, field := range def.Struct.Fields {
+	fields := def.Struct.Fields.Values()
+	for _, field := range fields {
 		name := structFieldName(field)
 		typ := typeName(field.Type)
 		goTag := fmt.Sprintf("`json:\"%v\"`", field.Name)
@@ -65,7 +66,7 @@ func (w *writer) parseStruct(def *model.Definition) error {
 	w.line(`// Decode in reverse order`)
 	w.line()
 
-	fields := def.Struct.Fields
+	fields := def.Struct.Fields.Values()
 	for i := len(fields) - 1; i >= 0; i-- {
 		field := fields[i]
 		fieldName := structFieldName(field)
@@ -91,7 +92,8 @@ func (w *writer) writeStruct(def *model.Definition) error {
 	w.line(`var err error`)
 	w.line()
 
-	for _, field := range def.Struct.Fields {
+	fields := def.Struct.Fields.Values()
+	for _, field := range fields {
 		fieldName := structFieldName(field)
 		writeFunc := typeWriteFunc(field.Type)
 

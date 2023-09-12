@@ -125,9 +125,10 @@ func (w *writer) definitions(file *model.File) error {
 			}
 		case model.DefinitionService:
 			if !w.skipRPC {
-				if err := w.service(def); err != nil {
-					return err
-				}
+				// TODO: Uncomment
+				// if err := w.service(def); err != nil {
+				// 	return err
+				// }
 			}
 		}
 	}
