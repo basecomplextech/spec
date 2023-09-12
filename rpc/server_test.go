@@ -8,6 +8,7 @@ import (
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
+	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/stretchr/testify/assert"
 )
@@ -44,10 +45,14 @@ func testServer(t tests.T, handle HandleFunc) *server {
 func testEchoServer(t tests.T) *server {
 	handle := func(cancel <-chan struct{}, ch ServerChannel, req prpc.Request) (*alloc.Buffer, status.Status) {
 		call := req.Calls().Get(0)
-		msg := string(call.Args().Unwrap())
+		msg := call.Args().String().Unwrap()
 
 		buf := alloc.NewBuffer()
-		buf.WriteString(msg)
+		w := spec.NewValueWriterBuffer(buf)
+		w.String(msg)
+		if _, err := w.Build(); err != nil {
+			return nil, status.WrapError(err)
+		}
 		return buf, status.OK
 	}
 
@@ -60,7 +65,7 @@ func testEchoRequest(t tests.T, msg string) prpc.Request {
 	{
 		call := calls.Add()
 		call.Method("echo")
-		call.Args([]byte(msg))
+		call.Args().String(msg)
 		if err := call.End(); err != nil {
 			t.Fatal(err)
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
+	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,13 +47,12 @@ func TestClient_Request__should_send_request_receive_response(t *testing.T) {
 	}
 	defer ch.Free()
 
-	buf, st := ch.Response(nil)
+	result, st := ch.Response(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg1 := string(buf.Bytes())
-	assert.Equal(t, msg, msg1)
+	assert.Equal(t, msg, result.Unwrap().String().Unwrap())
 }
 
 // Send
@@ -181,7 +181,11 @@ func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 		}
 
 		buf := alloc.NewBuffer()
-		buf.WriteString("response")
+		w := spec.NewValueWriterBuffer(buf)
+		w.String("response")
+		if _, err := w.Build(); err != nil {
+			return nil, status.WrapError(err)
+		}
 		return buf, status.OK
 	}
 
@@ -204,13 +208,13 @@ func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 	_, st = ch.Receive(nil)
 	assert.Equal(t, status.End, st)
 
-	buf, st := ch.Response(nil)
+	result, st := ch.Response(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer buf.Free()
+	defer result.Release()
 
-	assert.Equal(t, []byte("response"), buf.Bytes())
+	assert.Equal(t, "response", result.Unwrap().String().Unwrap())
 }
 
 // Response
@@ -218,7 +222,11 @@ func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 func TestClient_Response__should_receive_server_response(t *testing.T) {
 	handle := func(cancel <-chan struct{}, ch ServerChannel, req prpc.Request) (*alloc.Buffer, status.Status) {
 		buf := alloc.NewBuffer()
-		buf.Write([]byte("hello, world"))
+		w := spec.NewValueWriterBuffer(buf)
+		w.String("hello, world")
+		if _, err := w.Build(); err != nil {
+			return nil, status.WrapError(err)
+		}
 		return buf, status.OK
 	}
 
@@ -232,13 +240,13 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	buf, st := ch.Response(nil)
+	result, st := ch.Response(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer buf.Free()
+	defer result.Release()
 
-	assert.Equal(t, []byte("hello, world"), buf.Bytes())
+	assert.Equal(t, "hello, world", result.Unwrap().String().Unwrap())
 }
 
 func TestClient_Response__should_skip_message(t *testing.T) {
@@ -249,7 +257,11 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 		}
 
 		buf := alloc.NewBuffer()
-		buf.Write([]byte("response"))
+		w := spec.NewValueWriterBuffer(buf)
+		w.String("response")
+		if _, err := w.Build(); err != nil {
+			return nil, status.WrapError(err)
+		}
 		return buf, status.OK
 	}
 
@@ -263,13 +275,13 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	buf, st := ch.Response(nil)
+	result, st := ch.Response(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer buf.Free()
+	defer result.Release()
 
-	assert.Equal(t, []byte("response"), buf.Bytes())
+	assert.Equal(t, "response", result.Unwrap().String().Unwrap())
 }
 
 // Full
@@ -296,7 +308,12 @@ func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 		}
 
 		buf := alloc.NewBuffer()
-		buf.Write([]byte("response"))
+		w := spec.NewValueWriterBuffer(buf)
+		w.String("response")
+		if _, err := w.Build(); err != nil {
+			return nil, status.WrapError(err)
+		}
+
 		return buf, status.OK
 	}
 
@@ -329,11 +346,11 @@ func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 	_, st = ch.Receive(nil)
 	assert.Equal(t, status.End, st)
 
-	buf, st := ch.Response(nil)
+	result, st := ch.Response(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer buf.Free()
+	defer result.Release()
 
-	assert.Equal(t, []byte("response"), buf.Bytes())
+	assert.Equal(t, "response", result.Unwrap().String().Unwrap())
 }

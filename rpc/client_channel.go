@@ -5,6 +5,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
+	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
@@ -24,7 +25,7 @@ type Channel interface {
 	Receive(cancel <-chan struct{}) ([]byte, status.Status)
 
 	// Response receives a response and returns its status and result if status is OK.
-	Response(cancel <-chan struct{}) (*alloc.Buffer, status.Status)
+	Response(cancel <-chan struct{}) (*ref.R[spec.Value], status.Status)
 
 	// Internal
 
@@ -238,7 +239,7 @@ func (ch *channel) Receive(cancel <-chan struct{}) ([]byte, status.Status) {
 }
 
 // Response receives a response and returns its status and result if status is OK.
-func (ch *channel) Response(cancel <-chan struct{}) (*alloc.Buffer, status.Status) {
+func (ch *channel) Response(cancel <-chan struct{}) (*ref.R[spec.Value], status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil, status.Closed
@@ -363,7 +364,7 @@ type channelState struct {
 	readError  status.Status
 
 	// temp result stores result until Response is called
-	result   *alloc.Buffer
+	result   *ref.R[spec.Value]
 	resultOK bool
 	resultSt status.Status
 }
@@ -415,7 +416,7 @@ func (s *channelState) reset() {
 	s.readError = status.None
 
 	if s.result != nil {
-		s.result.Free()
+		s.result.Release()
 		s.result = nil
 		s.resultOK = false
 		s.resultSt = status.None
@@ -429,7 +430,7 @@ func (s *channelState) readFail(st status.Status) {
 
 // util
 
-func parseResult(resp prpc.Response) (*alloc.Buffer, status.Status) {
+func parseResult(resp prpc.Response) (*ref.R[spec.Value], status.Status) {
 	st := parseStatus(resp.Status())
 	if !st.OK() {
 		return nil, st
@@ -437,5 +438,20 @@ func parseResult(resp prpc.Response) (*alloc.Buffer, status.Status) {
 
 	buf := alloc.NewBuffer()
 	buf.Write(resp.Result())
-	return buf, status.OK
+
+	ok := false
+	defer func() {
+		if !ok {
+			buf.Free()
+		}
+	}()
+
+	v, err := spec.NewValueErr(buf.Bytes())
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	ref := ref.NewFreer(v, buf)
+	ok = true
+	return ref, status.OK
 }

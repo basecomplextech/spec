@@ -34,7 +34,7 @@ func BenchmarkRequest(b *testing.B) {
 			b.Fatal(st)
 		}
 
-		result.Free()
+		result.Release()
 		ch.Free()
 	}
 
@@ -71,7 +71,7 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 				b.Fatal(st)
 			}
 
-			result.Free()
+			result.Release()
 			ch.Free()
 		}
 	})
@@ -137,9 +137,9 @@ func BenchmarkStream(b *testing.B) {
 		if !st.OK() {
 			b.Fatal(st)
 		}
-		defer result.Free()
+		defer result.Release()
 
-		assert.Equal(b, []byte("response"), result.Bytes())
+		assert.Equal(b, "response", result.Unwrap().String().Unwrap())
 	}
 
 	t1 := time.Now()

@@ -85,7 +85,7 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 				return WrapError(err)
 			}
 			if result != nil {
-				w1.Result(result.Bytes())
+				w1.Result().Any(result.Bytes())
 			}
 			if err := w1.End(); err != nil {
 				return WrapError(err)

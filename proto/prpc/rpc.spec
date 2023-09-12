@@ -24,14 +24,14 @@ message Request {
 
 message Call {
     method  string  1;
-    args    bytes   2;
+    args    any     2;
 }
 
 // Response
 
 message Response {
     status  Status  1;
-    result  bytes   2;
+    result  any     2;
 }
 
 message Status {
