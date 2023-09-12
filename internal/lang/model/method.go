@@ -7,37 +7,49 @@ import (
 )
 
 type Method struct {
-	Name string
+	Package *Package
+	File    *File
+	Service *Service
 
+	Name string
 	Sub  bool // Returns subservice
 	Chan bool // Returns channel
 
-	Input   MethodInput
-	Output  MethodOutput
+	Input   *Type // Message
+	Output  *Type // Message or service
 	Channel *MethodChannel
+
+	// Temp fields are transformed into input/output messages
+	Temp struct {
+		InputType   *Type
+		InputFields *Fields
+
+		OutputType   *Type
+		OutputFields *Fields
+	}
 }
 
-func newMethod(pm *ast.Method) (*Method, error) {
+func newMethod(pkg *Package, file *File, service *Service, pm *ast.Method) (*Method, error) {
 	m := &Method{
+		Package: pkg,
+		File:    file,
+		Service: service,
+
 		Name: pm.Name,
 	}
 
 	// Input
 	if pm.Input != nil {
-		input, err := newMethodInput(pm.Input)
-		if err != nil {
-			return nil, fmt.Errorf("invalid input: %w", err)
+		if err := makeMethodInput(m, pm.Input); err != nil {
+			return nil, fmt.Errorf("%v: %w", m.Name, err)
 		}
-		m.Input = input
 	}
 
 	// Output
 	if pm.Output != nil {
-		output, err := newMethodOutput(pm.Output)
-		if err != nil {
-			return nil, fmt.Errorf("invalid output: %w", err)
+		if err := makeMethodOutput(m, pm.Output); err != nil {
+			return nil, fmt.Errorf("%v: %w", m.Name, err)
 		}
-		m.Output = output
 	}
 
 	// Channel
@@ -52,18 +64,24 @@ func newMethod(pm *ast.Method) (*Method, error) {
 }
 
 func (m *Method) resolve(file *File) error {
-	if m.Input != nil {
-		if err := m.Input.resolve(file); err != nil {
+	if in := m.Temp.InputType; in != nil {
+		if err := in.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
-	if m.Output != nil {
-		if err := m.Output.resolve(file); err != nil {
+	if in := m.Temp.InputFields; in != nil {
+		if err := in.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
-	if m.Channel != nil {
-		if err := m.Channel.resolve(file); err != nil {
+
+	if out := m.Temp.OutputType; out != nil {
+		if err := out.resolve(file); err != nil {
+			return fmt.Errorf("%v: %w", m.Name, err)
+		}
+	}
+	if out := m.Temp.OutputFields; out != nil {
+		if err := out.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
@@ -72,39 +90,59 @@ func (m *Method) resolve(file *File) error {
 
 func (m *Method) resolved() error {
 	// Input
-	if m.Input != nil {
-		switch in := m.Input.(type) {
-		case *Type:
-			if in.Kind != KindMessage {
-				return fmt.Errorf("%v: single input must be a message, got %q instead",
-					m.Name, in.Kind)
-			}
-
-		case *Fields:
-			if err := in.resolved(); err != nil {
-				return err
-			}
+	if in := m.Temp.InputType; in != nil {
+		if in.Kind != KindMessage {
+			return fmt.Errorf("%v: single input must be a message, got %q instead", m.Name, in.Kind)
 		}
+
+		m.Temp.InputType = nil
+		m.Input = in
+	}
+	if in := m.Temp.InputFields; in != nil {
+		if err := in.resolved(); err != nil {
+			return err
+		}
+
+		name := methodRequestName(m)
+		msg, err := generateMessage(m.Package, m.File, name, in)
+		if err != nil {
+			return fmt.Errorf("%v: failed to generate request message: %w", m.Name, err)
+		}
+
+		m.Temp.InputFields = nil
+		m.Input = newTypeRef(msg.Def)
 	}
 
 	// Output
-	if m.Output != nil {
-		switch out := m.Output.(type) {
-		case *Type:
-			switch out.Kind {
-			case KindMessage:
-			case KindService:
-				m.Sub = true
-			default:
-				return fmt.Errorf("%v: single output must be a message or a service, got %q instead",
-					m.Name, out.Kind)
-			}
+	if out := m.Temp.OutputType; out != nil {
+		switch out.Kind {
+		case KindMessage:
+			m.Temp.OutputType = nil
+			m.Output = out
 
-		case *Fields:
-			if err := out.resolved(); err != nil {
-				return err
-			}
+		case KindService:
+			m.Sub = true
+			m.Temp.OutputType = nil
+			m.Output = out
+
+		default:
+			return fmt.Errorf("%v: single output must be a message or a service, got %q instead",
+				m.Name, out.Kind)
 		}
+	}
+	if out := m.Temp.OutputFields; out != nil {
+		if err := out.resolved(); err != nil {
+			return err
+		}
+
+		name := methodResponseName(m)
+		msg, err := generateMessage(m.Package, m.File, name, out)
+		if err != nil {
+			return fmt.Errorf("%v: failed to generate response message: %w", m.Name, err)
+		}
+
+		m.Temp.OutputFields = nil
+		m.Output = newTypeRef(msg.Def)
 	}
 
 	// Channel
@@ -118,51 +156,37 @@ func (m *Method) resolved() error {
 	return nil
 }
 
-// Input
+// Input/output
 
-// MethodInput is a union type for method input.
-//
-//	MethodInput:
-//	| *Type
-//	| *Fields
-//	| nil
-type MethodInput interface {
-	resolve(file *File) error
-}
-
-func newMethodInput(p ast.MethodInput) (MethodInput, error) {
+func makeMethodInput(m *Method, p ast.MethodInput) (err error) {
 	switch p := p.(type) {
 	case *ast.Type:
-		return newType(p)
+		m.Temp.InputType, err = newType(p)
+		return err
+
 	case ast.Fields:
-		return newFields(p)
+		m.Temp.InputFields, err = newFields(p)
+		return err
+
 	case nil:
-		return nil, nil
+		return nil
 	}
 
 	panic("unsupported method input")
 }
 
-// Output
-
-// MethodOutput is a union type for method output.
-//
-//	MethodOutput:
-//	| *Type
-//	| *Fields
-//	| nil
-type MethodOutput interface {
-	resolve(file *File) error
-}
-
-func newMethodOutput(p ast.MethodOutput) (MethodOutput, error) {
+func makeMethodOutput(m *Method, p ast.MethodOutput) (err error) {
 	switch p := p.(type) {
 	case *ast.Type:
-		return newType(p)
+		m.Temp.OutputType, err = newType(p)
+		return err
+
 	case ast.Fields:
-		return newFields(p)
+		m.Temp.OutputFields, err = newFields(p)
+		return err
+
 	case nil:
-		return nil, nil
+		return nil
 	}
 
 	panic("unsupported method output")
@@ -221,4 +245,20 @@ func (ch *MethodChannel) resolve(file *File) error {
 		}
 	}
 	return nil
+}
+
+// Request/Response
+
+func methodRequestName(m *Method) string {
+	service := m.Service.Def.Name
+	method := toUpperCamelCase(m.Name)
+
+	return fmt.Sprintf("%v%vRequest", service, method)
+}
+
+func methodResponseName(m *Method) string {
+	service := m.Service.Def.Name
+	method := toUpperCamelCase(m.Name)
+
+	return fmt.Sprintf("%v%vResponse", service, method)
 }

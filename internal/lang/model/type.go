@@ -87,6 +87,16 @@ func newBuiltinType(kind Kind) *Type {
 	}
 }
 
+func newTypeRef(def *Definition) *Type {
+	t := &Type{
+		Kind: KindReference,
+		Name: def.Name,
+		Ref:  def,
+	}
+	t._resolve(def, nil)
+	return t
+}
+
 func (t *Type) builtin() bool {
 	_, ok := builtin[t.Kind]
 	return ok

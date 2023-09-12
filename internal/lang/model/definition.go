@@ -61,25 +61,25 @@ func newDefinition(pkg *Package, file *File, pdef *ast.Definition) (*Definition,
 
 	switch type_ {
 	case DefinitionEnum:
-		def.Enum, err = newEnum(def, pdef.Enum)
+		def.Enum, err = newEnum(pkg, file, def, pdef.Enum)
 		if err != nil {
 			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}
 
 	case DefinitionMessage:
-		def.Message, err = newMessage(def, pdef.Message)
+		def.Message, err = newMessage(pkg, file, def, pdef.Message)
 		if err != nil {
 			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}
 
 	case DefinitionStruct:
-		def.Struct, err = newStruct(def, pdef.Struct)
+		def.Struct, err = newStruct(pkg, file, def, pdef.Struct)
 		if err != nil {
 			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}
 
 	case DefinitionService:
-		def.Service, err = newService(def, pdef.Service)
+		def.Service, err = newService(pkg, file, def, pdef.Service)
 		if err != nil {
 			return nil, fmt.Errorf("%v: %w", def.Name, err)
 		}

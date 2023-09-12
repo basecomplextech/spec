@@ -130,6 +130,7 @@ func (c *compiler) compilePackage(id string, path string) (*model.Package, error
 	}
 	c.packages[id] = pkg
 
+	// Resolve imports and types
 	if err := pkg.ResolveImports(c.getPackage); err != nil {
 		return nil, err
 	}

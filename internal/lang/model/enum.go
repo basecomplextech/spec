@@ -7,16 +7,21 @@ import (
 )
 
 type Enum struct {
-	Def *Definition
+	Package *Package
+	File    *File
+	Def     *Definition
 
 	Values       []*EnumValue
 	ValueNames   map[string]*EnumValue
 	ValueNumbers map[int]*EnumValue
 }
 
-func newEnum(def *Definition, penum *ast.Enum) (*Enum, error) {
+func newEnum(pkg *Package, file *File, def *Definition, penum *ast.Enum) (*Enum, error) {
 	e := &Enum{
-		Def:          def,
+		Package: pkg,
+		File:    file,
+		Def:     def,
+
 		ValueNames:   make(map[string]*EnumValue),
 		ValueNumbers: make(map[int]*EnumValue),
 	}

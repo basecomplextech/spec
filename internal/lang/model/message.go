@@ -7,14 +7,21 @@ import (
 )
 
 type Message struct {
-	Def *Definition
+	Package *Package
+	File    *File
+	Def     *Definition
+
+	Generated bool // Auto-generated message, i.e. request/response
+	Primitive bool // Message contains only primitive fields
 
 	Fields *Fields
 }
 
-func newMessage(def *Definition, pmsg *ast.Message) (*Message, error) {
+func newMessage(pkg *Package, file *File, def *Definition, pmsg *ast.Message) (*Message, error) {
 	msg := &Message{
-		Def: def,
+		Package: pkg,
+		File:    file,
+		Def:     def,
 	}
 
 	var err error
@@ -23,6 +30,43 @@ func newMessage(def *Definition, pmsg *ast.Message) (*Message, error) {
 		return nil, err
 	}
 
+	return msg, nil
+}
+
+func generateMessage(pkg *Package, file *File, name string, fields *Fields) (*Message, error) {
+	msg := &Message{
+		Package: pkg,
+		File:    file,
+
+		Generated: true,
+		Primitive: true, // Calculated below
+
+		Fields: fields,
+	}
+
+	// Definition
+	msg.Def = &Definition{
+		Package: pkg,
+		File:    file,
+
+		Name:    name,
+		Type:    DefinitionMessage,
+		Message: msg,
+	}
+
+	// Primitive
+	for _, field := range msg.Fields.List {
+		ok := field.Type.builtin()
+		if !ok {
+			msg.Primitive = false
+			break
+		}
+	}
+
+	// Add to file
+	if err := file.add(msg.Def); err != nil {
+		return nil, err
+	}
 	return msg, nil
 }
 

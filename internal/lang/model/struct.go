@@ -8,14 +8,19 @@ import (
 )
 
 type Struct struct {
-	Def *Definition
+	Package *Package
+	File    *File
+	Def     *Definition
 
 	Fields *orderedmap.Map[string, *StructField]
 }
 
-func newStruct(def *Definition, pstr *ast.Struct) (*Struct, error) {
+func newStruct(pkg *Package, file *File, def *Definition, pstr *ast.Struct) (*Struct, error) {
 	str := &Struct{
-		Def:    def,
+		Package: pkg,
+		File:    file,
+		Def:     def,
+
 		Fields: orderedmap.New[string, *StructField](),
 	}
 

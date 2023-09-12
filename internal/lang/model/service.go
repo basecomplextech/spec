@@ -7,24 +7,28 @@ import (
 )
 
 type Service struct {
-	Def *Definition
-	Sub bool // Subservice
+	Package *Package
+	File    *File
+	Def     *Definition
+	Sub     bool // Subservice
 
 	Methods     []*Method
 	MethodNames map[string]*Method
 }
 
-func newService(def *Definition, psrv *ast.Service) (*Service, error) {
+func newService(pkg *Package, file *File, def *Definition, psrv *ast.Service) (*Service, error) {
 	srv := &Service{
-		Def: def,
-		Sub: psrv.Sub,
+		Package: pkg,
+		File:    file,
+		Def:     def,
+		Sub:     psrv.Sub,
 
 		MethodNames: make(map[string]*Method),
 	}
 
 	// Create methods
 	for _, pm := range psrv.Methods {
-		method, err := newMethod(pm)
+		method, err := newMethod(pkg, file, srv, pm)
 		if err != nil {
 			return nil, fmt.Errorf("%v: %w", pm.Name, err)
 		}

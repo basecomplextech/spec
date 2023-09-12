@@ -468,3 +468,51 @@ func TestCompiler__should_compile_service(t *testing.T) {
 	m0 := def.Service.MethodNames["method"]
 	require.NotNil(t, m0)
 }
+
+func TestCompiler__should_generate_request_from_fields(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("../../tests/pkg4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[0].DefinitionNames["Service"]
+	require.NotNil(t, def.Service)
+
+	m := def.Service.MethodNames["method1"]
+	require.NotNil(t, m)
+
+	in := m.Input
+	require.NotNil(t, in)
+	assert.Nil(t, m.Temp.InputType)
+	assert.Nil(t, m.Temp.InputFields)
+
+	assert.Equal(t, "ServiceMethod1Request", in.Name)
+	assert.True(t, in.Ref.Message.Generated)
+	assert.True(t, in.Ref.Message.Primitive)
+}
+
+func TestCompiler__should_generate_response_from_fields(t *testing.T) {
+	c := testCompiler(t)
+
+	pkg, err := c.Compile("../../tests/pkg4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def := pkg.Files[0].DefinitionNames["Service"]
+	require.NotNil(t, def.Service)
+
+	m := def.Service.MethodNames["method2"]
+	require.NotNil(t, m)
+
+	out := m.Output
+	require.NotNil(t, out)
+	assert.Nil(t, m.Temp.InputType)
+	assert.Nil(t, m.Temp.InputFields)
+
+	assert.Equal(t, "ServiceMethod2Response", out.Name)
+	assert.True(t, out.Ref.Message.Generated)
+	assert.True(t, out.Ref.Message.Primitive)
+}

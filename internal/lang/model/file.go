@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/basecomplextech/spec/internal/lang/ast"
 )
@@ -44,13 +43,9 @@ func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 			return nil, fmt.Errorf("%v: %w", path, err)
 		}
 
-		_, ok := f.ImportMap[imp.Name]
-		if ok {
-			return nil, fmt.Errorf("%v: duplicate import %v", path, imp.Name)
+		if err := f.addImport(imp); err != nil {
+			return nil, fmt.Errorf("%v: %w", path, err)
 		}
-
-		f.Imports = append(f.Imports, imp)
-		f.ImportMap[imp.Name] = imp
 	}
 
 	// Create options
@@ -60,13 +55,9 @@ func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 			return nil, fmt.Errorf("%v: %w", path, err)
 		}
 
-		_, ok := f.ImportMap[opt.Name]
-		if ok {
-			return nil, fmt.Errorf("%v: duplicate option %v", path, opt.Name)
+		if err := f.addOption(opt); err != nil {
+			return nil, fmt.Errorf("%v: %w", path, err)
 		}
-
-		f.Options = append(f.Options, opt)
-		f.OptionMap[opt.Name] = opt
 	}
 
 	// Create definitions
@@ -76,13 +67,9 @@ func newFile(pkg *Package, pfile *ast.File) (*File, error) {
 			return nil, err
 		}
 
-		_, ok := f.DefinitionNames[def.Name]
-		if ok {
-			return nil, fmt.Errorf("duplicate definition in file, path=%v", path)
+		if err := f.add(def); err != nil {
+			return nil, fmt.Errorf("%v: %w", path, err)
 		}
-
-		f.Definitions = append(f.Definitions, def)
-		f.DefinitionNames[def.Name] = def
 	}
 
 	return f, nil
@@ -136,58 +123,37 @@ func (f *File) validate() error {
 	return nil
 }
 
-// Import
+// add
 
-type Import struct {
-	File *File
+func (f *File) add(def *Definition) error {
+	_, ok := f.DefinitionNames[def.Name]
+	if ok {
+		return fmt.Errorf("duplicate definition %q", def.Name)
+	}
 
-	ID      string   // full id
-	Name    string   // name or alias
-	Package *Package // resolved imported package
-
-	Resolved bool
+	f.Definitions = append(f.Definitions, def)
+	f.DefinitionNames[def.Name] = def
+	return nil
 }
 
-func newImport(file *File, pimp *ast.Import) (*Import, error) {
-	name := pimp.Alias
-	if name == "" {
-		name = filepath.Base(pimp.ID)
+func (f *File) addImport(imp *Import) error {
+	_, ok := f.ImportMap[imp.Name]
+	if ok {
+		return fmt.Errorf("duplicate import %q", imp.Name)
 	}
 
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return nil, fmt.Errorf("empty import name")
-	}
-
-	imp := &Import{
-		File: file,
-		ID:   pimp.ID,
-		Name: name,
-	}
-	return imp, nil
+	f.Imports = append(f.Imports, imp)
+	f.ImportMap[imp.Name] = imp
+	return nil
 }
 
-func (imp *Import) LookupType(name string) (*Definition, bool) {
-	if !imp.Resolved {
-		panic("import not resolved")
+func (f *File) addOption(opt *Option) error {
+	_, ok := f.OptionMap[opt.Name]
+	if ok {
+		return fmt.Errorf("duplicate option %q", opt.Name)
 	}
 
-	return imp.Package.LookupType(name)
-}
-
-// internal
-
-func (imp *Import) resolve(getPackage func(string) (*Package, error)) error {
-	if imp.Resolved {
-		return fmt.Errorf("import already resolved: %v", imp.ID)
-	}
-
-	pkg, err := getPackage(imp.ID)
-	if err != nil {
-		return err
-	}
-
-	imp.Package = pkg
-	imp.Resolved = true
+	f.Options = append(f.Options, opt)
+	f.OptionMap[opt.Name] = opt
 	return nil
 }
