@@ -3,7 +3,6 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"go/format"
 	"strings"
 
 	"github.com/basecomplextech/spec/internal/lang/model"
@@ -12,17 +11,6 @@ import (
 const (
 	OptionPackage = "go_package"
 )
-
-// WriteFile writes a golang file.
-func WriteFile(file *model.File, skipRPC bool) ([]byte, error) {
-	w := newWriter(skipRPC)
-	if err := w.file(file); err != nil {
-		return nil, err
-	}
-
-	bytes := w.b.Bytes()
-	return format.Source(bytes)
-}
 
 type writer struct {
 	b bytes.Buffer
@@ -125,10 +113,9 @@ func (w *writer) definitions(file *model.File) error {
 			}
 		case model.DefinitionService:
 			if !w.skipRPC {
-				// TODO: Uncomment
-				// if err := w.service(def); err != nil {
-				// 	return err
-				// }
+				if err := w.service(def); err != nil {
+					return err
+				}
 			}
 		}
 	}

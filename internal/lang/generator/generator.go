@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"go/format"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,10 +45,12 @@ func (g *generator) file(file *model.File, out string) error {
 
 	// Format file
 	bytes := w.b.Bytes()
-	bytes, err := format.Source(bytes)
-	if err != nil {
-		return err
-	}
+
+	// TODO: Uncomment
+	// bytes, err := format.Source(bytes)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Create file
 	return g.createFile(file, out, bytes)
