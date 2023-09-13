@@ -45,7 +45,7 @@ func testServer(t tests.T, handle HandleFunc) *server {
 func testEchoServer(t tests.T) *server {
 	handle := func(cancel <-chan struct{}, ch ServerChannel, req prpc.Request) (*alloc.Buffer, status.Status) {
 		call := req.Calls().Get(0)
-		msg := call.Args().String().Unwrap()
+		msg := call.Input().String().Unwrap()
 
 		buf := alloc.NewBuffer()
 		w := spec.NewValueWriterBuffer(buf)
@@ -65,7 +65,9 @@ func testEchoRequest(t tests.T, msg string) prpc.Request {
 	{
 		call := calls.Add()
 		call.Method("echo")
-		call.Args().String(msg)
+		if err := call.Input().String(msg); err != nil {
+			t.Fatal(err)
+		}
 		if err := call.End(); err != nil {
 			t.Fatal(err)
 		}
