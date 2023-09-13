@@ -2,7 +2,9 @@ package rpc
 
 import (
 	"github.com/basecomplextech/baselibrary/logging"
+	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
+	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/basecomplextech/spec/tcp"
 )
@@ -12,8 +14,11 @@ type Client interface {
 	// Close closes the client.
 	Close() status.Status
 
-	// Request sends a request and returns a channel.
-	Request(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status)
+	// Channel opens a channels and sends a request.
+	Channel(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status)
+
+	// Request sends a request and returns a response.
+	Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.Value], status.Status)
 }
 
 // internal
@@ -37,8 +42,8 @@ func (c *client) Close() status.Status {
 	return c.client.Close()
 }
 
-// Request sends a request and returns a channel.
-func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status) {
+// Channel opens a channels and sends a request.
+func (c *client) Channel(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status) {
 	ch, st := c.channel(cancel)
 	if !st.OK() {
 		return nil, st
@@ -58,6 +63,22 @@ func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (Channel, sta
 
 	ok = true
 	return ch, status.OK
+}
+
+// Request sends a request and returns a response.
+func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.Value], status.Status) {
+	ch, st := c.channel(cancel)
+	if !st.OK() {
+		return nil, st
+	}
+	defer ch.Free()
+
+	st = ch.Request(cancel, req)
+	if !st.OK() {
+		return nil, st
+	}
+
+	return ch.Response(cancel)
 }
 
 // private

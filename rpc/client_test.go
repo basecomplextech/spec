@@ -41,16 +41,11 @@ func TestClient_Request__should_send_request_receive_response(t *testing.T) {
 	msg := "hello, world"
 	req := testEchoRequest(t, msg)
 
-	ch, st := client.Request(nil, req)
+	result, st := client.Request(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer ch.Free()
-
-	result, st := ch.Response(nil)
-	if !st.OK() {
-		t.Fatal(st)
-	}
+	defer result.Release()
 
 	assert.Equal(t, msg, result.Unwrap().String().Unwrap())
 }
@@ -77,7 +72,7 @@ func TestClient_Send__should_send_client_message_to_server(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
+	ch, st := client.Channel(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -120,7 +115,7 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
+	ch, st := client.Channel(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -160,7 +155,7 @@ func TestClient_Receive__should_receive_server_message(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
+	ch, st := client.Channel(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -194,7 +189,7 @@ func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
+	ch, st := client.Channel(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -235,7 +230,7 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
+	ch, st := client.Channel(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -270,7 +265,7 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
+	ch, st := client.Channel(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -322,7 +317,7 @@ func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
+	ch, st := client.Channel(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}

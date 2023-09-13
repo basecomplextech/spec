@@ -7,6 +7,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/status"
+	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,18 +25,12 @@ func BenchmarkRequest(b *testing.B) {
 	req := testEchoRequest(b, msg)
 
 	for i := 0; i < b.N; i++ {
-		ch, st := client.Request(nil, req)
-		if !st.OK() {
-			b.Fatal(st)
-		}
-
-		result, st := ch.Response(nil)
+		result, st := client.Request(nil, req)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
 		result.Release()
-		ch.Free()
 	}
 
 	t1 := time.Now()
@@ -61,18 +56,12 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 		req := testEchoRequest(b, msg)
 
 		for p.Next() {
-			ch, st := client.Request(nil, req)
-			if !st.OK() {
-				b.Fatal(st)
-			}
-
-			result, st := ch.Response(nil)
+			result, st := client.Request(nil, req)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 
 			result.Release()
-			ch.Free()
 		}
 	})
 
@@ -101,7 +90,11 @@ func BenchmarkStream(b *testing.B) {
 		}
 
 		buf := alloc.NewBuffer()
-		buf.Write([]byte("response"))
+		w := spec.NewValueWriterBuffer(buf)
+		w.String("response")
+		if _, err := w.Build(); err != nil {
+			return nil, status.WrapError(err)
+		}
 		return buf, status.OK
 	}
 
@@ -115,7 +108,7 @@ func BenchmarkStream(b *testing.B) {
 
 	{
 		req := testEchoRequest(b, "request")
-		ch, st := client.Request(nil, req)
+		ch, st := client.Channel(nil, req)
 		if !st.OK() {
 			b.Fatal(st)
 		}

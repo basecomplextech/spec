@@ -93,12 +93,8 @@ func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *t
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
-	if !st.OK() {
-		t.Fatal(st)
-	}
+	_, st := client.Request(nil, req)
 
-	_, st = ch.Response(nil)
 	assert.Equal(t, status.CodeError, st.Code)
 	assert.Equal(t, "test panic", st.Message)
 }
@@ -113,12 +109,8 @@ func TestServer_handleRequest__should_handle_errors(t *testing.T) {
 	defer client.Close()
 
 	req := testEchoRequest(t, "request")
-	ch, st := client.Request(nil, req)
-	if !st.OK() {
-		t.Fatal(st)
-	}
+	_, st := client.Request(nil, req)
 
-	_, st = ch.Response(nil)
 	assert.Equal(t, status.CodeUnauthorized, st.Code)
 	assert.Equal(t, "test unauthorized", st.Message)
 }
