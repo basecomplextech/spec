@@ -9,87 +9,135 @@ import (
 	"github.com/basecomplextech/spec/proto/prpc"
 )
 
-// Request is an outgoing RPC request.
+// Request is an outgoing RPC request builder.
 type Request struct {
-	buf   *alloc.Buffer
-	req   prpc.RequestWriter
-	calls spec.MessageListWriter[prpc.CallWriter]
-
-	done  bool
-	freed bool
+	s *requestState
 }
 
 // NewRequest returns a new request.
 func NewRequest() *Request {
-	buf := acquireBuffer()
-	req := prpc.NewRequestWriterBuffer(buf)
-	calls := req.Calls()
-
-	return &Request{
-		buf:   buf,
-		req:   req,
-		calls: calls,
-	}
+	s := acquireRequestState()
+	return &Request{s: s}
 }
 
 // Free releases the request resources.
 func (r *Request) Free() {
-	if r.freed {
+	if r.s == nil {
 		return
 	}
 
-	r.done = true
-	r.freed = true
-
-	r.calls = spec.MessageListWriter[prpc.CallWriter]{}
-	r.req = prpc.RequestWriter{}
-
-	releaseBuffer(r.buf)
-	r.buf = nil
+	s := r.s
+	r.s = nil
+	releaseRequestState(s)
 }
 
-// Call adds a call to the request and returns a call writer.
-func (r *Request) Call(method string) prpc.CallWriter {
-	if r.done {
+// Add adds a call with no input.
+func (r *Request) Add(method string) status.Status {
+	s := r.state()
+	if s.done {
 		panic("request is done")
 	}
 
-	return r.calls.Add()
+	call := s.calls.Add()
+	call.Method(method)
+
+	if err := call.End(); err != nil {
+		return WrapError(err)
+	}
+	return status.OK
 }
 
-// internal
-
-// build builds and returns the request data, data is valid until the request is freed.
-func (r *Request) build() (prpc.Request, status.Status) {
-	if r.done {
-		return prpc.Request{}, status.Error("request is done")
+// AddInput adds a call with an input message.
+func (r *Request) AddInput(method string, input spec.Message) status.Status {
+	s := r.state()
+	if s.done {
+		panic("request is done")
 	}
-	r.done = true
 
-	if err := r.calls.End(); err != nil {
+	call := s.calls.Add()
+	call.Method(method)
+	call.Input().Any(input.Raw())
+
+	if err := call.End(); err != nil {
+		return WrapError(err)
+	}
+	return status.OK
+}
+
+// Build builds and returns the request data, data is valid until the request is freed.
+func (r *Request) Build() (prpc.Request, status.Status) {
+	s := r.state()
+	if s.done {
+		panic("request is done")
+	}
+
+	if err := s.calls.End(); err != nil {
 		return prpc.Request{}, WrapError(err)
 	}
 
-	p, err := r.req.Build()
+	p, err := s.req.Build()
 	if err != nil {
 		return prpc.Request{}, WrapError(err)
 	}
 	return p, status.OK
 }
 
-// buffer pool
+// internal
 
-var bufferPool = &sync.Pool{}
-
-func acquireBuffer() *alloc.Buffer {
-	b := bufferPool.Get()
-	if b == nil {
-		return alloc.NewBuffer()
+func (r *Request) state() *requestState {
+	if r.s == nil {
+		panic("request is freed")
 	}
-	return b.(*alloc.Buffer)
+	return r.s
 }
 
-func releaseBuffer(b *alloc.Buffer) {
-	b.Reset()
-	bufferPool.Put(b)
+// state
+
+var requestStatePool = &sync.Pool{}
+
+type requestState struct {
+	buf    *alloc.Buffer
+	writer spec.Writer
+
+	req   prpc.RequestWriter
+	calls spec.MessageListWriter[prpc.CallWriter]
+	done  bool
+}
+
+func acquireRequestState() *requestState {
+	s := requestStatePool.Get()
+	if s == nil {
+		return newRequestState()
+	}
+	return s.(*requestState)
+}
+
+func releaseRequestState(s *requestState) {
+	s.reset()
+	requestStatePool.Put(s)
+}
+
+func newRequestState() *requestState {
+	buf := alloc.NewBuffer()
+	writer := spec.NewWriterBuffer(buf)
+
+	req := prpc.NewRequestWriterBuffer(buf)
+	calls := req.Calls()
+
+	return &requestState{
+		buf:    buf,
+		writer: writer,
+
+		req:   req,
+		calls: calls,
+	}
+}
+
+func (s *requestState) reset() {
+	s.buf.Reset()
+	s.writer.Reset(s.buf)
+
+	s.req = prpc.NewRequestWriterTo(s.writer.Message())
+	s.calls = s.req.Calls()
+	s.done = false
 }

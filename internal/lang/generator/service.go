@@ -6,10 +6,9 @@ func (w *writer) service(def *model.Definition) error {
 	if err := w.iface(def); err != nil {
 		return err
 	}
-	// TODO: Uncomment
-	// if err := w.client(def); err != nil {
-	// 	return err
-	// }
+	if err := w.client(def); err != nil {
+		return err
+	}
 	// if err := w.handler(def); err != nil {
 	// 	return err
 	// }
@@ -69,7 +68,7 @@ func (w *writer) ifaceMethod_args(def *model.Definition, m *model.Method) error 
 				if multi {
 					w.linef(`%v_ %v, `, argName, typeName)
 				} else {
-					w.writef(`%v %v, `, argName, typeName)
+					w.writef(`%v_ %v, `, argName, typeName)
 				}
 			}
 		} else {

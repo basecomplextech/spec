@@ -63,6 +63,7 @@ func (w *writer) file(file *model.File) error {
 	w.line("import (")
 	w.line(`"github.com/basecomplextech/baselibrary/bin"`)
 	w.line(`"github.com/basecomplextech/baselibrary/buffer"`)
+	w.line(`"github.com/basecomplextech/baselibrary/ref"`)
 	w.line(`"github.com/basecomplextech/baselibrary/status"`)
 	w.line(`"github.com/basecomplextech/spec"`)
 	w.line(`"github.com/basecomplextech/spec/encoding"`)
@@ -83,6 +84,7 @@ func (w *writer) file(file *model.File) error {
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.Type`)
+	w.line(`_ ref.Ref`)
 
 	if !w.skipRPC {
 		w.line(`_ rpc.Client`)

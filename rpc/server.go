@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
@@ -154,4 +155,21 @@ func requestMethod(req prpc.Request) string {
 	}
 
 	return b.String()
+}
+
+// buffer pool
+
+var bufferPool = &sync.Pool{}
+
+func acquireBuffer() *alloc.Buffer {
+	v := bufferPool.Get()
+	if v == nil {
+		return alloc.NewBuffer()
+	}
+	return v.(*alloc.Buffer)
+}
+
+func releaseBuffer(buf *alloc.Buffer) {
+	buf.Reset()
+	bufferPool.Put(buf)
 }
