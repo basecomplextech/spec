@@ -15,18 +15,13 @@ type Method struct {
 	Sub  bool // Returns subservice
 	Chan bool // Returns channel
 
-	Input   *Type // Message
-	Output  *Type // Message or service
+	Input       *Type // Message
+	InputFields *Fields
+
+	Output       *Type // Message or service
+	OutputFields *Fields
+
 	Channel *MethodChannel
-
-	// Temp fields are transformed into input/output messages
-	Temp struct {
-		InputType   *Type
-		InputFields *Fields
-
-		OutputType   *Type
-		OutputFields *Fields
-	}
 }
 
 func newMethod(pkg *Package, file *File, service *Service, pm *ast.Method) (*Method, error) {
@@ -64,23 +59,23 @@ func newMethod(pkg *Package, file *File, service *Service, pm *ast.Method) (*Met
 }
 
 func (m *Method) resolve(file *File) error {
-	if in := m.Temp.InputType; in != nil {
+	if in := m.Input; in != nil {
 		if err := in.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
-	if in := m.Temp.InputFields; in != nil {
+	if in := m.InputFields; in != nil {
 		if err := in.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
 
-	if out := m.Temp.OutputType; out != nil {
+	if out := m.Output; out != nil {
 		if err := out.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
-	if out := m.Temp.OutputFields; out != nil {
+	if out := m.OutputFields; out != nil {
 		if err := out.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
@@ -90,59 +85,56 @@ func (m *Method) resolve(file *File) error {
 
 func (m *Method) resolved() error {
 	// Input
-	if in := m.Temp.InputType; in != nil {
+	if in := m.Input; in != nil {
 		if in.Kind != KindMessage {
 			return fmt.Errorf("%v: single input must be a message, got %q instead", m.Name, in.Kind)
 		}
-
-		m.Temp.InputType = nil
-		m.Input = in
 	}
-	if in := m.Temp.InputFields; in != nil {
+	if in := m.InputFields; in != nil {
 		if err := in.resolved(); err != nil {
 			return err
 		}
 
-		name := methodRequestName(m)
-		msg, err := generateMessage(m.Package, m.File, name, in)
-		if err != nil {
-			return fmt.Errorf("%v: failed to generate request message: %w", m.Name, err)
-		}
+		// Convert into request message
+		if !in.primitive() {
+			name := methodRequestName(m)
+			msg, err := generateMessage(m.Package, m.File, name, in)
+			if err != nil {
+				return fmt.Errorf("%v: failed to generate request message: %w", m.Name, err)
+			}
 
-		m.Temp.InputFields = nil
-		m.Input = newTypeRef(msg.Def)
+			m.Input = newTypeRef(msg.Def)
+			m.InputFields = nil
+		}
 	}
 
 	// Output
-	if out := m.Temp.OutputType; out != nil {
+	if out := m.Output; out != nil {
 		switch out.Kind {
 		case KindMessage:
-			m.Temp.OutputType = nil
-			m.Output = out
-
 		case KindService:
 			m.Sub = true
-			m.Temp.OutputType = nil
-			m.Output = out
-
 		default:
 			return fmt.Errorf("%v: single output must be a message or a service, got %q instead",
 				m.Name, out.Kind)
 		}
 	}
-	if out := m.Temp.OutputFields; out != nil {
+	if out := m.OutputFields; out != nil {
 		if err := out.resolved(); err != nil {
 			return err
 		}
 
-		name := methodResponseName(m)
-		msg, err := generateMessage(m.Package, m.File, name, out)
-		if err != nil {
-			return fmt.Errorf("%v: failed to generate response message: %w", m.Name, err)
-		}
+		// Convert into response message
+		if !out.primitive() {
+			name := methodResponseName(m)
+			msg, err := generateMessage(m.Package, m.File, name, out)
+			if err != nil {
+				return fmt.Errorf("%v: failed to generate response message: %w", m.Name, err)
+			}
 
-		m.Temp.OutputFields = nil
-		m.Output = newTypeRef(msg.Def)
+			m.OutputFields = nil
+			m.Output = newTypeRef(msg.Def)
+		}
 	}
 
 	// Channel
@@ -161,11 +153,11 @@ func (m *Method) resolved() error {
 func makeMethodInput(m *Method, p ast.MethodInput) (err error) {
 	switch p := p.(type) {
 	case *ast.Type:
-		m.Temp.InputType, err = newType(p)
+		m.Input, err = newType(p)
 		return err
 
 	case ast.Fields:
-		m.Temp.InputFields, err = newFields(p)
+		m.InputFields, err = newFields(p)
 		return err
 
 	case nil:
@@ -178,11 +170,11 @@ func makeMethodInput(m *Method, p ast.MethodInput) (err error) {
 func makeMethodOutput(m *Method, p ast.MethodOutput) (err error) {
 	switch p := p.(type) {
 	case *ast.Type:
-		m.Temp.OutputType, err = newType(p)
+		m.Output, err = newType(p)
 		return err
 
 	case ast.Fields:
-		m.Temp.OutputFields, err = newFields(p)
+		m.OutputFields, err = newFields(p)
 		return err
 
 	case nil:

@@ -11,10 +11,8 @@ type Message struct {
 	File    *File
 	Def     *Definition
 
+	Fields    *Fields
 	Generated bool // Auto-generated message, i.e. request/response
-	Primitive bool // Message contains only primitive fields
-
-	Fields *Fields
 }
 
 func newMessage(pkg *Package, file *File, def *Definition, pmsg *ast.Message) (*Message, error) {
@@ -38,10 +36,8 @@ func generateMessage(pkg *Package, file *File, name string, fields *Fields) (*Me
 		Package: pkg,
 		File:    file,
 
+		Fields:    fields,
 		Generated: true,
-		Primitive: true, // Calculated below
-
-		Fields: fields,
 	}
 
 	// Definition
@@ -52,15 +48,6 @@ func generateMessage(pkg *Package, file *File, name string, fields *Fields) (*Me
 		Name:    name,
 		Type:    DefinitionMessage,
 		Message: msg,
-	}
-
-	// Primitive
-	for _, field := range msg.Fields.List {
-		ok := field.Type.builtin()
-		if !ok {
-			msg.Primitive = false
-			break
-		}
 	}
 
 	// Add to file

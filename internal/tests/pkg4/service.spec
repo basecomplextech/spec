@@ -20,8 +20,8 @@ service Service {
     // Method2 doc comment.
     method2(a int64 1, b string 2, c bool 3) (a int64 1, b string 2, c bool 3);
 
-    // Args doc comment.
-    args(
+    // Method3 doc comment.
+    method3(
         a00 bool    1,
         a01 byte    2,
 

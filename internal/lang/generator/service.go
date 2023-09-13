@@ -48,32 +48,30 @@ func (w *writer) ifaceMethod_args(def *model.Definition, m *model.Method) error 
 	w.writef(`%v`, methodName)
 	w.write(`(cancel <-chan struct{}, `)
 
-	in := m.Input
 	multi := false
 
-	if in != nil {
-		msg := in.Ref.Message
-		if msg.Generated && msg.Primitive {
-			fields := msg.Fields.List
+	switch {
+	case m.Input != nil:
+		typeName := typeName(m.Input)
+		w.writef(`req_ %v`, typeName)
 
-			multi = len(fields) > 3
+	case m.InputFields != nil:
+		fields := m.InputFields.List
+
+		multi = len(fields) > 3
+		if multi {
+			w.line()
+		}
+
+		for _, field := range fields {
+			argName := toLowerCameCase(field.Name)
+			typeName := typeRefName(field.Type)
+
 			if multi {
-				w.line()
+				w.linef(`%v_ %v, `, argName, typeName)
+			} else {
+				w.writef(`%v_ %v, `, argName, typeName)
 			}
-
-			for _, field := range fields {
-				argName := toLowerCameCase(field.Name)
-				typeName := typeRefName(field.Type)
-
-				if multi {
-					w.linef(`%v_ %v, `, argName, typeName)
-				} else {
-					w.writef(`%v_ %v, `, argName, typeName)
-				}
-			}
-		} else {
-			typeName := typeName(in)
-			w.writef(`req_ %v`, typeName)
 		}
 	}
 
@@ -87,34 +85,31 @@ func (w *writer) ifaceMethod_results(def *model.Definition, m *model.Method) err
 	out := m.Output
 	multi := false
 
-	if out != nil {
-		if m.Sub {
-			typeName := typeName(out)
-			w.writef(`_sub %v, `, typeName)
+	switch {
+	case m.Sub:
+		typeName := typeName(out)
+		w.writef(`_sub %v, `, typeName)
 
-		} else {
-			msg := out.Ref.Message
-			if msg.Generated && msg.Primitive {
-				fields := msg.Fields.List
+	case m.Output != nil:
+		typeName := typeName(out)
+		w.writef(`_resp %v, `, typeName)
 
-				multi = len(fields) > 1
-				if multi {
-					w.line()
-				}
+	case m.OutputFields != nil:
+		fields := m.OutputFields.List
 
-				for _, field := range fields {
-					resName := toLowerCameCase(field.Name)
-					typeName := typeName(field.Type)
+		multi = len(fields) > 1
+		if multi {
+			w.line()
+		}
 
-					if multi {
-						w.linef(`_%v %v, `, resName, typeName)
-					} else {
-						w.writef(`_%v %v, `, resName, typeName)
-					}
-				}
+		for _, field := range fields {
+			resName := toLowerCameCase(field.Name)
+			typeName := typeName(field.Type)
+
+			if multi {
+				w.linef(`_%v %v, `, resName, typeName)
 			} else {
-				typeName := typeName(out)
-				w.writef(`_resp %v, `, typeName)
+				w.writef(`_%v %v, `, resName, typeName)
 			}
 		}
 	}
