@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"strings"
+
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
@@ -71,16 +73,16 @@ func (w *writer) clientMethod(def *model.Definition, m *model.Method) error {
 	}
 	w.line(`{`)
 
-	if err := w.clientMethod_request(def, m); err != nil {
+	if err := w.clientMethod_call(def, m); err != nil {
 		return err
 	}
 
 	if m.Sub {
-		if err := w.clientMethod_sub(def, m); err != nil {
+		if err := w.clientMethod_subservice(def, m); err != nil {
 			return err
 		}
 	} else {
-		if err := w.clientMethod_send(def, m); err != nil {
+		if err := w.clientMethod_request(def, m); err != nil {
 			return err
 		}
 		if err := w.clientMethod_response(def, m); err != nil {
@@ -128,9 +130,11 @@ func (w *writer) clientMethod_input(def *model.Definition, m *model.Method) erro
 }
 
 func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) error {
-	if m.Output == nil {
+	switch {
+	default:
 		w.write(`(status.Status)`)
-	} else {
+
+	case m.Output != nil:
 		typeName := typeName(m.Output)
 		if m.Sub {
 			w.line(`(`)
@@ -139,11 +143,34 @@ func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) err
 			w.line(`(`)
 			w.writef(`*ref.R[%v], status.Status)`, typeName)
 		}
+
+	case m.OutputFields != nil:
+		fields := m.OutputFields.List
+		multi := len(fields) > 3
+		w.line(`(`)
+
+		for _, f := range fields {
+			name := toLowerCameCase(f.Name)
+			typeName := typeName(f.Type)
+			if multi {
+				w.linef(`_%v %v, `, name, typeName)
+			} else {
+				w.writef(`_%v %v, `, name, typeName)
+			}
+		}
+
+		if multi {
+			w.line(`_st status.Status,`)
+		} else {
+			w.write(`_st status.Status`)
+		}
+
+		w.write(`)`)
 	}
 	return nil
 }
 
-func (w *writer) clientMethod_request(def *model.Definition, m *model.Method) error {
+func (w *writer) clientMethod_call(def *model.Definition, m *model.Method) error {
 	// Build request
 	w.line(`// Begin request`)
 	w.line(`req := rpc.NewRequest()`)
@@ -226,7 +253,7 @@ func (w *writer) clientMethod_request(def *model.Definition, m *model.Method) er
 	return nil
 }
 
-func (w *writer) clientMethod_sub(def *model.Definition, m *model.Method) error {
+func (w *writer) clientMethod_subservice(def *model.Definition, m *model.Method) error {
 	// Return subservice
 	typeName := typeRefName(m.Output)
 
@@ -237,7 +264,7 @@ func (w *writer) clientMethod_sub(def *model.Definition, m *model.Method) error 
 	return nil
 }
 
-func (w *writer) clientMethod_send(def *model.Definition, m *model.Method) error {
+func (w *writer) clientMethod_request(def *model.Definition, m *model.Method) error {
 	// Build request
 	w.line(`// Build request`)
 	w.line(`preq, st := req.Build()`)
@@ -248,37 +275,141 @@ func (w *writer) clientMethod_send(def *model.Definition, m *model.Method) error
 
 	// Send request
 	w.line(`// Send request`)
-	w.line(`value, st := c.client.Request(cancel, preq)`)
+	w.line(`resp, st := c.client.Request(cancel, preq)`)
 	w.line(`if !st.OK() {`)
 	w.linef(`return %v st`, clientMethod_zeroReturn(m))
 	w.line(`}`)
-	w.line(`defer value.Release()`)
+	w.line(`defer resp.Release()`)
 	w.line(``)
 	return nil
 }
 
 func (w *writer) clientMethod_response(def *model.Definition, m *model.Method) error {
-	if m.Output == nil {
+
+	switch {
+	default:
 		w.line(`return status.OK`)
-		return nil
+
+	case m.Output != nil:
+		parseFunc := typeParseFunc(m.Output)
+		w.line(`// Parse result`)
+		w.linef(`result, _, err := %v(resp.Unwrap())`, parseFunc)
+		w.line(`if err != nil {`)
+		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`}`)
+		w.line(`return ref.NewParentRetain(result, resp), status.OK`)
+
+	case m.OutputFields != nil:
+		w.line(`// Parse results`)
+		w.linef(`result, err := resp.Unwrap().MessageErr()`)
+		w.line(`if err != nil {`)
+		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`}`)
+
+		fields := m.OutputFields.List
+		for _, f := range fields {
+			typ := f.Type
+			name := toLowerCameCase(f.Name)
+
+			switch typ.Kind {
+			case model.KindBool:
+				w.linef(`_%v, err = result.Field(%d).BoolErr()`, name, f.Tag)
+			case model.KindByte:
+				w.linef(`_%v, err = result.Field(%d).ByteErr()`, name, f.Tag)
+
+			case model.KindInt16:
+				w.linef(`_%v, err = result.Field(%d).Int16Err()`, name, f.Tag)
+			case model.KindInt32:
+				w.linef(`_%v, err = result.Field(%d).Int32Err()`, name, f.Tag)
+			case model.KindInt64:
+				w.linef(`_%v, err = result.Field(%d).Int64Err()`, name, f.Tag)
+
+			case model.KindUint16:
+				w.linef(`_%v, err = result.Field(%d).Uint16Err()`, name, f.Tag)
+			case model.KindUint32:
+				w.linef(`_%v, err = result.Field(%d).Uint32Err()`, name, f.Tag)
+			case model.KindUint64:
+				w.linef(`_%v, err = result.Field(%d).Uint64Err()`, name, f.Tag)
+
+			case model.KindBin64:
+				w.linef(`_%v, err = result.Field(%d).Bin64Err()`, name, f.Tag)
+			case model.KindBin128:
+				w.linef(`_%v, err = result.Field(%d).Bin128Err()`, name, f.Tag)
+			case model.KindBin256:
+				w.linef(`_%v, err = result.Field(%d).Bin256Err()`, name, f.Tag)
+
+			case model.KindFloat32:
+				w.linef(`_%v, err = result.Field(%d).Float32Err()`, name, f.Tag)
+			case model.KindFloat64:
+				w.linef(`_%v, err = result.Field(%d).Float64Err()`, name, f.Tag)
+			}
+
+			w.line(`if err != nil {`)
+			w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+			w.line(`}`)
+		}
+
+		w.write(`return `)
+		for _, f := range fields {
+			name := toLowerCameCase(f.Name)
+			w.writef(`_%v, `, name)
+		}
+		w.write(`status.OK`)
 	}
 
-	parseFunc := typeParseFunc(m.Output)
-	w.line(`// Parse result`)
-	w.linef(`result, _, err := %v(value.Unwrap())`, parseFunc)
-	w.line(`if err != nil {`)
-	w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
-	w.line(`}`)
-	w.line(`return ref.NewParentRetain(result, value), status.OK`)
 	return nil
 }
 
 // util
 
 func clientMethod_zeroReturn(m *model.Method) string {
-	if m.Output == nil {
+	switch {
+	default:
 		return ``
-	} else {
+
+	case m.Output != nil:
 		return `nil, `
+
+	case m.OutputFields != nil:
+		b := strings.Builder{}
+		fields := m.OutputFields.List
+
+		for _, f := range fields {
+			typ := f.Type
+			switch typ.Kind {
+			case model.KindBool:
+				b.WriteString(`false, `)
+			case model.KindByte:
+				b.WriteString(`0, `)
+
+			case model.KindInt16:
+				b.WriteString(`0, `)
+			case model.KindInt32:
+				b.WriteString(`0, `)
+			case model.KindInt64:
+				b.WriteString(`0, `)
+
+			case model.KindUint16:
+				b.WriteString(`0, `)
+			case model.KindUint32:
+				b.WriteString(`0, `)
+			case model.KindUint64:
+				b.WriteString(`0, `)
+
+			case model.KindBin64:
+				b.WriteString(`bin.Bin64{}, `)
+			case model.KindBin128:
+				b.WriteString(`bin.Bin128{}, `)
+			case model.KindBin256:
+				b.WriteString(`bin.Bin256{}, `)
+
+			case model.KindFloat32:
+				b.WriteString(`0, `)
+			case model.KindFloat64:
+				b.WriteString(`0, `)
+			}
+		}
+
+		return b.String()
 	}
 }
