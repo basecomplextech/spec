@@ -80,6 +80,12 @@ func (m *Method) resolve(file *File) error {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
+
+	if ch := m.Channel; ch != nil {
+		if err := ch.resolve(file); err != nil {
+			return fmt.Errorf("%v: %w", m.Name, err)
+		}
+	}
 	return nil
 }
 

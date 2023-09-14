@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/basecomplextech/spec/internal/lang/model"
@@ -11,6 +12,9 @@ func (w *writer) client(def *model.Definition) error {
 		return err
 	}
 	if err := w.clientMethods(def); err != nil {
+		return err
+	}
+	if err := w.clientChannels(def); err != nil {
 		return err
 	}
 	return nil
@@ -72,11 +76,16 @@ func (w *writer) clientMethod(def *model.Definition, m *model.Method) error {
 		return err
 	}
 
-	if m.Sub {
+	switch {
+	case m.Sub:
 		if err := w.clientMethod_subservice(def, m); err != nil {
 			return err
 		}
-	} else {
+	case m.Chan:
+		if err := w.clientMethod_channel(def, m); err != nil {
+			return err
+		}
+	default:
 		if err := w.clientMethod_request(def, m); err != nil {
 			return err
 		}
@@ -133,6 +142,11 @@ func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) err
 		typeName := typeName(m.Output)
 		w.line(`(`)
 		w.writef(`*%vClient, status.Status)`, typeName)
+
+	case m.Chan:
+		name := clientMethod_channelName(m)
+		w.line(`(`)
+		w.writef(`*%v, status.Status)`, name)
 
 	case m.Output != nil:
 		typeName := typeName(m.Output)
@@ -277,6 +291,26 @@ func (w *writer) clientMethod_subservice(def *model.Definition, m *model.Method)
 	return nil
 }
 
+func (w *writer) clientMethod_channel(def *model.Definition, m *model.Method) error {
+	// Build request
+	w.line(`// Build request`)
+	w.line(`preq, st := req.Build()`)
+	w.line(`if !st.OK() {`)
+	w.linef(`return %v st`, clientMethod_zeroReturn(m))
+	w.line(`}`)
+	w.line()
+
+	// Open channel
+	name := clientMethod_channelName(m)
+	w.line(`// Open channel`)
+	w.line(`ch, st := c.client.Channel(cancel, preq)`)
+	w.line(`if !st.OK() {`)
+	w.linef(`return %v st`, clientMethod_zeroReturn(m))
+	w.line(`}`)
+	w.linef(`return New%v(ch), status.OK`, name)
+	return nil
+}
+
 func (w *writer) clientMethod_request(def *model.Definition, m *model.Method) error {
 	// Build request
 	w.line(`// Build request`)
@@ -298,7 +332,6 @@ func (w *writer) clientMethod_request(def *model.Definition, m *model.Method) er
 }
 
 func (w *writer) clientMethod_response(def *model.Definition, m *model.Method) error {
-
 	switch {
 	default:
 		w.line(`return status.OK`)
@@ -373,12 +406,107 @@ func (w *writer) clientMethod_response(def *model.Definition, m *model.Method) e
 	return nil
 }
 
+// channel
+
+func (w *writer) clientChannels(def *model.Definition) error {
+	for _, m := range def.Service.Methods {
+		if !m.Chan {
+			continue
+		}
+
+		if err := w.clientChannel(def, m); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *writer) clientChannel(def *model.Definition, m *model.Method) error {
+	if err := w.clientChannel_def(def, m); err != nil {
+		return err
+	}
+	if err := w.clientChannel_send(def, m); err != nil {
+		return err
+	}
+	if err := w.clientChannel_receive(def, m); err != nil {
+		return err
+	}
+	if err := w.clientChannel_response(def, m); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *writer) clientChannel_def(def *model.Definition, m *model.Method) error {
+	name := clientMethod_channelName(m)
+
+	w.linef(`// %v`, name)
+	w.line()
+	w.linef(`type %v struct {`, name)
+	w.line(`ch rpc.Channel`)
+	w.line(`}`)
+	w.line()
+	w.linef(`func New%v(ch rpc.Channel) *%v {`, name, name)
+	w.linef(`return &%v{ch: ch}`, name)
+	w.linef(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) clientChannel_send(def *model.Definition, m *model.Method) error {
+	out := m.Channel.Out
+	if out == nil {
+		return nil
+	}
+
+	name := clientMethod_channelName(m)
+	typeName := typeName(out)
+
+	w.linef(`func (c *%v) Send(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
+	w.line(`return c.ch.Send(cancel, msg.Unwrap().Raw())`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) clientChannel_receive(def *model.Definition, m *model.Method) error {
+	in := m.Channel.In
+	if in == nil {
+		return nil
+	}
+
+	name := clientMethod_channelName(m)
+	typeName := typeName(in)
+	parseFunc := typeParseFunc(in)
+
+	w.linef(`func (c *%v) Receive(cancel <-chan struct{}) (%v, status.Status) {`, name, typeName)
+	w.line(`b, st := c.ch.Receive(cancel)`)
+	w.line(`if !st.OK() {`)
+	w.linef(`return %v{}, st`, typeName)
+	w.line(`}`)
+	w.linef(`msg, _, err := %v(b)`, parseFunc)
+	w.line(`if err != nil {`)
+	w.linef(`return %v{}, status.WrapError(err)`, typeName)
+	w.line(`}`)
+	w.line(`return msg, status.OK`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) clientChannel_response(def *model.Definition, m *model.Method) error {
+	return nil
+}
+
 // util
 
 func clientMethod_zeroReturn(m *model.Method) string {
 	switch {
 	default:
 		return ``
+
+	case m.Chan:
+		return `nil, `
 
 	case m.Output != nil:
 		return `nil, `
@@ -425,4 +553,8 @@ func clientMethod_zeroReturn(m *model.Method) string {
 
 		return b.String()
 	}
+}
+
+func clientMethod_channelName(m *model.Method) string {
+	return fmt.Sprintf("%v%vChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
 }
