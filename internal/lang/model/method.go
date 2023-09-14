@@ -96,7 +96,8 @@ func (m *Method) resolved() error {
 		}
 
 		// Convert into request message
-		if !in.primitive() {
+		// Client input accepts any value types as arguments.
+		if !in.value() {
 			name := methodRequestName(m)
 			msg, err := generateMessage(m.Package, m.File, name, in)
 			if err != nil {
@@ -125,6 +126,7 @@ func (m *Method) resolved() error {
 		}
 
 		// Convert into response message
+		// Client output accepts only non-allocated primitive types as return values.
 		if !out.primitive() {
 			name := methodResponseName(m)
 			msg, err := generateMessage(m.Package, m.File, name, out)

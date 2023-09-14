@@ -18,7 +18,7 @@ service Service {
     method1(msg string 1);
 
     // Method2 doc comment.
-    method2(a int64 1, b string 2, c bool 3) (a int64 1, b string 2, c bool 3);
+    method2(a int64 1, b float64 2, c bool 3) (a int64 1, b float64 2, c bool 3);
 
     // Method3 doc comment.
     method3(

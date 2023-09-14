@@ -48,8 +48,6 @@ func (w *writer) ifaceMethod_args(def *model.Definition, m *model.Method) error 
 	w.writef(`%v`, methodName)
 	w.write(`(cancel <-chan struct{}, `)
 
-	multi := false
-
 	switch {
 	case m.Input != nil:
 		typeName := typeName(m.Input)
@@ -58,7 +56,7 @@ func (w *writer) ifaceMethod_args(def *model.Definition, m *model.Method) error 
 	case m.InputFields != nil:
 		fields := m.InputFields.List
 
-		multi = len(fields) > 3
+		multi := len(fields) > 3
 		if multi {
 			w.line()
 		}

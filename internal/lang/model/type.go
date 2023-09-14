@@ -32,6 +32,26 @@ var builtin = map[Kind]*Type{
 	KindAnyMessage: newBuiltinType(KindAnyMessage),
 }
 
+var primitive = map[Kind]struct{}{
+	KindBool: {},
+	KindByte: {},
+
+	KindInt16: {},
+	KindInt32: {},
+	KindInt64: {},
+
+	KindUint16: {},
+	KindUint32: {},
+	KindUint64: {},
+
+	KindBin64:  {},
+	KindBin128: {},
+	KindBin256: {},
+
+	KindFloat32: {},
+	KindFloat64: {},
+}
+
 type Type struct {
 	Kind       Kind
 	Name       string
@@ -100,6 +120,22 @@ func newTypeRef(def *Definition) *Type {
 func (t *Type) builtin() bool {
 	_, ok := builtin[t.Kind]
 	return ok
+}
+
+// primitive returns true if the type is a primitive type.
+// primitive types are not allocated on the heap.
+func (t *Type) primitive() bool {
+	_, ok := primitive[t.Kind]
+	return ok
+}
+
+// value returns true if the type is a primitive type or string/bytes.
+func (t *Type) value() bool {
+	switch t.Kind {
+	case KindString, KindBytes:
+		return true
+	}
+	return t.primitive()
 }
 
 func (t *Type) resolve(file *File) error {

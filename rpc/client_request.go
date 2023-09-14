@@ -31,8 +31,20 @@ func (r *Request) Free() {
 	releaseRequestState(s)
 }
 
-// Add adds a call with no input.
-func (r *Request) Add(method string) status.Status {
+// Add adds a call and returns its writer.
+func (r *Request) Add(method string) prpc.CallWriter {
+	s := r.state()
+	if s.done {
+		panic("request is done")
+	}
+
+	call := s.calls.Add()
+	call.Method(method)
+	return call
+}
+
+// AddEmpty adds a call with no input.
+func (r *Request) AddEmpty(method string) status.Status {
 	s := r.state()
 	if s.done {
 		panic("request is done")
@@ -47,8 +59,8 @@ func (r *Request) Add(method string) status.Status {
 	return status.OK
 }
 
-// AddInput adds a call with an input message.
-func (r *Request) AddInput(method string, input spec.Message) status.Status {
+// AddMessage adds a call with an input message.
+func (r *Request) AddMessage(method string, input spec.Message) status.Status {
 	s := r.state()
 	if s.done {
 		panic("request is done")

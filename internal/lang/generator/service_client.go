@@ -94,11 +94,35 @@ func (w *writer) clientMethod(def *model.Definition, m *model.Method) error {
 }
 
 func (w *writer) clientMethod_input(def *model.Definition, m *model.Method) error {
-	if m.Input == nil {
+	switch {
+	default:
 		w.write(`(cancel <-chan struct{}) `)
-	} else {
+
+	case m.Input != nil:
 		typeName := typeName(m.Input)
 		w.writef(`(cancel <-chan struct{}, req_ %v) `, typeName)
+
+	case m.InputFields != nil:
+		w.write(`(cancel <-chan struct{}, `)
+
+		fields := m.InputFields.List
+		multi := len(fields) > 3
+		if multi {
+			w.line()
+		}
+
+		for _, field := range fields {
+			argName := toLowerCameCase(field.Name)
+			typeName := typeName(field.Type)
+
+			if multi {
+				w.linef(`%v_ %v, `, argName, typeName)
+			} else {
+				w.writef(`%v_ %v, `, argName, typeName)
+			}
+		}
+
+		w.write(`)`)
 	}
 	return nil
 }
@@ -121,20 +145,81 @@ func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) err
 
 func (w *writer) clientMethod_request(def *model.Definition, m *model.Method) error {
 	// Build request
-	w.line(`// Build request`)
+	w.line(`// Begin request`)
 	w.line(`req := rpc.NewRequest()`)
 	w.line(`defer req.Free()`)
 	w.line()
 
 	// Add call
-	if m.Input == nil {
-		w.linef(`st := req.Add("%v")`, m.Name)
-	} else {
-		w.linef(`st := req.AddInput("%v", req_.Unwrap())`, m.Name)
+	w.line(`// Add call`)
+	switch {
+	default:
+		w.linef(`st := req.AddEmpty("%v")`, m.Name)
+		w.line(`if !st.OK() {`)
+		w.linef(`return %v st`, clientMethod_zeroReturn(m))
+		w.line(`}`)
+
+	case m.Input != nil:
+		w.linef(`st := req.AddMessage("%v", req_.Unwrap())`, m.Name)
+		w.line(`if !st.OK() {`)
+		w.linef(`return %v st`, clientMethod_zeroReturn(m))
+		w.line(`}`)
+
+	case m.InputFields != nil:
+		w.line(`{`)
+		w.linef(`call := req.Add("%v")`, m.Name)
+		w.line(`in := call.Input().Message()`)
+
+		for _, f := range m.InputFields.List {
+			typ := f.Type
+			switch typ.Kind {
+			case model.KindBool:
+				w.linef(`in.Field(%d).Bool(%v_)`, f.Tag, f.Name)
+			case model.KindByte:
+				w.linef(`in.Field(%d).Byte(%v_)`, f.Tag, f.Name)
+
+			case model.KindInt16:
+				w.linef(`in.Field(%d).Int16(%v_)`, f.Tag, f.Name)
+			case model.KindInt32:
+				w.linef(`in.Field(%d).Int32(%v_)`, f.Tag, f.Name)
+			case model.KindInt64:
+				w.linef(`in.Field(%d).Int64(%v_)`, f.Tag, f.Name)
+
+			case model.KindUint16:
+				w.linef(`in.Field(%d).Uint16(%v_)`, f.Tag, f.Name)
+			case model.KindUint32:
+				w.linef(`in.Field(%d).Uint32(%v_)`, f.Tag, f.Name)
+			case model.KindUint64:
+				w.linef(`in.Field(%d).Uint64(%v_)`, f.Tag, f.Name)
+
+			case model.KindBin64:
+				w.linef(`in.Field(%d).Bin64(%v_)`, f.Tag, f.Name)
+			case model.KindBin128:
+				w.linef(`in.Field(%d).Bin128(%v_)`, f.Tag, f.Name)
+			case model.KindBin256:
+				w.linef(`in.Field(%d).Bin256(%v_)`, f.Tag, f.Name)
+
+			case model.KindFloat32:
+				w.linef(`in.Field(%d).Float32(%v_)`, f.Tag, f.Name)
+			case model.KindFloat64:
+				w.linef(`in.Field(%d).Float64(%v_)`, f.Tag, f.Name)
+
+			case model.KindString:
+				w.linef(`in.Field(%d).String(%v_)`, f.Tag, f.Name)
+			case model.KindBytes:
+				w.linef(`in.Field(%d).Bytes(%v_)`, f.Tag, f.Name)
+			}
+		}
+
+		w.line()
+		w.line(`if err := in.End(); err != nil {`)
+		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`}`)
+		w.line(`if err := call.End(); err != nil {`)
+		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`}`)
+		w.line(`}`)
 	}
-	w.line(`if !st.OK() {`)
-	w.linef(`return %v st`, clientMethod_zeroReturn(m))
-	w.line(`}`)
 
 	// End request
 	w.line()
@@ -154,6 +239,7 @@ func (w *writer) clientMethod_sub(def *model.Definition, m *model.Method) error 
 
 func (w *writer) clientMethod_send(def *model.Definition, m *model.Method) error {
 	// Build request
+	w.line(`// Build request`)
 	w.line(`preq, st := req.Build()`)
 	w.line(`if !st.OK() {`)
 	w.linef(`return %v st`, clientMethod_zeroReturn(m))

@@ -101,7 +101,17 @@ func (f *Fields) GetByTag(tag int) *Field {
 // primitive returns true if all fields are primitive types.
 func (f *Fields) primitive() bool {
 	for _, field := range f.List {
-		if !field.Type.builtin() {
+		if !field.Type.primitive() {
+			return false
+		}
+	}
+	return true
+}
+
+// value returns true if all fields are primitive types or string/bytes.
+func (f *Fields) value() bool {
+	for _, field := range f.List {
+		if !field.Type.value() {
 			return false
 		}
 	}
