@@ -49,11 +49,6 @@ func (w *writer) clientDef(def *model.Definition) error {
 
 func (w *writer) clientMethods(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
-		// TODO: Remove me
-		if m.Sub {
-			continue
-		}
-
 		if err := w.clientMethod(def, m); err != nil {
 			return err
 		}
@@ -134,15 +129,15 @@ func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) err
 	default:
 		w.write(`(status.Status)`)
 
+	case m.Sub:
+		typeName := typeName(m.Output)
+		w.line(`(`)
+		w.writef(`*%vClient, status.Status)`, typeName)
+
 	case m.Output != nil:
 		typeName := typeName(m.Output)
-		if m.Sub {
-			w.line(`(`)
-			w.writef(`%v, status.Status)`, typeName)
-		} else {
-			w.line(`(`)
-			w.writef(`*ref.R[%v], status.Status)`, typeName)
-		}
+		w.line(`(`)
+		w.writef(`*ref.R[%v], status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List
@@ -171,11 +166,29 @@ func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) err
 }
 
 func (w *writer) clientMethod_call(def *model.Definition, m *model.Method) error {
-	// Build request
-	w.line(`// Begin request`)
-	w.line(`req := rpc.NewRequest()`)
-	w.line(`defer req.Free()`)
-	w.line()
+	// Begin request
+	if def.Service.Sub {
+		w.line(`// Continue request`)
+		w.line(`req := c.req`)
+		w.line(`c.req = nil`)
+	} else {
+		w.line(`// Begin request`)
+		w.line(`req := rpc.NewRequest()`)
+	}
+
+	// Free request
+	if m.Sub {
+		w.line(`ok := false`)
+		w.line(`defer func() {`)
+		w.line(`if !ok {`)
+		w.line(`req.Free()`)
+		w.line(`}`)
+		w.line(`}()`)
+		w.line()
+	} else {
+		w.line(`defer req.Free()`)
+		w.line()
+	}
 
 	// Add call
 	w.line(`// Add call`)
