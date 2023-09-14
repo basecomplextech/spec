@@ -144,7 +144,7 @@ func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) err
 		w.writef(`*%vClient, status.Status)`, typeName)
 
 	case m.Chan:
-		name := clientMethod_channelName(m)
+		name := clientChannel_name(m)
 		w.line(`(`)
 		w.writef(`*%v, status.Status)`, name)
 
@@ -161,6 +161,7 @@ func (w *writer) clientMethod_output(def *model.Definition, m *model.Method) err
 		for _, f := range fields {
 			name := toLowerCameCase(f.Name)
 			typeName := typeName(f.Type)
+
 			if multi {
 				w.linef(`_%v %v, `, name, typeName)
 			} else {
@@ -301,7 +302,7 @@ func (w *writer) clientMethod_channel(def *model.Definition, m *model.Method) er
 	w.line()
 
 	// Open channel
-	name := clientMethod_channelName(m)
+	name := clientChannel_name(m)
 	w.line(`// Open channel`)
 	w.line(`ch, st := c.client.Channel(cancel, preq)`)
 	w.line(`if !st.OK() {`)
@@ -438,7 +439,7 @@ func (w *writer) clientChannel(def *model.Definition, m *model.Method) error {
 }
 
 func (w *writer) clientChannel_def(def *model.Definition, m *model.Method) error {
-	name := clientMethod_channelName(m)
+	name := clientChannel_name(m)
 
 	w.linef(`// %v`, name)
 	w.line()
@@ -459,7 +460,7 @@ func (w *writer) clientChannel_send(def *model.Definition, m *model.Method) erro
 		return nil
 	}
 
-	name := clientMethod_channelName(m)
+	name := clientChannel_name(m)
 	typeName := typeName(out)
 
 	w.linef(`func (c *%v) Send(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
@@ -475,7 +476,7 @@ func (w *writer) clientChannel_receive(def *model.Definition, m *model.Method) e
 		return nil
 	}
 
-	name := clientMethod_channelName(m)
+	name := clientChannel_name(m)
 	typeName := typeName(in)
 	parseFunc := typeParseFunc(in)
 
@@ -509,7 +510,7 @@ func (w *writer) clientChannel_response(def *model.Definition, m *model.Method) 
 
 func (w *writer) clientChannel_response_def(m *model.Method) error {
 	// Response method
-	name := clientMethod_channelName(m)
+	name := clientChannel_name(m)
 	w.writef(`func (c *%v) Response(cancel <-chan struct{}) `, name)
 
 	switch {
@@ -518,8 +519,7 @@ func (w *writer) clientChannel_response_def(m *model.Method) error {
 
 	case m.Output != nil:
 		typeName := typeName(m.Output)
-		w.line(`(`)
-		w.writef(`*ref.R[%v], status.Status)`, typeName)
+		w.writef(`(*ref.R[%v], status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List
@@ -641,10 +641,6 @@ func (w *writer) clientChannel_response_parse(m *model.Method) error {
 
 // util
 
-func clientMethod_channelName(m *model.Method) string {
-	return fmt.Sprintf("%v%vChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
-}
-
 func clientMethod_zeroReturn(m *model.Method) string {
 	switch {
 	default:
@@ -698,6 +694,10 @@ func clientMethod_zeroReturn(m *model.Method) string {
 
 		return b.String()
 	}
+}
+
+func clientChannel_name(m *model.Method) string {
+	return fmt.Sprintf("%v%vChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
 }
 
 func clientChannel_zeroReturn(m *model.Method) string {

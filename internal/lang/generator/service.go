@@ -32,30 +32,32 @@ func (w *writer) iface(def *model.Definition) error {
 }
 
 func (w *writer) ifaceMethod(def *model.Definition, m *model.Method) error {
-	if err := w.ifaceMethod_args(def, m); err != nil {
+	if err := w.ifaceMethod_input(def, m); err != nil {
 		return err
 	}
-	if err := w.ifaceMethod_results(def, m); err != nil {
+	if err := w.ifaceMethod_output(def, m); err != nil {
 		return err
 	}
 	w.line()
 	return nil
 }
 
-func (w *writer) ifaceMethod_args(def *model.Definition, m *model.Method) error {
-	methodName := toUpperCamelCase(m.Name)
-
-	w.writef(`%v`, methodName)
-	w.write(`(cancel <-chan struct{}, `)
+func (w *writer) ifaceMethod_input(def *model.Definition, m *model.Method) error {
+	name := toUpperCamelCase(m.Name)
+	w.writef(`%v`, name)
 
 	switch {
+	default:
+		w.write(`(cancel <-chan struct{}) `)
+
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`req_ %v`, typeName)
+		w.writef(`(cancel <-chan struct{}, req %v) `, typeName)
 
 	case m.InputFields != nil:
-		fields := m.InputFields.List
+		w.write(`(cancel <-chan struct{}, `)
 
+		fields := m.InputFields.List
 		multi := len(fields) > 3
 		if multi {
 			w.line()
@@ -71,52 +73,54 @@ func (w *writer) ifaceMethod_args(def *model.Definition, m *model.Method) error 
 				w.writef(`%v_ %v, `, argName, typeName)
 			}
 		}
-	}
 
-	w.write(`) `)
+		w.write(`) `)
+	}
 	return nil
 }
 
-func (w *writer) ifaceMethod_results(def *model.Definition, m *model.Method) error {
-	w.write(`(`)
-
+func (w *writer) ifaceMethod_output(def *model.Definition, m *model.Method) error {
 	out := m.Output
-	multi := false
 
 	switch {
+	default:
+		w.write(`(status.Status)`)
+
 	case m.Sub:
 		typeName := typeName(out)
-		w.writef(`_sub %v, `, typeName)
+		w.writef(`(%v, status.Status)`, typeName)
 
 	case m.Output != nil:
 		typeName := typeName(out)
-		w.writef(`_resp %v, `, typeName)
+		w.writef(`(*ref.R[%v], status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List
-
-		multi = len(fields) > 1
-		if multi {
-			w.line()
-		}
+		multi := len(fields) > 1
+		w.line(`(`)
 
 		for _, field := range fields {
-			resName := toLowerCameCase(field.Name)
+			name := toLowerCameCase(field.Name)
 			typeName := typeName(field.Type)
 
 			if multi {
-				w.linef(`_%v %v, `, resName, typeName)
+				w.linef(`_%v %v, `, name, typeName)
 			} else {
-				w.writef(`_%v %v, `, resName, typeName)
+				w.writef(`_%v %v, `, name, typeName)
 			}
 		}
-	}
 
-	if multi {
-		w.line(`_st status.Status,`)
-	} else {
-		w.write(`_st status.Status`)
+		if multi {
+			w.line(`_st status.Status,`)
+		} else {
+			w.write(`_st status.Status`)
+		}
+
+		w.write(`)`)
 	}
-	w.line(`)`)
 	return nil
+}
+
+func ifaceChannel_name(m *model.Method) string {
+	return ""
 }
