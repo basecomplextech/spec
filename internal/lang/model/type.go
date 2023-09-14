@@ -129,15 +129,6 @@ func (t *Type) primitive() bool {
 	return ok
 }
 
-// value returns true if the type is a primitive type or string/bytes.
-func (t *Type) value() bool {
-	switch t.Kind {
-	case KindString, KindBytes:
-		return true
-	}
-	return t.primitive()
-}
-
 func (t *Type) resolve(file *File) error {
 	switch t.Kind {
 	case KindList:
