@@ -495,10 +495,155 @@ func (w *writer) clientChannel_receive(def *model.Definition, m *model.Method) e
 }
 
 func (w *writer) clientChannel_response(def *model.Definition, m *model.Method) error {
+	if err := w.clientChannel_response_def(m); err != nil {
+		return err
+	}
+	if err := w.clientChannel_response_receive(m); err != nil {
+		return err
+	}
+	if err := w.clientChannel_response_parse(m); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *writer) clientChannel_response_def(m *model.Method) error {
+	// Response method
+	name := clientMethod_channelName(m)
+	w.writef(`func (c *%v) Response(cancel <-chan struct{}) `, name)
+
+	switch {
+	default:
+		w.write(`(status.Status)`)
+
+	case m.Output != nil:
+		typeName := typeName(m.Output)
+		w.line(`(`)
+		w.writef(`*ref.R[%v], status.Status)`, typeName)
+
+	case m.OutputFields != nil:
+		fields := m.OutputFields.List
+		multi := len(fields) > 3
+		w.line(`(`)
+
+		for _, f := range fields {
+			name := toLowerCameCase(f.Name)
+			typeName := typeName(f.Type)
+			if multi {
+				w.linef(`_%v %v, `, name, typeName)
+			} else {
+				w.writef(`_%v %v, `, name, typeName)
+			}
+		}
+
+		if multi {
+			w.line(`_st status.Status,`)
+		} else {
+			w.write(`_st status.Status`)
+		}
+
+		w.write(`)`)
+	}
+
+	w.line(`{`)
+	return nil
+}
+
+func (w *writer) clientChannel_response_receive(m *model.Method) error {
+	// Receive response
+	w.line(`// Receive response`)
+	w.line(`resp, st := c.ch.Response(cancel)`)
+	w.line(`if !st.OK() {`)
+	w.linef(`return %v st`, clientChannel_zeroReturn(m))
+	w.line(`}`)
+	w.line(`defer resp.Release()`)
+	w.line(``)
+	return nil
+}
+
+func (w *writer) clientChannel_response_parse(m *model.Method) error {
+	// Parse results
+	switch {
+	default:
+		w.line(`return status.OK`)
+
+	case m.Output != nil:
+		parseFunc := typeParseFunc(m.Output)
+		w.line(`// Parse result`)
+		w.linef(`result, _, err := %v(resp.Unwrap())`, parseFunc)
+		w.line(`if err != nil {`)
+		w.linef(`return %v status.WrapError(err)`, clientChannel_zeroReturn(m))
+		w.line(`}`)
+		w.line(`return ref.NewParentRetain(result, resp), status.OK`)
+
+	case m.OutputFields != nil:
+		w.line(`// Parse results`)
+		w.linef(`result, err := resp.Unwrap().MessageErr()`)
+		w.line(`if err != nil {`)
+		w.linef(`return %v status.WrapError(err)`, clientChannel_zeroReturn(m))
+		w.line(`}`)
+
+		fields := m.OutputFields.List
+		for _, f := range fields {
+			typ := f.Type
+			name := toLowerCameCase(f.Name)
+
+			switch typ.Kind {
+			case model.KindBool:
+				w.linef(`_%v, err = result.Field(%d).BoolErr()`, name, f.Tag)
+			case model.KindByte:
+				w.linef(`_%v, err = result.Field(%d).ByteErr()`, name, f.Tag)
+
+			case model.KindInt16:
+				w.linef(`_%v, err = result.Field(%d).Int16Err()`, name, f.Tag)
+			case model.KindInt32:
+				w.linef(`_%v, err = result.Field(%d).Int32Err()`, name, f.Tag)
+			case model.KindInt64:
+				w.linef(`_%v, err = result.Field(%d).Int64Err()`, name, f.Tag)
+
+			case model.KindUint16:
+				w.linef(`_%v, err = result.Field(%d).Uint16Err()`, name, f.Tag)
+			case model.KindUint32:
+				w.linef(`_%v, err = result.Field(%d).Uint32Err()`, name, f.Tag)
+			case model.KindUint64:
+				w.linef(`_%v, err = result.Field(%d).Uint64Err()`, name, f.Tag)
+
+			case model.KindBin64:
+				w.linef(`_%v, err = result.Field(%d).Bin64Err()`, name, f.Tag)
+			case model.KindBin128:
+				w.linef(`_%v, err = result.Field(%d).Bin128Err()`, name, f.Tag)
+			case model.KindBin256:
+				w.linef(`_%v, err = result.Field(%d).Bin256Err()`, name, f.Tag)
+
+			case model.KindFloat32:
+				w.linef(`_%v, err = result.Field(%d).Float32Err()`, name, f.Tag)
+			case model.KindFloat64:
+				w.linef(`_%v, err = result.Field(%d).Float64Err()`, name, f.Tag)
+			}
+
+			w.line(`if err != nil {`)
+			w.linef(`return %v status.WrapError(err)`, clientChannel_zeroReturn(m))
+			w.line(`}`)
+		}
+
+		w.write(`return `)
+		for _, f := range fields {
+			name := toLowerCameCase(f.Name)
+			w.writef(`_%v, `, name)
+		}
+		w.write(`status.OK`)
+	}
+
+	w.line(`}`)
+	w.line()
 	return nil
 }
 
 // util
+
+func clientMethod_channelName(m *model.Method) string {
+	return fmt.Sprintf("%v%vChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
+}
 
 func clientMethod_zeroReturn(m *model.Method) string {
 	switch {
@@ -555,6 +700,54 @@ func clientMethod_zeroReturn(m *model.Method) string {
 	}
 }
 
-func clientMethod_channelName(m *model.Method) string {
-	return fmt.Sprintf("%v%vChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
+func clientChannel_zeroReturn(m *model.Method) string {
+	switch {
+	default:
+		return ``
+
+	case m.Output != nil:
+		return `nil, `
+
+	case m.OutputFields != nil:
+		b := strings.Builder{}
+		fields := m.OutputFields.List
+
+		for _, f := range fields {
+			typ := f.Type
+			switch typ.Kind {
+			case model.KindBool:
+				b.WriteString(`false, `)
+			case model.KindByte:
+				b.WriteString(`0, `)
+
+			case model.KindInt16:
+				b.WriteString(`0, `)
+			case model.KindInt32:
+				b.WriteString(`0, `)
+			case model.KindInt64:
+				b.WriteString(`0, `)
+
+			case model.KindUint16:
+				b.WriteString(`0, `)
+			case model.KindUint32:
+				b.WriteString(`0, `)
+			case model.KindUint64:
+				b.WriteString(`0, `)
+
+			case model.KindBin64:
+				b.WriteString(`bin.Bin64{}, `)
+			case model.KindBin128:
+				b.WriteString(`bin.Bin128{}, `)
+			case model.KindBin256:
+				b.WriteString(`bin.Bin256{}, `)
+
+			case model.KindFloat32:
+				b.WriteString(`0, `)
+			case model.KindFloat64:
+				b.WriteString(`0, `)
+			}
+		}
+
+		return b.String()
+	}
 }

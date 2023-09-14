@@ -100,16 +100,16 @@ service Service {
     );
 
     // Method20 doc comment.
-    method20(a int64 1, b float64 2, c bool 3) (a int64 1, b float64 2, c bool 3) (->In);
+    method20(a int64 1, b float64 2, c bool 3) (a int64 1, b float64 2, c bool 3) (->Out <-In);
 
     // Method21 doc comment.
-    method21(Request) (Response) (->In);
+    method21(Request) (Response) (->Out);
 
     // Method22 doc comment.
-    method22(Request) (Response) (<-Out);
+    method22(Request) (Response) (<-In);
 
     // Method23 doc comment.
-    method23(Request) (Response) (->In <-Out);
+    method23(Request) (Response) (->Out <-In);
 }
 
 subservice Subservice {
