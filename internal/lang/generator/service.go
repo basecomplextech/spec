@@ -1,6 +1,10 @@
 package generator
 
-import "github.com/basecomplextech/spec/internal/lang/model"
+import (
+	"fmt"
+
+	"github.com/basecomplextech/spec/internal/lang/model"
+)
 
 func (w *writer) service(def *model.Definition) error {
 	if err := w.iface(def); err != nil {
@@ -46,16 +50,21 @@ func (w *writer) ifaceMethod_input(def *model.Definition, m *model.Method) error
 	name := toUpperCamelCase(m.Name)
 	w.writef(`%v`, name)
 
+	channel := ""
+	if m.Chan {
+		channel = fmt.Sprintf(", ch *%v", handlerChannel_name(m))
+	}
+
 	switch {
 	default:
-		w.write(`(cancel <-chan struct{}) `)
+		w.writef(`(cancel <-chan struct{}%v) `, channel)
 
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`(cancel <-chan struct{}, req %v) `, typeName)
+		w.writef(`(cancel <-chan struct{}%v, req %v) `, channel, typeName)
 
 	case m.InputFields != nil:
-		w.write(`(cancel <-chan struct{}, `)
+		w.writef(`(cancel <-chan struct{}%v, `, channel)
 
 		fields := m.InputFields.List
 		multi := len(fields) > 3
@@ -119,8 +128,4 @@ func (w *writer) ifaceMethod_output(def *model.Definition, m *model.Method) erro
 		w.write(`)`)
 	}
 	return nil
-}
-
-func ifaceChannel_name(m *model.Method) string {
-	return ""
 }

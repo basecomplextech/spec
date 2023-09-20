@@ -1,6 +1,10 @@
 package generator
 
-import "github.com/basecomplextech/spec/internal/lang/model"
+import (
+	"fmt"
+
+	"github.com/basecomplextech/spec/internal/lang/model"
+)
 
 func (w *writer) handler(def *model.Definition) error {
 	if err := w.handlerDef(def); err != nil {
@@ -10,6 +14,9 @@ func (w *writer) handler(def *model.Definition) error {
 		return err
 	}
 	if err := w.handlerMethods(def); err != nil {
+		return err
+	}
+	if err := w.handlerChannels(def); err != nil {
 		return err
 	}
 	return nil
@@ -145,6 +152,15 @@ func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 		w.line()
 	}
 
+	// Make channels
+	channel := ""
+	if m.Chan {
+		w.line(`// Make channel`)
+		w.linef(`ch1 := New%v(ch)`, handlerChannel_name(m))
+		w.line()
+		channel = ", ch1"
+	}
+
 	// Declare result
 	w.line(`// Call method`)
 	switch {
@@ -165,16 +181,16 @@ func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 	// Call method
 	switch {
 	case m.Input != nil:
-		w.linef(`h.service.%v(cancel, in)`, toUpperCamelCase(m.Name))
+		w.linef(`h.service.%v(cancel%v, in)`, toUpperCamelCase(m.Name), channel)
 	case m.InputFields != nil:
-		w.writef(`h.service.%v(cancel, `, toUpperCamelCase(m.Name))
+		w.writef(`h.service.%v(cancel%v, `, toUpperCamelCase(m.Name), channel)
 		fields := m.InputFields.List
 		for _, f := range fields {
 			w.writef(`%v_, `, toLowerCameCase(f.Name))
 		}
 		w.line(`)`)
 	default:
-		w.linef(`h.service.%v(cancel)`, toUpperCamelCase(m.Name))
+		w.linef(`h.service.%v(cancel%v)`, toUpperCamelCase(m.Name), channel)
 	}
 
 	// Handle output
@@ -262,4 +278,93 @@ func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 	w.line(`}`)
 	w.line()
 	return nil
+}
+
+// channels
+
+func (w *writer) handlerChannels(def *model.Definition) error {
+	for _, m := range def.Service.Methods {
+		if !m.Chan {
+			continue
+		}
+
+		if err := w.handlerChannel(def, m); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *writer) handlerChannel(def *model.Definition, m *model.Method) error {
+	if err := w.handlerChannel_def(def, m); err != nil {
+		return err
+	}
+	if err := w.handlerChannel_send(def, m); err != nil {
+		return err
+	}
+	if err := w.handlerChannel_receive(def, m); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *writer) handlerChannel_def(def *model.Definition, m *model.Method) error {
+	name := handlerChannel_name(m)
+
+	w.linef(`// %v`, name)
+	w.line()
+	w.linef(`type %v struct {`, name)
+	w.line(`ch rpc.ServerChannel`)
+	w.line(`}`)
+	w.line()
+	w.linef(`func New%v(ch rpc.ServerChannel) *%v {`, name, name)
+	w.linef(`return &%v{ch: ch}`, name)
+	w.linef(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) handlerChannel_send(def *model.Definition, m *model.Method) error {
+	in := m.Channel.In
+	if in == nil {
+		return nil
+	}
+
+	name := handlerChannel_name(m)
+	typeName := typeName(in)
+
+	w.linef(`func (c *%v) Send(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
+	w.line(`return c.ch.Send(cancel, msg.Unwrap().Raw())`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) handlerChannel_receive(def *model.Definition, m *model.Method) error {
+	out := m.Channel.Out
+	if out == nil {
+		return nil
+	}
+
+	name := handlerChannel_name(m)
+	typeName := typeName(out)
+	parseFunc := typeParseFunc(out)
+
+	w.linef(`func (c *%v) Receive(cancel <-chan struct{}) (%v, status.Status) {`, name, typeName)
+	w.line(`b, st := c.ch.Receive(cancel)`)
+	w.line(`if !st.OK() {`)
+	w.linef(`return %v{}, st`, typeName)
+	w.line(`}`)
+	w.linef(`msg, _, err := %v(b)`, parseFunc)
+	w.line(`if err != nil {`)
+	w.linef(`return %v{}, status.WrapError(err)`, typeName)
+	w.line(`}`)
+	w.line(`return msg, status.OK`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func handlerChannel_name(m *model.Method) string {
+	return fmt.Sprintf("%v%vServerChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
 }
