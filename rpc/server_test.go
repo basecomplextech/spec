@@ -6,6 +6,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/logging"
+	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/basecomplextech/spec"
@@ -43,7 +44,7 @@ func testServer(t tests.T, handle HandleFunc) *server {
 }
 
 func testEchoServer(t tests.T) *server {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*alloc.Buffer, status.Status) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		req, st := ch.Request(cancel)
 		if !st.OK() {
 			return nil, st
@@ -58,7 +59,8 @@ func testEchoServer(t tests.T) *server {
 		if _, err := w.Build(); err != nil {
 			return nil, status.WrapError(err)
 		}
-		return buf, status.OK
+
+		return ref.NewFreer(buf.Bytes(), buf), status.OK
 	}
 
 	return testServer(t, handle)
@@ -91,7 +93,7 @@ func testEchoRequest(t tests.T, msg string) prpc.Request {
 // handleRequest
 
 func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*alloc.Buffer, status.Status) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		panic("test panic")
 	}
 
@@ -107,7 +109,7 @@ func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *t
 }
 
 func TestServer_handleRequest__should_handle_errors(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*alloc.Buffer, status.Status) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		return nil, status.Unauthorized("test unauthorized")
 	}
 

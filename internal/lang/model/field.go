@@ -58,6 +58,10 @@ type Fields struct {
 }
 
 func newFields(pfields []*ast.Field) (*Fields, error) {
+	if len(pfields) == 0 {
+		return nil, nil
+	}
+
 	fields := &Fields{
 		Names: make(map[string]*Field),
 		Tags:  make(map[int]*Field),

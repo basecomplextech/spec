@@ -8,6 +8,7 @@ import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
+	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/basecomplextech/spec/tcp"
@@ -66,7 +67,7 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 	// Handle request
 	result, st := s.handleRequest(tch, msg.Req())
 	if result != nil {
-		defer result.Free()
+		defer result.Release()
 	}
 
 	// Make response
@@ -86,7 +87,7 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 				return WrapError(err)
 			}
 			if result != nil {
-				w1.Result().Any(result.Bytes())
+				w1.Result().Any(result.Unwrap())
 			}
 			if err := w1.End(); err != nil {
 				return WrapError(err)
@@ -106,7 +107,7 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 
 // private
 
-func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *alloc.Buffer, st status.Status) {
+func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R[[]byte], st status.Status) {
 	start := time.Now()
 	method := requestMethod(req)
 

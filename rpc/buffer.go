@@ -2,5 +2,8 @@ package rpc
 
 import "github.com/basecomplextech/baselibrary/alloc"
 
-// Buffer is an alias for alloc.Buffer for code generation.
-type Buffer = alloc.Buffer
+// NewBuffer returns a new alloc.Buffer.
+// The method is used in generated code.
+func NewBuffer() *alloc.Buffer {
+	return alloc.NewBuffer()
+}

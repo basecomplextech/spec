@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
 	"github.com/stretchr/testify/assert"
@@ -77,7 +78,7 @@ func BenchmarkStream(b *testing.B) {
 	streamMsg := []byte("hello, world")
 	closeMsg := []byte("close")
 
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*alloc.Buffer, status.Status) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		for {
 			msg, st := ch.Receive(cancel)
 			if !st.OK() {
@@ -94,7 +95,8 @@ func BenchmarkStream(b *testing.B) {
 		if _, err := w.Build(); err != nil {
 			return nil, status.WrapError(err)
 		}
-		return buf, status.OK
+
+		return ref.NewFreer(buf.Bytes(), buf), status.OK
 	}
 
 	server := testServer(b, handle)

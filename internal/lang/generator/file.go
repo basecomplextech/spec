@@ -70,6 +70,7 @@ func (w *writer) file(file *model.File) error {
 
 	if !w.skipRPC {
 		w.line(`"github.com/basecomplextech/spec/rpc"`)
+		w.line(`"github.com/basecomplextech/spec/proto/prpc"`)
 	}
 
 	for _, imp := range file.Imports {
@@ -88,6 +89,7 @@ func (w *writer) file(file *model.File) error {
 
 	if !w.skipRPC {
 		w.line(`_ rpc.Client`)
+		w.line(`_ prpc.Request`)
 	}
 
 	w.line(`_ spec.Type`)
