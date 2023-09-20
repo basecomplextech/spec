@@ -431,11 +431,19 @@ func (s *channelState) readFail(st status.Status) {
 // util
 
 func parseResult(resp prpc.Response) (*ref.R[spec.Value], status.Status) {
+	// Parse status
 	st := parseStatus(resp.Status())
 	if !st.OK() {
 		return nil, st
 	}
 
+	// Return nil when no result
+	result := resp.Result()
+	if len(result) == 0 {
+		return ref.NewNoFreer[spec.Value](nil), status.OK
+	}
+
+	// Copy result to buffer
 	buf := alloc.NewBuffer()
 	buf.Write(resp.Result())
 
@@ -446,11 +454,13 @@ func parseResult(resp prpc.Response) (*ref.R[spec.Value], status.Status) {
 		}
 	}()
 
+	// Parse result
 	v, err := spec.NewValueErr(buf.Bytes())
 	if err != nil {
 		return nil, WrapError(err)
 	}
 
+	// Wrap into ref
 	ref := ref.NewFreer(v, buf)
 	ok = true
 	return ref, status.OK

@@ -80,7 +80,7 @@ service Service {
     );
 
     // Method11 doc comment.
-    method12() (
+    method11() (
         a50 string  50,
         a51 bytes   51,
         a52 message 52,

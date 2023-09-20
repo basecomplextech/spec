@@ -25,6 +25,11 @@ type Server interface {
 	Listening() <-chan struct{}
 }
 
+// NewServer returns a new RPC server.
+func NewServer(address string, handler Handler, logger logging.Logger) Server {
+	return newServer(address, handler, logger)
+}
+
 // internal
 
 type server struct {

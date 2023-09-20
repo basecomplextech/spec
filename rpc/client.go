@@ -21,6 +21,11 @@ type Client interface {
 	Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.Value], status.Status)
 }
 
+// NewClient returns a new client.
+func NewClient(address string, logger logging.Logger) Client {
+	return newClient(address, logger)
+}
+
 // internal
 
 var _ Client = (*client)(nil)

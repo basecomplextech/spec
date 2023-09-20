@@ -302,7 +302,7 @@ func (w *writer) handlerChannel(def *model.Definition, m *model.Method) error {
 	if err := w.handlerChannel_def(def, m); err != nil {
 		return err
 	}
-	if err := w.handlerChannel_input(def, m); err != nil {
+	if err := w.handlerChannel_request(def, m); err != nil {
 		return err
 	}
 	if err := w.handlerChannel_send(def, m); err != nil {
@@ -331,7 +331,7 @@ func (w *writer) handlerChannel_def(def *model.Definition, m *model.Method) erro
 	return nil
 }
 
-func (w *writer) handlerChannel_input(def *model.Definition, m *model.Method) error {
+func (w *writer) handlerChannel_request(def *model.Definition, m *model.Method) error {
 	name := handlerChannel_name(m)
 
 	switch {
@@ -339,7 +339,7 @@ func (w *writer) handlerChannel_input(def *model.Definition, m *model.Method) er
 		typeName := typeName(m.Input)
 		parseFunc := typeParseFunc(m.Input)
 
-		w.linef(`func (c *%v) Input() (%v, status.Status) {`, name, typeName)
+		w.linef(`func (c *%v) Request() (%v, status.Status) {`, name, typeName)
 		w.linef(`in, _, err := %v(c.in)`, parseFunc)
 		w.line(`if err != nil {`)
 		w.linef(`return %v{}, rpc.WrapError(err)`, typeName)
@@ -351,7 +351,7 @@ func (w *writer) handlerChannel_input(def *model.Definition, m *model.Method) er
 		w.line()
 
 	case m.InputFields != nil:
-		w.writef(`func (c *%v) Input() (`, name)
+		w.writef(`func (c *%v) Request() (`, name)
 
 		fields := m.InputFields.List
 		for _, f := range fields {

@@ -100,16 +100,21 @@ func (w *writer) clientMethod(def *model.Definition, m *model.Method) error {
 }
 
 func (w *writer) clientMethod_input(def *model.Definition, m *model.Method) error {
+	cancel := "cancel <-chan struct{}, "
+	if m.Sub {
+		cancel = ""
+	}
+
 	switch {
 	default:
-		w.write(`(cancel <-chan struct{}) `)
+		w.writef(`(%v) `, cancel)
 
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`(cancel <-chan struct{}, req_ %v) `, typeName)
+		w.writef(`(%v req_ %v) `, cancel, typeName)
 
 	case m.InputFields != nil:
-		w.write(`(cancel <-chan struct{}, `)
+		w.writef(`(%v`, cancel)
 
 		fields := m.InputFields.List
 		multi := len(fields) > 3
@@ -426,6 +431,9 @@ func (w *writer) clientChannel(def *model.Definition, m *model.Method) error {
 	if err := w.clientChannel_def(def, m); err != nil {
 		return err
 	}
+	if err := w.clientChannel_free(def, m); err != nil {
+		return err
+	}
 	if err := w.clientChannel_send(def, m); err != nil {
 		return err
 	}
@@ -450,6 +458,15 @@ func (w *writer) clientChannel_def(def *model.Definition, m *model.Method) error
 	w.linef(`func New%v(ch rpc.Channel) *%v {`, name, name)
 	w.linef(`return &%v{ch: ch}`, name)
 	w.linef(`}`)
+	w.line()
+	return nil
+}
+
+func (w *writer) clientChannel_free(def *model.Definition, m *model.Method) error {
+	name := clientChannel_name(m)
+	w.linef(`func (c *%v) Free() {`, name)
+	w.line(`c.ch.Free()`)
+	w.line(`}`)
 	w.line()
 	return nil
 }
