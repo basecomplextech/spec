@@ -1,8 +1,6 @@
 package generator
 
 import (
-	"fmt"
-
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
@@ -50,21 +48,20 @@ func (w *writer) ifaceMethod_input(def *model.Definition, m *model.Method) error
 	name := toUpperCamelCase(m.Name)
 	w.writef(`%v`, name)
 
-	channel := ""
-	if m.Chan {
-		channel = fmt.Sprintf(", ch *%v", handlerChannel_name(m))
-	}
-
 	switch {
 	default:
-		w.writef(`(cancel <-chan struct{}%v) `, channel)
+		w.write(`(cancel <-chan struct{}) `)
+
+	case m.Chan:
+		channel := handlerChannel_name(m)
+		w.writef(`(cancel <-chan struct{}, ch *%v) `, channel)
 
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`(cancel <-chan struct{}%v, req %v) `, channel, typeName)
+		w.writef(`(cancel <-chan struct{}, req %v) `, typeName)
 
 	case m.InputFields != nil:
-		w.writef(`(cancel <-chan struct{}%v, `, channel)
+		w.writef(`(cancel <-chan struct{}, `)
 
 		fields := m.InputFields.List
 		multi := len(fields) > 3

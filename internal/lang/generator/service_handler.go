@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
@@ -91,6 +92,12 @@ func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 
 	// Parse input
 	switch {
+	case m.Chan:
+		w.line(`// Make channel`)
+		w.linef(`ch1 := New%v(ch)`, handlerChannel_name(m))
+		w.line(`ch1.in = call.Input()`)
+		w.line()
+
 	case m.Input != nil:
 		parseFunc := typeParseFunc(m.Input)
 		w.line(`// Parse input`)
@@ -152,15 +159,6 @@ func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 		w.line()
 	}
 
-	// Make channels
-	channel := ""
-	if m.Chan {
-		w.line(`// Make channel`)
-		w.linef(`ch1 := New%v(ch)`, handlerChannel_name(m))
-		w.line()
-		channel = ", ch1"
-	}
-
 	// Declare result
 	w.line(`// Call method`)
 	switch {
@@ -180,17 +178,22 @@ func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 
 	// Call method
 	switch {
+	case m.Chan:
+		w.linef(`h.service.%v(cancel, ch1)`, toUpperCamelCase(m.Name))
+
 	case m.Input != nil:
-		w.linef(`h.service.%v(cancel%v, in)`, toUpperCamelCase(m.Name), channel)
+		w.linef(`h.service.%v(cancel, in)`, toUpperCamelCase(m.Name))
+
 	case m.InputFields != nil:
-		w.writef(`h.service.%v(cancel%v, `, toUpperCamelCase(m.Name), channel)
+		w.writef(`h.service.%v(cancel, `, toUpperCamelCase(m.Name))
 		fields := m.InputFields.List
 		for _, f := range fields {
 			w.writef(`%v_, `, toLowerCameCase(f.Name))
 		}
 		w.line(`)`)
+
 	default:
-		w.linef(`h.service.%v(cancel%v)`, toUpperCamelCase(m.Name), channel)
+		w.linef(`h.service.%v(cancel)`, toUpperCamelCase(m.Name))
 	}
 
 	// Handle output
@@ -299,6 +302,9 @@ func (w *writer) handlerChannel(def *model.Definition, m *model.Method) error {
 	if err := w.handlerChannel_def(def, m); err != nil {
 		return err
 	}
+	if err := w.handlerChannel_input(def, m); err != nil {
+		return err
+	}
 	if err := w.handlerChannel_send(def, m); err != nil {
 		return err
 	}
@@ -315,12 +321,101 @@ func (w *writer) handlerChannel_def(def *model.Definition, m *model.Method) erro
 	w.line()
 	w.linef(`type %v struct {`, name)
 	w.line(`ch rpc.ServerChannel`)
+	w.line(`in spec.Value`)
 	w.line(`}`)
 	w.line()
 	w.linef(`func New%v(ch rpc.ServerChannel) *%v {`, name, name)
 	w.linef(`return &%v{ch: ch}`, name)
 	w.linef(`}`)
 	w.line()
+	return nil
+}
+
+func (w *writer) handlerChannel_input(def *model.Definition, m *model.Method) error {
+	name := handlerChannel_name(m)
+
+	switch {
+	case m.Input != nil:
+		typeName := typeName(m.Input)
+		parseFunc := typeParseFunc(m.Input)
+
+		w.linef(`func (c *%v) Input() (%v, status.Status) {`, name, typeName)
+		w.linef(`in, _, err := %v(c.in)`, parseFunc)
+		w.line(`if err != nil {`)
+		w.linef(`return %v{}, rpc.WrapError(err)`, typeName)
+		w.line(`}`)
+
+		w.line(`c.in = nil`)
+		w.line(`return in, status.OK`)
+		w.line(`}`)
+		w.line()
+
+	case m.InputFields != nil:
+		w.writef(`func (c *%v) Input() (`, name)
+
+		fields := m.InputFields.List
+		for _, f := range fields {
+			w.writef(`%v, `, typeName(f.Type))
+		}
+		w.line(`status.Status) {`)
+
+		w.linef(`in, err := c.in.MessageErr()`)
+		w.line(`if err != nil {`)
+		w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn(m))
+		w.line(`}`)
+		w.line()
+
+		for _, f := range fields {
+			typ := f.Type
+			name := toLowerCameCase(f.Name)
+
+			switch typ.Kind {
+			case model.KindBool:
+				w.linef(`_%v, err := in.Field(%d).BoolErr()`, name, f.Tag)
+			case model.KindByte:
+				w.linef(`_%v, err := in.Field(%d).ByteErr()`, name, f.Tag)
+
+			case model.KindInt16:
+				w.linef(`_%v, err := in.Field(%d).Int16Err()`, name, f.Tag)
+			case model.KindInt32:
+				w.linef(`_%v, err := in.Field(%d).Int32Err()`, name, f.Tag)
+			case model.KindInt64:
+				w.linef(`_%v, err := in.Field(%d).Int64Err()`, name, f.Tag)
+
+			case model.KindUint16:
+				w.linef(`_%v, err := in.Field(%d).Uint16Err()`, name, f.Tag)
+			case model.KindUint32:
+				w.linef(`_%v, err := in.Field(%d).Uint32Err()`, name, f.Tag)
+			case model.KindUint64:
+				w.linef(`_%v, err := in.Field(%d).Uint64Err()`, name, f.Tag)
+
+			case model.KindBin64:
+				w.linef(`_%v, err := in.Field(%d).Bin64Err()`, name, f.Tag)
+			case model.KindBin128:
+				w.linef(`_%v, err := in.Field(%d).Bin128Err()`, name, f.Tag)
+			case model.KindBin256:
+				w.linef(`_%v, err := in.Field(%d).Bin256Err()`, name, f.Tag)
+
+			case model.KindFloat32:
+				w.linef(`_%v, err := in.Field(%d).Float32Err()`, name, f.Tag)
+			case model.KindFloat64:
+				w.linef(`_%v, err := in.Field(%d).Float64Err()`, name, f.Tag)
+			}
+
+			w.line(`if err != nil {`)
+			w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn(m))
+			w.line(`}`)
+		}
+
+		w.line(`c.in = nil`)
+		w.write(`return `)
+		for _, f := range fields {
+			w.writef(`_%v, `, toLowerCameCase(f.Name))
+		}
+		w.line(`status.OK`)
+		w.line(`}`)
+		w.line()
+	}
 	return nil
 }
 
@@ -367,4 +462,56 @@ func (w *writer) handlerChannel_receive(def *model.Definition, m *model.Method) 
 
 func handlerChannel_name(m *model.Method) string {
 	return fmt.Sprintf("%v%vServerChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
+}
+
+func handlerChannel_zeroReturn(m *model.Method) string {
+	switch {
+	default:
+		return ``
+
+	case m.Output != nil:
+		return `nil, `
+
+	case m.OutputFields != nil:
+		b := strings.Builder{}
+		fields := m.OutputFields.List
+
+		for _, f := range fields {
+			typ := f.Type
+			switch typ.Kind {
+			case model.KindBool:
+				b.WriteString(`false, `)
+			case model.KindByte:
+				b.WriteString(`0, `)
+
+			case model.KindInt16:
+				b.WriteString(`0, `)
+			case model.KindInt32:
+				b.WriteString(`0, `)
+			case model.KindInt64:
+				b.WriteString(`0, `)
+
+			case model.KindUint16:
+				b.WriteString(`0, `)
+			case model.KindUint32:
+				b.WriteString(`0, `)
+			case model.KindUint64:
+				b.WriteString(`0, `)
+
+			case model.KindBin64:
+				b.WriteString(`bin.Bin64{}, `)
+			case model.KindBin128:
+				b.WriteString(`bin.Bin128{}, `)
+			case model.KindBin256:
+				b.WriteString(`bin.Bin256{}, `)
+
+			case model.KindFloat32:
+				b.WriteString(`0, `)
+			case model.KindFloat64:
+				b.WriteString(`0, `)
+			}
+		}
+
+		return b.String()
+	}
 }
