@@ -8,7 +8,6 @@ import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
-	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -78,7 +77,7 @@ func BenchmarkStream(b *testing.B) {
 	streamMsg := []byte("hello, world")
 	closeMsg := []byte("close")
 
-	handle := func(cancel <-chan struct{}, ch ServerChannel, req prpc.Request) (*alloc.Buffer, status.Status) {
+	handle := func(cancel <-chan struct{}, ch ServerChannel) (*alloc.Buffer, status.Status) {
 		for {
 			msg, st := ch.Receive(cancel)
 			if !st.OK() {

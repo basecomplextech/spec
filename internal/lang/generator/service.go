@@ -9,9 +9,9 @@ func (w *writer) service(def *model.Definition) error {
 	if err := w.client(def); err != nil {
 		return err
 	}
-	// if err := w.handler(def); err != nil {
-	// 	return err
-	// }
+	if err := w.handler(def); err != nil {
+		return err
+	}
 	return nil
 }
 

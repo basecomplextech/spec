@@ -13,6 +13,9 @@ import (
 
 // ServerChannel is a server RPC channel.
 type ServerChannel interface {
+	// Request returns the request, the message is valid until the next call to Receive.
+	Request(cancel <-chan struct{}) (prpc.Request, status.Status)
+
 	// End sends an end message to the channel.
 	End(cancel <-chan struct{}) status.Status
 
@@ -35,13 +38,38 @@ type serverChannel struct {
 	state   *serverChannelState
 }
 
-func newServerChannel(ch tcp.Channel) *serverChannel {
+func newServerChannel(ch tcp.Channel, req prpc.Request) *serverChannel {
 	s := acquireServerState()
+	s.readReq = req
 
 	return &serverChannel{
 		ch:    ch,
 		state: s,
 	}
+}
+
+// Request returns the request, the message is valid until the next call to Receive.
+func (ch *serverChannel) Request(cancel <-chan struct{}) (prpc.Request, status.Status) {
+	s, ok := ch.rlock()
+	if !ok {
+		return prpc.Request{}, status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Read lock
+	select {
+	case <-s.readLock:
+	case <-cancel:
+		return prpc.Request{}, status.Cancelled
+	}
+	defer s.readLock.Unlock()
+
+	// Check state
+	if s.readReq.IsEmpty() {
+		return prpc.Request{}, Error("request already received")
+	}
+
+	return s.readReq, status.OK
 }
 
 // End sends an end message to the channel.
@@ -153,6 +181,11 @@ func (ch *serverChannel) Receive(cancel <-chan struct{}) ([]byte, status.Status)
 		return nil, status.End
 	}
 
+	// Clear request
+	if !s.readReq.IsEmpty() {
+		s.readReq = prpc.Request{}
+	}
+
 	// Read message
 	var msg prpc.Message
 	{
@@ -225,6 +258,7 @@ type serverChannelState struct {
 	writeMsg  spec.Writer
 
 	readLock   async.Lock
+	readReq    prpc.Request
 	readEnd    bool // end received
 	readFailed bool
 	readError  status.Status
@@ -271,6 +305,7 @@ func (s *serverChannelState) reset() {
 	s.writeBuf.Reset()
 	s.writeMsg.Reset(s.writeBuf)
 
+	s.readReq = prpc.Request{}
 	s.readEnd = false
 	s.readFailed = false
 	s.readError = status.None
