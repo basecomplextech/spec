@@ -2,7 +2,7 @@
 
 enum Version {
     UNDEFINED = 0;
-    Version_1_0 = 1;
+    Version_1_0 = 10;
 }
 
 message ConnectRequest {
@@ -19,22 +19,25 @@ message ConnectResponse {
 
 enum Code {
     UNDEFINED = 0;
-    NEW_CHANNEL = 1;
+    OPEN_CHANNEL = 1;
     CLOSE_CHANNEL = 2;
     CHANNEL_MESSAGE = 3;
+    CHANNEL_WINDOW = 4;
 }
 
 message Message {
     code    Code            1;
-    new     NewChannel      2;
+    open    OpenChannel     2;
     close   CloseChannel    3;
     message ChannelMessage  4;
+    window  ChannelWindow   5;
 }
 
 // Channels
 
-message NewChannel {
-    id  bin128  1;
+message OpenChannel {
+    id      bin128  1;
+    window  int32   2; // Channel read/write window, 0 means unlimited
 }
 
 message CloseChannel {
@@ -44,4 +47,9 @@ message CloseChannel {
 message ChannelMessage {
     id      bin128  1;
     data    bytes   2;
+}
+
+message ChannelWindow {
+    id      bin128  1;
+    delta   int32   2; // Increment write window by delta
 }

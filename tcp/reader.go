@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/basecomplextech/baselibrary/alloc"
@@ -51,7 +52,7 @@ func (r *reader) readLine() (string, status.Status) {
 	}
 
 	if debug {
-		debugPrint(r.client, "<- line\t%q", s)
+		debugPrint(r.client, "<- line\t", strings.TrimSpace(s))
 	}
 	return s, status.OK
 }
@@ -108,12 +109,14 @@ func (r *reader) readMessage() (ptcp.Message, status.Status) {
 	if debug {
 		code := msg.Code()
 		switch code {
-		case ptcp.Code_NewChannel:
-			debugPrint(r.client, "<- open\t", msg.New().Id())
+		case ptcp.Code_OpenChannel:
+			debugPrint(r.client, "<- open\t", msg.Open().Id())
 		case ptcp.Code_CloseChannel:
 			debugPrint(r.client, "<- close\t", msg.Close().Id())
 		case ptcp.Code_ChannelMessage:
 			debugPrint(r.client, "<- message\t", msg.Message().Id())
+		case ptcp.Code_ChannelWindow:
+			debugPrint(r.client, "<- window\t", msg.Window().Id(), msg.Window().Delta())
 		default:
 			debugPrint(r.client, "<- unknown", code)
 		}

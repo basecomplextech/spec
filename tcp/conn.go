@@ -84,7 +84,7 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger) *c
 
 		reader: newReader(c, client),
 		writer: newWriter(c, client),
-		writeq: alloc.NewMQueueCap(connWriteQueueCap),
+		writeq: alloc.NewMQueueCap(connQueueCap),
 	}
 }
 
@@ -303,11 +303,10 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 		// Handle message
 		code := msg.Code()
 		switch code {
-		case ptcp.Code_NewChannel:
-			m := msg.New()
-			id := m.Id()
+		case ptcp.Code_OpenChannel:
+			m := msg.Open()
 
-			if st := c.channels.opened(c, id); !st.OK() {
+			if st := c.channels.opened(c, m); !st.OK() {
 				return st
 			}
 
@@ -319,7 +318,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			if !ok {
 				continue
 			}
-			ch.connReceived(cancel, msg)
+			ch.receiveMessage(cancel, msg)
 
 		case ptcp.Code_ChannelMessage:
 			m := msg.Message()
@@ -329,7 +328,17 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			if !ok {
 				continue
 			}
-			ch.connReceived(cancel, msg)
+			ch.receiveMessage(cancel, msg)
+
+		case ptcp.Code_ChannelWindow:
+			m := msg.Window()
+			id := m.Id()
+
+			ch, ok := c.channels.get(id)
+			if !ok {
+				continue
+			}
+			ch.receiveWindow(cancel, msg)
 
 		default:
 			return tcpErrorf("unexpected tpc message code %d", code)
@@ -503,12 +512,12 @@ func (c *connChannels) open(conn *conn) (*channel, status.Status) {
 		debugPrint(c.client, "conn.open\t", id)
 	}
 
-	ch := openChannel(id, conn)
+	ch := openChannel(conn, id)
 	c.channels[ch.id] = ch
 	return ch, status.OK
 }
 
-func (c *connChannels) opened(conn *conn, id bin.Bin128) status.Status {
+func (c *connChannels) opened(conn *conn, msg ptcp.OpenChannel) status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -516,6 +525,7 @@ func (c *connChannels) opened(conn *conn, id bin.Bin128) status.Status {
 		return statusConnClosed
 	}
 
+	id := msg.Id()
 	_, ok := c.channels[id]
 	if ok {
 		return tcpErrorf("ch %v already exists", id) // impossible
@@ -525,7 +535,7 @@ func (c *connChannels) opened(conn *conn, id bin.Bin128) status.Status {
 		debugPrint(c.client, "conn.opened\t", id)
 	}
 
-	ch := openedChannel(id, conn)
+	ch := openedChannel(conn, msg)
 	c.channels[id] = ch
 	return status.OK
 }

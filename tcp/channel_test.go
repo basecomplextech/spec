@@ -103,6 +103,35 @@ func TestChannel_Read__should_read_pending_messages_even_when_closed(t *testing.
 	assert.Equal(t, status.End, st)
 }
 
+func TestChannel_Read__should_increment_read_bytes(t *testing.T) {
+	server := testServer(t, func(s Channel) status.Status {
+		st := s.Write(nil, []byte("hello, channel"))
+		if !st.OK() {
+			return st
+		}
+		return s.Close()
+	})
+
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	ch := testChannel(t, conn)
+	defer ch.Free()
+
+	st := ch.Write(nil, []byte("hello, server"))
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	assert.Equal(t, 0, ch.state.readBytes)
+
+	_, st = ch.Read(nil)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	assert.Equal(t, 53, ch.state.readBytes)
+}
+
 // Write
 
 func TestChannel_Write__should_send_message(t *testing.T) {
@@ -173,6 +202,115 @@ func TestChannel_Write__should_return_error_when_ch_closed(t *testing.T) {
 	assert.Equal(t, statusChannelClosed, st)
 }
 
+func TestChannel_Write__should_decrement_write_window(t *testing.T) {
+	server := testRequestServer(t)
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	ch := testChannel(t, conn)
+	defer ch.Free()
+	assert.Equal(t, ch.state.window, ch.state.writeWindow)
+
+	st := ch.Write(nil, []byte("hello, world"))
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	assert.Equal(t, ch.state.window-51, ch.state.writeWindow)
+}
+
+func TestChannel_Write__should_block_when_write_window_not_enough(t *testing.T) {
+	server := testRequestServer(t)
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	ch := testChannel(t, conn)
+	defer ch.Free()
+
+	assert.Equal(t, ch.state.window, ch.state.writeWindow)
+	msg := bytes.Repeat([]byte("a"), (ch.state.window / 3))
+
+	st := ch.Write(nil, msg)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	st = ch.Write(nil, msg)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	timeout := make(chan struct{})
+	go func() {
+		defer close(timeout)
+		time.Sleep(time.Millisecond * 100)
+	}()
+
+	st = ch.Write(timeout, msg)
+	assert.Equal(t, status.Cancelled, st)
+}
+
+func TestChannel_Write__should_wait_write_window_increment(t *testing.T) {
+	server := testServer(t, func(ch Channel) status.Status {
+		if _, st := ch.Read(nil); !st.OK() {
+			return st
+		}
+		if _, st := ch.Read(nil); !st.OK() {
+			return st
+		}
+		return status.OK
+	})
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	ch := testChannel(t, conn)
+	defer ch.Free()
+
+	assert.Equal(t, ch.state.window, ch.state.writeWindow)
+	msg := bytes.Repeat([]byte("a"), (ch.state.window/2)+1)
+
+	st := ch.Write(nil, msg)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	st = ch.Write(nil, msg)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+}
+
+func TestChannel_Write__should_write_message_if_it_exceeds_half_window_size(t *testing.T) {
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
+
+	server := testServer(t, func(ch Channel) status.Status {
+		<-timer.C
+
+		ch.Read(nil)
+		ch.Read(nil)
+		return status.OK
+	})
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	ch := testChannel(t, conn)
+	defer ch.Free()
+
+	assert.Equal(t, ch.state.window, ch.state.writeWindow)
+	msg0 := bytes.Repeat([]byte("a"), (ch.state.window/2)-100)
+
+	st := ch.Write(nil, msg0)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	msg1 := bytes.Repeat([]byte("a"), (ch.state.window/2)+100)
+	st = ch.Write(nil, msg1)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+}
+
 // Close
 
 func TestChannel_Close__should_send_close_message(t *testing.T) {
@@ -220,7 +358,7 @@ func TestChannel_Close__should_close_incoming_queue(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.True(t, ch.state.readq.Closed())
+	assert.True(t, ch.state.readQueue.Closed())
 }
 
 func TestChannel_Close__should_ignore_when_already_closed(t *testing.T) {

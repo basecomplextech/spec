@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
+	"strings"
 
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/ptcp"
@@ -30,12 +31,12 @@ func (w *writer) flush() status.Status {
 }
 
 // writeString writes a single string.
-func (w *writer) writeString(line string) status.Status {
-	if _, err := w.w.WriteString(line); err != nil {
+func (w *writer) writeString(s string) status.Status {
+	if _, err := w.w.WriteString(s); err != nil {
 		return tcpError(err)
 	}
 	if debug {
-		debugPrint(w.client, "-> line\t%q", line)
+		debugPrint(w.client, "-> line\t", strings.TrimSpace(s))
 	}
 	return status.OK
 }
@@ -103,12 +104,14 @@ func (w *writer) writeMessage(msg []byte) status.Status {
 		m := ptcp.NewMessage(msg)
 		code := m.Code()
 		switch code {
-		case ptcp.Code_NewChannel:
-			debugPrint(w.client, "-> open\t", m.New().Id())
+		case ptcp.Code_OpenChannel:
+			debugPrint(w.client, "-> open\t", m.Open().Id())
 		case ptcp.Code_CloseChannel:
 			debugPrint(w.client, "-> close\t", m.Close().Id())
 		case ptcp.Code_ChannelMessage:
 			debugPrint(w.client, "-> message\t", m.Message().Id())
+		case ptcp.Code_ChannelWindow:
+			debugPrint(w.client, "-> window\t", m.Window().Id(), m.Window().Delta())
 		default:
 			debugPrint(w.client, "-> unknown", code)
 		}

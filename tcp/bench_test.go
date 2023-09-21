@@ -127,6 +127,133 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 
 // Stream
 
+func BenchmarkStream(b *testing.B) {
+	closeMsg := []byte("close")
+	handle := func(ch Channel) status.Status {
+		for {
+			msg, st := ch.Read(nil)
+			if !st.OK() {
+				return st
+			}
+			if !bytes.Equal(msg, closeMsg) {
+				continue
+			}
+
+			break
+		}
+
+		st := ch.Write(nil, closeMsg)
+		if !st.OK() {
+			return st
+		}
+		return ch.Close()
+	}
+
+	server := testServer(b, handle)
+	conn := testConnect(b, server)
+	defer conn.Free()
+
+	b.SetBytes(int64(benchMsgSize))
+	b.ReportAllocs()
+	b.ResetTimer()
+	t0 := time.Now()
+
+	ch, st := conn.Channel(nil)
+	if !st.OK() {
+		b.Fatal(st)
+	}
+	defer ch.Free()
+
+	msg := bytes.Repeat([]byte("a"), benchMsgSize)
+	for i := 0; i < b.N; i++ {
+		st = ch.Write(nil, msg)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+	}
+
+	st = ch.Write(nil, closeMsg)
+	if !st.OK() {
+		b.Fatal(st)
+	}
+
+	_, st = ch.Read(nil)
+	if !st.OK() {
+		b.Fatal(st)
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+}
+
+func BenchmarkStream_16kb(b *testing.B) {
+	close := []byte("close")
+	benchMsgSize := 16 * 1024
+
+	handle := func(ch Channel) status.Status {
+		for {
+			msg, st := ch.Read(nil)
+			if !st.OK() {
+				return st
+			}
+			if !bytes.Equal(msg, close) {
+				continue
+			}
+
+			break
+		}
+
+		st := ch.Write(nil, close)
+		if !st.OK() {
+			return st
+		}
+		return ch.Close()
+	}
+
+	server := testServer(b, handle)
+	conn := testConnect(b, server)
+	defer conn.Free()
+
+	b.SetBytes(int64(benchMsgSize))
+	b.ReportAllocs()
+	b.ResetTimer()
+	t0 := time.Now()
+
+	ch, st := conn.Channel(nil)
+	if !st.OK() {
+		b.Fatal(st)
+	}
+	defer ch.Free()
+
+	msg := bytes.Repeat([]byte("a"), benchMsgSize)
+
+	for i := 0; i < b.N; i++ {
+		st = ch.Write(nil, msg)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+	}
+
+	st = ch.Write(nil, close)
+	if !st.OK() {
+		b.Fatal(st)
+	}
+
+	_, st = ch.Read(nil)
+	if !st.OK() {
+		b.Fatal(st)
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+}
+
 func BenchmarkStream_Parallel(b *testing.B) {
 	closeMsg := []byte("close")
 	handle := func(ch Channel) status.Status {
