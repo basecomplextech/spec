@@ -192,9 +192,14 @@ func (c *conn) connectClient(cancel <-chan struct{}) status.Status {
 	// Write connect request
 	{
 		w := ptcp.NewConnectRequestWriter()
+
 		vv := w.Versions()
 		vv.Add(ptcp.Version_Version10)
 		vv.End()
+
+		cc := w.Compress()
+		cc.Add(ptcp.Compress_Lz4)
+		cc.End()
 
 		req, err := w.Build()
 		if err != nil {
@@ -278,10 +283,22 @@ func (c *conn) connectServer(cancel <-chan struct{}) status.Status {
 		return c.writer.writeResponse(resp)
 	}
 
+	// Select compression
+	compress := ptcp.Compress_None
+	cc := req.Compress()
+	for i := 0; i < cc.Len(); i++ {
+		c := cc.Get(i)
+		if c == ptcp.Compress_Lz4 {
+			compress = ptcp.Compress_Lz4
+			break
+		}
+	}
+
 	// Return response
 	w := ptcp.NewConnectResponseWriter()
 	w.Ok(true)
 	w.Version(ptcp.Version_Version10)
+	w.Compress(compress)
 
 	resp, err := w.Build()
 	if err != nil {

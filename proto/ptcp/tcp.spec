@@ -5,14 +5,22 @@ enum Version {
     Version_1_0 = 10;
 }
 
+enum Compress {
+    NONE = 0;
+    LZ4 = 1;
+}
+
 message ConnectRequest {
     versions    []Version   1; // Proposed versions
+    compress    []Compress  2; // Proposed compression algorithms
 }
 
 message ConnectResponse {
     ok      bool    1;
     error   string  2;
-    version Version 10; // Negotiated version
+
+    version     Version     10; // Negotiated version
+    compress    Compress    11; // Negotiated compression algorithm
 }
 
 // Messages
