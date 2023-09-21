@@ -43,6 +43,15 @@ func (r *reader) free() {
 	r.buf = nil
 }
 
+// readLine reads and returns a single line delimited by \n, includes the delimiter.
+func (r *reader) readLine() (string, status.Status) {
+	s, err := r.r.ReadString('\n')
+	if err != nil {
+		return "", tcpError(err)
+	}
+	return s, status.OK
+}
+
 // read reads the next message, the message is valid until the next read.
 func (r *reader) read() (ptcp.Message, status.Status) {
 	r.mu.Lock()

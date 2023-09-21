@@ -9,6 +9,10 @@ import (
 )
 
 const (
+	ProtocolLine = "SpecTCP/1\n"
+)
+
+const (
 	readBufferSize    = 32 * 1024
 	writeBufferSize   = 32 * 1024
 	connWriteQueueCap = 1024 * 1024 // max connection write queue capacity

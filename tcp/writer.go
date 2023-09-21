@@ -29,6 +29,17 @@ func (w *writer) flush() status.Status {
 	return status.OK
 }
 
+// writeString writes a single string.
+func (w *writer) writeString(line string) status.Status {
+	if _, err := w.w.WriteString(line); err != nil {
+		return tcpError(err)
+	}
+	if err := w.w.Flush(); err != nil {
+		return tcpError(err)
+	}
+	return status.OK
+}
+
 func (w *writer) write(msg []byte) status.Status {
 	head := w.head[:]
 

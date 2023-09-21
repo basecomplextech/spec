@@ -123,6 +123,12 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 	}()
 	defer c.close()
 
+	// Connect
+	if st := c.connect(cancel); !st.OK() {
+		c.logger.Error("Connection failed", "client", c.client, "status", st)
+		return st
+	}
+
 	// Start loops
 	reader := async.Go(c.readLoop)
 	writer := async.Go(c.writeLoop)
@@ -165,6 +171,38 @@ func (c *conn) close() {
 
 func (c *conn) closed() bool {
 	return c.socket.closed()
+}
+
+// connect
+
+func (c *conn) connect(cancel <-chan struct{}) status.Status {
+	// Check line
+	if st := c.writer.writeString(ProtocolLine); !st.OK() {
+		return st
+	}
+	line, st := c.reader.readLine()
+	if !st.OK() {
+		return st
+	}
+	if line != ProtocolLine {
+		return tcpErrorf("invalid protocol, expected %q, got %q", ProtocolLine, line)
+	}
+
+	// Connect request/response
+	if c.client {
+		return c.connectClient(cancel)
+	} else {
+		return c.connectServer(cancel)
+	}
+}
+
+func (c *conn) connectClient(cancel <-chan struct{}) status.Status {
+
+	return status.OK
+}
+
+func (c *conn) connectServer(cancel <-chan struct{}) status.Status {
+	return status.OK
 }
 
 // read
