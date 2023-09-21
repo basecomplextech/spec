@@ -1,4 +1,21 @@
+// Connect
 
+enum Version {
+    UNDEFINED = 0;
+    Version_1_0 = 1;
+}
+
+message ConnectRequest {
+    versions    []Version   1; // Proposed versions
+}
+
+message ConnectResponse {
+    ok      bool    1;
+    error   string  2;
+    version Version 10; // Negotiated version
+}
+
+// Messages
 
 enum Code {
     UNDEFINED = 0;
@@ -13,6 +30,8 @@ message Message {
     close   CloseChannel    3;
     message ChannelMessage  4;
 }
+
+// Channels
 
 message NewChannel {
     id  bin128  1;

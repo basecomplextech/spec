@@ -34,13 +34,58 @@ func (w *writer) writeString(line string) status.Status {
 	if _, err := w.w.WriteString(line); err != nil {
 		return tcpError(err)
 	}
-	if err := w.w.Flush(); err != nil {
-		return tcpError(err)
+	if debug {
+		debugPrint(w.client, "-> line\t%q", line)
 	}
 	return status.OK
 }
 
-func (w *writer) write(msg []byte) status.Status {
+// writeRequest writes a connect request and flushes the writer.
+func (w *writer) writeRequest(req ptcp.ConnectRequest) status.Status {
+	msg := req.Unwrap().Raw()
+	head := w.head[:]
+
+	// Write size
+	binary.BigEndian.PutUint32(head, uint32(len(msg)))
+	if _, err := w.w.Write(head); err != nil {
+		return tcpError(err)
+	}
+
+	// Write message
+	if _, err := w.w.Write(msg); err != nil {
+		return tcpError(err)
+	}
+
+	if debug {
+		debugPrint(w.client, "-> connect req")
+	}
+	return w.flush()
+}
+
+// writeRequest writes a connect response and flushes the writer.
+func (w *writer) writeResponse(resp ptcp.ConnectResponse) status.Status {
+	msg := resp.Unwrap().Raw()
+	head := w.head[:]
+
+	// Write size
+	binary.BigEndian.PutUint32(head, uint32(len(msg)))
+	if _, err := w.w.Write(head); err != nil {
+		return tcpError(err)
+	}
+
+	// Write message
+	if _, err := w.w.Write(msg); err != nil {
+		return tcpError(err)
+	}
+
+	if debug {
+		debugPrint(w.client, "-> connect resp")
+	}
+	return w.flush()
+}
+
+// writeMessage writes a single message.
+func (w *writer) writeMessage(msg []byte) status.Status {
 	head := w.head[:]
 
 	// Write size

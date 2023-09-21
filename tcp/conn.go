@@ -176,19 +176,6 @@ func (c *conn) closed() bool {
 // connect
 
 func (c *conn) connect(cancel <-chan struct{}) status.Status {
-	// Check line
-	if st := c.writer.writeString(ProtocolLine); !st.OK() {
-		return st
-	}
-	line, st := c.reader.readLine()
-	if !st.OK() {
-		return st
-	}
-	if line != ProtocolLine {
-		return tcpErrorf("invalid protocol, expected %q, got %q", ProtocolLine, line)
-	}
-
-	// Connect request/response
 	if c.client {
 		return c.connectClient(cancel)
 	} else {
@@ -197,12 +184,110 @@ func (c *conn) connect(cancel <-chan struct{}) status.Status {
 }
 
 func (c *conn) connectClient(cancel <-chan struct{}) status.Status {
+	// Write protocol line
+	if st := c.writer.writeString(ProtocolLine); !st.OK() {
+		return st
+	}
 
+	// Write connect request
+	{
+		w := ptcp.NewConnectRequestWriter()
+		vv := w.Versions()
+		vv.Add(ptcp.Version_Version10)
+		vv.End()
+
+		req, err := w.Build()
+		if err != nil {
+			return tcpError(err)
+		}
+
+		if st := c.writer.writeRequest(req); !st.OK() {
+			return st
+		}
+	}
+
+	// Read/check protocol line
+	line, st := c.reader.readLine()
+	if !st.OK() {
+		return st
+	}
+	if line != ProtocolLine {
+		return tcpErrorf("invalid protocol, expected %q, got %q", ProtocolLine, line)
+	}
+
+	// Read connect response
+	resp, st := c.reader.readResponse()
+	if !st.OK() {
+		return st
+	}
+
+	// Check status
+	ok := resp.Ok()
+	if !ok {
+		return tcpErrorf("server refused connection: %v", resp.Error())
+	}
+
+	// Check version
+	v := resp.Version()
+	if v != ptcp.Version_Version10 {
+		return tcpErrorf("server returned unsupported version %d", v)
+	}
 	return status.OK
 }
 
 func (c *conn) connectServer(cancel <-chan struct{}) status.Status {
-	return status.OK
+	// Write protocol line
+	if st := c.writer.writeString(ProtocolLine); !st.OK() {
+		return st
+	}
+
+	// Read/check protocol line
+	line, st := c.reader.readLine()
+	if !st.OK() {
+		return st
+	}
+	if line != ProtocolLine {
+		return tcpErrorf("invalid protocol, expected %q, got %q", ProtocolLine, line)
+	}
+
+	// Read connect request
+	req, st := c.reader.readRequest()
+	if !st.OK() {
+		return st
+	}
+
+	// Check version
+	ok := false
+	vv := req.Versions()
+	for i := 0; i < vv.Len(); i++ {
+		v := vv.Get(i)
+		if v == ptcp.Version_Version10 {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		w := ptcp.NewConnectResponseWriter()
+		w.Ok(false)
+		w.Error("unsupported protocol versions")
+
+		resp, err := w.Build()
+		if err != nil {
+			return tcpError(err)
+		}
+		return c.writer.writeResponse(resp)
+	}
+
+	// Return response
+	w := ptcp.NewConnectResponseWriter()
+	w.Ok(true)
+	w.Version(ptcp.Version_Version10)
+
+	resp, err := w.Build()
+	if err != nil {
+		return tcpError(err)
+	}
+	return c.writer.writeResponse(resp)
 }
 
 // read
@@ -210,7 +295,7 @@ func (c *conn) connectServer(cancel <-chan struct{}) status.Status {
 func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 	for {
 		// Receive message
-		msg, st := c.reader.read()
+		msg, st := c.reader.readMessage()
 		if !st.OK() {
 			return st
 		}
@@ -270,7 +355,7 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 				c.channels.remove(id)
 			}
 
-			if st := c.writer.write(b); !st.OK() {
+			if st := c.writer.writeMessage(b); !st.OK() {
 				return st
 			}
 

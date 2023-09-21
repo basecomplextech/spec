@@ -49,27 +49,54 @@ func (r *reader) readLine() (string, status.Status) {
 	if err != nil {
 		return "", tcpError(err)
 	}
+
+	if debug {
+		debugPrint(r.client, "<- line\t%q", s)
+	}
 	return s, status.OK
 }
 
-// read reads the next message, the message is valid until the next read.
-func (r *reader) read() (ptcp.Message, status.Status) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	head := r.head[:]
-
-	// Read size
-	if _, err := io.ReadFull(r.r, head); err != nil {
-		return ptcp.Message{}, tcpError(err)
+// readRequest reads and parses a connect request, the message is valid until the next read call.
+func (r *reader) readRequest() (ptcp.ConnectRequest, status.Status) {
+	buf, st := r.read()
+	if !st.OK() {
+		return ptcp.ConnectRequest{}, st
 	}
-	size := binary.BigEndian.Uint32(head)
 
-	// Read message
-	r.buf.Reset()
-	buf := r.buf.Grow(int(size))
-	if _, err := io.ReadFull(r.r, buf); err != nil {
-		return ptcp.Message{}, tcpError(err)
+	req, _, err := ptcp.ParseConnectRequest(buf)
+	if err != nil {
+		return ptcp.ConnectRequest{}, tcpErrorf("failed to parse connect request: %v", err)
+	}
+
+	if debug {
+		debugPrint(r.client, "<- connect req")
+	}
+	return req, status.OK
+}
+
+// readResponse reads and parses a connect response, the message is valid until the next read call.
+func (r *reader) readResponse() (ptcp.ConnectResponse, status.Status) {
+	buf, st := r.read()
+	if !st.OK() {
+		return ptcp.ConnectResponse{}, st
+	}
+
+	resp, _, err := ptcp.ParseConnectResponse(buf)
+	if err != nil {
+		return ptcp.ConnectResponse{}, tcpErrorf("failed to parse connect response: %v", err)
+	}
+
+	if debug {
+		debugPrint(r.client, "<- connect resp")
+	}
+	return resp, status.OK
+}
+
+// readMessage reads and parses the next message, the message is valid until the next read call.
+func (r *reader) readMessage() (ptcp.Message, status.Status) {
+	buf, st := r.read()
+	if !st.OK() {
+		return ptcp.Message{}, st
 	}
 
 	// Parse message
@@ -92,4 +119,26 @@ func (r *reader) read() (ptcp.Message, status.Status) {
 		}
 	}
 	return msg, status.OK
+}
+
+// read reads the next message bytes, the bytes are valid until the next read call.
+func (r *reader) read() ([]byte, status.Status) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	head := r.head[:]
+
+	// Read size
+	if _, err := io.ReadFull(r.r, head); err != nil {
+		return nil, tcpError(err)
+	}
+	size := binary.BigEndian.Uint32(head)
+
+	// Read bytes
+	r.buf.Reset()
+	buf := r.buf.Grow(int(size))
+	if _, err := io.ReadFull(r.r, buf); err != nil {
+		return nil, tcpError(err)
+	}
+	return buf, status.OK
 }
