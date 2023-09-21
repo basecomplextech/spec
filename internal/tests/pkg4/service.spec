@@ -21,7 +21,10 @@ service Service {
     method2(a int64 1, b float64 2, c bool 3) (a int64 1, b float64 2, c bool 3);
 
     // Method3 doc comment.
-    method3(
+    method3(Request) (Response);
+
+    // Method4 doc comment.
+    method4(
         a00 bool    1,
         a01 byte    2,
 

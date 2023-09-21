@@ -91,7 +91,24 @@ func TestService_Request(t *testing.T) {
 
 	// method3
 	{
-		w := NewServiceMethod3RequestWriter()
+		w := NewRequestWriter()
+		w.Msg("hello")
+
+		req, err := w.Build()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp, st := client.Method3(nil, req)
+		if !st.OK() {
+			t.Fatal(st)
+		}
+		resp.Release()
+	}
+
+	// method4
+	{
+		w := NewServiceMethod4RequestWriter()
 		w.A00(true)
 		w.A01(1)
 		w.A10(10)
@@ -103,7 +120,7 @@ func TestService_Request(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ok, st := client.Method3(nil, req)
+		ok, st := client.Method4(nil, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}

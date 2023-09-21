@@ -1,6 +1,7 @@
 package pkg4
 
 import (
+	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
@@ -36,7 +37,21 @@ func (s *testService) Method2(cancel <-chan struct{}, a_ int64, b_ float64, c_ b
 	return a_, b_, c_, status.OK
 }
 
-func (s *testService) Method3(cancel <-chan struct{}, req ServiceMethod3Request) (
+func (s *testService) Method3(cancel <-chan struct{}, req Request) (*ref.R[Response], status.Status) {
+	msg := req.Msg()
+
+	buf := alloc.NewBuffer()
+	w := NewResponseWriterBuffer(buf)
+	w.Msg(msg.Unwrap())
+
+	resp, err := w.Build()
+	if err != nil {
+		return nil, status.WrapError(err)
+	}
+	return ref.NewFreer(resp, buf), status.OK
+}
+
+func (s *testService) Method4(cancel <-chan struct{}, req ServiceMethod4Request) (
 	_ok bool, _st status.Status) {
 	return true, status.OK
 }
