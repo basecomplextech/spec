@@ -28,13 +28,13 @@ type Conn interface {
 }
 
 // Connect dials an address and returns a connection.
-func Connect(address string, logger logging.Logger) (Conn, status.Status) {
-	return connect(address, logger)
+func Connect(address string, logger logging.Logger, opts Options) (Conn, status.Status) {
+	return connect(address, logger, opts)
 }
 
 // ConnectTimeout dials an address and returns a connection.
-func ConnectTimeout(address string, logger logging.Logger, timeout time.Duration) (Conn, status.Status) {
-	return connectTimeout(address, logger, timeout)
+func ConnectTimeout(address string, logger logging.Logger, opts Options, timeout time.Duration) (Conn, status.Status) {
+	return connectTimeout(address, logger, opts, timeout)
 }
 
 // internal
@@ -42,6 +42,7 @@ func ConnectTimeout(address string, logger logging.Logger, timeout time.Duration
 type conn struct {
 	handler Handler
 	logger  logging.Logger
+	options Options
 
 	client   bool
 	socket   connSocket
@@ -54,11 +55,13 @@ type conn struct {
 	routine async.Routine[struct{}]
 }
 
-func connect(address string, logger logging.Logger) (*conn, status.Status) {
-	return connectTimeout(address, logger, 0)
+func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
+	return connectTimeout(address, logger, opts, 0)
 }
 
-func connectTimeout(address string, logger logging.Logger, timeout time.Duration) (*conn, status.Status) {
+func connectTimeout(address string, logger logging.Logger, opts Options, timeout time.Duration) (
+	*conn, status.Status) {
+
 	nc, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, tcpError(err)
@@ -68,23 +71,26 @@ func connectTimeout(address string, logger logging.Logger, timeout time.Duration
 		return c.Close()
 	})
 
-	c := newConn(nc, true /* client */, h, logger)
+	c := newConn(nc, true /* client */, h, logger, opts)
 	c.routine = async.Go(c.run)
 	return c, status.OK
 }
 
-func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger) *conn {
+func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, opts Options) *conn {
+	opts = opts.clean()
+
 	return &conn{
 		handler: handler,
 		logger:  logger,
+		options: opts,
 
 		client:   client,
 		socket:   newConnSocket(client, c),
 		channels: newConnChannels(client),
 
-		reader: newReader(c, client),
-		writer: newWriter(c, client),
-		writeq: alloc.NewMQueueCap(connQueueCap),
+		reader: newReader(c, client, int(opts.ReadBufferSize)),
+		writer: newWriter(c, client, int(opts.WriteBufferSize)),
+		writeq: alloc.NewMQueueCap(int(opts.WriteQueueSize)),
 	}
 }
 
@@ -197,9 +203,11 @@ func (c *conn) connectClient(cancel <-chan struct{}) status.Status {
 		vv.Add(ptcp.Version_Version10)
 		vv.End()
 
-		cc := w.Compress()
-		cc.Add(ptcp.Compress_Lz4)
-		cc.End()
+		if c.options.Compress {
+			cc := w.Compress()
+			cc.Add(ptcp.Compress_Lz4)
+			cc.End()
+		}
 
 		req, err := w.Build()
 		if err != nil {
@@ -561,7 +569,7 @@ func (c *connChannels) open(conn *conn) (*channel, status.Status) {
 		debugPrint(c.client, "conn.open\t", id)
 	}
 
-	ch := openChannel(conn, id)
+	ch := openChannel(conn, id, int(conn.options.ChannelWindowSize))
 	c.channels[ch.id] = ch
 	return ch, status.OK
 }

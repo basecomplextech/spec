@@ -14,12 +14,6 @@ const (
 
 const (
 	codeError status.Code = "tcp_error"
-
-	connQueueCap  = 8 * 1024 * 1024 // max connection write queue capacity
-	channelWindow = 8 * 1024 * 1024 // max channel window size
-
-	readBufferSize  = 32 * 1024
-	writeBufferSize = 32 * 1024
 )
 
 var (

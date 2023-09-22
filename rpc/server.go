@@ -23,11 +23,14 @@ type Server interface {
 
 	// Listening indicates that the server is listening.
 	Listening() <-chan struct{}
+
+	// Options returns the server options.
+	Options() Options
 }
 
 // NewServer returns a new RPC server.
-func NewServer(address string, handler Handler, logger logging.Logger) Server {
-	return newServer(address, handler, logger)
+func NewServer(address string, handler Handler, logger logging.Logger, opts Options) Server {
+	return newServer(address, handler, logger, opts)
 }
 
 // internal
@@ -39,12 +42,12 @@ type server struct {
 	logger  logging.Logger
 }
 
-func newServer(address string, handler Handler, logger logging.Logger) *server {
+func newServer(address string, handler Handler, logger logging.Logger, opts Options) *server {
 	s := &server{
 		handler: handler,
 		logger:  logger,
 	}
-	s.Server = tcp.NewServer(address, s, logger)
+	s.Server = tcp.NewServer(address, s, logger, opts)
 	return s
 }
 

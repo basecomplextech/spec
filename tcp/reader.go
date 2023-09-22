@@ -26,8 +26,8 @@ type reader struct {
 	buf  *alloc.Buffer
 }
 
-func newReader(r io.Reader, client bool) *reader {
-	src := bufio.NewReaderSize(r, readBufferSize)
+func newReader(r io.Reader, client bool, bufferSize int) *reader {
+	src := bufio.NewReaderSize(r, bufferSize)
 	return &reader{
 		src:    src,
 		client: client,

@@ -13,11 +13,14 @@ type Client interface {
 
 	// Channel returns a new channel.
 	Channel(cancel <-chan struct{}) (Channel, status.Status)
+
+	// Options returns the client options.
+	Options() Options
 }
 
 // NewClient returns a new client.
-func NewClient(address string, logger logging.Logger) Client {
-	return newClient(address, logger)
+func NewClient(address string, logger logging.Logger, opts Options) Client {
+	return newClient(address, logger, opts)
 }
 
 // internal
@@ -27,16 +30,18 @@ var _ Client = (*client)(nil)
 type client struct {
 	address string
 	logger  logging.Logger
+	options Options
 
 	lock   async.Lock
 	conn   *conn
 	closed bool
 }
 
-func newClient(address string, logger logging.Logger) *client {
+func newClient(address string, logger logging.Logger, opts Options) *client {
 	return &client{
 		address: address,
 		logger:  logger,
+		options: opts.clean(),
 
 		lock: async.NewLock(),
 	}
@@ -77,6 +82,11 @@ func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 	return conn.Channel(cancel)
 }
 
+// Options returns the client options.
+func (c *client) Options() Options {
+	return c.options
+}
+
 // private
 
 func (c *client) connect(cancel <-chan struct{}) (*conn, status.Status) {
@@ -97,7 +107,7 @@ func (c *client) connect(cancel <-chan struct{}) (*conn, status.Status) {
 	}
 
 	// Open new connection
-	conn, st := connect(c.address, c.logger)
+	conn, st := connect(c.address, c.logger, c.options)
 	if !st.OK() {
 		return nil, st
 	}

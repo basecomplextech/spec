@@ -40,15 +40,15 @@ type channel struct {
 	state   *channelState
 }
 
-func openChannel(conn *conn, id bin.Bin128) *channel {
+func openChannel(conn *conn, id bin.Bin128, window int) *channel {
 	if debug {
 		debugPrint(conn.client, "channel.open\t", id)
 	}
 
 	s := acquireState()
 	s.started = true
-	s.window = channelWindow
-	s.writeWindow = channelWindow
+	s.window = window
+	s.writeWindow = window
 
 	return &channel{
 		id:     id,

@@ -15,7 +15,7 @@ import (
 
 func testClient(t tests.T, s *server) *client {
 	addr := s.Address()
-	return newClient(addr, s.logger)
+	return newClient(addr, s.logger, s.Server.Options())
 }
 
 // Close

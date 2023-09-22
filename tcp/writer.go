@@ -25,8 +25,8 @@ type writerFlusher interface {
 	Flush() error
 }
 
-func newWriter(w io.Writer, client bool) *writer {
-	dst := bufio.NewWriterSize(w, writeBufferSize)
+func newWriter(w io.Writer, client bool, bufferSize int) *writer {
+	dst := bufio.NewWriterSize(w, bufferSize)
 	return &writer{
 		dst:    dst,
 		client: client,

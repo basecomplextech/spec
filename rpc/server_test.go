@@ -15,8 +15,9 @@ import (
 )
 
 func testServer(t tests.T, handle HandleFunc) *server {
+	opts := Default()
 	logger := logging.TestLogger(t)
-	server := newServer("localhost:0", handle, logger)
+	server := newServer("localhost:0", handle, logger, opts)
 
 	routine, st := server.Start()
 	if !st.OK() {

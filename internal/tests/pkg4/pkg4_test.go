@@ -12,8 +12,9 @@ import (
 )
 
 func testServer(t tests.T, logger logging.Logger, service Service) rpc.Server {
+	opts := rpc.Default()
 	handler := NewServiceHandler(service)
-	server := rpc.NewServer("localhost:0", handler, logger)
+	server := rpc.NewServer("localhost:0", handler, logger, opts)
 
 	routine, st := server.Start()
 	if !st.OK() {
@@ -42,7 +43,7 @@ func testServer(t tests.T, logger logging.Logger, service Service) rpc.Server {
 
 func testClient(t tests.T, logger logging.Logger, server rpc.Server) *ServiceClient {
 	address := server.Address()
-	client := rpc.NewClient(address, logger)
+	client := rpc.NewClient(address, logger, server.Options())
 	return NewServiceClient(client)
 }
 

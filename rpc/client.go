@@ -22,8 +22,8 @@ type Client interface {
 }
 
 // NewClient returns a new client.
-func NewClient(address string, logger logging.Logger) Client {
-	return newClient(address, logger)
+func NewClient(address string, logger logging.Logger, opts Options) Client {
+	return newClient(address, logger, opts)
 }
 
 // internal
@@ -35,9 +35,9 @@ type client struct {
 	logger logging.Logger
 }
 
-func newClient(address string, logger logging.Logger) *client {
+func newClient(address string, logger logging.Logger, opts Options) *client {
 	return &client{
-		client: tcp.NewClient(address, logger),
+		client: tcp.NewClient(address, logger, opts),
 		logger: logger,
 	}
 }

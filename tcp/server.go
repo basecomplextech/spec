@@ -20,11 +20,14 @@ type Server interface {
 
 	// Listening indicates that the server is listening.
 	Listening() <-chan struct{}
+
+	// Options returns the server options.
+	Options() Options
 }
 
 // NewServer creates a new server with a connection handler.
-func NewServer(address string, handler Handler, logger logging.Logger) Server {
-	return newServer(address, handler, logger)
+func NewServer(address string, handler Handler, logger logging.Logger, opts Options) Server {
+	return newServer(address, handler, logger, opts)
 }
 
 // internal
@@ -35,6 +38,7 @@ type server struct {
 	address string
 	handler Handler
 	logger  logging.Logger
+	options Options
 
 	listening *async.Flag
 
@@ -42,11 +46,12 @@ type server struct {
 	ln net.Listener
 }
 
-func newServer(address string, handler Handler, logger logging.Logger) *server {
+func newServer(address string, handler Handler, logger logging.Logger, opts Options) *server {
 	s := &server{
 		address: address,
 		handler: handler,
 		logger:  logger,
+		options: opts.clean(),
 
 		listening: async.UnsetFlag(),
 	}
@@ -69,6 +74,11 @@ func (s *server) Address() string {
 // Listening indicates that the server is listening.
 func (s *server) Listening() <-chan struct{} {
 	return s.listening.Wait()
+}
+
+// Options returns the server options.
+func (s *server) Options() Options {
+	return s.options
 }
 
 // internal
@@ -179,7 +189,7 @@ func (s *server) serve(cancel <-chan struct{}) status.Status {
 }
 
 func (s *server) handle(nc net.Conn) {
-	conn := newConn(nc, false /* not client */, s.handler, s.logger)
+	conn := newConn(nc, false /* not client */, s.handler, s.logger, s.options)
 	conn.routine = async.Go(func(cancel <-chan struct{}) status.Status {
 		defer conn.Free()
 

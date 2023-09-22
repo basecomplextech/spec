@@ -11,8 +11,9 @@ import (
 )
 
 func testServer(t tests.T, handle HandleFunc) *server {
+	opts := Default()
 	logger := logging.TestLogger(t)
-	server := newServer("localhost:0", handle, logger)
+	server := newServer("localhost:0", handle, logger, opts)
 
 	routine, st := server.Start()
 	if !st.OK() {
@@ -57,7 +58,7 @@ func testRequestServer(t tests.T) *server {
 func testConnect(t tests.T, s *server) *conn {
 	addr := s.Address()
 
-	c, st := Connect(addr, s.logger)
+	c, st := Connect(addr, s.logger, s.options)
 	if !st.OK() {
 		t.Fatal(st)
 	}
