@@ -3,7 +3,6 @@ package tcp
 import (
 	"net"
 	"sync"
-	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
@@ -32,11 +31,6 @@ func Connect(address string, logger logging.Logger, opts Options) (Conn, status.
 	return connect(address, logger, opts)
 }
 
-// ConnectTimeout dials an address and returns a connection.
-func ConnectTimeout(address string, logger logging.Logger, opts Options, timeout time.Duration) (Conn, status.Status) {
-	return connectTimeout(address, logger, opts, timeout)
-}
-
 // internal
 
 type conn struct {
@@ -56,13 +50,9 @@ type conn struct {
 }
 
 func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
-	return connectTimeout(address, logger, opts, 0)
-}
+	opts = opts.clean()
 
-func connectTimeout(address string, logger logging.Logger, opts Options, timeout time.Duration) (
-	*conn, status.Status) {
-
-	nc, err := net.DialTimeout("tcp", address, timeout)
+	nc, err := net.DialTimeout("tcp", address, opts.DialTimeout)
 	if err != nil {
 		return nil, tcpError(err)
 	}
@@ -77,12 +67,10 @@ func connectTimeout(address string, logger logging.Logger, opts Options, timeout
 }
 
 func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, opts Options) *conn {
-	opts = opts.clean()
-
 	return &conn{
 		handler: handler,
 		logger:  logger,
-		options: opts,
+		options: opts.clean(),
 
 		client:   client,
 		socket:   newConnSocket(client, c),

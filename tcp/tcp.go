@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"os"
 
 	"github.com/basecomplextech/baselibrary/status"
 )
@@ -27,6 +28,7 @@ func tcpError(err error) status.Status {
 		return status.OK
 	}
 
+	// IO errors
 	switch err {
 	case io.EOF:
 		return status.End
@@ -34,17 +36,23 @@ func tcpError(err error) status.Status {
 		return status.WrapError(err).WithCode(codeError)
 	}
 
-	if errors.Is(err, net.ErrClosed) {
+	// Closed/OS errors
+	switch {
+	case errors.Is(err, net.ErrClosed):
 		return status.WrapError(err).WithCode(status.CodeClosed)
+	case errors.Is(err, os.ErrDeadlineExceeded):
+		return status.WrapError(err).WithCode(status.CodeTimeout)
 	}
 
+	// Net and other errors
 	ne, ok := (err).(net.Error)
 	switch {
 	case !ok:
 		return status.WrapError(err).WithCode(codeError)
 	case ne.Timeout():
-		return status.Timeout
+		return status.WrapError(err).WithCode(status.CodeTimeout)
 	}
+
 	return status.WrapError(err).WithCode(codeError)
 }
 

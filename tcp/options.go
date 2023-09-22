@@ -1,10 +1,17 @@
 package tcp
 
-import "github.com/basecomplextech/baselibrary/units"
+import (
+	"time"
+
+	"github.com/basecomplextech/baselibrary/units"
+)
 
 type Options struct {
 	// Compress enables compression.
 	Compress bool `json:"compress"`
+
+	// DialTimeout is a client dial timeout.
+	DialTimeout time.Duration `json:"dial_timeout"`
 
 	// ChannelWindowSize is an initial channel window size.
 	ChannelWindowSize units.Bytes `json:"channel_window_size"`
@@ -23,6 +30,7 @@ type Options struct {
 func Default() Options {
 	return Options{
 		Compress:          true,
+		DialTimeout:       2 * time.Second,
 		ChannelWindowSize: 16 * units.MiB,
 		ReadBufferSize:    32 * units.KiB,
 		WriteBufferSize:   32 * units.KiB,
@@ -36,6 +44,7 @@ func Default() Options {
 func (o Options) clean() Options {
 	o1 := Default()
 	o1.Compress = o.Compress
+	o1.DialTimeout = o.DialTimeout
 
 	if o.ChannelWindowSize != 0 {
 		o1.ChannelWindowSize = o.ChannelWindowSize
