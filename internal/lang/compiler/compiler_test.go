@@ -498,18 +498,18 @@ func TestCompiler__should_generate_request_from_complex_fields(t *testing.T) {
 	def := pkg.Files[0].DefinitionNames["Service"]
 	require.NotNil(t, def.Service)
 
-	m := def.Service.MethodNames["method3"]
+	m := def.Service.MethodNames["method4"]
 	require.NotNil(t, m)
 
 	in := m.Input
 	require.NotNil(t, in)
 	assert.Nil(t, m.InputFields)
 
-	assert.Equal(t, "ServiceMethod3Request", in.Name)
+	assert.Equal(t, "ServiceMethod4Request", in.Name)
 	assert.True(t, in.Ref.Message.Generated)
 }
 
-func TestCompiler__should_not_generater_response_from_primitive_fields(t *testing.T) {
+func TestCompiler__should_not_generate_response_from_primitive_fields(t *testing.T) {
 	c := testCompiler(t)
 
 	pkg, err := c.Compile("../../tests/pkg4")
@@ -520,7 +520,7 @@ func TestCompiler__should_not_generater_response_from_primitive_fields(t *testin
 	def := pkg.Files[0].DefinitionNames["Service"]
 	require.NotNil(t, def.Service)
 
-	m := def.Service.MethodNames["result0"]
+	m := def.Service.MethodNames["method10"]
 	require.NotNil(t, m)
 
 	assert.Nil(t, m.Output)
@@ -538,13 +538,13 @@ func TestCompiler__should_generate_response_from_fields(t *testing.T) {
 	def := pkg.Files[0].DefinitionNames["Service"]
 	require.NotNil(t, def.Service)
 
-	m := def.Service.MethodNames["result4"]
+	m := def.Service.MethodNames["method11"]
 	require.NotNil(t, m)
 
 	out := m.Output
 	require.NotNil(t, out)
 	assert.Nil(t, m.OutputFields)
 
-	assert.Equal(t, "ServiceResult4Response", out.Name)
+	assert.Equal(t, "ServiceMethod11Response", out.Name)
 	assert.True(t, out.Ref.Message.Generated)
 }
