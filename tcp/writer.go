@@ -8,31 +8,60 @@ import (
 
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/ptcp"
+	"github.com/pierrec/lz4/v4"
 )
 
 type writer struct {
-	w      *bufio.Writer
+	dst  *bufio.Writer
+	comp *lz4.Writer // Nil when no compression
+
 	client bool
 	head   [4]byte
+	writer writerFlusher // Points to dst or comp
+}
+
+type writerFlusher interface {
+	io.Writer
+	Flush() error
 }
 
 func newWriter(w io.Writer, client bool) *writer {
+	dst := bufio.NewWriterSize(w, writeBufferSize)
 	return &writer{
-		w:      bufio.NewWriterSize(w, writeBufferSize),
+		dst:    dst,
 		client: client,
+		writer: dst,
 	}
 }
 
+func (w *writer) initLZ4() status.Status {
+	if w.comp != nil {
+		return status.OK
+	}
+
+	w.comp = lz4.NewWriter(w.dst)
+	err := w.comp.Apply(lz4.BlockSizeOption(lz4.Block1Mb))
+	if err != nil {
+		return tcpError(err)
+	}
+
+	w.writer = w.comp
+	return status.OK
+}
+
 func (w *writer) flush() status.Status {
-	if err := w.w.Flush(); err != nil {
+	if err := w.writer.Flush(); err != nil {
+		return tcpError(err)
+	}
+	if err := w.dst.Flush(); err != nil {
 		return tcpError(err)
 	}
 	return status.OK
 }
 
-// writeString writes a single string.
+// writeString writes a single string, used only to write the protocol line.
 func (w *writer) writeString(s string) status.Status {
-	if _, err := w.w.WriteString(s); err != nil {
+	if _, err := w.dst.WriteString(s); err != nil {
 		return tcpError(err)
 	}
 	if debug {
@@ -48,12 +77,12 @@ func (w *writer) writeRequest(req ptcp.ConnectRequest) status.Status {
 
 	// Write size
 	binary.BigEndian.PutUint32(head, uint32(len(msg)))
-	if _, err := w.w.Write(head); err != nil {
+	if _, err := w.writer.Write(head); err != nil {
 		return tcpError(err)
 	}
 
 	// Write message
-	if _, err := w.w.Write(msg); err != nil {
+	if _, err := w.writer.Write(msg); err != nil {
 		return tcpError(err)
 	}
 
@@ -70,12 +99,12 @@ func (w *writer) writeResponse(resp ptcp.ConnectResponse) status.Status {
 
 	// Write size
 	binary.BigEndian.PutUint32(head, uint32(len(msg)))
-	if _, err := w.w.Write(head); err != nil {
+	if _, err := w.writer.Write(head); err != nil {
 		return tcpError(err)
 	}
 
 	// Write message
-	if _, err := w.w.Write(msg); err != nil {
+	if _, err := w.writer.Write(msg); err != nil {
 		return tcpError(err)
 	}
 
@@ -91,12 +120,12 @@ func (w *writer) writeMessage(msg []byte) status.Status {
 
 	// Write size
 	binary.BigEndian.PutUint32(head, uint32(len(msg)))
-	if _, err := w.w.Write(head); err != nil {
+	if _, err := w.writer.Write(head); err != nil {
 		return tcpError(err)
 	}
 
 	// Write message
-	if _, err := w.w.Write(msg); err != nil {
+	if _, err := w.writer.Write(msg); err != nil {
 		return tcpError(err)
 	}
 

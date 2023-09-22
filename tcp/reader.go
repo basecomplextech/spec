@@ -10,10 +10,14 @@ import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/ptcp"
+	"github.com/pierrec/lz4/v4"
 )
 
 type reader struct {
-	r      *bufio.Reader
+	src    *bufio.Reader
+	comp   *lz4.Reader // Nil when no compression
+	reader io.Reader   // Points to src or comp
+
 	client bool
 	freed  bool
 
@@ -23,9 +27,11 @@ type reader struct {
 }
 
 func newReader(r io.Reader, client bool) *reader {
+	src := bufio.NewReaderSize(r, readBufferSize)
 	return &reader{
-		r:      bufio.NewReaderSize(r, readBufferSize),
+		src:    src,
 		client: client,
+		reader: src,
 
 		buf: alloc.NewBuffer(),
 	}
@@ -44,9 +50,19 @@ func (r *reader) free() {
 	r.buf = nil
 }
 
+func (r *reader) initLZ4() status.Status {
+	if r.comp != nil {
+		return status.OK
+	}
+
+	r.comp = lz4.NewReader(r.src)
+	r.reader = r.comp
+	return status.OK
+}
+
 // readLine reads and returns a single line delimited by \n, includes the delimiter.
 func (r *reader) readLine() (string, status.Status) {
-	s, err := r.r.ReadString('\n')
+	s, err := r.src.ReadString('\n')
 	if err != nil {
 		return "", tcpError(err)
 	}
@@ -132,7 +148,7 @@ func (r *reader) read() ([]byte, status.Status) {
 	head := r.head[:]
 
 	// Read size
-	if _, err := io.ReadFull(r.r, head); err != nil {
+	if _, err := io.ReadFull(r.reader, head); err != nil {
 		return nil, tcpError(err)
 	}
 	size := binary.BigEndian.Uint32(head)
@@ -140,7 +156,7 @@ func (r *reader) read() ([]byte, status.Status) {
 	// Read bytes
 	r.buf.Reset()
 	buf := r.buf.Grow(int(size))
-	if _, err := io.ReadFull(r.r, buf); err != nil {
+	if _, err := io.ReadFull(r.reader, buf); err != nil {
 		return nil, tcpError(err)
 	}
 	return buf, status.OK

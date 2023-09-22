@@ -237,6 +237,21 @@ func (c *conn) connectClient(cancel <-chan struct{}) status.Status {
 	if v != ptcp.Version_Version10 {
 		return tcpErrorf("server returned unsupported version %d", v)
 	}
+
+	// Init compression
+	comp := resp.Compress()
+	switch comp {
+	case ptcp.Compress_None:
+	case ptcp.Compress_Lz4:
+		if st := c.reader.initLZ4(); !st.OK() {
+			return st
+		}
+		if st := c.writer.initLZ4(); !st.OK() {
+			return st
+		}
+	default:
+		return tcpErrorf("server returned unsupported compression %d", comp)
+	}
 	return status.OK
 }
 
@@ -263,9 +278,9 @@ func (c *conn) connectServer(cancel <-chan struct{}) status.Status {
 
 	// Check version
 	ok := false
-	vv := req.Versions()
-	for i := 0; i < vv.Len(); i++ {
-		v := vv.Get(i)
+	versions := req.Versions()
+	for i := 0; i < versions.Len(); i++ {
+		v := versions.Get(i)
 		if v == ptcp.Version_Version10 {
 			ok = true
 			break
@@ -284,27 +299,44 @@ func (c *conn) connectServer(cancel <-chan struct{}) status.Status {
 	}
 
 	// Select compression
-	compress := ptcp.Compress_None
-	cc := req.Compress()
-	for i := 0; i < cc.Len(); i++ {
-		c := cc.Get(i)
+	comp := ptcp.Compress_None
+	comps := req.Compress()
+	for i := 0; i < comps.Len(); i++ {
+		c := comps.Get(i)
 		if c == ptcp.Compress_Lz4 {
-			compress = ptcp.Compress_Lz4
+			comp = ptcp.Compress_Lz4
 			break
 		}
 	}
 
 	// Return response
-	w := ptcp.NewConnectResponseWriter()
-	w.Ok(true)
-	w.Version(ptcp.Version_Version10)
-	w.Compress(compress)
+	{
+		w := ptcp.NewConnectResponseWriter()
+		w.Ok(true)
+		w.Version(ptcp.Version_Version10)
+		w.Compress(comp)
 
-	resp, err := w.Build()
-	if err != nil {
-		return tcpError(err)
+		resp, err := w.Build()
+		if err != nil {
+			return tcpError(err)
+		}
+		if st := c.writer.writeResponse(resp); !st.OK() {
+			return st
+		}
 	}
-	return c.writer.writeResponse(resp)
+
+	// Init compression
+	switch comp {
+	case ptcp.Compress_None:
+	case ptcp.Compress_Lz4:
+		if st := c.reader.initLZ4(); !st.OK() {
+			return st
+		}
+		if st := c.writer.initLZ4(); !st.OK() {
+			return st
+		}
+	}
+	return status.OK
 }
 
 // read
