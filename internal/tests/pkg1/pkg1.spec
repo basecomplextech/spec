@@ -52,3 +52,10 @@ message Submessage {
     value   string      1;
     next    Submessage  2;
 }
+
+struct ComplexStruct {
+    bin64   bin64;
+    bin128  bin128;
+    bin256  bin256;
+    string  string;
+}

@@ -169,6 +169,8 @@ func makeMethodInput(m *Method, p ast.MethodInput) (err error) {
 			m.InputFields, err = newFields(p)
 			return err
 		}
+		return nil
+
 	case nil:
 		return nil
 	}
@@ -187,6 +189,8 @@ func makeMethodOutput(m *Method, p ast.MethodOutput) (err error) {
 			m.OutputFields, err = newFields(p)
 			return err
 		}
+		return nil
+
 	case nil:
 		return nil
 	}

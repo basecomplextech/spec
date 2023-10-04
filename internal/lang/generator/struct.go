@@ -71,6 +71,9 @@ func (w *writer) parseStruct(def *model.Definition) error {
 		field := fields[i]
 		fieldName := structFieldName(field)
 		decodeName := typeDecodeFunc(field.Type)
+		if field.Type.Kind == model.KindString {
+			decodeName = "encoding.DecodeStringClone"
+		}
 
 		w.line(`off -= n`)
 		w.linef(`s.%v, n, err = %v(b[:off])`, fieldName, decodeName)

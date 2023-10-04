@@ -677,6 +677,14 @@ func DecodeString(b []byte) (_ types.String, size int, err error) {
 	return types.String(data), size, nil
 }
 
+func DecodeStringClone(b []byte) (_ string, size int, err error) {
+	s, size, err := DecodeString(b)
+	if err != nil {
+		return "", size, err
+	}
+	return string(s), size, nil
+}
+
 func decodeStringData(b []byte, size uint32) (string, error) {
 	off := len(b) - int(size)
 	if off < 0 {
