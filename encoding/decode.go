@@ -682,7 +682,7 @@ func DecodeStringClone(b []byte) (_ string, size int, err error) {
 	if err != nil {
 		return "", size, err
 	}
-	return string(s), size, nil
+	return s.Clone(), size, nil
 }
 
 func decodeStringData(b []byte, size uint32) (string, error) {
