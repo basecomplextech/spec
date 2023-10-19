@@ -67,7 +67,7 @@ func (s *messageStack) hasField(tableOffset int, tag uint16) bool {
 	table := s.stack[tableOffset:]
 
 	n := sort.Search(len(table), func(i int) bool {
-		return table[i].Tag == tag
+		return table[i].Tag >= tag
 	})
 	if n >= len(table) {
 		return false
