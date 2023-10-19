@@ -111,15 +111,15 @@ func (c *conn) Free() {
 func (c *conn) run(cancel <-chan struct{}) status.Status {
 	defer func() {
 		if e := recover(); e != nil {
-			st, stack := status.RecoverStack(e)
-			c.logger.Error("Connection panic", "status", st, "stack", string(stack))
+			st := status.Recover(e)
+			c.logger.ErrorStatus("Connection panic", st)
 		}
 	}()
 	defer c.close()
 
 	// Connect
 	if st := c.connect(cancel); !st.OK() {
-		c.logger.Error("Connection failed", "client", c.client, "status", st)
+		c.logger.ErrorStatus("Connection failed", st)
 		return st
 	}
 
@@ -150,7 +150,7 @@ func (c *conn) run(cancel <-chan struct{}) status.Status {
 	}
 
 	// Log internal errors
-	c.logger.Error("Connection error", "client", c.client, "status", st)
+	c.logger.ErrorStatus("Connection error", st)
 	return st
 }
 

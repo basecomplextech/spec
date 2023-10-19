@@ -285,8 +285,8 @@ func (ch *channel) run() {
 	// and recover panics manually.
 	defer func() {
 		if e := recover(); e != nil {
-			st, stack := status.RecoverStack(e)
-			ch.conn.logger.Error("Channel panic", "status", st, "stack", string(stack))
+			st := status.Recover(e)
+			ch.conn.logger.ErrorStatus("Channel panic", st)
 		}
 	}()
 	defer ch.Free()
@@ -302,7 +302,7 @@ func (ch *channel) run() {
 	}
 
 	// Log errors
-	ch.conn.logger.Error("Channel error", "status", st)
+	ch.conn.logger.ErrorStatus("Channel error", st)
 }
 
 // read bytes

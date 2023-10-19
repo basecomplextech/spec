@@ -52,8 +52,6 @@ func parseStatusCode(code spec.String) status.Code {
 	// Error class
 	case status.CodeError:
 		return status.CodeError
-	case status.CodeFatal:
-		return status.CodeFatal
 	case status.CodeCorrupted:
 		return status.CodeCorrupted
 	case status.CodeExternalError:

@@ -126,9 +126,8 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R
 			return
 		}
 
-		var stack []byte
-		st, stack = status.RecoverStack(e)
-		s.logger.Error("Request panic", "method", method, "status", st, "stack", string(stack))
+		st = status.Recover(e)
+		s.logger.ErrorStatus("Request panic", st, "method", method)
 	}()
 
 	// Handle request
@@ -145,7 +144,7 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R
 			s.logger.Debug("Request ok", "method", method, "time", time)
 		}
 	} else {
-		s.logger.Error("Request error", "method", method, "time", time, "status", st)
+		s.logger.ErrorStatus("Request error", st, "method", method, "time", time)
 	}
 	return result, st
 }

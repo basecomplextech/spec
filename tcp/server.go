@@ -89,7 +89,7 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 
 	// Listen
 	if st := s.listen(); !st.OK() {
-		s.logger.Error("Server failed to listen to address", "status", st)
+		s.logger.ErrorStatus("Server failed to listen to address", st)
 		return st
 	}
 
@@ -109,7 +109,7 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 		switch st.Code {
 		case status.CodeOK, status.CodeCancelled:
 		default:
-			s.logger.Error("Internal server error", "status", st)
+			s.logger.ErrorStatus("Internal server error", st)
 		}
 	}
 	return st
