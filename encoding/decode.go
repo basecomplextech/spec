@@ -25,6 +25,10 @@ func DecodeType(b []byte) (Type, int, error) {
 
 // DecodeTypeSize decodes a value type and its total size, returns 0, 0 on error.
 func DecodeTypeSize(b []byte) (Type, int, error) {
+	if len(b) == 0 {
+		return TypeUndefined, 0, nil
+	}
+
 	t, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, fmt.Errorf("decode type: invalid data")
@@ -209,6 +213,10 @@ func decodeType(b []byte) (Type, int) {
 // Byte
 
 func DecodeByte(b []byte) (byte, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, errors.New("decode byte: invalid data")
@@ -227,6 +235,10 @@ func DecodeByte(b []byte) (byte, int, error) {
 // Bool
 
 func DecodeBool(b []byte) (bool, int, error) {
+	if len(b) == 0 {
+		return false, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return false, 0, errors.New("decode bool: invalid data")
@@ -240,6 +252,10 @@ func DecodeBool(b []byte) (bool, int, error) {
 // Int
 
 func DecodeInt16(b []byte) (int16, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, errors.New("decode int16: invalid data")
@@ -284,6 +300,10 @@ func DecodeInt16(b []byte) (int16, int, error) {
 }
 
 func DecodeInt32(b []byte) (int32, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, errors.New("decode int32: invalid data")
@@ -321,6 +341,10 @@ func DecodeInt32(b []byte) (int32, int, error) {
 }
 
 func DecodeInt64(b []byte) (int64, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, errors.New("decode int64: invalid data")
@@ -351,6 +375,10 @@ func DecodeInt64(b []byte) (int64, int, error) {
 // Uint
 
 func DecodeUint16(b []byte) (uint16, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, errors.New("decode uint16: invalid data")
@@ -389,6 +417,10 @@ func DecodeUint16(b []byte) (uint16, int, error) {
 }
 
 func DecodeUint32(b []byte) (uint32, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, errors.New("decode uint32: invalid data")
@@ -422,6 +454,10 @@ func DecodeUint32(b []byte) (uint32, int, error) {
 }
 
 func DecodeUint64(b []byte) (uint64, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, errors.New("decode uint64: invalid data")
@@ -452,6 +488,10 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 // Bin64/128/256
 
 func DecodeBin64(b []byte) (_ bin.Bin64, size int, err error) {
+	if len(b) == 0 {
+		return bin.Bin64{}, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin64: invalid data")
@@ -481,6 +521,10 @@ func DecodeBin64(b []byte) (_ bin.Bin64, size int, err error) {
 }
 
 func DecodeBin128(b []byte) (_ bin.Bin128, size int, err error) {
+	if len(b) == 0 {
+		return bin.Bin128{}, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin128: invalid data")
@@ -510,6 +554,10 @@ func DecodeBin128(b []byte) (_ bin.Bin128, size int, err error) {
 }
 
 func DecodeBin256(b []byte) (_ bin.Bin256, size int, err error) {
+	if len(b) == 0 {
+		return bin.Bin256{}, 0, nil
+	}
+
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bin256: invalid data")
@@ -541,6 +589,10 @@ func DecodeBin256(b []byte) (_ bin.Bin256, size int, err error) {
 // Float
 
 func DecodeFloat32(b []byte) (float32, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	v, n := decodeFloat64(b)
 	switch {
 	case n < 0:
@@ -556,6 +608,10 @@ func DecodeFloat32(b []byte) (float32, int, error) {
 }
 
 func DecodeFloat64(b []byte) (float64, int, error) {
+	if len(b) == 0 {
+		return 0, 0, nil
+	}
+
 	v, n := decodeFloat64(b)
 	if n < 0 {
 		return 0, n, errors.New("decode float64: invalid data")
@@ -600,6 +656,10 @@ func decodeFloat64(b []byte) (float64, int) {
 // Bytes
 
 func DecodeBytes(b []byte) (_ types.Bytes, size int, err error) {
+	if len(b) == 0 {
+		return nil, 0, nil
+	}
+
 	// Type
 	typ, n := decodeType(b)
 	if n < 0 {
@@ -644,6 +704,10 @@ func decodeBytesData(b []byte, size uint32) ([]byte, error) {
 // String
 
 func DecodeString(b []byte) (_ types.String, size int, err error) {
+	if len(b) == 0 {
+		return "", 0, nil
+	}
+
 	// Type
 	typ, n := decodeType(b)
 	if n < 0 {
