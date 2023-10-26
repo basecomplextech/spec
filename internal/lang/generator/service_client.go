@@ -14,6 +14,9 @@ func (w *writer) client(def *model.Definition) error {
 	if err := w.clientMethods(def); err != nil {
 		return err
 	}
+	if err := w.clientUnwrap(def); err != nil {
+		return err
+	}
 	if err := w.clientChannels(def); err != nil {
 		return err
 	}
@@ -409,6 +412,16 @@ func (w *writer) clientMethod_response(def *model.Definition, m *model.Method) e
 		w.write(`status.OK`)
 	}
 
+	return nil
+}
+
+// unwrap
+
+func (w *writer) clientUnwrap(def *model.Definition) error {
+	w.linef(`func (c *%vClient) Unwrap() rpc.Client {`, def.Name)
+	w.line(`return c.client `)
+	w.line(`}`)
+	w.line()
 	return nil
 }
 
