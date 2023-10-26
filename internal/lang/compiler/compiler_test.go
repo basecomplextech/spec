@@ -148,7 +148,7 @@ func TestCompiler__should_compile_file_definitions(t *testing.T) {
 	file1 := pkg.Files[1]
 
 	assert.Len(t, file0.Definitions, 1)
-	assert.Len(t, file1.Definitions, 3)
+	assert.Len(t, file1.Definitions, 4)
 }
 
 func TestCompiler__should_compile_package_definitions(t *testing.T) {
@@ -159,7 +159,7 @@ func TestCompiler__should_compile_package_definitions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Len(t, pkg.Definitions, 4)
+	assert.Len(t, pkg.Definitions, 5)
 
 	assert.Contains(t, pkg.DefinitionNames, "Enum")
 	assert.Contains(t, pkg.DefinitionNames, "Message")
