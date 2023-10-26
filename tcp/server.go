@@ -132,7 +132,7 @@ func (s *server) listen() status.Status {
 	addr := ln.Addr().String()
 	s.ln = ln
 	s.listening.Set()
-	s.logger.Debug("Server listening", "address", addr)
+	s.logger.Notice("Server listening", "address", addr)
 	return status.OK
 }
 

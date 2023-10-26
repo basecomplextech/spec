@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"testing"
+	"time"
 
 	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,30 @@ import (
 func testClient(t tests.T, s *server) *client {
 	addr := s.Address()
 	return newClient(addr, s.logger, s.options)
+}
+
+// Connect
+
+func TestClient_Connect_should_connect_to_server(t *testing.T) {
+	server := testRequestServer(t)
+
+	client := testClient(t, server)
+	future := client.Connect(nil)
+
+	select {
+	case <-future.Wait():
+	case <-time.After(time.Second):
+		t.Fatal("timeout")
+	}
+
+	st := future.Status()
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	assert.NotNil(t, client.conn)
+	assert.Nil(t, client.connecting)
+	assert.True(t, client.connected.IsSet())
 }
 
 // Close
