@@ -14,15 +14,15 @@ import (
 
 // Conn is a TCP network connection.
 type Conn interface {
-	// Close closes the connection.
+	// Close closes the connection and frees its internal resources.
 	Close() status.Status
 
-	// Channel opens a new ch.
+	// Channel opens a new channel.
 	Channel(cancel <-chan struct{}) (Channel, status.Status)
 
 	// Internal
 
-	// Free closes and frees the connection.
+	// Free closes the connection, allows to wrap it into ref.R[Conn].
 	Free()
 }
 
@@ -45,24 +45,34 @@ type conn struct {
 	reader *reader
 	writer *writer
 	writeq alloc.MQueue
-
-	routine async.Routine[struct{}]
 }
 
 func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
 	opts = opts.clean()
 
+	// Dial address
 	nc, err := net.DialTimeout("tcp", address, opts.DialTimeout)
 	if err != nil {
 		return nil, tcpError(err)
 	}
 
+	// Noop incoming handler
 	h := HandleFunc(func(c Channel) status.Status {
 		return c.Close()
 	})
 
+	// Make connection
 	c := newConn(nc, true /* client */, h, logger, opts)
-	c.routine = async.Go(c.run)
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				st := status.Recover(e)
+				logger.ErrorStatus("Connection panic", st)
+			}
+		}()
+
+		c.run()
+	}()
 	return c, status.OK
 }
 
@@ -85,72 +95,64 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, op
 // Close closes the connection.
 func (c *conn) Close() status.Status {
 	c.close()
-
-	c.routine.Cancel()
 	return status.OK
 }
 
-// Channel opens a new ch.
+// Channel opens a new channel.
 func (c *conn) Channel(cancel <-chan struct{}) (Channel, status.Status) {
 	return c.channels.open(c)
 }
 
 // Internal
 
-// Free closes and frees the connection.
+// Free closes the connection, allows to wrap it into ref.R[Conn].
 func (c *conn) Free() {
-	defer c.reader.free()
-	defer c.writeq.Free()
-
-	c.Close()
+	c.close()
 }
 
 // internal
 
-func (c *conn) run(cancel <-chan struct{}) status.Status {
-	defer func() {
-		if e := recover(); e != nil {
-			st := status.Recover(e)
-			c.logger.ErrorStatus("Connection panic", st)
-		}
-	}()
+func (c *conn) run() {
+	defer c.reader.free()
+	defer c.writeq.Free()
 	defer c.close()
 
 	// Connect
-	if st := c.connect(cancel); !st.OK() {
-		c.logger.ErrorStatus("Connection failed", st)
-		return st
+	st := c.connect()
+	switch st.Code {
+	case status.CodeOK:
+	case status.CodeCancelled,
+		status.CodeEnd,
+		status.CodeClosed:
+		return
+	default:
+		c.logger.ErrorStatus("Connection error", st)
+		return
 	}
 
-	// Start loops
+	// Run loops
 	reader := async.Go(c.readLoop)
 	writer := async.Go(c.writeLoop)
 	defer async.CancelWaitAll(reader, writer)
 	defer c.close()
 
-	// Wait cancel/exit
-	var st status.Status
+	// Wait exit
 	select {
-	case <-cancel:
-		st = status.Cancelled
 	case <-reader.Wait():
 		st = reader.Status()
 	case <-writer.Wait():
 		st = writer.Status()
 	}
 
-	// Check status
+	// Maybe log error
 	switch st.Code {
 	case status.CodeOK,
 		status.CodeCancelled,
 		status.CodeEnd,
 		status.CodeClosed:
-		return st
+	default:
+		c.logger.ErrorStatus("Connection error", st)
 	}
-
-	// Log internal errors
-	c.logger.ErrorStatus("Connection error", st)
-	return st
 }
 
 // close
@@ -172,15 +174,15 @@ func (c *conn) disconnected() <-chan struct{} {
 
 // connect
 
-func (c *conn) connect(cancel <-chan struct{}) status.Status {
+func (c *conn) connect() status.Status {
 	if c.client {
-		return c.connectClient(cancel)
+		return c.connectClient()
 	} else {
-		return c.connectServer(cancel)
+		return c.connectServer()
 	}
 }
 
-func (c *conn) connectClient(cancel <-chan struct{}) status.Status {
+func (c *conn) connectClient() status.Status {
 	// Write protocol line
 	if st := c.writer.writeString(ProtocolLine); !st.OK() {
 		return st
@@ -254,7 +256,7 @@ func (c *conn) connectClient(cancel <-chan struct{}) status.Status {
 	return status.OK
 }
 
-func (c *conn) connectServer(cancel <-chan struct{}) status.Status {
+func (c *conn) connectServer() status.Status {
 	// Write protocol line
 	if st := c.writer.writeString(ProtocolLine); !st.OK() {
 		return st

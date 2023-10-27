@@ -40,7 +40,7 @@ func NewClient(address string, logger logging.Logger, opts Options) Client {
 // internal
 
 const (
-	minConnectRetryTimeout = time.Millisecond * 10
+	minConnectRetryTimeout = time.Millisecond * 25
 	maxConnectRetryTimeout = time.Second
 )
 

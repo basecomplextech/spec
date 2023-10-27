@@ -190,10 +190,15 @@ func (s *server) serve(cancel <-chan struct{}) status.Status {
 
 func (s *server) handle(nc net.Conn) {
 	conn := newConn(nc, false /* not client */, s.handler, s.logger, s.options)
-	conn.routine = async.Go(conn.run)
 
 	go func() {
-		defer conn.Free()
-		<-conn.routine.Wait()
+		defer func() {
+			if e := recover(); e != nil {
+				st := status.Recover(e)
+				s.logger.ErrorStatus("Connection panic", st)
+			}
+		}()
+
+		conn.run()
 	}()
 }
