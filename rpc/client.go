@@ -11,7 +11,21 @@ import (
 
 // Client is a SpecRPC client.
 type Client interface {
-	// Close closes the client.
+	// Options returns the client options.
+	Options() Options
+
+	// Connected indicates that the client is connected to the server.
+	Connected() <-chan struct{}
+
+	// Disconnected indicates that the client is disconnected from the server.
+	Disconnected() <-chan struct{}
+
+	// Methods
+
+	// Connect manually starts the internal connect loop.
+	Connect() status.Status
+
+	// Close closes the client, disconnect from theh server.
 	Close() status.Status
 
 	// Channel opens a channels and sends a request.
@@ -40,6 +54,28 @@ func newClient(address string, logger logging.Logger, opts Options) *client {
 		client: tcp.NewClient(address, logger, opts),
 		logger: logger,
 	}
+}
+
+// Options returns the client options.
+func (c *client) Options() Options {
+	return c.client.Options()
+}
+
+// Connected indicates that the client is connected to the server.
+func (c *client) Connected() <-chan struct{} {
+	return c.client.Connected()
+}
+
+// Disconnected indicates that the client is disconnected from the server.
+func (c *client) Disconnected() <-chan struct{} {
+	return c.client.Disconnected()
+}
+
+// Methods
+
+// Connect manually starts the internal connect loop.
+func (c *client) Connect() status.Status {
+	return c.client.Connect()
 }
 
 // Close closes the client.

@@ -26,7 +26,7 @@ func testServer(t tests.T, handle HandleFunc) *server {
 		select {
 		case <-routine.Wait():
 		case <-time.After(time.Second):
-			t.Fatal("server not stopped")
+			t.Fatal("stop timeout")
 		}
 	}
 	t.Cleanup(cleanup)

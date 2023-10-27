@@ -9,6 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func testChannelWrite(t *testing.T, ch Channel, msg string) {
+	st := ch.Write(nil, []byte(msg))
+	if !st.OK() {
+		t.Fatal(st)
+	}
+}
+
 // Read
 
 func TestChannel_Read__should_read_message(t *testing.T) {

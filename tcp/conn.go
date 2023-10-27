@@ -87,7 +87,6 @@ func (c *conn) Close() status.Status {
 	c.close()
 
 	c.routine.Cancel()
-	<-c.routine.Wait()
 	return status.OK
 }
 
@@ -165,6 +164,10 @@ func (c *conn) close() {
 
 func (c *conn) closed() bool {
 	return c.socket.closed()
+}
+
+func (c *conn) disconnected() <-chan struct{} {
+	return c.socket.disconnected.Wait()
 }
 
 // connect
@@ -456,6 +459,8 @@ func (c *conn) write(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 // socket
 
 type connSocket struct {
+	disconnected *async.Flag
+
 	mu     sync.Mutex
 	st     status.Status
 	conn   net.Conn
@@ -464,6 +469,8 @@ type connSocket struct {
 
 func newConnSocket(client bool, conn net.Conn) connSocket {
 	return connSocket{
+		disconnected: async.UnsetFlag(),
+
 		st:     status.OK,
 		conn:   conn,
 		client: client,
@@ -480,6 +487,7 @@ func (c *connSocket) close() status.Status {
 
 	c.st = statusConnClosed
 	c.conn.Close()
+	c.disconnected.Set()
 
 	if debug {
 		debugPrint(c.client, "conn.close\t", c.st)

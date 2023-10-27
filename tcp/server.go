@@ -190,9 +190,10 @@ func (s *server) serve(cancel <-chan struct{}) status.Status {
 
 func (s *server) handle(nc net.Conn) {
 	conn := newConn(nc, false /* not client */, s.handler, s.logger, s.options)
-	conn.routine = async.Go(func(cancel <-chan struct{}) status.Status {
-		defer conn.Free()
+	conn.routine = async.Go(conn.run)
 
-		return conn.run(cancel)
-	})
+	go func() {
+		defer conn.Free()
+		<-conn.routine.Wait()
+	}()
 }

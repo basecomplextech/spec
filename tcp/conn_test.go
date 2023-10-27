@@ -46,7 +46,7 @@ func TestConn_Free__should_close_connection(t *testing.T) {
 	assert.True(t, conn.writeq.Closed())
 }
 
-func TestConn_Free__should_close_chs(t *testing.T) {
+func TestConn_Free__should_close_channels(t *testing.T) {
 	server := testRequestServer(t)
 	conn := testConnect(t, server)
 	defer conn.Free()
@@ -60,7 +60,7 @@ func TestConn_Free__should_close_chs(t *testing.T) {
 
 // HandleChannel
 
-func TestConn_handleChannel__should_log_ch_panics(t *testing.T) {
+func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
 	server := testServer(t, func(ch Channel) status.Status {
 		panic("test")
 	})
@@ -79,7 +79,7 @@ func TestConn_handleChannel__should_log_ch_panics(t *testing.T) {
 	assert.Equal(t, status.End, st)
 }
 
-func TestConn_handleChannel__should_log_ch_errors(t *testing.T) {
+func TestConn_handleChannel__should_log_channel_errors(t *testing.T) {
 	server := testServer(t, func(ch Channel) status.Status {
 		return status.Errorf("test ch error")
 	})
