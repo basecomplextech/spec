@@ -20,6 +20,9 @@ type Client interface {
 	// Disconnected indicates that the client is disconnected from the server.
 	Disconnected() <-chan struct{}
 
+	// IsConnected returns true if the client is connected to the server.
+	IsConnected() bool
+
 	// Methods
 
 	// Connect manually starts the internal connect loop.
@@ -69,6 +72,11 @@ func (c *client) Connected() <-chan struct{} {
 // Disconnected indicates that the client is disconnected from the server.
 func (c *client) Disconnected() <-chan struct{} {
 	return c.client.Disconnected()
+}
+
+// IsConnected returns true if the client is connected to the server.
+func (c *client) IsConnected() bool {
+	return c.client.IsConnected()
 }
 
 // Methods
