@@ -361,7 +361,7 @@ func (w *writer) handlerChannel_request(def *model.Definition, m *model.Method) 
 
 		w.linef(`in, err := c.in.MessageErr()`)
 		w.line(`if err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn(m))
+		w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn1(m.Input, m.InputFields))
 		w.line(`}`)
 		w.line()
 
@@ -403,7 +403,7 @@ func (w *writer) handlerChannel_request(def *model.Definition, m *model.Method) 
 			}
 
 			w.line(`if err != nil {`)
-			w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn(m))
+			w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn1(m.Input, m.InputFields))
 			w.line(`}`)
 		}
 
@@ -465,16 +465,20 @@ func handlerChannel_name(m *model.Method) string {
 }
 
 func handlerChannel_zeroReturn(m *model.Method) string {
+	return handlerChannel_zeroReturn1(m.Output, m.OutputFields)
+}
+
+func handlerChannel_zeroReturn1(output *model.Type, outputFields *model.Fields) string {
 	switch {
 	default:
 		return ``
 
-	case m.Output != nil:
+	case output != nil:
 		return `nil, `
 
-	case m.OutputFields != nil:
+	case outputFields != nil:
 		b := strings.Builder{}
-		fields := m.OutputFields.List
+		fields := outputFields.List
 
 		for _, f := range fields {
 			typ := f.Type

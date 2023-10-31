@@ -22,9 +22,9 @@ service TestService {
     method2(Request) (Response);
 
     // Method10, 11, 12 have channels.
-    method11(Request) (Response) (->In);
-    method12(Request) (Response) (<-Out);
-    method13(Request) (Response) (->In <-Out);
+    method11(Request) (Response) (<-In);
+    method12(Request) (Response) (->Out);
+    method13(Request) (Response) (<-In ->Out);
 
     // Subservice doc comment.
     subservice(id bin128 1) (TestSubservice);

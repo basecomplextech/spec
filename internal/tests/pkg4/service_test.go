@@ -112,7 +112,7 @@ func (s *testService) Method21(cancel <-chan struct{}, ch *ServiceMethod21Server
 	str := req.Msg().Unwrap()
 
 	{
-		w := NewOutWriter()
+		w := NewInWriter()
 		w.A(1)
 		w.B(2)
 		w.C("3")
@@ -162,7 +162,7 @@ func (s *testService) Method23(cancel <-chan struct{}, ch *ServiceMethod23Server
 	str := req.Msg().Clone()
 
 	{
-		w := NewOutWriter()
+		w := NewInWriter()
 		w.A(1)
 		w.B(2)
 		w.C("3")

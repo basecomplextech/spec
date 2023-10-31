@@ -222,7 +222,7 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		w1 := NewInWriter()
+		w1 := NewOutWriter()
 		w1.A(1)
 		w1.B(2)
 		w1.C("3")
@@ -268,7 +268,7 @@ func TestService_Channel(t *testing.T) {
 		assert.Equal(t, float64(2), msg.B())
 		assert.Equal(t, "3", msg.C().Unwrap())
 
-		w1 := NewInWriter()
+		w1 := NewOutWriter()
 		w1.A(1)
 		w1.B(2)
 		w1.C("3")

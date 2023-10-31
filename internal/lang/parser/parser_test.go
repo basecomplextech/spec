@@ -504,9 +504,9 @@ func TestParser_Parse__should_parse_method_channel(t *testing.T) {
 	p := newParser()
 	s := `service Service {
 		method0() () ();
-		method1() () (->In);
-		method2() () (<-Out);
-		method3() () (->In <-Out);
+		method1() () (<-In);
+		method2() () (->Out);
+		method3() () (<-In ->Out);
 	}`
 
 	file, err := p.Parse(s)

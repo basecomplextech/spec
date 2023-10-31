@@ -633,7 +633,7 @@ method_channel_in:
 	{
 		$$ = nil
 	}
-	| '-' '>' type
+	| '<' '-' type
 	{
 		$$ = $3
 	};
@@ -643,7 +643,7 @@ method_channel_out:
 	{
 		$$ = nil
 	}
-	| '<' '-' type
+	| '-' '>' type
 	{
 		$$ = $3
 	};
