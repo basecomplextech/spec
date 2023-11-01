@@ -1,6 +1,10 @@
 package generator
 
-import "github.com/basecomplextech/spec/internal/lang/model"
+import (
+	"fmt"
+
+	"github.com/basecomplextech/spec/internal/lang/model"
+)
 
 type clientWriter struct {
 	*writer
@@ -18,6 +22,9 @@ func (w *clientWriter) client(def *model.Definition) error {
 		return err
 	}
 	if err := w.ifaceEnd(def); err != nil {
+		return err
+	}
+	if err := w.channels(def); err != nil {
 		return err
 	}
 	return nil
@@ -54,7 +61,6 @@ func (w *clientWriter) method(def *model.Definition, m *model.Method) error {
 	if err := w.method_output(def, m); err != nil {
 		return err
 	}
-	w.line()
 	return nil
 }
 
@@ -100,27 +106,29 @@ func (w *clientWriter) method_input(def *model.Definition, m *model.Method) erro
 func (w *clientWriter) method_output(def *model.Definition, m *model.Method) error {
 	switch {
 	default:
-		w.write(`(status.Status)`)
+		w.line(`(status.Status)`)
 
 	case m.Sub:
 		typeName := typeName(m.Output)
-		w.line(`(`)
-		w.writef(`%vClient, status.Status)`, typeName)
+		w.linef(`(%vClient, status.Status)`, typeName)
 
 	case m.Chan:
-		name := channel_name(m)
-		w.line(`(`)
-		w.writef(`*%v, status.Status)`, name)
+		name := clientChannel_name(m)
+		w.linef(`(%v, status.Status)`, name)
 
 	case m.Output != nil:
 		typeName := typeName(m.Output)
-		w.line(`(`)
-		w.writef(`*ref.R[%v], status.Status)`, typeName)
+		w.linef(`(*ref.R[%v], status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List
 		multi := len(fields) > 3
-		w.line(`(`)
+
+		if multi {
+			w.line(`(`)
+		} else {
+			w.write(`(`)
+		}
 
 		for _, f := range fields {
 			name := toLowerCameCase(f.Name)
@@ -139,7 +147,7 @@ func (w *clientWriter) method_output(def *model.Definition, m *model.Method) err
 			w.write(`_st status.Status`)
 		}
 
-		w.write(`)`)
+		w.line(`)`)
 	}
 	return nil
 }
@@ -151,4 +159,88 @@ func (w *clientWriter) ifaceEnd(def *model.Definition) error {
 	w.line(`}`)
 	w.line()
 	return nil
+}
+
+// channel
+
+func (w *clientWriter) channels(def *model.Definition) error {
+	for _, m := range def.Service.Methods {
+		if !m.Chan {
+			continue
+		}
+
+		if err := w.channel(def, m); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
+	name := clientChannel_name(m)
+	w.linef(`type %v interface {`, name)
+
+	// Send method
+	if out := m.Channel.Out; out != nil {
+		typeName := typeName(out)
+		w.linef(`Send(cancel <-chan struct{}, msg %v) status.Status `, typeName)
+	}
+
+	// Receive method
+	if in := m.Channel.In; in != nil {
+		typeName := typeName(in)
+		w.linef(`Receive(cancel <-chan struct{}) (%v, status.Status)`, typeName)
+	}
+
+	// Response method
+	{
+		w.write(`Response(cancel <-chan struct{}) `)
+
+		switch {
+		default:
+			w.line(`(status.Status)`)
+
+		case m.Output != nil:
+			typeName := typeName(m.Output)
+			w.linef(`(*ref.R[%v], status.Status)`, typeName)
+
+		case m.OutputFields != nil:
+			fields := m.OutputFields.List
+			multi := len(fields) > 3
+
+			if multi {
+				w.line(`(`)
+			} else {
+				w.write(`(`)
+			}
+
+			for _, f := range fields {
+				name := toLowerCameCase(f.Name)
+				typeName := typeName(f.Type)
+				if multi {
+					w.linef(`_%v %v, `, name, typeName)
+				} else {
+					w.writef(`_%v %v, `, name, typeName)
+				}
+			}
+
+			if multi {
+				w.line(`_st status.Status,`)
+			} else {
+				w.write(`_st status.Status`)
+			}
+
+			w.line(`)`)
+		}
+	}
+
+	// Free method
+	w.line(`Free()`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func clientChannel_name(m *model.Method) string {
+	return fmt.Sprintf("%v%vChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
 }

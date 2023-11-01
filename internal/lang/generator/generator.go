@@ -47,9 +47,10 @@ func (g *generator) file(file *model.File, out string) error {
 	if err := w.file(file); err != nil {
 		return err
 	}
+	bytes := w.b.Bytes()
 
 	// Format file
-	bytes, err := format.Source(w.b.Bytes())
+	bytes, err := format.Source(bytes)
 	if err != nil {
 		return err
 	}
