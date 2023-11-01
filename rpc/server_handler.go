@@ -12,6 +12,13 @@ type Handler interface {
 	Handle(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status)
 }
 
+// Subhandler is an RPC subservice handler.
+type Subhandler interface {
+	// Handle handles a request and returns its result and status.
+	// Result is ignored if status is not OK.
+	Handle(cancel <-chan struct{}, ch ServerChannel, index int) (*ref.R[[]byte], status.Status)
+}
+
 // HandleFunc is a type adapter to allow use of ordinary functions as RPC handlers.
 type HandleFunc func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status)
 

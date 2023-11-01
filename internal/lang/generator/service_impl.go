@@ -32,27 +32,36 @@ func (w *serviceImplWriter) serviceImpl(def *model.Definition) error {
 }
 
 func (w *serviceImplWriter) def(def *model.Definition) error {
-	w.linef(`// %vHandler`, def.Name)
+	name := handler_name(def)
+
+	w.linef(`// %v`, name)
 	w.line()
-	w.linef(`type %vHandler struct {`, def.Name)
+	w.linef(`type %v struct {`, name)
 	w.linef(`service %v`, def.Name)
 	w.line(`}`)
 	w.line()
 
-	w.linef(`func New%vHandler(s %v) *%vHandler {`, def.Name, def.Name, def.Name)
-	w.linef(`return &%vHandler{service: s}`, def.Name)
+	if def.Service.Sub {
+		w.linef(`func New%vHandler(s %v) rpc.Subhandler {`, def.Name, def.Name)
+	} else {
+		w.linef(`func New%vHandler(s %v) rpc.Handler {`, def.Name, def.Name)
+	}
+
+	w.linef(`return &%v{service: s}`, name)
 	w.linef(`}`)
 	w.line()
 	return nil
 }
 
 func (w *serviceImplWriter) handle(def *model.Definition) error {
+	name := handler_name(def)
+
 	if def.Service.Sub {
-		w.linef(`func (h *%vHandler) Handle(cancel <-chan struct{}, ch rpc.ServerChannel, index int) (*ref.R[[]byte], status.Status) {`,
-			def.Name)
+		w.linef(`func (h *%v) Handle(cancel <-chan struct{}, ch rpc.ServerChannel, index int) (*ref.R[[]byte], status.Status) {`,
+			name)
 	} else {
-		w.linef(`func (h *%vHandler) Handle(cancel <-chan struct{}, ch rpc.ServerChannel) (*ref.R[[]byte], status.Status) {`,
-			def.Name)
+		w.linef(`func (h *%v) Handle(cancel <-chan struct{}, ch rpc.ServerChannel) (*ref.R[[]byte], status.Status) {`,
+			name)
 		w.line(`index := 0`)
 	}
 
@@ -94,8 +103,9 @@ func (w *serviceImplWriter) methods(def *model.Definition) error {
 
 func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error {
 	// Declare method
-	w.linef(`func (h *%vHandler) _%v(cancel <-chan struct{}, ch rpc.ServerChannel, call prpc.Call, index int) (`,
-		def.Name, toLowerCameCase(m.Name))
+	name := handler_name(def)
+	w.linef(`func (h *%v) _%v(cancel <-chan struct{}, ch rpc.ServerChannel, call prpc.Call, index int) (`,
+		name, toLowerCameCase(m.Name))
 	w.line(`*ref.R[[]byte], status.Status) {`)
 
 	// Parse input
@@ -466,6 +476,10 @@ func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Meth
 	w.line(`}`)
 	w.line()
 	return nil
+}
+
+func handler_name(def *model.Definition) string {
+	return fmt.Sprintf(`%vHandler`, toLowerCameCase(def.Name))
 }
 
 func handlerChannel_name(m *model.Method) string {
