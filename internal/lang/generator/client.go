@@ -242,5 +242,5 @@ func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
 }
 
 func clientChannel_name(m *model.Method) string {
-	return fmt.Sprintf("%v%vChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
+	return fmt.Sprintf("%v%vClientChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
 }

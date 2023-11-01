@@ -334,7 +334,7 @@ func (w *clientImplWriter) method_channel(def *model.Definition, m *model.Method
 	w.line(`if !st.OK() {`)
 	w.linef(`return %v st`, clientMethod_zeroReturn(m))
 	w.line(`}`)
-	w.linef(`return new%v(ch), status.OK`, toUpperCamelCase(name))
+	w.linef(`return new%v(ch), status.OK`, strings.Title(name))
 	return nil
 }
 
@@ -487,7 +487,7 @@ func (w *clientImplWriter) channel_def(def *model.Definition, m *model.Method) e
 	w.line(`ch rpc.Channel`)
 	w.line(`}`)
 	w.line()
-	w.linef(`func new%v(ch rpc.Channel) *%v {`, toUpperCamelCase(name), name)
+	w.linef(`func new%v(ch rpc.Channel) *%v {`, strings.Title(name), name)
 	w.linef(`return &%v{ch: ch}`, name)
 	w.linef(`}`)
 	w.line()
@@ -750,7 +750,7 @@ func clientMethod_zeroReturn(m *model.Method) string {
 }
 
 func clientChannelImpl_name(m *model.Method) string {
-	return fmt.Sprintf("%v%vChannel", toLowerCameCase(m.Service.Def.Name), toUpperCamelCase(m.Name))
+	return fmt.Sprintf("%v%vClientChannel", toLowerCameCase(m.Service.Def.Name), toUpperCamelCase(m.Name))
 }
 
 func clientChannelImpl_zeroReturn(m *model.Method) string {

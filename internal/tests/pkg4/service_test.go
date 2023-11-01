@@ -91,7 +91,7 @@ func (s *testService) Method11(cancel <-chan struct{}) (*ref.R[ServiceMethod11Re
 	return ref.NewNoFreer(resp), status.OK
 }
 
-func (s *testService) Method20(cancel <-chan struct{}, ch *ServiceMethod20ServerChannel) (
+func (s *testService) Method20(cancel <-chan struct{}, ch ServiceMethod20Channel) (
 	_a int64,
 	_b float64,
 	_c bool,
@@ -104,7 +104,7 @@ func (s *testService) Method20(cancel <-chan struct{}, ch *ServiceMethod20Server
 	return a_, b_, c_, status.OK
 }
 
-func (s *testService) Method21(cancel <-chan struct{}, ch *ServiceMethod21ServerChannel) (*ref.R[Response], status.Status) {
+func (s *testService) Method21(cancel <-chan struct{}, ch ServiceMethod21Channel) (*ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
@@ -133,7 +133,7 @@ func (s *testService) Method21(cancel <-chan struct{}, ch *ServiceMethod21Server
 	return ref.NewNoFreer(resp), status.OK
 }
 
-func (s *testService) Method22(cancel <-chan struct{}, ch *ServiceMethod22ServerChannel) (*ref.R[Response], status.Status) {
+func (s *testService) Method22(cancel <-chan struct{}, ch ServiceMethod22Channel) (*ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
@@ -154,7 +154,7 @@ func (s *testService) Method22(cancel <-chan struct{}, ch *ServiceMethod22Server
 	return ref.NewNoFreer(resp), status.OK
 }
 
-func (s *testService) Method23(cancel <-chan struct{}, ch *ServiceMethod23ServerChannel) (*ref.R[Response], status.Status) {
+func (s *testService) Method23(cancel <-chan struct{}, ch ServiceMethod23Channel) (*ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st

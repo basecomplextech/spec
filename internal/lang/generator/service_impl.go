@@ -111,9 +111,9 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	// Parse input
 	switch {
 	case m.Chan:
+		channelName := handlerChannel_name(m)
 		w.line(`// Make channel`)
-		w.linef(`ch1 := New%v(ch)`, handlerChannel_name(m))
-		w.line(`ch1.in = call.Input()`)
+		w.linef(`ch1 := new%v(ch, call.Input())`, strings.Title(channelName))
 		w.line()
 
 	case m.Input != nil:
@@ -339,11 +339,11 @@ func (w *serviceImplWriter) channel_def(def *model.Definition, m *model.Method) 
 	w.line()
 	w.linef(`type %v struct {`, name)
 	w.line(`ch rpc.ServerChannel`)
-	w.line(`in spec.Value`)
+	w.line(`req spec.Value`)
 	w.line(`}`)
 	w.line()
-	w.linef(`func New%v(ch rpc.ServerChannel) *%v {`, name, name)
-	w.linef(`return &%v{ch: ch}`, name)
+	w.linef(`func new%v(ch rpc.ServerChannel, req spec.Value) *%v {`, strings.Title(name), name)
+	w.linef(`return &%v{ch: ch, req: req}`, name)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -358,13 +358,13 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 		parseFunc := typeParseFunc(m.Input)
 
 		w.linef(`func (c *%v) Request() (%v, status.Status) {`, name, typeName)
-		w.linef(`in, _, err := %v(c.in)`, parseFunc)
+		w.linef(`req, _, err := %v(c.req)`, parseFunc)
 		w.line(`if err != nil {`)
 		w.linef(`return %v{}, rpc.WrapError(err)`, typeName)
 		w.line(`}`)
 
-		w.line(`c.in = nil`)
-		w.line(`return in, status.OK`)
+		w.line(`c.req = nil`)
+		w.line(`return req, status.OK`)
 		w.line(`}`)
 		w.line()
 
@@ -377,7 +377,7 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 		}
 		w.line(`status.Status) {`)
 
-		w.linef(`in, err := c.in.MessageErr()`)
+		w.linef(`req, err := c.req.MessageErr()`)
 		w.line(`if err != nil {`)
 		w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn1(m.Input, m.InputFields))
 		w.line(`}`)
@@ -389,35 +389,35 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 
 			switch typ.Kind {
 			case model.KindBool:
-				w.linef(`_%v, err := in.Field(%d).BoolErr()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).BoolErr()`, name, f.Tag)
 			case model.KindByte:
-				w.linef(`_%v, err := in.Field(%d).ByteErr()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).ByteErr()`, name, f.Tag)
 
 			case model.KindInt16:
-				w.linef(`_%v, err := in.Field(%d).Int16Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Int16Err()`, name, f.Tag)
 			case model.KindInt32:
-				w.linef(`_%v, err := in.Field(%d).Int32Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Int32Err()`, name, f.Tag)
 			case model.KindInt64:
-				w.linef(`_%v, err := in.Field(%d).Int64Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Int64Err()`, name, f.Tag)
 
 			case model.KindUint16:
-				w.linef(`_%v, err := in.Field(%d).Uint16Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Uint16Err()`, name, f.Tag)
 			case model.KindUint32:
-				w.linef(`_%v, err := in.Field(%d).Uint32Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Uint32Err()`, name, f.Tag)
 			case model.KindUint64:
-				w.linef(`_%v, err := in.Field(%d).Uint64Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Uint64Err()`, name, f.Tag)
 
 			case model.KindBin64:
-				w.linef(`_%v, err := in.Field(%d).Bin64Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Bin64Err()`, name, f.Tag)
 			case model.KindBin128:
-				w.linef(`_%v, err := in.Field(%d).Bin128Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Bin128Err()`, name, f.Tag)
 			case model.KindBin256:
-				w.linef(`_%v, err := in.Field(%d).Bin256Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Bin256Err()`, name, f.Tag)
 
 			case model.KindFloat32:
-				w.linef(`_%v, err := in.Field(%d).Float32Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Float32Err()`, name, f.Tag)
 			case model.KindFloat64:
-				w.linef(`_%v, err := in.Field(%d).Float64Err()`, name, f.Tag)
+				w.linef(`_%v, err := req.Field(%d).Float64Err()`, name, f.Tag)
 			}
 
 			w.line(`if err != nil {`)
@@ -425,7 +425,7 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 			w.line(`}`)
 		}
 
-		w.line(`c.in = nil`)
+		w.line(`c.req = nil`)
 		w.write(`return `)
 		for _, f := range fields {
 			w.writef(`_%v, `, toLowerCameCase(f.Name))
@@ -483,7 +483,7 @@ func handler_name(def *model.Definition) string {
 }
 
 func handlerChannel_name(m *model.Method) string {
-	return fmt.Sprintf("%v%vServerChannel", m.Service.Def.Name, toUpperCamelCase(m.Name))
+	return fmt.Sprintf("%v%vChannel", toLowerCameCase(m.Service.Def.Name), toUpperCamelCase(m.Name))
 }
 
 func handlerChannel_zeroReturn(m *model.Method) string {
