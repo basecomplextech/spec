@@ -7,23 +7,31 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) handler(def *model.Definition) error {
-	if err := w.handlerDef(def); err != nil {
+type serviceImplWriter struct {
+	*writer
+}
+
+func newServiceImplWriter(w *writer) *serviceImplWriter {
+	return &serviceImplWriter{w}
+}
+
+func (w *serviceImplWriter) serviceImpl(def *model.Definition) error {
+	if err := w.def(def); err != nil {
 		return err
 	}
-	if err := w.handlerHandle(def); err != nil {
+	if err := w.handle(def); err != nil {
 		return err
 	}
-	if err := w.handlerMethods(def); err != nil {
+	if err := w.methods(def); err != nil {
 		return err
 	}
-	if err := w.handlerChannels(def); err != nil {
+	if err := w.channels(def); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *writer) handlerDef(def *model.Definition) error {
+func (w *serviceImplWriter) def(def *model.Definition) error {
 	w.linef(`// %vHandler`, def.Name)
 	w.line()
 	w.linef(`type %vHandler struct {`, def.Name)
@@ -38,7 +46,7 @@ func (w *writer) handlerDef(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) handlerHandle(def *model.Definition) error {
+func (w *serviceImplWriter) handle(def *model.Definition) error {
 	if def.Service.Sub {
 		w.linef(`func (h *%vHandler) Handle(cancel <-chan struct{}, ch rpc.ServerChannel, index int) (*ref.R[[]byte], status.Status) {`,
 			def.Name)
@@ -75,16 +83,16 @@ func (w *writer) handlerHandle(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) handlerMethods(def *model.Definition) error {
+func (w *serviceImplWriter) methods(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
-		if err := w.handlerMethod(def, m); err != nil {
+		if err := w.method(def, m); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
+func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error {
 	// Declare method
 	w.linef(`func (h *%vHandler) _%v(cancel <-chan struct{}, ch rpc.ServerChannel, call prpc.Call, index int) (`,
 		def.Name, toLowerCameCase(m.Name))
@@ -285,36 +293,36 @@ func (w *writer) handlerMethod(def *model.Definition, m *model.Method) error {
 
 // channels
 
-func (w *writer) handlerChannels(def *model.Definition) error {
+func (w *serviceImplWriter) channels(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
 		if !m.Chan {
 			continue
 		}
 
-		if err := w.handlerChannel(def, m); err != nil {
+		if err := w.channel(def, m); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (w *writer) handlerChannel(def *model.Definition, m *model.Method) error {
-	if err := w.handlerChannel_def(def, m); err != nil {
+func (w *serviceImplWriter) channel(def *model.Definition, m *model.Method) error {
+	if err := w.channel_def(def, m); err != nil {
 		return err
 	}
-	if err := w.handlerChannel_request(def, m); err != nil {
+	if err := w.channel_request(def, m); err != nil {
 		return err
 	}
-	if err := w.handlerChannel_send(def, m); err != nil {
+	if err := w.channel_send(def, m); err != nil {
 		return err
 	}
-	if err := w.handlerChannel_receive(def, m); err != nil {
+	if err := w.channel_receive(def, m); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *writer) handlerChannel_def(def *model.Definition, m *model.Method) error {
+func (w *serviceImplWriter) channel_def(def *model.Definition, m *model.Method) error {
 	name := handlerChannel_name(m)
 
 	w.linef(`// %v`, name)
@@ -331,7 +339,7 @@ func (w *writer) handlerChannel_def(def *model.Definition, m *model.Method) erro
 	return nil
 }
 
-func (w *writer) handlerChannel_request(def *model.Definition, m *model.Method) error {
+func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Method) error {
 	name := handlerChannel_name(m)
 
 	switch {
@@ -419,7 +427,7 @@ func (w *writer) handlerChannel_request(def *model.Definition, m *model.Method) 
 	return nil
 }
 
-func (w *writer) handlerChannel_send(def *model.Definition, m *model.Method) error {
+func (w *serviceImplWriter) channel_send(def *model.Definition, m *model.Method) error {
 	in := m.Channel.In
 	if in == nil {
 		return nil
@@ -435,7 +443,7 @@ func (w *writer) handlerChannel_send(def *model.Definition, m *model.Method) err
 	return nil
 }
 
-func (w *writer) handlerChannel_receive(def *model.Definition, m *model.Method) error {
+func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Method) error {
 	out := m.Channel.Out
 	if out == nil {
 		return nil

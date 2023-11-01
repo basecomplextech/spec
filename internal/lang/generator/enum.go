@@ -7,29 +7,37 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) enum(def *model.Definition) error {
-	if err := w.enumDef(def); err != nil {
+type enumWriter struct {
+	*writer
+}
+
+func newEnumWriter(w *writer) *enumWriter {
+	return &enumWriter{w}
+}
+
+func (w *enumWriter) enum(def *model.Definition) error {
+	if err := w.def(def); err != nil {
 		return err
 	}
-	if err := w.enumValues(def); err != nil {
+	if err := w.values(def); err != nil {
 		return err
 	}
-	if err := w.newEnum(def); err != nil {
+	if err := w.new_method(def); err != nil {
 		return err
 	}
-	if err := w.parseEnum(def); err != nil {
+	if err := w.parse_method(def); err != nil {
 		return err
 	}
-	if err := w.writeEnum(def); err != nil {
+	if err := w.write_method(def); err != nil {
 		return err
 	}
-	if err := w.enumString(def); err != nil {
+	if err := w.string_method(def); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *writer) enumDef(def *model.Definition) error {
+func (w *enumWriter) def(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef("type %v int32", def.Name)
@@ -37,7 +45,7 @@ func (w *writer) enumDef(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) enumValues(def *model.Definition) error {
+func (w *enumWriter) values(def *model.Definition) error {
 	w.line("const (")
 
 	for _, val := range def.Enum.Values {
@@ -51,7 +59,7 @@ func (w *writer) enumValues(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) newEnum(def *model.Definition) error {
+func (w *enumWriter) new_method(def *model.Definition) error {
 	name := def.Name
 	w.linef(`func New%v(b []byte) %v {`, name, name)
 	w.linef(`v, _, _ := encoding.DecodeInt32(b)`)
@@ -61,7 +69,7 @@ func (w *writer) newEnum(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) parseEnum(def *model.Definition) error {
+func (w *enumWriter) parse_method(def *model.Definition) error {
 	name := def.Name
 	w.linef(`func Parse%v(b []byte) (result %v, size int, err error) {`, name, name)
 	w.linef(`v, size, err := encoding.DecodeInt32(b)`)
@@ -75,7 +83,7 @@ func (w *writer) parseEnum(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) writeEnum(def *model.Definition) error {
+func (w *enumWriter) write_method(def *model.Definition) error {
 	w.linef(`func Write%v(b buffer.Buffer, v %v) (int, error) {`, def.Name, def.Name)
 	w.linef(`return encoding.EncodeInt32(b, int32(v))`)
 	w.linef(`}`)
@@ -83,7 +91,7 @@ func (w *writer) writeEnum(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) enumString(def *model.Definition) error {
+func (w *enumWriter) string_method(def *model.Definition) error {
 	w.linef("func (e %v) String() string {", def.Name)
 	w.line("switch e {")
 

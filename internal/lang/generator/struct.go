@@ -6,23 +6,31 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) struct_(def *model.Definition) error {
-	if err := w.structDef(def); err != nil {
+type structWriter struct {
+	*writer
+}
+
+func newStructWriter(w *writer) *structWriter {
+	return &structWriter{w}
+}
+
+func (w *structWriter) struct_(def *model.Definition) error {
+	if err := w.def(def); err != nil {
 		return err
 	}
-	if err := w.newStruct(def); err != nil {
+	if err := w.new_method(def); err != nil {
 		return err
 	}
-	if err := w.parseStruct(def); err != nil {
+	if err := w.parse_method(def); err != nil {
 		return err
 	}
-	if err := w.writeStruct(def); err != nil {
+	if err := w.write_method(def); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *writer) structDef(def *model.Definition) error {
+func (w *structWriter) def(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef("type %v struct {", def.Name)
@@ -40,7 +48,7 @@ func (w *writer) structDef(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) newStruct(def *model.Definition) error {
+func (w *structWriter) new_method(def *model.Definition) error {
 	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`s, _, _ := Parse%v(b)`, def.Name)
 	w.line(`return s`)
@@ -49,7 +57,7 @@ func (w *writer) newStruct(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) parseStruct(def *model.Definition) error {
+func (w *structWriter) parse_method(def *model.Definition) error {
 	w.linef(`func Parse%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
 	w.line(`dataSize, size, err := encoding.DecodeStruct(b)`)
 	w.line(`if err != nil || size == 0 {
@@ -89,7 +97,7 @@ func (w *writer) parseStruct(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) writeStruct(def *model.Definition) error {
+func (w *structWriter) write_method(def *model.Definition) error {
 	w.linef(`func Write%v(b buffer.Buffer, s %v) (int, error) {`, def.Name, def.Name)
 	w.line(`var dataSize, n int`)
 	w.line(`var err error`)

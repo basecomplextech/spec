@@ -9,6 +9,10 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
+const (
+	OptionPackage = "go_package"
+)
+
 type Generator interface {
 	// Package generates a go package.
 	Package(pkg *model.Package, out string) error

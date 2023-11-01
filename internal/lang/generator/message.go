@@ -6,29 +6,37 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-func (w *writer) message(def *model.Definition) error {
-	if err := w.messageDef(def); err != nil {
+type messageWriter struct {
+	*writer
+}
+
+func newMessageWriter(w *writer) *messageWriter {
+	return &messageWriter{w}
+}
+
+func (w *messageWriter) message(def *model.Definition) error {
+	if err := w.def(def); err != nil {
 		return err
 	}
-	if err := w.newMessage(def); err != nil {
+	if err := w.new_method(def); err != nil {
 		return err
 	}
-	if err := w.parseMessage(def); err != nil {
+	if err := w.parse_method(def); err != nil {
 		return err
 	}
-	if err := w.messageFields(def); err != nil {
+	if err := w.fields(def); err != nil {
 		return err
 	}
-	if err := w.messageHasFields(def); err != nil {
+	if err := w.has_fields(def); err != nil {
 		return err
 	}
-	if err := w.messageMethods(def); err != nil {
+	if err := w.methods(def); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *writer) messageDef(def *model.Definition) error {
+func (w *messageWriter) def(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef(`type %v struct {`, def.Name)
@@ -38,7 +46,7 @@ func (w *writer) messageDef(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) newMessage(def *model.Definition) error {
+func (w *messageWriter) new_method(def *model.Definition) error {
 	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`msg := spec.NewMessage(b)`)
 	w.linef(`return %v{msg}`, def.Name)
@@ -47,7 +55,7 @@ func (w *writer) newMessage(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) parseMessage(def *model.Definition) error {
+func (w *messageWriter) parse_method(def *model.Definition) error {
 	w.linef(`func Parse%v(b []byte) (_ %v, size int, err error) {`, def.Name, def.Name)
 	w.linef(`msg, size, err := spec.ParseMessage(b)`)
 	w.line(`if err != nil || size == 0 {
@@ -59,11 +67,11 @@ func (w *writer) parseMessage(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageFields(def *model.Definition) error {
+func (w *messageWriter) fields(def *model.Definition) error {
 	fields := def.Message.Fields.List
 
 	for _, field := range fields {
-		if err := w.messageField(def, field); err != nil {
+		if err := w.field(def, field); err != nil {
 			return err
 		}
 	}
@@ -72,7 +80,7 @@ func (w *writer) messageFields(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageField(def *model.Definition, field *model.Field) error {
+func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 	fieldName := messageFieldName(field)
 	typeName := typeRefName(field.Type)
 
@@ -150,11 +158,11 @@ func (w *writer) messageField(def *model.Definition, field *model.Field) error {
 	return nil
 }
 
-func (w *writer) messageHasFields(def *model.Definition) error {
+func (w *messageWriter) has_fields(def *model.Definition) error {
 	fields := def.Message.Fields.List
 
 	for _, field := range fields {
-		if err := w.messageHasField(def, field); err != nil {
+		if err := w.has_field(def, field); err != nil {
 			return err
 		}
 	}
@@ -163,7 +171,7 @@ func (w *writer) messageHasFields(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageHasField(def *model.Definition, field *model.Field) error {
+func (w *messageWriter) has_field(def *model.Definition, field *model.Field) error {
 	fieldName := messageFieldName(field)
 	tag := field.Tag
 
@@ -174,7 +182,7 @@ func (w *writer) messageHasField(def *model.Definition, field *model.Field) erro
 	return nil
 }
 
-func (w *writer) messageMethods(def *model.Definition) error {
+func (w *messageWriter) methods(def *model.Definition) error {
 	w.writef(`func (m %v) IsEmpty() bool {`, def.Name)
 	w.writef(`return m.msg.Empty()`)
 	w.writef(`}`)
@@ -194,23 +202,23 @@ func (w *writer) messageMethods(def *model.Definition) error {
 
 // writer
 
-func (w *writer) messageWriter(def *model.Definition) error {
-	if err := w.messageWriterDef(def); err != nil {
+func (w *messageWriter) messageWriter(def *model.Definition) error {
+	if err := w.writer_def(def); err != nil {
 		return err
 	}
-	if err := w.newMessageWriter(def); err != nil {
+	if err := w.writer_new_method(def); err != nil {
 		return err
 	}
-	if err := w.messageWriterFields(def); err != nil {
+	if err := w.writer_fields(def); err != nil {
 		return err
 	}
-	if err := w.messageWriterBuild(def); err != nil {
+	if err := w.writer_build(def); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *writer) messageWriterDef(def *model.Definition) error {
+func (w *messageWriter) writer_def(def *model.Definition) error {
 	w.linef(`// %vWriter`, def.Name)
 	w.line()
 	w.linef(`type %vWriter struct {`, def.Name)
@@ -220,7 +228,7 @@ func (w *writer) messageWriterDef(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) newMessageWriter(def *model.Definition) error {
+func (w *messageWriter) writer_new_method(def *model.Definition) error {
 	w.linef(`func New%vWriter() %vWriter {`, def.Name, def.Name)
 	w.linef(`w := spec.NewMessageWriter()`)
 	w.linef(`return %vWriter{w}`, def.Name)
@@ -240,7 +248,7 @@ func (w *writer) newMessageWriter(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterBuild(def *model.Definition) error {
+func (w *messageWriter) writer_build(def *model.Definition) error {
 	w.linef(`func (w %vWriter) End() error {`, def.Name)
 	w.linef(`return w.w.End()`)
 	w.linef(`}`)
@@ -262,11 +270,11 @@ func (w *writer) messageWriterBuild(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterFields(def *model.Definition) error {
+func (w *messageWriter) writer_fields(def *model.Definition) error {
 	fields := def.Message.Fields.List
 
 	for _, field := range fields {
-		if err := w.messageWriterField(def, field); err != nil {
+		if err := w.writer_field(def, field); err != nil {
 			return err
 		}
 	}
@@ -275,7 +283,7 @@ func (w *writer) messageWriterFields(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) messageWriterField(def *model.Definition, field *model.Field) error {
+func (w *messageWriter) writer_field(def *model.Definition, field *model.Field) error {
 	fname := messageFieldName(field)
 	tname := inTypeName(field.Type)
 	wname := fmt.Sprintf("%vWriter", def.Name)
@@ -382,10 +390,10 @@ func (w *writer) messageWriterField(def *model.Definition, field *model.Field) e
 
 	case model.KindMessage:
 		writer := typeWriter(field.Type)
-		newMessageWriter := typeWriteFunc(field.Type)
+		writer_new_method := typeWriteFunc(field.Type)
 		w.linef(`func (w %v) %v() %v {`, wname, fname, writer)
 		w.linef(`w1 := w.w.Field(%d).Message()`, tag)
-		w.linef(`return %v(w1)`, newMessageWriter)
+		w.linef(`return %v(w1)`, writer_new_method)
 		w.linef(`}`)
 		w.line()
 

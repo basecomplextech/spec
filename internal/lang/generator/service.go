@@ -1,29 +1,22 @@
 package generator
 
-import (
-	"github.com/basecomplextech/spec/internal/lang/model"
-)
+import "github.com/basecomplextech/spec/internal/lang/model"
 
-func (w *writer) service(def *model.Definition) error {
-	if err := w.iface(def); err != nil {
-		return err
-	}
-	if err := w.client(def); err != nil {
-		return err
-	}
-	if err := w.handler(def); err != nil {
-		return err
-	}
-	return nil
+type serviceWriter struct {
+	*writer
 }
 
-func (w *writer) iface(def *model.Definition) error {
+func newServiceWriter(w *writer) *serviceWriter {
+	return &serviceWriter{w}
+}
+
+func (w *serviceWriter) service(def *model.Definition) error {
 	w.linef(`// %v`, def.Name)
 	w.line()
 	w.linef(`type %v interface {`, def.Name)
 
 	for _, m := range def.Service.Methods {
-		if err := w.ifaceMethod(def, m); err != nil {
+		if err := w.method(def, m); err != nil {
 			return err
 		}
 	}
@@ -33,18 +26,18 @@ func (w *writer) iface(def *model.Definition) error {
 	return nil
 }
 
-func (w *writer) ifaceMethod(def *model.Definition, m *model.Method) error {
-	if err := w.ifaceMethod_input(def, m); err != nil {
+func (w *serviceWriter) method(def *model.Definition, m *model.Method) error {
+	if err := w.method_input(def, m); err != nil {
 		return err
 	}
-	if err := w.ifaceMethod_output(def, m); err != nil {
+	if err := w.method_output(def, m); err != nil {
 		return err
 	}
 	w.line()
 	return nil
 }
 
-func (w *writer) ifaceMethod_input(def *model.Definition, m *model.Method) error {
+func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) error {
 	name := toUpperCamelCase(m.Name)
 	w.writef(`%v`, name)
 
@@ -85,7 +78,7 @@ func (w *writer) ifaceMethod_input(def *model.Definition, m *model.Method) error
 	return nil
 }
 
-func (w *writer) ifaceMethod_output(def *model.Definition, m *model.Method) error {
+func (w *serviceWriter) method_output(def *model.Definition, m *model.Method) error {
 	out := m.Output
 
 	switch {

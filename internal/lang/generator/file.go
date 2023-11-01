@@ -1,60 +1,18 @@
 package generator
 
 import (
-	"bytes"
-	"fmt"
-	"strings"
-
 	"github.com/basecomplextech/spec/internal/lang/model"
 )
 
-const (
-	OptionPackage = "go_package"
-)
-
-type writer struct {
-	b bytes.Buffer
-
-	skipRPC bool
+type fileWriter struct {
+	*writer
 }
 
-func newWriter(skipRPC bool) *writer {
-	return &writer{
-		b: bytes.Buffer{},
-
-		skipRPC: skipRPC,
-	}
+func newFileWriter(w *writer) *fileWriter {
+	return &fileWriter{w}
 }
 
-func (w *writer) line(args ...string) {
-	w.write(args...)
-	w.b.WriteString("\n")
-}
-
-func (w *writer) linef(format string, args ...interface{}) {
-	w.writef(format, args...)
-	w.b.WriteString("\n")
-}
-
-func (w *writer) write(args ...string) {
-	for _, s := range args {
-		w.b.WriteString(s)
-	}
-}
-
-func (w *writer) writef(format string, args ...interface{}) {
-	if len(args) == 0 {
-		w.write(format)
-		return
-	}
-
-	s := fmt.Sprintf(format, args...)
-	w.b.WriteString(s)
-}
-
-// file
-
-func (w *writer) file(file *model.File) error {
+func (w *fileWriter) file(file *model.File) error {
 	// Package
 	w.line("package ", file.Package.Name)
 	w.line()
@@ -100,7 +58,8 @@ func (w *writer) file(file *model.File) error {
 	return w.definitions(file)
 }
 
-func (w *writer) definitions(file *model.File) error {
+func (w *fileWriter) definitions(file *model.File) error {
+	// Types and interfaces
 	for _, def := range file.Definitions {
 		switch def.Type {
 		case model.DefinitionEnum:
@@ -116,18 +75,38 @@ func (w *writer) definitions(file *model.File) error {
 				return err
 			}
 		case model.DefinitionService:
-			if !w.skipRPC {
-				if err := w.service(def); err != nil {
-					return err
-				}
+			if w.skipRPC {
+				continue
+			}
+			if err := w.service(def); err != nil {
+				return err
+			}
+			if err := w.client(def); err != nil {
+				return err
 			}
 		}
 	}
 
+	// Message writers
 	for _, def := range file.Definitions {
-		switch def.Type {
-		case model.DefinitionMessage:
-			if err := w.messageWriter(def); err != nil {
+		if def.Type != model.DefinitionMessage {
+			continue
+		}
+		if err := w.messageWriter(def); err != nil {
+			return err
+		}
+	}
+
+	// Service impls
+	if !w.skipRPC {
+		for _, def := range file.Definitions {
+			if def.Type != model.DefinitionService {
+				continue
+			}
+			if err := w.clientImpl(def); err != nil {
+				return err
+			}
+			if err := w.serviceImpl(def); err != nil {
 				return err
 			}
 		}
@@ -135,32 +114,34 @@ func (w *writer) definitions(file *model.File) error {
 	return nil
 }
 
-// internal
-
-func importPackage(imp *model.Import) string {
-	pkg, ok := imp.Package.OptionNames[OptionPackage]
-	if ok {
-		return pkg.Value
-	}
-
-	return imp.ID
+func (w *fileWriter) enum(def *model.Definition) error {
+	return newEnumWriter(w.writer).enum(def)
 }
 
-func toUpperCamelCase(s string) string {
-	parts := strings.Split(s, "_")
-	for i, part := range parts {
-		part = strings.ToLower(part)
-		part = strings.Title(part)
-		parts[i] = part
-	}
-	return strings.Join(parts, "")
+func (w *fileWriter) message(def *model.Definition) error {
+	return newMessageWriter(w.writer).message(def)
 }
 
-func toLowerCameCase(s string) string {
-	if len(s) == 0 {
-		return ""
-	}
+func (w *fileWriter) messageWriter(def *model.Definition) error {
+	return newMessageWriter(w.writer).messageWriter(def)
+}
 
-	s = toUpperCamelCase(s)
-	return strings.ToLower(s[:1]) + s[1:]
+func (w *fileWriter) struct_(def *model.Definition) error {
+	return newStructWriter(w.writer).struct_(def)
+}
+
+func (w *fileWriter) client(def *model.Definition) error {
+	return newClientWriter(w.writer).client(def)
+}
+
+func (w *fileWriter) clientImpl(def *model.Definition) error {
+	return newClientImplWriter(w.writer).clientImpl(def)
+}
+
+func (w *fileWriter) service(def *model.Definition) error {
+	return newServiceWriter(w.writer).service(def)
+}
+
+func (w *fileWriter) serviceImpl(def *model.Definition) error {
+	return newServiceImplWriter(w.writer).serviceImpl(def)
 }
