@@ -59,31 +59,7 @@ func (w *fileWriter) file(file *model.File) error {
 }
 
 func (w *fileWriter) definitions(file *model.File) error {
-	// Services
-	if !w.skipRPC {
-		for _, def := range file.Definitions {
-			if def.Type != model.DefinitionService {
-				continue
-			}
-
-			if err := w.service(def); err != nil {
-				return err
-			}
-
-		}
-
-		for _, def := range file.Definitions {
-			if def.Type != model.DefinitionService {
-				continue
-			}
-
-			if err := w.client(def); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Messages and types
+	// Types
 	for _, def := range file.Definitions {
 		switch def.Type {
 		case model.DefinitionEnum:
@@ -96,6 +72,17 @@ func (w *fileWriter) definitions(file *model.File) error {
 			}
 		case model.DefinitionStruct:
 			if err := w.struct_(def); err != nil {
+				return err
+			}
+		case model.DefinitionService:
+			if w.skipRPC {
+				continue
+			}
+
+			if err := w.service(def); err != nil {
+				return err
+			}
+			if err := w.client(def); err != nil {
 				return err
 			}
 		}

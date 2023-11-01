@@ -24,6 +24,9 @@ func (w *clientWriter) client(def *model.Definition) error {
 	if err := w.ifaceEnd(def); err != nil {
 		return err
 	}
+	if err := w.new_client(def); err != nil {
+		return err
+	}
 	if err := w.channels(def); err != nil {
 		return err
 	}
@@ -37,6 +40,29 @@ func (w *clientWriter) iface(def *model.Definition) error {
 	w.line()
 	w.linef(`type %vClient interface {`, def.Name)
 	w.line()
+	return nil
+}
+
+// new_client
+
+func (w *clientWriter) new_client(def *model.Definition) error {
+	name := clientImplName(def)
+
+	if def.Service.Sub {
+		w.linef(`func New%vClient(client rpc.Client, req *rpc.Request) %vClient {`, def.Name, def.Name)
+		w.linef(`return &%v{`, name)
+		w.linef(`client: client,`)
+		w.linef(`req: req,`)
+		w.linef(`}`)
+		w.linef(`}`)
+		w.line()
+	} else {
+		w.linef(`func New%vClient(client rpc.Client) %vClient {`, def.Name, def.Name)
+		w.linef(`return &%v{client: client}`, name)
+		w.linef(`}`)
+		w.line()
+	}
+
 	return nil
 }
 

@@ -47,23 +47,12 @@ func (w *clientImplWriter) def(def *model.Definition) error {
 		w.line(`req *rpc.Request`)
 		w.line(`}`)
 		w.line()
-		w.linef(`func New%vClient(client rpc.Client, req *rpc.Request) %vClient {`, def.Name, def.Name)
-		w.linef(`return &%v{`, name)
-		w.linef(`client: client,`)
-		w.linef(`req: req,`)
-		w.linef(`}`)
-		w.linef(`}`)
-		w.line()
 	} else {
 		w.linef(`// %v`, name)
 		w.line()
 		w.linef(`type %v struct {`, name)
 		w.line(`client rpc.Client`)
 		w.line(`}`)
-		w.line()
-		w.linef(`func New%vClient(client rpc.Client) %vClient {`, def.Name, def.Name)
-		w.linef(`return &%v{client: client}`, name)
-		w.linef(`}`)
 		w.line()
 	}
 	return nil
@@ -160,19 +149,19 @@ func (w *clientImplWriter) method_input(def *model.Definition, m *model.Method) 
 func (w *clientImplWriter) method_output(def *model.Definition, m *model.Method) error {
 	switch {
 	default:
-		w.write(`(status.Status)`)
+		w.write(`(_st status.Status)`)
 
 	case m.Sub:
 		typeName := typeName(m.Output)
-		w.writef(`(%vClient, status.Status)`, typeName)
+		w.writef(`(_ %vClient, _st status.Status)`, typeName)
 
 	case m.Chan:
 		name := clientChannel_name(m)
-		w.writef(`(%v, status.Status)`, name)
+		w.writef(`(_ %v, _st status.Status)`, name)
 
 	case m.Output != nil:
 		typeName := typeName(m.Output)
-		w.writef(`(*ref.R[%v], status.Status)`, typeName)
+		w.writef(`(_ *ref.R[%v], _st status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List
@@ -237,13 +226,15 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 	default:
 		w.linef(`st := req.AddEmpty("%v")`, m.Name)
 		w.line(`if !st.OK() {`)
-		w.linef(`return %v st`, clientMethod_zeroReturn(m))
+		w.line(`_st = st`)
+		w.line(`return`)
 		w.line(`}`)
 
 	case m.Input != nil:
 		w.linef(`st := req.AddMessage("%v", req_.Unwrap())`, m.Name)
 		w.line(`if !st.OK() {`)
-		w.linef(`return %v st`, clientMethod_zeroReturn(m))
+		w.line(`_st = st`)
+		w.line(`return`)
 		w.line(`}`)
 
 	case m.InputFields != nil:
@@ -294,10 +285,12 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 
 		w.line()
 		w.line(`if err := in.End(); err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`_st = status.WrapError(err)`)
+		w.line(`return`)
 		w.line(`}`)
 		w.line(`if err := call.End(); err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`_st = status.WrapError(err)`)
+		w.line(`return`)
 		w.line(`}`)
 		w.line(`}`)
 	}
@@ -323,7 +316,8 @@ func (w *clientImplWriter) method_channel(def *model.Definition, m *model.Method
 	w.line(`// Build request`)
 	w.line(`preq, st := req.Build()`)
 	w.line(`if !st.OK() {`)
-	w.linef(`return %v st`, clientMethod_zeroReturn(m))
+	w.line(`_st = st`)
+	w.line(`return`)
 	w.line(`}`)
 	w.line()
 
@@ -332,7 +326,8 @@ func (w *clientImplWriter) method_channel(def *model.Definition, m *model.Method
 	w.line(`// Open channel`)
 	w.line(`ch, st := c.client.Channel(cancel, preq)`)
 	w.line(`if !st.OK() {`)
-	w.linef(`return %v st`, clientMethod_zeroReturn(m))
+	w.line(`_st = st`)
+	w.line(`return`)
 	w.line(`}`)
 	w.linef(`return new%v(ch), status.OK`, strings.Title(name))
 	return nil
@@ -343,7 +338,8 @@ func (w *clientImplWriter) method_request(def *model.Definition, m *model.Method
 	w.line(`// Build request`)
 	w.line(`preq, st := req.Build()`)
 	w.line(`if !st.OK() {`)
-	w.linef(`return %v st`, clientMethod_zeroReturn(m))
+	w.line(`_st = st`)
+	w.line(`return`)
 	w.line(`}`)
 	w.line()
 
@@ -351,7 +347,8 @@ func (w *clientImplWriter) method_request(def *model.Definition, m *model.Method
 	w.line(`// Send request`)
 	w.line(`resp, st := c.client.Request(cancel, preq)`)
 	w.line(`if !st.OK() {`)
-	w.linef(`return %v st`, clientMethod_zeroReturn(m))
+	w.line(`_st = st`)
+	w.line(`return`)
 	w.line(`}`)
 	w.line(`defer resp.Release()`)
 	w.line(``)
@@ -368,7 +365,8 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 		w.line(`// Parse result`)
 		w.linef(`result, _, err := %v(resp.Unwrap())`, parseFunc)
 		w.line(`if err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`_st = status.WrapError(err)`)
+		w.line(`return`)
 		w.line(`}`)
 		w.line(`return ref.NewParentRetain(result, resp), status.OK`)
 
@@ -376,7 +374,8 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 		w.line(`// Parse results`)
 		w.linef(`result, err := resp.Unwrap().MessageErr()`)
 		w.line(`if err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+		w.line(`_st = status.WrapError(err)`)
+		w.line(`return`)
 		w.line(`}`)
 
 		fields := m.OutputFields.List
@@ -418,7 +417,8 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 			}
 
 			w.line(`if err != nil {`)
-			w.linef(`return %v status.WrapError(err)`, clientMethod_zeroReturn(m))
+			w.line(`_st = status.WrapError(err)`)
+			w.line(`return`)
 			w.line(`}`)
 		}
 
@@ -564,11 +564,11 @@ func (w *clientImplWriter) channel_response_def(m *model.Method) error {
 
 	switch {
 	default:
-		w.write(`(status.Status)`)
+		w.write(`(_st status.Status)`)
 
 	case m.Output != nil:
 		typeName := typeName(m.Output)
-		w.writef(`(*ref.R[%v], status.Status)`, typeName)
+		w.writef(`(_ *ref.R[%v], _st status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List
@@ -603,7 +603,8 @@ func (w *clientImplWriter) channel_response_receive(m *model.Method) error {
 	w.line(`// Receive response`)
 	w.line(`resp, st := c.ch.Response(cancel)`)
 	w.line(`if !st.OK() {`)
-	w.linef(`return %v st`, clientChannelImpl_zeroReturn(m))
+	w.line(`_st = st`)
+	w.line(`return`)
 	w.line(`}`)
 	w.line(`defer resp.Release()`)
 	w.line(``)
@@ -621,7 +622,8 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 		w.line(`// Parse result`)
 		w.linef(`result, _, err := %v(resp.Unwrap())`, parseFunc)
 		w.line(`if err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, clientChannelImpl_zeroReturn(m))
+		w.line(`_st = status.WrapError(err)`)
+		w.line(`return`)
 		w.line(`}`)
 		w.line(`return ref.NewParentRetain(result, resp), status.OK`)
 
@@ -629,7 +631,8 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 		w.line(`// Parse results`)
 		w.linef(`result, err := resp.Unwrap().MessageErr()`)
 		w.line(`if err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, clientChannelImpl_zeroReturn(m))
+		w.line(`_st = status.WrapError(err)`)
+		w.line(`return`)
 		w.line(`}`)
 
 		fields := m.OutputFields.List
@@ -671,7 +674,8 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 			}
 
 			w.line(`if err != nil {`)
-			w.linef(`return %v status.WrapError(err)`, clientChannelImpl_zeroReturn(m))
+			w.line(`_st = status.WrapError(err)`)
+			w.line(`return`)
 			w.line(`}`)
 		}
 
@@ -694,113 +698,6 @@ func clientImplName(def *model.Definition) string {
 	return fmt.Sprintf("%vClient", toLowerCameCase(def.Name))
 }
 
-func clientMethod_zeroReturn(m *model.Method) string {
-	switch {
-	default:
-		return ``
-
-	case m.Chan:
-		return `nil, `
-
-	case m.Output != nil:
-		return `nil, `
-
-	case m.OutputFields != nil:
-		b := strings.Builder{}
-		fields := m.OutputFields.List
-
-		for _, f := range fields {
-			typ := f.Type
-			switch typ.Kind {
-			case model.KindBool:
-				b.WriteString(`false, `)
-			case model.KindByte:
-				b.WriteString(`0, `)
-
-			case model.KindInt16:
-				b.WriteString(`0, `)
-			case model.KindInt32:
-				b.WriteString(`0, `)
-			case model.KindInt64:
-				b.WriteString(`0, `)
-
-			case model.KindUint16:
-				b.WriteString(`0, `)
-			case model.KindUint32:
-				b.WriteString(`0, `)
-			case model.KindUint64:
-				b.WriteString(`0, `)
-
-			case model.KindBin64:
-				b.WriteString(`bin.Bin64{}, `)
-			case model.KindBin128:
-				b.WriteString(`bin.Bin128{}, `)
-			case model.KindBin256:
-				b.WriteString(`bin.Bin256{}, `)
-
-			case model.KindFloat32:
-				b.WriteString(`0, `)
-			case model.KindFloat64:
-				b.WriteString(`0, `)
-			}
-		}
-
-		return b.String()
-	}
-}
-
 func clientChannelImpl_name(m *model.Method) string {
 	return fmt.Sprintf("%v%vClientChannel", toLowerCameCase(m.Service.Def.Name), toUpperCamelCase(m.Name))
-}
-
-func clientChannelImpl_zeroReturn(m *model.Method) string {
-	switch {
-	default:
-		return ``
-
-	case m.Output != nil:
-		return `nil, `
-
-	case m.OutputFields != nil:
-		b := strings.Builder{}
-		fields := m.OutputFields.List
-
-		for _, f := range fields {
-			typ := f.Type
-			switch typ.Kind {
-			case model.KindBool:
-				b.WriteString(`false, `)
-			case model.KindByte:
-				b.WriteString(`0, `)
-
-			case model.KindInt16:
-				b.WriteString(`0, `)
-			case model.KindInt32:
-				b.WriteString(`0, `)
-			case model.KindInt64:
-				b.WriteString(`0, `)
-
-			case model.KindUint16:
-				b.WriteString(`0, `)
-			case model.KindUint32:
-				b.WriteString(`0, `)
-			case model.KindUint64:
-				b.WriteString(`0, `)
-
-			case model.KindBin64:
-				b.WriteString(`bin.Bin64{}, `)
-			case model.KindBin128:
-				b.WriteString(`bin.Bin128{}, `)
-			case model.KindBin256:
-				b.WriteString(`bin.Bin256{}, `)
-
-			case model.KindFloat32:
-				b.WriteString(`0, `)
-			case model.KindFloat64:
-				b.WriteString(`0, `)
-			}
-		}
-
-		return b.String()
-	}
 }

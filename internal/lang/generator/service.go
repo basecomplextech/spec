@@ -18,6 +18,9 @@ func (w *serviceWriter) service(def *model.Definition) error {
 	if err := w.iface(def); err != nil {
 		return err
 	}
+	if err := w.new_handler(def); err != nil {
+		return err
+	}
 	if err := w.channels(def); err != nil {
 		return err
 	}
@@ -131,6 +134,23 @@ func (w *serviceWriter) method_output(def *model.Definition, m *model.Method) er
 
 		w.write(`)`)
 	}
+	return nil
+}
+
+// new_handler
+
+func (w *serviceWriter) new_handler(def *model.Definition) error {
+	name := handler_name(def)
+
+	if def.Service.Sub {
+		w.linef(`func New%vHandler(s %v) rpc.Subhandler {`, def.Name, def.Name)
+	} else {
+		w.linef(`func New%vHandler(s %v) rpc.Handler {`, def.Name, def.Name)
+	}
+
+	w.linef(`return &%v{service: s}`, name)
+	w.linef(`}`)
+	w.line()
 	return nil
 }
 

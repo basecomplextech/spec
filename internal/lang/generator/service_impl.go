@@ -40,16 +40,6 @@ func (w *serviceImplWriter) def(def *model.Definition) error {
 	w.linef(`service %v`, def.Name)
 	w.line(`}`)
 	w.line()
-
-	if def.Service.Sub {
-		w.linef(`func New%vHandler(s %v) rpc.Subhandler {`, def.Name, def.Name)
-	} else {
-		w.linef(`func New%vHandler(s %v) rpc.Handler {`, def.Name, def.Name)
-	}
-
-	w.linef(`return &%v{service: s}`, name)
-	w.linef(`}`)
-	w.line()
 	return nil
 }
 
@@ -373,13 +363,15 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 
 		fields := m.InputFields.List
 		for _, f := range fields {
-			w.writef(`%v, `, typeName(f.Type))
+			name := toLowerCameCase(f.Name)
+			w.writef(`_%v %v, `, name, typeName(f.Type))
 		}
-		w.line(`status.Status) {`)
+		w.line(`_st status.Status) {`)
 
 		w.linef(`req, err := c.req.MessageErr()`)
 		w.line(`if err != nil {`)
-		w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn1(m.Input, m.InputFields))
+		w.line(`_st = status.WrapError(err)`)
+		w.line(`return`)
 		w.line(`}`)
 		w.line()
 
@@ -389,39 +381,40 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 
 			switch typ.Kind {
 			case model.KindBool:
-				w.linef(`_%v, err := req.Field(%d).BoolErr()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).BoolErr()`, name, f.Tag)
 			case model.KindByte:
-				w.linef(`_%v, err := req.Field(%d).ByteErr()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).ByteErr()`, name, f.Tag)
 
 			case model.KindInt16:
-				w.linef(`_%v, err := req.Field(%d).Int16Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Int16Err()`, name, f.Tag)
 			case model.KindInt32:
-				w.linef(`_%v, err := req.Field(%d).Int32Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Int32Err()`, name, f.Tag)
 			case model.KindInt64:
-				w.linef(`_%v, err := req.Field(%d).Int64Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Int64Err()`, name, f.Tag)
 
 			case model.KindUint16:
-				w.linef(`_%v, err := req.Field(%d).Uint16Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Uint16Err()`, name, f.Tag)
 			case model.KindUint32:
-				w.linef(`_%v, err := req.Field(%d).Uint32Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Uint32Err()`, name, f.Tag)
 			case model.KindUint64:
-				w.linef(`_%v, err := req.Field(%d).Uint64Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Uint64Err()`, name, f.Tag)
 
 			case model.KindBin64:
-				w.linef(`_%v, err := req.Field(%d).Bin64Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Bin64Err()`, name, f.Tag)
 			case model.KindBin128:
-				w.linef(`_%v, err := req.Field(%d).Bin128Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Bin128Err()`, name, f.Tag)
 			case model.KindBin256:
-				w.linef(`_%v, err := req.Field(%d).Bin256Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Bin256Err()`, name, f.Tag)
 
 			case model.KindFloat32:
-				w.linef(`_%v, err := req.Field(%d).Float32Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Float32Err()`, name, f.Tag)
 			case model.KindFloat64:
-				w.linef(`_%v, err := req.Field(%d).Float64Err()`, name, f.Tag)
+				w.linef(`_%v, err = req.Field(%d).Float64Err()`, name, f.Tag)
 			}
 
 			w.line(`if err != nil {`)
-			w.linef(`return %v status.WrapError(err)`, handlerChannel_zeroReturn1(m.Input, m.InputFields))
+			w.line(`_st = status.WrapError(err)`)
+			w.line(`return`)
 			w.line(`}`)
 		}
 
@@ -484,60 +477,4 @@ func handler_name(def *model.Definition) string {
 
 func handlerChannel_name(m *model.Method) string {
 	return fmt.Sprintf("%v%vChannel", toLowerCameCase(m.Service.Def.Name), toUpperCamelCase(m.Name))
-}
-
-func handlerChannel_zeroReturn(m *model.Method) string {
-	return handlerChannel_zeroReturn1(m.Output, m.OutputFields)
-}
-
-func handlerChannel_zeroReturn1(output *model.Type, outputFields *model.Fields) string {
-	switch {
-	default:
-		return ``
-
-	case output != nil:
-		return `nil, `
-
-	case outputFields != nil:
-		b := strings.Builder{}
-		fields := outputFields.List
-
-		for _, f := range fields {
-			typ := f.Type
-			switch typ.Kind {
-			case model.KindBool:
-				b.WriteString(`false, `)
-			case model.KindByte:
-				b.WriteString(`0, `)
-
-			case model.KindInt16:
-				b.WriteString(`0, `)
-			case model.KindInt32:
-				b.WriteString(`0, `)
-			case model.KindInt64:
-				b.WriteString(`0, `)
-
-			case model.KindUint16:
-				b.WriteString(`0, `)
-			case model.KindUint32:
-				b.WriteString(`0, `)
-			case model.KindUint64:
-				b.WriteString(`0, `)
-
-			case model.KindBin64:
-				b.WriteString(`bin.Bin64{}, `)
-			case model.KindBin128:
-				b.WriteString(`bin.Bin128{}, `)
-			case model.KindBin256:
-				b.WriteString(`bin.Bin256{}, `)
-
-			case model.KindFloat32:
-				b.WriteString(`0, `)
-			case model.KindFloat64:
-				b.WriteString(`0, `)
-			}
-		}
-
-		return b.String()
-	}
 }

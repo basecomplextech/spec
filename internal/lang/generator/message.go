@@ -76,7 +76,9 @@ func (w *messageWriter) fields(def *model.Definition) error {
 		}
 	}
 
-	w.line()
+	if len(fields) > 1 {
+		w.line()
+	}
 	return nil
 }
 
@@ -167,7 +169,9 @@ func (w *messageWriter) has_fields(def *model.Definition) error {
 		}
 	}
 
-	w.line()
+	if len(fields) > 1 {
+		w.line()
+	}
 	return nil
 }
 
