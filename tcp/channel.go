@@ -10,9 +10,9 @@ import (
 	"github.com/basecomplextech/spec/proto/ptcp"
 )
 
-// Channel is a single ch in a TCP connection.
+// Channel is a single channel in a TCP connection.
 type Channel interface {
-	// Read reads a message from the ch, the message is valid until the next iteration.
+	// Read reads a message from the channel, the message is valid until the next iteration.
 	Read(cancel <-chan struct{}) ([]byte, status.Status)
 
 	// Write writes a message to the channel.
@@ -82,7 +82,7 @@ func openedChannel(conn *conn, msg ptcp.OpenChannel) *channel {
 	}
 }
 
-// Read reads a message from the ch, the message is valid until the next iteration.
+// Read reads a message from the channel, the message is valid until the next iteration.
 func (ch *channel) Read(cancel <-chan struct{}) ([]byte, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
