@@ -41,7 +41,7 @@ func testServer(t tests.T, logger logging.Logger, service Service) rpc.Server {
 	return server
 }
 
-func testClient(t tests.T, logger logging.Logger, server rpc.Server) *ServiceClient {
+func testClient(t tests.T, logger logging.Logger, server rpc.Server) ServiceClient {
 	address := server.Address()
 	client := rpc.NewClient(address, logger, server.Options())
 	return NewServiceClient(client)

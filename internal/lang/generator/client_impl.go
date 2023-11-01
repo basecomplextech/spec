@@ -37,30 +37,32 @@ func (w *clientImplWriter) clientImpl(def *model.Definition) error {
 }
 
 func (w *clientImplWriter) def(def *model.Definition) error {
+	name := clientImplName(def)
+
 	if def.Service.Sub {
-		w.linef(`// %vClient`, def.Name)
+		w.linef(`// %v`, name)
 		w.line()
-		w.linef(`type %vClient struct {`, def.Name)
+		w.linef(`type %v struct {`, name)
 		w.line(`client rpc.Client`)
 		w.line(`req *rpc.Request`)
 		w.line(`}`)
 		w.line()
-		w.linef(`func New%vClient(client rpc.Client, req *rpc.Request) *%vClient {`, def.Name, def.Name)
-		w.linef(`return &%vClient{`, def.Name)
+		w.linef(`func New%vClient(client rpc.Client, req *rpc.Request) %vClient {`, def.Name, def.Name)
+		w.linef(`return &%v{`, name)
 		w.linef(`client: client,`)
 		w.linef(`req: req,`)
 		w.linef(`}`)
 		w.linef(`}`)
 		w.line()
 	} else {
-		w.linef(`// %vClient`, def.Name)
+		w.linef(`// %v`, name)
 		w.line()
-		w.linef(`type %vClient struct {`, def.Name)
+		w.linef(`type %v struct {`, name)
 		w.line(`client rpc.Client`)
 		w.line(`}`)
 		w.line()
-		w.linef(`func New%vClient(client rpc.Client) *%vClient {`, def.Name, def.Name)
-		w.linef(`return &%vClient{client: client}`, def.Name)
+		w.linef(`func New%vClient(client rpc.Client) %vClient {`, def.Name, def.Name)
+		w.linef(`return &%v{client: client}`, name)
 		w.linef(`}`)
 		w.line()
 	}
@@ -77,8 +79,9 @@ func (w *clientImplWriter) methods(def *model.Definition) error {
 }
 
 func (w *clientImplWriter) method(def *model.Definition, m *model.Method) error {
+	name := clientImplName(def)
 	methodName := toUpperCamelCase(m.Name)
-	w.writef(`func (c *%vClient) %v`, def.Name, methodName)
+	w.writef(`func (c *%v) %v`, name, methodName)
 
 	if err := w.method_input(def, m); err != nil {
 		return err
@@ -162,7 +165,7 @@ func (w *clientImplWriter) method_output(def *model.Definition, m *model.Method)
 	case m.Sub:
 		typeName := typeName(m.Output)
 		w.line(`(`)
-		w.writef(`*%vClient, status.Status)`, typeName)
+		w.writef(`%vClient, status.Status)`, typeName)
 
 	case m.Chan:
 		name := channel_name(m)
@@ -431,7 +434,8 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 // unwrap
 
 func (w *clientImplWriter) unwrap(def *model.Definition) error {
-	w.linef(`func (c *%vClient) Unwrap() rpc.Client {`, def.Name)
+	name := clientImplName(def)
+	w.linef(`func (c *%v) Unwrap() rpc.Client {`, name)
 	w.line(`return c.client `)
 	w.line(`}`)
 	w.line()
@@ -683,6 +687,10 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 }
 
 // util
+
+func clientImplName(def *model.Definition) string {
+	return fmt.Sprintf("%vClient", toLowerCameCase(def.Name))
+}
 
 func clientMethod_zeroReturn(m *model.Method) string {
 	switch {
