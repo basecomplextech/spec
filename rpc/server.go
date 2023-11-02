@@ -2,15 +2,12 @@ package rpc
 
 import (
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/basecomplextech/spec/tcp"
 )
@@ -83,7 +80,7 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 	var resp []byte
 	{
 		buf := acquireBufferWriter()
-		defer releaseBufferWriter(buf)
+		defer buf.Free()
 
 		w := prpc.NewMessageWriterTo(buf.writer.Message())
 		w.Type(prpc.MessageType_Response)
@@ -165,56 +162,4 @@ func requestMethod(req prpc.Request) string {
 	}
 
 	return b.String()
-}
-
-// buffer pool
-
-var bufferPool = &sync.Pool{}
-
-func acquireBuffer() *alloc.Buffer {
-	v := bufferPool.Get()
-	if v == nil {
-		return alloc.NewBuffer()
-	}
-	return v.(*alloc.Buffer)
-}
-
-func releaseBuffer(buf *alloc.Buffer) {
-	buf.Reset()
-	bufferPool.Put(buf)
-}
-
-// writer pool
-
-var bufferWriterPool = &sync.Pool{}
-
-type bufferWriter struct {
-	buf    *alloc.Buffer
-	writer spec.Writer
-}
-
-func newBufferWriter() *bufferWriter {
-	buf := alloc.NewBuffer()
-	return &bufferWriter{
-		buf:    buf,
-		writer: spec.NewWriterBuffer(buf),
-	}
-}
-
-func (w *bufferWriter) reset() {
-	w.buf.Reset()
-	w.writer.Reset(w.buf)
-}
-
-func acquireBufferWriter() *bufferWriter {
-	v := bufferWriterPool.Get()
-	if v == nil {
-		return newBufferWriter()
-	}
-	return v.(*bufferWriter)
-}
-
-func releaseBufferWriter(w *bufferWriter) {
-	w.reset()
-	bufferWriterPool.Put(w)
 }

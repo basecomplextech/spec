@@ -368,7 +368,7 @@ func (ch *channel) run() {
 	}()
 	defer ch.Free()
 
-	// Handle ch
+	// Handle channel
 	st := ch.conn.handler.HandleChannel(ch)
 	switch st.Code {
 	case status.CodeOK,

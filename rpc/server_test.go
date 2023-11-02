@@ -4,12 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
-	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/stretchr/testify/assert"
 )
@@ -54,14 +52,24 @@ func testEchoServer(t tests.T) *server {
 		call := req.Calls().Get(0)
 		msg := call.Input().String().Unwrap()
 
-		buf := alloc.NewBuffer()
-		w := spec.NewValueWriterBuffer(buf)
+		buf := acquireBufferWriter()
+		ok := false
+		defer func() {
+			if !ok {
+				buf.Free()
+			}
+		}()
+
+		w := buf.writer.Value()
 		w.String(msg)
-		if _, err := w.Build(); err != nil {
+
+		bytes, err := w.Build()
+		if err != nil {
 			return nil, status.WrapError(err)
 		}
 
-		return ref.NewFreer(buf.Bytes(), buf), status.OK
+		ok = true
+		return ref.NewFreer(bytes, buf), status.OK
 	}
 
 	return testServer(t, handle)

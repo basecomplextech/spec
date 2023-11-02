@@ -46,10 +46,7 @@ func testRequestServer(t tests.T) *server {
 		if !st.OK() {
 			return st
 		}
-		if st := ch.Write(nil, msg); !st.OK() {
-			return st
-		}
-		return ch.Close()
+		return ch.WriteAndClose(nil, msg)
 	}
 
 	return testServer(t, handle)
