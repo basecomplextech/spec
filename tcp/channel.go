@@ -12,14 +12,22 @@ import (
 
 // Channel is a single channel in a TCP connection.
 type Channel interface {
-	// Read reads a message from the channel, the message is valid until the next iteration.
-	Read(cancel <-chan struct{}) ([]byte, status.Status)
+	// Close closes the channel and sends the close message.
+	Close() status.Status
+
+	// Receive receives and returns a message, the message is valid until the iteration.
+	// The method blocks until a message is received, or the channel is closed.
+	Receive(cancel <-chan struct{}) ([]byte, status.Status)
+
+	// Read reads and returns a message, the message is valid until the next iteration.
+	// The method does not block if no messages, and returns false instead.
+	Read(cancel <-chan struct{}) ([]byte, bool, status.Status)
+
+	// Wait returns a channel that is notified on a new message, or a channel close.
+	Wait() <-chan struct{}
 
 	// Write writes a message to the channel.
 	Write(cancel <-chan struct{}, msg []byte) status.Status
-
-	// Close closes the channel and sends the close message.
-	Close() status.Status
 
 	// Internal
 
@@ -82,71 +90,99 @@ func openedChannel(conn *conn, msg ptcp.OpenChannel) *channel {
 	}
 }
 
-// Read reads a message from the channel, the message is valid until the next iteration.
-func (ch *channel) Read(cancel <-chan struct{}) ([]byte, status.Status) {
+// Close closes the channel and sends the close message.
+func (ch *channel) Close() status.Status {
+	return ch.close()
+}
+
+// Receive receives and returns a message, the message is valid until the iteration.
+// The method blocks until a message is received, or the channel is closed.
+func (ch *channel) Receive(cancel <-chan struct{}) ([]byte, status.Status) {
+	for {
+		msg, ok, st := ch.Read(cancel)
+		switch {
+		case !st.OK():
+			return nil, st
+		case ok:
+			return msg, status.OK
+		}
+
+		select {
+		case <-cancel:
+			return nil, status.Cancelled
+		case <-ch.Wait():
+		}
+	}
+}
+
+// Read reads and returns a message, the message is valid until the next iteration.
+// The method does not block if no messages, and returns false instead.
+func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
-		return nil, statusChannelClosed
+		return nil, false, statusChannelClosed
 	}
 	defer ch.stateMu.RUnlock()
 
-	for {
-		b, ok, st := s.readQueue.Read()
-		switch {
-		case !st.OK():
-			// End
-			return nil, st
-
-		case !ok:
-			// Wait for next messages or end
-			select {
-			case <-cancel:
-				return nil, status.Cancelled
-			case <-s.readQueue.ReadWait():
-				continue
-			}
-		}
-
-		if debug && debugChannel {
-			debugPrint(ch.client, "channel.read\t", ch.id, ok, st)
-		}
-
-		// Parse message
-		msg, _, err := ptcp.ParseMessage(b)
-		if err != nil {
-			ch.close()
-			return nil, tcpError(err)
-		}
-
-		// Handle message
-		code := msg.Code()
-		switch code {
-		case ptcp.Code_ChannelMessage:
-			data := msg.Message().Data()
-			if st := ch.incrementReadBytes(cancel, s, len(b)); !st.OK() {
-				return nil, st
-			}
-			return data, status.OK
-
-		case ptcp.Code_ChannelWindow:
-			delta := msg.Window().Delta()
-			ch.incrementWriteWindow(s, int(delta))
-
-			if debug {
-				debugPrint(ch.client, "channel.increment-window\t", ch.id)
-			}
-
-		case ptcp.Code_CloseChannel:
-			s.close()
-
-			if debug {
-				debugPrint(ch.client, "channel.remote-closed\t", ch.id)
-			}
-			return nil, status.End
-		}
-
-		return nil, tcpErrorf("unexpected message code %d", code)
+	// Read message
+	b, ok, st := s.readQueue.Read()
+	switch {
+	case !st.OK():
+		return nil, false, st
+	case !ok:
+		return nil, false, status.OK
 	}
+
+	if debug && debugChannel {
+		debugPrint(ch.client, "channel.read\t", ch.id, ok, st)
+	}
+
+	// Parse message
+	msg, _, err := ptcp.ParseMessage(b)
+	if err != nil {
+		ch.close()
+		return nil, false, tcpError(err)
+	}
+
+	// Handle message
+	code := msg.Code()
+	switch code {
+	case ptcp.Code_ChannelMessage:
+		data := msg.Message().Data()
+		if st := ch.incrementReadBytes(cancel, s, len(b)); !st.OK() {
+			return nil, false, st
+		}
+		return data, true, status.OK
+
+	case ptcp.Code_ChannelWindow:
+		delta := msg.Window().Delta()
+		ch.incrementWriteWindow(s, int(delta))
+
+		if debug {
+			debugPrint(ch.client, "channel.increment-window\t", ch.id)
+		}
+
+	case ptcp.Code_CloseChannel:
+		s.close()
+
+		if debug {
+			debugPrint(ch.client, "channel.remote-closed\t", ch.id)
+		}
+		return nil, false, status.End
+	}
+
+	return nil, false, tcpErrorf("unexpected message code %d", code)
+}
+
+// Wait returns a channel that is notified on a new message, or a channel close.
+func (ch *channel) Wait() <-chan struct{} {
+	s, ok := ch.rlock()
+	if !ok {
+		return nil
+	}
+	defer ch.stateMu.RUnlock()
+
+	return s.readQueue.ReadWait()
 }
 
 // Write writes a message to the channel.
@@ -168,11 +204,6 @@ func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
 		s.newSent = true
 	}
 	return ch.writeMessage(cancel, s, msg)
-}
-
-// Close closes the channel and sends the close message.
-func (ch *channel) Close() status.Status {
-	return ch.close()
 }
 
 // Internal

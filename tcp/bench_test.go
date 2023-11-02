@@ -13,7 +13,7 @@ const benchMsgSize = 16
 func BenchmarkRequest(b *testing.B) {
 	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := ch.Read(nil)
+			msg, st := ch.Receive(nil)
 			if !st.OK() {
 				return st
 			}
@@ -44,7 +44,7 @@ func BenchmarkRequest(b *testing.B) {
 			b.Fatal(st)
 		}
 
-		msg1, st := ch.Read(nil)
+		msg1, st := ch.Receive(nil)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -69,7 +69,7 @@ func BenchmarkRequest(b *testing.B) {
 func BenchmarkRequest_Parallel(b *testing.B) {
 	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := ch.Read(nil)
+			msg, st := ch.Receive(nil)
 			if !st.OK() {
 				return st
 			}
@@ -102,7 +102,7 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 				b.Fatal(st)
 			}
 
-			msg1, st := ch.Read(nil)
+			msg1, st := ch.Receive(nil)
 			if !st.OK() {
 				b.Fatal(st)
 			}
@@ -131,7 +131,7 @@ func BenchmarkStream(b *testing.B) {
 	closeMsg := []byte("close")
 	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := ch.Read(nil)
+			msg, st := ch.Receive(nil)
 			if !st.OK() {
 				return st
 			}
@@ -177,7 +177,7 @@ func BenchmarkStream(b *testing.B) {
 		b.Fatal(st)
 	}
 
-	_, st = ch.Read(nil)
+	_, st = ch.Receive(nil)
 	if !st.OK() {
 		b.Fatal(st)
 	}
@@ -195,7 +195,7 @@ func BenchmarkStream_16kb(b *testing.B) {
 
 	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := ch.Read(nil)
+			msg, st := ch.Receive(nil)
 			if !st.OK() {
 				return st
 			}
@@ -242,7 +242,7 @@ func BenchmarkStream_16kb(b *testing.B) {
 		b.Fatal(st)
 	}
 
-	_, st = ch.Read(nil)
+	_, st = ch.Receive(nil)
 	if !st.OK() {
 		b.Fatal(st)
 	}
@@ -258,7 +258,7 @@ func BenchmarkStream_Parallel(b *testing.B) {
 	closeMsg := []byte("close")
 	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := ch.Read(nil)
+			msg, st := ch.Receive(nil)
 			if !st.OK() {
 				return st
 			}
@@ -306,7 +306,7 @@ func BenchmarkStream_Parallel(b *testing.B) {
 			b.Fatal(st)
 		}
 
-		_, st = ch.Read(nil)
+		_, st = ch.Receive(nil)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -325,7 +325,7 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 
 	handle := func(ch Channel) status.Status {
 		for {
-			msg, st := ch.Read(nil)
+			msg, st := ch.Receive(nil)
 			if !st.OK() {
 				return st
 			}
@@ -373,7 +373,7 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 			b.Fatal(st)
 		}
 
-		_, st = ch.Read(nil)
+		_, st = ch.Receive(nil)
 		if !st.OK() {
 			b.Fatal(st)
 		}

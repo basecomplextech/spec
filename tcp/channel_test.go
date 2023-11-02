@@ -16,9 +16,9 @@ func testChannelWrite(t *testing.T, ch Channel, msg string) {
 	}
 }
 
-// Read
+// Receive
 
-func TestChannel_Read__should_read_message(t *testing.T) {
+func TestChannel_Receive__should_receive_message(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		st := s.Write(nil, []byte("hello, channel"))
 		if !st.OK() {
@@ -38,7 +38,7 @@ func TestChannel_Read__should_read_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.Read(nil)
+	msg, st := ch.Receive(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -46,7 +46,7 @@ func TestChannel_Read__should_read_message(t *testing.T) {
 	assert.Equal(t, []byte("hello, channel"), msg)
 }
 
-func TestChannel_Read__should_return_end_when_channel_closed(t *testing.T) {
+func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		return s.Close()
 	})
@@ -57,11 +57,11 @@ func TestChannel_Read__should_return_end_when_channel_closed(t *testing.T) {
 	ch := testChannel(t, conn)
 	ch.Close()
 
-	_, st := ch.Read(nil)
+	_, st := ch.Receive(nil)
 	assert.Equal(t, status.End, st)
 }
 
-func TestChannel_Read__should_read_pending_messages_even_when_closed(t *testing.T) {
+func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testing.T) {
 	sent := make(chan struct{})
 	server := testServer(t, func(s Channel) status.Status {
 		defer close(sent)
@@ -94,23 +94,23 @@ func TestChannel_Read__should_read_pending_messages_even_when_closed(t *testing.
 		t.Fatal("timeout")
 	}
 
-	msg, st := ch.Read(nil)
+	msg, st := ch.Receive(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("hello, channel"), msg)
 
-	msg, st = ch.Read(nil)
+	msg, st = ch.Receive(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("how are you?"), msg)
 
-	_, st = ch.Read(nil)
+	_, st = ch.Receive(nil)
 	assert.Equal(t, status.End, st)
 }
 
-func TestChannel_Read__should_increment_read_bytes(t *testing.T) {
+func TestChannel_Receive__should_increment_read_bytes(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		st := s.Write(nil, []byte("hello, channel"))
 		if !st.OK() {
@@ -131,7 +131,7 @@ func TestChannel_Read__should_increment_read_bytes(t *testing.T) {
 	}
 	assert.Equal(t, 0, ch.state.readBytes)
 
-	_, st = ch.Read(nil)
+	_, st = ch.Receive(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -148,7 +148,7 @@ func TestChannel_Write__should_send_message(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		defer close(done)
 
-		msg, st := s.Read(nil)
+		msg, st := s.Receive(nil)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -258,10 +258,10 @@ func TestChannel_Write__should_block_when_write_window_not_enough(t *testing.T) 
 
 func TestChannel_Write__should_wait_write_window_increment(t *testing.T) {
 	server := testServer(t, func(ch Channel) status.Status {
-		if _, st := ch.Read(nil); !st.OK() {
+		if _, st := ch.Receive(nil); !st.OK() {
 			return st
 		}
-		if _, st := ch.Read(nil); !st.OK() {
+		if _, st := ch.Receive(nil); !st.OK() {
 			return st
 		}
 		return status.OK
@@ -293,8 +293,8 @@ func TestChannel_Write__should_write_message_if_it_exceeds_half_window_size(t *t
 	server := testServer(t, func(ch Channel) status.Status {
 		<-timer.C
 
-		ch.Read(nil)
-		ch.Read(nil)
+		ch.Receive(nil)
+		ch.Receive(nil)
 		return status.OK
 	})
 	conn := testConnect(t, server)
@@ -325,7 +325,7 @@ func TestChannel_Close__should_send_close_message(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		defer close(closed)
 
-		_, st := s.Read(nil)
+		_, st := s.Receive(nil)
 		return st
 	})
 
@@ -370,7 +370,7 @@ func TestChannel_Close__should_close_incoming_queue(t *testing.T) {
 
 func TestChannel_Close__should_ignore_when_already_closed(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
-		_, st := s.Read(nil)
+		_, st := s.Receive(nil)
 		return st
 	})
 
