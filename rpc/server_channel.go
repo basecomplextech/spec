@@ -13,31 +13,31 @@ import (
 
 // ServerChannel is a server RPC channel.
 type ServerChannel interface {
-	// Request returns the request, the message is valid until the next call to Receive.
+	// Request returns the request, the message is valid until the next call to Read.
 	Request(cancel <-chan struct{}) (prpc.Request, status.Status)
 
 	// Read
 
-	// Receive receives a message from the channel, or an end.
-	// The method blocks until a message is received, or the channel is closed.
-	// The message is valid until the next call to Read/Receive/Response.
-	Receive(cancel <-chan struct{}) ([]byte, status.Status)
-
-	// Read reads and returns a message, or false.
+	// Read reads and returns a message, or false/end.
 	// The method does not block if no messages, and returns false instead.
-	// The message is valid until the next call to Read/Receive/Response.
+	// The message is valid until the next call to Read.
 	Read(cancel <-chan struct{}) ([]byte, bool, status.Status)
 
-	// Wait returns a channel which is notified on a new message, or a channel close.
-	Wait() <-chan struct{}
+	// ReadSync reads and returns a message from the channel, or an end.
+	// The method blocks until a message is received, or the channel is closed.
+	// The message is valid until the next call to Read.
+	ReadSync(cancel <-chan struct{}) ([]byte, status.Status)
+
+	// ReadWait returns a channel which is notified on a new message, or a channel close.
+	ReadWait() <-chan struct{}
 
 	// Write
 
 	// Write writes a message to the channel.
 	Write(cancel <-chan struct{}, message []byte) status.Status
 
-	// End writes an end message to the channel.
-	End(cancel <-chan struct{}) status.Status
+	// WriteEnd writes an end message to the channel.
+	WriteEnd(cancel <-chan struct{}) status.Status
 }
 
 // internal
@@ -61,7 +61,7 @@ func newServerChannel(ch tcp.Channel, req prpc.Request) *serverChannel {
 	}
 }
 
-// Request returns the request, the message is valid until the next call to Receive.
+// Request returns the request, the message is valid until the next call to ReadSync.
 func (ch *serverChannel) Request(cancel <-chan struct{}) (prpc.Request, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
@@ -87,30 +87,9 @@ func (ch *serverChannel) Request(cancel <-chan struct{}) (prpc.Request, status.S
 
 // Read
 
-// Receive receives a message from the channel, or an end.
-// The method blocks until a message is received, or the channel is closed.
-// The message is valid until the next call to Read/Receive/Response.
-func (ch *serverChannel) Receive(cancel <-chan struct{}) ([]byte, status.Status) {
-	for {
-		msg, ok, st := ch.Read(cancel)
-		switch {
-		case !st.OK():
-			return nil, st
-		case ok:
-			return msg, status.OK
-		}
-
-		select {
-		case <-cancel:
-			return nil, status.Cancelled
-		case <-ch.ch.Wait():
-		}
-	}
-}
-
-// Read reads and returns a message, or false.
+// Read reads and returns a message, or false/end.
 // The method does not block if no messages, and returns false instead.
-// The message is valid until the next call to Read/Receive/Response.
+// The message is valid until the next call to Read.
 func (ch *serverChannel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
@@ -173,8 +152,29 @@ func (ch *serverChannel) Read(cancel <-chan struct{}) ([]byte, bool, status.Stat
 	return nil, false, st
 }
 
-// Wait returns a channel which is notified on a new message, or a channel close.
-func (ch *serverChannel) Wait() <-chan struct{} {
+// ReadSync reads and returns a message from the channel, or an end.
+// The method blocks until a message is received, or the channel is closed.
+// The message is valid until the next call to Read.
+func (ch *serverChannel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status) {
+	for {
+		msg, ok, st := ch.Read(cancel)
+		switch {
+		case !st.OK():
+			return nil, st
+		case ok:
+			return msg, status.OK
+		}
+
+		select {
+		case <-cancel:
+			return nil, status.Cancelled
+		case <-ch.ch.Wait():
+		}
+	}
+}
+
+// ReadWait returns a channel which is notified on a new message, or a channel close.
+func (ch *serverChannel) ReadWait() <-chan struct{} {
 	return ch.ch.Wait()
 }
 
@@ -222,8 +222,8 @@ func (ch *serverChannel) Write(cancel <-chan struct{}, message []byte) status.St
 	return ch.ch.Write(cancel, msg)
 }
 
-// End writes an end message to the channel.
-func (ch *serverChannel) End(cancel <-chan struct{}) status.Status {
+// WriteEnd writes an end message to the channel.
+func (ch *serverChannel) WriteEnd(cancel <-chan struct{}) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return status.Closed

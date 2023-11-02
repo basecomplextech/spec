@@ -80,7 +80,7 @@ func BenchmarkStream(b *testing.B) {
 
 	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		for {
-			msg, st := ch.Receive(cancel)
+			msg, st := ch.ReadSync(cancel)
 			if !st.OK() {
 				return nil, st
 			}
