@@ -119,7 +119,7 @@ func (s *testService) Method21(cancel <-chan struct{}, ch ServiceMethod21Channel
 		msg, err := w.Build()
 		if err != nil {
 		}
-		if st := ch.Send(cancel, msg); !st.OK() {
+		if st := ch.Write(cancel, msg); !st.OK() {
 			return nil, st
 		}
 	}
@@ -169,7 +169,7 @@ func (s *testService) Method23(cancel <-chan struct{}, ch ServiceMethod23Channel
 		msg, err := w.Build()
 		if err != nil {
 		}
-		if st := ch.Send(cancel, msg); !st.OK() {
+		if st := ch.Write(cancel, msg); !st.OK() {
 			return nil, st
 		}
 	}

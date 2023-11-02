@@ -231,7 +231,7 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st = ch.Send(nil, msg)
+		st = ch.Write(nil, msg)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -277,7 +277,7 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st = ch.Send(nil, msg1)
+		st = ch.Write(nil, msg1)
 		if !st.OK() {
 			t.Fatal(st)
 		}

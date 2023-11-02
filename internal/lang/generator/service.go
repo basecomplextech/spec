@@ -184,21 +184,25 @@ func (w *serviceWriter) channel(def *model.Definition, m *model.Method) error {
 
 		fields := m.InputFields.List
 		for _, f := range fields {
-			w.writef(`%v, `, typeName(f.Type))
+			fieldName := toLowerCameCase(f.Name)
+			w.writef(`%v %v, `, fieldName, typeName(f.Type))
 		}
-		w.line(`status.Status)`)
+		w.line(`st status.Status)`)
 	}
 
-	// Send method
-	if in := m.Channel.In; in != nil {
-		typeName := typeName(in)
-		w.linef(`Send(cancel <-chan struct{}, msg %v) status.Status`, typeName)
-	}
-
-	// Receive method
+	// Read methods
 	if out := m.Channel.Out; out != nil {
 		typeName := typeName(out)
 		w.linef(`Receive(cancel <-chan struct{}) (%v, status.Status)`, typeName)
+		w.linef(`Read(cancel <-chan struct{}) (%v, bool, status.Status)`, typeName)
+		w.line(`Wait() <-chan struct{}`)
+	}
+
+	// Write methods
+	if in := m.Channel.In; in != nil {
+		typeName := typeName(in)
+		w.linef(`Write(cancel <-chan struct{}, msg %v) status.Status`, typeName)
+		w.line(`End(cancel <-chan struct{}) status.Status`)
 	}
 
 	w.linef(`}`)

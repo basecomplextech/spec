@@ -314,10 +314,10 @@ func (w *serviceImplWriter) channel(def *model.Definition, m *model.Method) erro
 	if err := w.channel_request(def, m); err != nil {
 		return err
 	}
-	if err := w.channel_send(def, m); err != nil {
+	if err := w.channel_read(def, m); err != nil {
 		return err
 	}
-	if err := w.channel_receive(def, m); err != nil {
+	if err := w.channel_write(def, m); err != nil {
 		return err
 	}
 	return nil
@@ -431,23 +431,7 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 	return nil
 }
 
-func (w *serviceImplWriter) channel_send(def *model.Definition, m *model.Method) error {
-	in := m.Channel.In
-	if in == nil {
-		return nil
-	}
-
-	name := handlerChannel_name(m)
-	typeName := typeName(in)
-
-	w.linef(`func (c *%v) Send(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
-	w.line(`return c.ch.Send(cancel, msg.Unwrap().Raw())`)
-	w.line(`}`)
-	w.line()
-	return nil
-}
-
-func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Method) error {
+func (w *serviceImplWriter) channel_read(def *model.Definition, m *model.Method) error {
 	out := m.Channel.Out
 	if out == nil {
 		return nil
@@ -457,6 +441,7 @@ func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Meth
 	typeName := typeName(out)
 	parseFunc := typeParseFunc(out)
 
+	// Receive
 	w.linef(`func (c *%v) Receive(cancel <-chan struct{}) (%v, status.Status) {`, name, typeName)
 	w.line(`b, st := c.ch.Receive(cancel)`)
 	w.line(`if !st.OK() {`)
@@ -467,6 +452,52 @@ func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Meth
 	w.linef(`return %v{}, status.WrapError(err)`, typeName)
 	w.line(`}`)
 	w.line(`return msg, status.OK`)
+	w.line(`}`)
+	w.line()
+
+	// Read
+	w.linef(`func (c *%v) Read(cancel <-chan struct{}) (%v, bool, status.Status) {`, name, typeName)
+	w.line(`b, ok, st := c.ch.Read(cancel)`)
+	w.line(`switch {`)
+	w.line(`case !st.OK():`)
+	w.linef(`return %v{}, false, st`, typeName)
+	w.line(`case !ok:`)
+	w.linef(`return %v{}, false, status.OK`, typeName)
+	w.line(`}`)
+	w.linef(`msg, _, err := %v(b)`, parseFunc)
+	w.line(`if err != nil {`)
+	w.linef(`return %v{}, false, status.WrapError(err)`, typeName)
+	w.line(`}`)
+	w.line(`return msg, true, status.OK`)
+	w.line(`}`)
+	w.line()
+
+	// Wait
+	w.linef(`func (c *%v) Wait() <-chan struct{} {`, name)
+	w.line(`return c.ch.Wait()`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *serviceImplWriter) channel_write(def *model.Definition, m *model.Method) error {
+	in := m.Channel.In
+	if in == nil {
+		return nil
+	}
+
+	name := handlerChannel_name(m)
+	typeName := typeName(in)
+
+	// Write
+	w.linef(`func (c *%v) Write(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
+	w.line(`return c.ch.Write(cancel, msg.Unwrap().Raw())`)
+	w.line(`}`)
+	w.line()
+
+	// End
+	w.linef(`func (c *%v) End(cancel <-chan struct{}) status.Status {`, name)
+	w.line(`return c.ch.End(cancel)`)
 	w.line(`}`)
 	w.line()
 	return nil
