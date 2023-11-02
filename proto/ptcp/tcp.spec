@@ -46,6 +46,7 @@ message Message {
 message OpenChannel {
     id      bin128  1;
     window  int32   2; // Channel read/write window, 0 means unlimited
+    data    bytes   3;
 }
 
 message CloseChannel {

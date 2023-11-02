@@ -356,9 +356,11 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 		case ptcp.Code_OpenChannel:
 			m := msg.Open()
 
-			if st := c.channels.opened(c, m); !st.OK() {
+			ch, st := c.channels.opened(c, m)
+			if !st.OK() {
 				return st
 			}
+			ch.receiveMessage(cancel, msg)
 
 		case ptcp.Code_CloseChannel:
 			m := msg.Close()
@@ -572,18 +574,18 @@ func (c *connChannels) open(conn *conn) (*channel, status.Status) {
 	return ch, status.OK
 }
 
-func (c *connChannels) opened(conn *conn, msg ptcp.OpenChannel) status.Status {
+func (c *connChannels) opened(conn *conn, msg ptcp.OpenChannel) (*channel, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.closed {
-		return statusConnClosed
+		return nil, statusConnClosed
 	}
 
 	id := msg.Id()
 	_, ok := c.channels[id]
 	if ok {
-		return tcpErrorf("ch %v already exists", id) // impossible
+		return nil, tcpErrorf("ch %v already exists", id) // impossible
 	}
 
 	if debug {
@@ -592,7 +594,7 @@ func (c *connChannels) opened(conn *conn, msg ptcp.OpenChannel) status.Status {
 
 	ch := openedChannel(conn, msg)
 	c.channels[id] = ch
-	return status.OK
+	return ch, status.OK
 }
 
 func (c *connChannels) remove(id bin.Bin128) (*channel, bool) {

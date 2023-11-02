@@ -147,6 +147,13 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	// Handle message
 	code := msg.Code()
 	switch code {
+	case ptcp.Code_OpenChannel:
+		data := msg.Open().Data()
+		if st := ch.incrementReadBytes(cancel, s, len(b)); !st.OK() {
+			return nil, false, st
+		}
+		return data, true, status.OK
+
 	case ptcp.Code_ChannelMessage:
 		data := msg.Message().Data()
 		if st := ch.incrementReadBytes(cancel, s, len(b)); !st.OK() {
@@ -161,6 +168,7 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 		if debug {
 			debugPrint(ch.client, "channel.increment-window\t", ch.id)
 		}
+		return nil, false, status.OK
 
 	case ptcp.Code_CloseChannel:
 		s.close()
@@ -198,11 +206,13 @@ func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	}
 
 	if !s.newSent {
-		if st := ch.writeNew(cancel, s); !st.OK() {
+		if st := ch.writeNew(cancel, s, msg); !st.OK() {
 			return st
 		}
 		s.newSent = true
+		return status.OK
 	}
+
 	return ch.writeMessage(cancel, s, msg)
 }
 
@@ -351,13 +361,10 @@ func (ch *channel) incrementReadBytes(cancel <-chan struct{}, s *channelState, n
 
 // write
 
-func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState) status.Status {
+func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState, data []byte) status.Status {
 	if s.isClosed() {
 		return statusChannelClosed
 	}
-
-	s.wmu.Lock()
-	defer s.wmu.Unlock()
 
 	var msg ptcp.Message
 	{
@@ -370,6 +377,8 @@ func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState) status.Stat
 		w1 := w0.Open()
 		w1.Id(ch.id)
 		w1.Window(int32(s.window))
+		w1.Data(data)
+
 		if err := w1.End(); err != nil {
 			return tcpError(err)
 		}
@@ -379,6 +388,18 @@ func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState) status.Stat
 		if err != nil {
 			return tcpError(err)
 		}
+	}
+
+	n := len(msg.Unwrap().Raw())
+	if st := ch.decrementWriteWindow(cancel, s, n); !st.OK() {
+		return st
+	}
+
+	s.wmu.Lock()
+	defer s.wmu.Unlock()
+
+	if debug && debugChannel {
+		debugPrint(ch.client, "channel.write\t", ch.id)
 	}
 
 	return ch.conn.write(cancel, msg)

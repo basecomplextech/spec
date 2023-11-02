@@ -223,7 +223,7 @@ func TestChannel_Write__should_decrement_write_window(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.Equal(t, ch.state.window-51, ch.state.writeWindow)
+	assert.Equal(t, ch.state.window-60, ch.state.writeWindow)
 }
 
 func TestChannel_Write__should_block_when_write_window_not_enough(t *testing.T) {
