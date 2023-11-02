@@ -209,16 +209,16 @@ func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
 	// Read methods
 	if in := m.Channel.In; in != nil {
 		typeName := typeName(in)
-		w.linef(`Receive(cancel <-chan struct{}) (%v, status.Status)`, typeName)
 		w.linef(`Read(cancel <-chan struct{}) (%v, bool, status.Status)`, typeName)
-		w.line(`Wait() <-chan struct{}`)
+		w.linef(`ReadSync(cancel <-chan struct{}) (%v, status.Status)`, typeName)
+		w.line(`ReadWait() <-chan struct{}`)
 	}
 
 	// Write methods
 	if out := m.Channel.Out; out != nil {
 		typeName := typeName(out)
 		w.linef(`Write(cancel <-chan struct{}, msg %v) status.Status `, typeName)
-		w.line(`End(cancel <-chan struct{}) status.Status `)
+		w.line(`WriteEnd(cancel <-chan struct{}) status.Status `)
 	}
 
 	// Response method

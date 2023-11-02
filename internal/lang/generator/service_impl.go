@@ -441,20 +441,6 @@ func (w *serviceImplWriter) channel_read(def *model.Definition, m *model.Method)
 	typeName := typeName(out)
 	parseFunc := typeParseFunc(out)
 
-	// Receive
-	w.linef(`func (c *%v) Receive(cancel <-chan struct{}) (%v, status.Status) {`, name, typeName)
-	w.line(`b, st := c.ch.Receive(cancel)`)
-	w.line(`if !st.OK() {`)
-	w.linef(`return %v{}, st`, typeName)
-	w.line(`}`)
-	w.linef(`msg, _, err := %v(b)`, parseFunc)
-	w.line(`if err != nil {`)
-	w.linef(`return %v{}, status.WrapError(err)`, typeName)
-	w.line(`}`)
-	w.line(`return msg, status.OK`)
-	w.line(`}`)
-	w.line()
-
 	// Read
 	w.linef(`func (c *%v) Read(cancel <-chan struct{}) (%v, bool, status.Status) {`, name, typeName)
 	w.line(`b, ok, st := c.ch.Read(cancel)`)
@@ -472,9 +458,23 @@ func (w *serviceImplWriter) channel_read(def *model.Definition, m *model.Method)
 	w.line(`}`)
 	w.line()
 
-	// Wait
-	w.linef(`func (c *%v) Wait() <-chan struct{} {`, name)
-	w.line(`return c.ch.Wait()`)
+	// ReadSync
+	w.linef(`func (c *%v) ReadSync(cancel <-chan struct{}) (%v, status.Status) {`, name, typeName)
+	w.line(`b, st := c.ch.ReadSync(cancel)`)
+	w.line(`if !st.OK() {`)
+	w.linef(`return %v{}, st`, typeName)
+	w.line(`}`)
+	w.linef(`msg, _, err := %v(b)`, parseFunc)
+	w.line(`if err != nil {`)
+	w.linef(`return %v{}, status.WrapError(err)`, typeName)
+	w.line(`}`)
+	w.line(`return msg, status.OK`)
+	w.line(`}`)
+	w.line()
+
+	// ReadWait
+	w.linef(`func (c *%v) ReadWait() <-chan struct{} {`, name)
+	w.line(`return c.ch.ReadWait()`)
 	w.line(`}`)
 	w.line()
 	return nil
@@ -495,9 +495,9 @@ func (w *serviceImplWriter) channel_write(def *model.Definition, m *model.Method
 	w.line(`}`)
 	w.line()
 
-	// End
-	w.linef(`func (c *%v) End(cancel <-chan struct{}) status.Status {`, name)
-	w.line(`return c.ch.End(cancel)`)
+	// WriteEnd
+	w.linef(`func (c *%v) WriteEnd(cancel <-chan struct{}) status.Status {`, name)
+	w.line(`return c.ch.WriteEnd(cancel)`)
 	w.line(`}`)
 	w.line()
 	return nil

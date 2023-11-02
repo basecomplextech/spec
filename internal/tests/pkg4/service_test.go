@@ -140,7 +140,7 @@ func (s *testService) Method22(cancel <-chan struct{}, ch ServiceMethod22Channel
 	}
 	str := req.Msg().Unwrap()
 
-	_, st = ch.Receive(cancel)
+	_, st = ch.ReadSync(cancel)
 	if !st.OK() {
 		return nil, st
 	}
@@ -174,7 +174,7 @@ func (s *testService) Method23(cancel <-chan struct{}, ch ServiceMethod23Channel
 		}
 	}
 
-	_, st = ch.Receive(cancel)
+	_, st = ch.ReadSync(cancel)
 	if !st.OK() {
 		return nil, st
 	}

@@ -190,7 +190,7 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		msg, st := ch.Receive(nil)
+		msg, st := ch.ReadSync(nil)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -260,7 +260,7 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		msg, st := ch.Receive(nil)
+		msg, st := ch.ReadSync(nil)
 		if !st.OK() {
 			t.Fatal(st)
 		}
