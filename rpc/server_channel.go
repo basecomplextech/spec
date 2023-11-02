@@ -168,14 +168,14 @@ func (ch *serverChannel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status
 		select {
 		case <-cancel:
 			return nil, status.Cancelled
-		case <-ch.ch.Wait():
+		case <-ch.ch.ReadWait():
 		}
 	}
 }
 
 // ReadWait returns a channel which is notified on a new message, or a channel close.
 func (ch *serverChannel) ReadWait() <-chan struct{} {
-	return ch.ch.Wait()
+	return ch.ch.ReadWait()
 }
 
 // Write

@@ -189,14 +189,14 @@ func (ch *channel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status) {
 		select {
 		case <-cancel:
 			return nil, status.Cancelled
-		case <-ch.ch.Wait():
+		case <-ch.ch.ReadWait():
 		}
 	}
 }
 
 // ReadWait returns a channel which is notified on a new message, or a channel close.
 func (ch *channel) ReadWait() <-chan struct{} {
-	return ch.ch.Wait()
+	return ch.ch.ReadWait()
 }
 
 // Write
@@ -323,7 +323,7 @@ func (ch *channel) Response(cancel <-chan struct{}) (*ref.R[spec.Value], status.
 
 	// Read messages
 	for {
-		msg, st := ch.receive(cancel)
+		msg, st := ch.readSync(cancel)
 		if !st.OK() {
 			s.readFail(st)
 			return nil, st
@@ -397,9 +397,9 @@ func (ch *channel) read(cancel <-chan struct{}) (prpc.Message, bool, status.Stat
 	return msg, true, status.OK
 }
 
-// receive receives, parses and returns the next message, or blocks.
-func (ch *channel) receive(cancel <-chan struct{}) (prpc.Message, status.Status) {
-	b, st := ch.ch.Receive(cancel)
+// readSync reads, parses and returns the next message, or blocks.
+func (ch *channel) readSync(cancel <-chan struct{}) (prpc.Message, status.Status) {
+	b, st := ch.ch.ReadSync(cancel)
 	if !st.OK() {
 		return prpc.Message{}, st
 	}
@@ -510,13 +510,16 @@ func parseResult(resp prpc.Response) (*ref.R[spec.Value], status.Status) {
 	}
 
 	// Copy result to buffer
-	buf := alloc.NewBuffer()
+	buf := acquireBuffer()
 	buf.Write(resp.Result())
+	free := func() {
+		releaseBuffer(buf)
+	}
 
 	ok := false
 	defer func() {
 		if !ok {
-			buf.Free()
+			free()
 		}
 	}()
 
@@ -527,7 +530,7 @@ func parseResult(resp prpc.Response) (*ref.R[spec.Value], status.Status) {
 	}
 
 	// Wrap into ref
-	ref := ref.NewFreer(v, buf)
+	ref := ref.NewFree(v, free)
 	ok = true
 	return ref, status.OK
 }

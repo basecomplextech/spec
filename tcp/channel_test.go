@@ -7,6 +7,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testChannelWrite(t *testing.T, ch Channel, msg string) {
@@ -16,9 +17,9 @@ func testChannelWrite(t *testing.T, ch Channel, msg string) {
 	}
 }
 
-// Receive
+// ReadSync
 
-func TestChannel_Receive__should_receive_message(t *testing.T) {
+func TestChannel_ReadSync__should_receive_message(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		st := s.Write(nil, []byte("hello, channel"))
 		if !st.OK() {
@@ -38,7 +39,7 @@ func TestChannel_Receive__should_receive_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.Receive(nil)
+	msg, st := ch.ReadSync(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -46,7 +47,7 @@ func TestChannel_Receive__should_receive_message(t *testing.T) {
 	assert.Equal(t, []byte("hello, channel"), msg)
 }
 
-func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
+func TestChannel_ReadSync__should_return_end_when_channel_closed(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		return s.Close()
 	})
@@ -57,11 +58,11 @@ func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
 	ch := testChannel(t, conn)
 	ch.Close()
 
-	_, st := ch.Receive(nil)
+	_, st := ch.ReadSync(nil)
 	assert.Equal(t, status.End, st)
 }
 
-func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testing.T) {
+func TestChannel_ReadSync__should_read_pending_messages_even_when_closed(t *testing.T) {
 	sent := make(chan struct{})
 	server := testServer(t, func(s Channel) status.Status {
 		defer close(sent)
@@ -94,23 +95,23 @@ func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testi
 		t.Fatal("timeout")
 	}
 
-	msg, st := ch.Receive(nil)
+	msg, st := ch.ReadSync(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("hello, channel"), msg)
 
-	msg, st = ch.Receive(nil)
+	msg, st = ch.ReadSync(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("how are you?"), msg)
 
-	_, st = ch.Receive(nil)
+	_, st = ch.ReadSync(nil)
 	assert.Equal(t, status.End, st)
 }
 
-func TestChannel_Receive__should_increment_read_bytes(t *testing.T) {
+func TestChannel_ReadSync__should_increment_read_bytes(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		st := s.Write(nil, []byte("hello, channel"))
 		if !st.OK() {
@@ -131,7 +132,7 @@ func TestChannel_Receive__should_increment_read_bytes(t *testing.T) {
 	}
 	assert.Equal(t, 0, ch.state.readBytes)
 
-	_, st = ch.Receive(nil)
+	_, st = ch.ReadSync(nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -148,7 +149,7 @@ func TestChannel_Write__should_send_message(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		defer close(done)
 
-		msg, st := s.Receive(nil)
+		msg, st := s.ReadSync(nil)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -258,10 +259,10 @@ func TestChannel_Write__should_block_when_write_window_not_enough(t *testing.T) 
 
 func TestChannel_Write__should_wait_write_window_increment(t *testing.T) {
 	server := testServer(t, func(ch Channel) status.Status {
-		if _, st := ch.Receive(nil); !st.OK() {
+		if _, st := ch.ReadSync(nil); !st.OK() {
 			return st
 		}
-		if _, st := ch.Receive(nil); !st.OK() {
+		if _, st := ch.ReadSync(nil); !st.OK() {
 			return st
 		}
 		return status.OK
@@ -293,8 +294,8 @@ func TestChannel_Write__should_write_message_if_it_exceeds_half_window_size(t *t
 	server := testServer(t, func(ch Channel) status.Status {
 		<-timer.C
 
-		ch.Receive(nil)
-		ch.Receive(nil)
+		ch.ReadSync(nil)
+		ch.ReadSync(nil)
 		return status.OK
 	})
 	conn := testConnect(t, server)
@@ -318,6 +319,55 @@ func TestChannel_Write__should_write_message_if_it_exceeds_half_window_size(t *t
 	}
 }
 
+// WriteAndClose
+
+func TestChannel_WriteAndClose__should_send_data_in_close_message(t *testing.T) {
+	var msg0 []byte
+	done := make(chan struct{})
+
+	server := testServer(t, func(s Channel) status.Status {
+		defer close(done)
+
+		msg, st := s.ReadSync(nil)
+		if !st.OK() {
+			t.Fatal(st)
+		}
+		msg0 = append(msg0, msg...)
+
+		msg, st = s.ReadSync(nil)
+		if !st.OK() {
+			t.Fatal(st)
+		}
+		msg0 = append(msg0, msg...)
+		return s.Close()
+	})
+
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	ch := testChannel(t, conn)
+	defer ch.Free()
+
+	st := ch.Write(nil, []byte("hello, "))
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	st = ch.WriteAndClose(nil, []byte("world"))
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	require.True(t, ch.state.closed)
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("timeout")
+	}
+
+	assert.Equal(t, []byte("hello, world"), msg0)
+}
+
 // Close
 
 func TestChannel_Close__should_send_close_message(t *testing.T) {
@@ -325,7 +375,7 @@ func TestChannel_Close__should_send_close_message(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
 		defer close(closed)
 
-		_, st := s.Receive(nil)
+		_, st := s.ReadSync(nil)
 		return st
 	})
 
@@ -370,7 +420,7 @@ func TestChannel_Close__should_close_incoming_queue(t *testing.T) {
 
 func TestChannel_Close__should_ignore_when_already_closed(t *testing.T) {
 	server := testServer(t, func(s Channel) status.Status {
-		_, st := s.Receive(nil)
+		_, st := s.ReadSync(nil)
 		return st
 	})
 

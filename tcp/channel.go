@@ -15,16 +15,22 @@ type Channel interface {
 	// Close closes the channel and sends the close message.
 	Close() status.Status
 
-	// Receive receives and returns a message, the message is valid until the iteration.
-	// The method blocks until a message is received, or the channel is closed.
-	Receive(cancel <-chan struct{}) ([]byte, status.Status)
+	// Read
 
-	// Read reads and returns a message, the message is valid until the next iteration.
+	// Read reads and returns a message, or false/end.
+	// The message is valid until the next call to Read.
 	// The method does not block if no messages, and returns false instead.
 	Read(cancel <-chan struct{}) ([]byte, bool, status.Status)
 
-	// Wait returns a channel that is notified on a new message, or a channel close.
-	Wait() <-chan struct{}
+	// ReadSync reads and returns a message, or an end.
+	// The message is valid until the next call to Read.
+	// The method blocks until a message is received, or the channel is closed.
+	ReadSync(cancel <-chan struct{}) ([]byte, status.Status)
+
+	// ReadWait returns a channel that is notified on a new message, or a channel close.
+	ReadWait() <-chan struct{}
+
+	// Write
 
 	// Write writes a message to the channel.
 	Write(cancel <-chan struct{}, msg []byte) status.Status
@@ -98,27 +104,10 @@ func (ch *channel) Close() status.Status {
 	return ch.close(nil)
 }
 
-// Receive receives and returns a message, the message is valid until the iteration.
-// The method blocks until a message is received, or the channel is closed.
-func (ch *channel) Receive(cancel <-chan struct{}) ([]byte, status.Status) {
-	for {
-		msg, ok, st := ch.Read(cancel)
-		switch {
-		case !st.OK():
-			return nil, st
-		case ok:
-			return msg, status.OK
-		}
+// Read
 
-		select {
-		case <-cancel:
-			return nil, status.Cancelled
-		case <-ch.Wait():
-		}
-	}
-}
-
-// Read reads and returns a message, the message is valid until the next iteration.
+// Read reads and returns a message, or false/end.
+// The message is valid until the next call to Read.
 // The method does not block if no messages, and returns false instead.
 func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	s, ok := ch.rlock()
@@ -190,8 +179,29 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	return nil, false, tcpErrorf("unexpected message code %d", code)
 }
 
-// Wait returns a channel that is notified on a new message, or a channel close.
-func (ch *channel) Wait() <-chan struct{} {
+// ReadSync reads and returns a message, or an end.
+// The message is valid until the next call to Read.
+// The method blocks until a message is received, or the channel is closed.
+func (ch *channel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status) {
+	for {
+		msg, ok, st := ch.Read(cancel)
+		switch {
+		case !st.OK():
+			return nil, st
+		case ok:
+			return msg, status.OK
+		}
+
+		select {
+		case <-cancel:
+			return nil, status.Cancelled
+		case <-ch.ReadWait():
+		}
+	}
+}
+
+// ReadWait returns a channel that is notified on a new message, or a channel close.
+func (ch *channel) ReadWait() <-chan struct{} {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil
@@ -200,6 +210,8 @@ func (ch *channel) Wait() <-chan struct{} {
 
 	return s.readQueue.ReadWait()
 }
+
+// Write
 
 // Write writes a message to the channel.
 func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
@@ -214,13 +226,8 @@ func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	}
 
 	if !s.newSent {
-		if st := ch.writeNew(cancel, s, msg); !st.OK() {
-			return st
-		}
-		s.newSent = true
-		return status.OK
+		return ch.writeNew(cancel, s, msg)
 	}
-
 	return ch.writeMessage(cancel, s, msg)
 }
 
@@ -237,10 +244,10 @@ func (ch *channel) WriteAndClose(cancel <-chan struct{}, msg []byte) status.Stat
 	}
 
 	if !s.newSent {
-		if st := ch.Write(cancel, msg); !st.OK() {
+		if st := ch.writeNew(cancel, s, msg); !st.OK() {
 			return st
 		}
-		return ch.Close()
+		return ch.close(nil)
 	}
 	return ch.close(msg)
 }
@@ -394,6 +401,7 @@ func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState, data []byte
 	if s.isClosed() {
 		return statusChannelClosed
 	}
+	s.newSent = true
 
 	var msg ptcp.Message
 	{

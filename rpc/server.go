@@ -10,6 +10,7 @@ import (
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
+	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 	"github.com/basecomplextech/spec/tcp"
 )
@@ -54,7 +55,7 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 // HandleChannel handles an incoming TCP channel.
 func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 	// Receive message
-	b, st := tch.Receive(nil)
+	b, st := tch.ReadSync(nil)
 	if !st.OK() {
 		return st
 	}
@@ -81,10 +82,10 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 	// Make response
 	var resp []byte
 	{
-		buf := acquireBuffer()
-		defer releaseBuffer(buf)
+		buf := acquireBufferWriter()
+		defer releaseBufferWriter(buf)
 
-		w := prpc.NewMessageWriterBuffer(buf)
+		w := prpc.NewMessageWriterTo(buf.writer.Message())
 		w.Type(prpc.MessageType_Response)
 		{
 			w1 := w.Resp()
@@ -110,7 +111,7 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 	}
 
 	// Write response
-	return tch.Write(nil, resp)
+	return tch.WriteAndClose(nil, resp)
 }
 
 // private
@@ -181,4 +182,39 @@ func acquireBuffer() *alloc.Buffer {
 func releaseBuffer(buf *alloc.Buffer) {
 	buf.Reset()
 	bufferPool.Put(buf)
+}
+
+// writer pool
+
+var bufferWriterPool = &sync.Pool{}
+
+type bufferWriter struct {
+	buf    *alloc.Buffer
+	writer spec.Writer
+}
+
+func newBufferWriter() *bufferWriter {
+	buf := alloc.NewBuffer()
+	return &bufferWriter{
+		buf:    buf,
+		writer: spec.NewWriterBuffer(buf),
+	}
+}
+
+func (w *bufferWriter) reset() {
+	w.buf.Reset()
+	w.writer.Reset(w.buf)
+}
+
+func acquireBufferWriter() *bufferWriter {
+	v := bufferWriterPool.Get()
+	if v == nil {
+		return newBufferWriter()
+	}
+	return v.(*bufferWriter)
+}
+
+func releaseBufferWriter(w *bufferWriter) {
+	w.reset()
+	bufferWriterPool.Put(w)
 }
