@@ -116,13 +116,13 @@ func BenchmarkStream(b *testing.B) {
 		defer ch.Free()
 
 		for i := 0; i < b.N; i++ {
-			st = ch.Send(nil, streamMsg)
+			st = ch.Write(nil, streamMsg)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 		}
 
-		st = ch.Send(nil, []byte(closeMsg))
+		st = ch.Write(nil, []byte(closeMsg))
 		if !st.OK() {
 			b.Fatal(st)
 		}

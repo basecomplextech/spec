@@ -53,8 +53,8 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 
 // HandleChannel handles an incoming TCP channel.
 func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
-	// Read message
-	b, st := tch.Read(nil)
+	// Receive message
+	b, st := tch.Receive(nil)
 	if !st.OK() {
 		return st
 	}

@@ -50,9 +50,9 @@ func TestClient_Request__should_send_request_receive_response(t *testing.T) {
 	assert.Equal(t, msg, result.Unwrap().String().Unwrap())
 }
 
-// Send
+// Write
 
-func TestClient_Send__should_send_client_message_to_server(t *testing.T) {
+func TestClient_Write__should_send_client_message_to_server(t *testing.T) {
 	done := make(chan struct{})
 	var message []byte
 
@@ -77,7 +77,7 @@ func TestClient_Send__should_send_client_message_to_server(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	st = ch.Send(nil, []byte("hello, world"))
+	st = ch.Write(nil, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -120,7 +120,7 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	st = ch.Send(nil, []byte("client message"))
+	st = ch.Write(nil, []byte("client message"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -143,7 +143,7 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 
 func TestClient_Receive__should_receive_server_message(t *testing.T) {
 	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Send(cancel, []byte("hello, world"))
+		st := ch.Write(cancel, []byte("hello, world"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -170,7 +170,7 @@ func TestClient_Receive__should_receive_server_message(t *testing.T) {
 
 func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Send(cancel, []byte("server message"))
+		st := ch.Write(cancel, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -246,7 +246,7 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 
 func TestClient_Response__should_skip_message(t *testing.T) {
 	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Send(cancel, []byte("server message"))
+		st := ch.Write(cancel, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -283,7 +283,7 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 
 func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Send(cancel, []byte("server message"))
+		st := ch.Write(cancel, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -327,7 +327,7 @@ func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 	}
 	assert.Equal(t, []byte("server message"), msg)
 
-	st = ch.Send(nil, []byte("client message"))
+	st = ch.Write(nil, []byte("client message"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
