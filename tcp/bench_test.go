@@ -12,15 +12,11 @@ const benchMsgSize = 16
 
 func BenchmarkRequest(b *testing.B) {
 	handle := func(ch Channel) status.Status {
-		for {
-			msg, st := ch.Receive(nil)
-			if !st.OK() {
-				return st
-			}
-			if st := ch.Write(nil, msg); !st.OK() {
-				return st
-			}
+		msg, st := ch.Receive(nil)
+		if !st.OK() {
+			return st
 		}
+		return ch.WriteAndClose(nil, msg)
 	}
 
 	server := testServer(b, handle)
@@ -68,15 +64,11 @@ func BenchmarkRequest(b *testing.B) {
 
 func BenchmarkRequest_Parallel(b *testing.B) {
 	handle := func(ch Channel) status.Status {
-		for {
-			msg, st := ch.Receive(nil)
-			if !st.OK() {
-				return st
-			}
-			if st := ch.Write(nil, msg); !st.OK() {
-				return st
-			}
+		msg, st := ch.Receive(nil)
+		if !st.OK() {
+			return st
 		}
+		return ch.WriteAndClose(nil, msg)
 	}
 
 	server := testServer(b, handle)

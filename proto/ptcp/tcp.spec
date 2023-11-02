@@ -50,7 +50,8 @@ message OpenChannel {
 }
 
 message CloseChannel {
-    id  bin128  1;
+    id      bin128  1;
+    data    bytes   2;
 }
 
 message ChannelMessage {

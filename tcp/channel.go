@@ -29,6 +29,9 @@ type Channel interface {
 	// Write writes a message to the channel.
 	Write(cancel <-chan struct{}, msg []byte) status.Status
 
+	// WriteAndClose writes a close message with a payload.
+	WriteAndClose(cancel <-chan struct{}, msg []byte) status.Status
+
 	// Internal
 
 	// Free closes the channel and releases its resources.
@@ -92,7 +95,7 @@ func openedChannel(conn *conn, msg ptcp.OpenChannel) *channel {
 
 // Close closes the channel and sends the close message.
 func (ch *channel) Close() status.Status {
-	return ch.close()
+	return ch.close(nil)
 }
 
 // Receive receives and returns a message, the message is valid until the iteration.
@@ -140,7 +143,7 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	// Parse message
 	msg, _, err := ptcp.ParseMessage(b)
 	if err != nil {
-		ch.close()
+		ch.close(nil)
 		return nil, false, tcpError(err)
 	}
 
@@ -175,6 +178,11 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 
 		if debug {
 			debugPrint(ch.client, "channel.remote-closed\t", ch.id)
+		}
+
+		data := msg.Close().Data()
+		if len(data) > 0 {
+			return data, true, status.OK
 		}
 		return nil, false, status.End
 	}
@@ -216,11 +224,32 @@ func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	return ch.writeMessage(cancel, s, msg)
 }
 
+// WriteAndClose writes a close message with a payload.
+func (ch *channel) WriteAndClose(cancel <-chan struct{}, msg []byte) status.Status {
+	s, ok := ch.rlock()
+	if !ok {
+		return statusChannelClosed
+	}
+	defer ch.stateMu.RUnlock()
+
+	if s.closed {
+		return statusChannelClosed
+	}
+
+	if !s.newSent {
+		if st := ch.Write(cancel, msg); !st.OK() {
+			return st
+		}
+		return ch.Close()
+	}
+	return ch.close(msg)
+}
+
 // Internal
 
 // Free closes the channel and releases its resources.
 func (ch *channel) Free() {
-	ch.close()
+	ch.close(nil)
 	ch.free()
 }
 
@@ -301,7 +330,7 @@ func (ch *channel) rlock() (*channelState, bool) {
 	return ch.state, true
 }
 
-func (ch *channel) close() status.Status {
+func (ch *channel) close(data []byte) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -316,7 +345,7 @@ func (ch *channel) close() status.Status {
 	if debug {
 		debugPrint(ch.client, "channel.close\t", ch.id)
 	}
-	return ch.writeClose(nil /* no cancel */, s)
+	return ch.writeClose(nil /* no cancel */, s, data)
 }
 
 // run
@@ -476,7 +505,7 @@ func (ch *channel) writeWindow(cancel <-chan struct{}, s *channelState, delta in
 	return ch.conn.write(cancel, msg)
 }
 
-func (ch *channel) writeClose(cancel <-chan struct{}, s *channelState) status.Status {
+func (ch *channel) writeClose(cancel <-chan struct{}, s *channelState, data []byte) status.Status {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 
@@ -490,6 +519,7 @@ func (ch *channel) writeClose(cancel <-chan struct{}, s *channelState) status.St
 
 		w1 := w0.Close()
 		w1.Id(ch.id)
+		w1.Data(data)
 		if err := w1.End(); err != nil {
 			return tcpError(err)
 		}
