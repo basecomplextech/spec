@@ -302,10 +302,10 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 
 func (w *clientImplWriter) method_subservice(def *model.Definition, m *model.Method) error {
 	// Return subservice
-	typeName := typeRefName(m.Output)
+	newFunc := clientImplNew(m.Output)
 
 	w.line(`// Return subservice`)
-	w.linef(`sub := New%vClient(c.client, req)`, typeName)
+	w.linef(`sub := %v(c.client, req)`, newFunc)
 	w.line(`ok = true`)
 	w.linef(`return sub, status.OK`)
 	return nil
@@ -696,6 +696,13 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 
 func clientImplName(def *model.Definition) string {
 	return fmt.Sprintf("%vClient", toLowerCameCase(def.Name))
+}
+
+func clientImplNew(typ *model.Type) string {
+	if typ.Import != nil {
+		return fmt.Sprintf("%v.New%vClient", typ.ImportName, typ.Name)
+	}
+	return fmt.Sprintf("New%vClient", typ.Name)
 }
 
 func clientChannelImpl_name(m *model.Method) string {

@@ -207,12 +207,13 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	// Handle output
 	switch {
 	case m.Sub:
+		newFunc := handler_new(m.Output)
 		w.line(`if !st.OK() {`)
 		w.line(`return nil, st`)
 		w.line(`}`)
 		w.line()
 		w.line(`// Call subservice`)
-		w.linef(`h1 := New%vHandler(sub)`, typeName(m.Output))
+		w.linef(`h1 := %v(sub)`, newFunc)
 		w.line(`return h1.Handle(cancel, ch, index+1)`)
 
 	case m.Output != nil:
@@ -473,6 +474,13 @@ func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Meth
 
 func handler_name(def *model.Definition) string {
 	return fmt.Sprintf(`%vHandler`, toLowerCameCase(def.Name))
+}
+
+func handler_new(typ *model.Type) string {
+	if typ.Import != nil {
+		return fmt.Sprintf(`%v.New%vHandler`, typ.ImportName, typ.Name)
+	}
+	return fmt.Sprintf(`New%vHandler`, typ.Name)
 }
 
 func handlerChannel_name(m *model.Method) string {
