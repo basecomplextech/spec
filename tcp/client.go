@@ -279,9 +279,9 @@ func (c *client) doConnect(cancel <-chan struct{}) (st status.Status) {
 		switch {
 		case !logged:
 			logged = true
-			c.logger.ErrorStatus("Client failed to connect", st, "address", c.address)
+			c.logger.ErrorStatus("Client connection failed", st, "address", c.address)
 		case c.logger.TraceEnabled():
-			c.logger.Trace("Client failed to connect", "status", st, "address", c.address,
+			c.logger.Trace("Client connection failed", "status", st, "address", c.address,
 				"retry", timeout)
 		}
 

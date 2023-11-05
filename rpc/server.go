@@ -138,8 +138,8 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R
 	// Log request
 	time := time.Since(start)
 	if st.OK() {
-		if s.logger.DebugEnabled() {
-			s.logger.Debug("Request ok", "method", method, "time", time)
+		if s.logger.TraceEnabled() {
+			s.logger.Trace("Request ok", "method", method, "time", time)
 		}
 	} else {
 		s.logger.ErrorStatus("Request error", st, "method", method, "time", time)
