@@ -136,6 +136,9 @@ func typeParseFunc(typ *model.Type) string {
 			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
 		}
 		return fmt.Sprintf("Parse%v", typ.Name)
+
+	default:
+		return typeDecodeFunc(typ)
 	}
 	return ""
 }

@@ -554,7 +554,12 @@ func (w *clientImplWriter) channel_write(def *model.Definition, m *model.Method)
 
 	// Write
 	w.linef(`func (c *%v) Write(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
-	w.line(`return c.ch.Write(cancel, msg.Unwrap().Raw())`)
+	switch out.Kind {
+	case model.KindList, model.KindMessage:
+		w.line(`return c.ch.Write(cancel, msg.Unwrap().Raw())`)
+	default:
+		w.line(`return c.ch.Write(cancel, msg)`)
+	}
 	w.line(`}`)
 	w.line()
 
