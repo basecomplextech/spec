@@ -5,7 +5,7 @@ service TestService {
     method(msg string 1) (msg string 1);
 
     // Method0 doc comment.
-    method0() () ();
+    method0() ();
 
     // Method1 doc comment.
     method1(
@@ -22,9 +22,9 @@ service TestService {
     method2(Request) (Response);
 
     // Method10, 11, 12 have channels.
-    method11(Request) (Response) (<-In);
-    method12(Request) (Response) (->Out);
-    method13(Request) (Response) (<-In ->Out);
+    method11(Request) (<-In) (Response);
+    method12(Request) (->Out) (Response);
+    method13(Request) (<-In ->Out) (Response);
 
     // Subservice doc comment.
     subservice(id bin128 1) (TestSubservice);

@@ -563,7 +563,7 @@ method:
 			Output: $3,
 		}
 	}
-	| field_name method_input method_output method_channel ';'
+	| field_name method_input method_channel method_output ';'
 	{
 		if debugParser {
 			fmt.Println("method", $1, $2, $3, $4)
@@ -571,8 +571,8 @@ method:
 		$$ = &ast.Method{
 			Name: $1,
 			Input: $2,
-			Output: $3,
-			Channel: $4,
+			Channel: $3,
+			Output: $4,
 		}
 	};
 
@@ -609,41 +609,46 @@ method_output:
 	};
 
 method_channel:
-	'(' method_channel_in method_channel_out ')'
+	'(' method_channel_in ')'
+	{
+		if debugParser {
+			fmt.Println("method channel", $2)
+		}
+
+		$$ = &ast.MethodChannel{
+			In: $2,
+		}
+	}
+	| '(' method_channel_out ')'
+	{
+		if debugParser {
+			fmt.Println("method channel", $2)
+		}
+
+		$$ = &ast.MethodChannel{
+			Out: $2,
+		}
+	}
+	| '(' method_channel_in method_channel_out ')'
 	{
 		if debugParser {
 			fmt.Println("method channel", $2, $3)
 		}
 
-		in := $2
-		out := $3
-		
-		if in == nil && out == nil {
-			$$ = nil
-		} else {
-			$$ = &ast.MethodChannel{
-				In: $2,
-				Out: $3,
-			}
+		$$ = &ast.MethodChannel{
+			In: $2,
+			Out: $3,
 		}
 	};
 
 method_channel_in:
-	// Empty
-	{
-		$$ = nil
-	}
-	| '<' '-' type
+	'<' '-' type
 	{
 		$$ = $3
 	};
 
 method_channel_out:
-	// Empty
-	{
-		$$ = nil
-	}
-	| '-' '>' type
+	'-' '>' type
 	{
 		$$ = $3
 	};
