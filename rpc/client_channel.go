@@ -5,6 +5,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
+	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
@@ -57,8 +58,9 @@ type channel struct {
 	state   *channelState
 }
 
-func newChannel(ch tcp.Channel) *channel {
+func newChannel(ch tcp.Channel, logger logging.Logger) *channel {
 	s := acquireState()
+	s.logger = logger
 
 	return &channel{
 		ch:    ch,
@@ -105,6 +107,7 @@ func (ch *channel) Request(cancel <-chan struct{}, req prpc.Request) status.Stat
 	}
 
 	// Send request
+	s.method = requestMethod(req)
 	s.writeReq = true
 	return ch.ch.Write(cancel, msg)
 }
@@ -416,6 +419,9 @@ func (ch *channel) readSync(cancel <-chan struct{}) (prpc.Message, status.Status
 var statePool = &sync.Pool{}
 
 type channelState struct {
+	logger logging.Logger
+	method string
+
 	writeLock async.Lock
 	writeReq  bool // request sent
 	writeEnd  bool // end sent
@@ -471,6 +477,9 @@ func (s *channelState) reset() {
 	default:
 	}
 
+	s.logger = nil
+	s.method = ""
+
 	s.writeReq = false
 	s.writeEnd = false
 	s.writeBuf.Reset()
@@ -490,8 +499,21 @@ func (s *channelState) reset() {
 }
 
 func (s *channelState) readFail(st status.Status) {
+	if s.readFailed {
+		return
+	}
+
 	s.readFailed = true
 	s.readError = st
+
+	switch st.Code {
+	case status.CodeOK,
+		status.CodeCancelled,
+		status.CodeEnd,
+		status.CodeClosed:
+	default:
+		s.logger.ErrorStatus("RPC client request error", st, "method", s.method)
+	}
 }
 
 // util

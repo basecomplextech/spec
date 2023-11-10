@@ -93,11 +93,19 @@ func (c *client) Close() status.Status {
 
 // Channel opens a channels and sends a request.
 func (c *client) Channel(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status) {
+	// Open channel
 	ch, st := c.channel(cancel)
-	if !st.OK() {
+	switch st.Code {
+	case status.CodeOK:
+	case status.CodeCancelled:
+		return nil, st
+	default:
+		method := requestMethod(req)
+		c.logger.ErrorStatus("RPC client request error", st, "method", method)
 		return nil, st
 	}
 
+	// Free on error
 	ok := false
 	defer func() {
 		if !ok {
@@ -105,28 +113,51 @@ func (c *client) Channel(cancel <-chan struct{}, req prpc.Request) (Channel, sta
 		}
 	}()
 
+	// Send request
 	st = ch.Request(cancel, req)
-	if !st.OK() {
+	switch st.Code {
+	case status.CodeOK:
+	case status.CodeCancelled:
+		return nil, st
+	default:
+		method := requestMethod(req)
+		c.logger.ErrorStatus("RPC client request error", st, "method", method)
 		return nil, st
 	}
 
+	// Done
 	ok = true
 	return ch, status.OK
 }
 
 // Request sends a request and returns a response.
 func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.Value], status.Status) {
+	// Open channel
 	ch, st := c.channel(cancel)
-	if !st.OK() {
+	switch st.Code {
+	case status.CodeOK:
+	case status.CodeCancelled:
+		return nil, st
+	default:
+		method := requestMethod(req)
+		c.logger.ErrorStatus("RPC client request error", st, "method", method)
 		return nil, st
 	}
 	defer ch.Free()
 
+	// Send request
 	st = ch.Request(cancel, req)
-	if !st.OK() {
+	switch st.Code {
+	case status.CodeOK:
+	case status.CodeCancelled:
+		return nil, st
+	default:
+		method := requestMethod(req)
+		c.logger.ErrorStatus("RPC client request error", st, "method", method)
 		return nil, st
 	}
 
+	// Read response
 	return ch.Response(cancel)
 }
 
@@ -145,7 +176,7 @@ func (c *client) channel(cancel <-chan struct{}) (*channel, status.Status) {
 		}
 	}()
 
-	ch := newChannel(tch)
+	ch := newChannel(tch, c.logger)
 	ok = true
 	return ch, status.OK
 }
