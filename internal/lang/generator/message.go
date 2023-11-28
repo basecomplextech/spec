@@ -18,7 +18,7 @@ func (w *messageWriter) message(def *model.Definition) error {
 	if err := w.def(def); err != nil {
 		return err
 	}
-	if err := w.new_method(def); err != nil {
+	if err := w.new_methods(def); err != nil {
 		return err
 	}
 	if err := w.parse_method(def); err != nil {
@@ -46,10 +46,19 @@ func (w *messageWriter) def(def *model.Definition) error {
 	return nil
 }
 
-func (w *messageWriter) new_method(def *model.Definition) error {
+func (w *messageWriter) new_methods(def *model.Definition) error {
 	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`msg := spec.NewMessage(b)`)
 	w.linef(`return %v{msg}`, def.Name)
+	w.linef(`}`)
+	w.line()
+
+	w.linef(`func New%vErr(b []byte) (_ %v, err error) {`, def.Name, def.Name)
+	w.linef(`msg, err := spec.NewMessageErr(b)`)
+	w.line(`if err != nil {
+		return
+	}`)
+	w.linef(`return %v{msg}, nil`, def.Name)
 	w.linef(`}`)
 	w.line()
 	return nil
