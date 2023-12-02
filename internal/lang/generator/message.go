@@ -306,89 +306,78 @@ func (w *messageWriter) writer_field(def *model.Definition, field *model.Field) 
 
 	switch kind {
 	default:
-		w.linef(`func (w %vWriter) %v(v %v) %v {`, def.Name, fname, tname, wname)
+		w.writef(`func (w %vWriter) %v(v %v) {`, def.Name, fname, tname)
 
 		switch kind {
 		case model.KindBool:
-			w.linef(`w.w.Field(%d).Bool(v)`, tag)
+			w.writef(`w.w.Field(%d).Bool(v)`, tag)
 		case model.KindByte:
-			w.linef(`w.w.Field(%d).Byte(v)`, tag)
+			w.writef(`w.w.Field(%d).Byte(v)`, tag)
 
 		case model.KindInt16:
-			w.linef(`w.w.Field(%d).Int16(v)`, tag)
+			w.writef(`w.w.Field(%d).Int16(v)`, tag)
 		case model.KindInt32:
-			w.linef(`w.w.Field(%d).Int32(v)`, tag)
+			w.writef(`w.w.Field(%d).Int32(v)`, tag)
 		case model.KindInt64:
-			w.linef(`w.w.Field(%d).Int64(v)`, tag)
+			w.writef(`w.w.Field(%d).Int64(v)`, tag)
 
 		case model.KindUint16:
-			w.linef(`w.w.Field(%d).Uint16(v)`, tag)
+			w.writef(`w.w.Field(%d).Uint16(v)`, tag)
 		case model.KindUint32:
-			w.linef(`w.w.Field(%d).Uint32(v)`, tag)
+			w.writef(`w.w.Field(%d).Uint32(v)`, tag)
 		case model.KindUint64:
-			w.linef(`w.w.Field(%d).Uint64(v)`, tag)
+			w.writef(`w.w.Field(%d).Uint64(v)`, tag)
 
 		case model.KindBin64:
-			w.linef(`w.w.Field(%d).Bin64(v)`, tag)
+			w.writef(`w.w.Field(%d).Bin64(v)`, tag)
 		case model.KindBin128:
-			w.linef(`w.w.Field(%d).Bin128(v)`, tag)
+			w.writef(`w.w.Field(%d).Bin128(v)`, tag)
 		case model.KindBin256:
-			w.linef(`w.w.Field(%d).Bin256(v)`, tag)
+			w.writef(`w.w.Field(%d).Bin256(v)`, tag)
 
 		case model.KindFloat32:
-			w.linef(`w.w.Field(%d).Float32(v)`, tag)
+			w.writef(`w.w.Field(%d).Float32(v)`, tag)
 		case model.KindFloat64:
-			w.linef(`w.w.Field(%d).Float64(v)`, tag)
+			w.writef(`w.w.Field(%d).Float64(v)`, tag)
 
 		case model.KindBytes:
-			w.linef(`w.w.Field(%d).Bytes(v)`, tag)
+			w.writef(`w.w.Field(%d).Bytes(v)`, tag)
 		case model.KindString:
-			w.linef(`w.w.Field(%d).String(v)`, tag)
+			w.writef(`w.w.Field(%d).String(v)`, tag)
 		}
-
-		w.linef(`return w`)
 		w.linef(`}`)
-		w.line()
 
 	case model.KindAny:
-		w.linef(`func (w %v) %v() spec.FieldWriter {`, wname, fname)
-		w.linef(`return w.w.Field(%d)`, tag)
+		w.writef(`func (w %v) %v() spec.FieldWriter {`, wname, fname)
+		w.writef(`return w.w.Field(%d)`, tag)
 		w.linef(`}`)
-		w.line()
 
-		w.linef(`func (w %v) Copy%v(v spec.Value) error {`, wname, fname)
-		w.linef(`return w.w.Field(%d).Any(v)`, tag)
+		w.writef(`func (w %v) Copy%v(v spec.Value) error {`, wname, fname)
+		w.writef(`return w.w.Field(%d).Any(v)`, tag)
 		w.linef(`}`)
-		w.line()
 
 	case model.KindAnyMessage:
-		w.linef(`func (w %v) %v() spec.MessageWriter {`, wname, fname)
-		w.linef(`return w.w.Field(%d).Message()`, tag)
+		w.writef(`func (w %v) %v() spec.MessageWriter {`, wname, fname)
+		w.writef(`return w.w.Field(%d).Message()`, tag)
 		w.linef(`}`)
-		w.line()
 
-		w.linef(`func (w %v) Copy%v(v spec.Message) error {`, wname, fname)
-		w.linef(`return w.w.Field(%d).Any(v.Raw())`, tag)
+		w.writef(`func (w %v) Copy%v(v spec.Message) error {`, wname, fname)
+		w.writef(`return w.w.Field(%d).Any(v.Raw())`, tag)
 		w.linef(`}`)
-		w.line()
 
 	case model.KindEnum:
 		writeFunc := typeWriteFunc(field.Type)
 
-		w.linef(`func (w %v) %v(v %v) %v {`, wname, fname, tname, wname)
-		w.linef(`spec.WriteField(w.w.Field(%d), v, %v)`, tag, writeFunc)
-		w.linef(`return w`)
+		w.writef(`func (w %v) %v(v %v) {`, wname, fname, tname)
+		w.writef(`spec.WriteField(w.w.Field(%d), v, %v)`, tag, writeFunc)
 		w.linef(`}`)
-		w.line()
 
 	case model.KindStruct:
 		writeFunc := typeWriteFunc(field.Type)
 
-		w.linef(`func (w %v) %v(v %v) %v {`, wname, fname, tname, wname)
-		w.linef(`spec.WriteField(w.w.Field(%d), v, %v)`, tag, writeFunc)
-		w.linef(`return w`)
+		w.writef(`func (w %v) %v(v %v) {`, wname, fname, tname)
+		w.writef(`spec.WriteField(w.w.Field(%d), v, %v)`, tag, writeFunc)
 		w.linef(`}`)
-		w.line()
 
 	case model.KindList:
 		writer := typeWriter(field.Type)
@@ -399,7 +388,6 @@ func (w *messageWriter) writer_field(def *model.Definition, field *model.Field) 
 		w.linef(`w1 := w.w.Field(%d).List()`, tag)
 		w.linef(`return %v(w1, %v)`, buildList, encodeElement)
 		w.linef(`}`)
-		w.line()
 
 	case model.KindMessage:
 		writer := typeWriter(field.Type)
@@ -408,13 +396,11 @@ func (w *messageWriter) writer_field(def *model.Definition, field *model.Field) 
 		w.linef(`w1 := w.w.Field(%d).Message()`, tag)
 		w.linef(`return %v(w1)`, writer_new_method)
 		w.linef(`}`)
-		w.line()
 
 		tname := typeName(field.Type)
 		w.linef(`func (w %v) Copy%v(v %v) error {`, wname, fname, tname)
 		w.linef(`return w.w.Field(%d).Any(v.Unwrap().Raw())`, tag)
 		w.linef(`}`)
-		w.line()
 	}
 	return nil
 }
