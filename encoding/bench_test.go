@@ -6,17 +6,48 @@ import (
 	"github.com/basecomplextech/baselibrary/buffer"
 )
 
-func BenchmarkFieldTable_field(b *testing.B) {
+// messageTable: field_big
+
+func BenchmarkMessageTable_field_big(b *testing.B) {
 	buf := buffer.NewSize(4096)
 	fields := TestFieldsN(100)
 
-	size, err := encodeMessageTable(buf, fields, false)
+	size, err := encodeMessageTable(buf, fields, true /* big */)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	data := buf.Bytes()
-	table, err := decodeMessageTable(data, uint32(size), false)
+	table, err := decodeMessageTable(data, uint32(size), true /* big */)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	last := len(fields) - 1
+	for i := 0; i < b.N; i++ {
+		f, ok := table.field_big(last)
+		if !ok || f.Tag == 0 || f.Offset == 0 {
+			b.Fatal()
+		}
+	}
+}
+
+// messageTable: field_small
+
+func BenchmarkMessageTable_field_small(b *testing.B) {
+	buf := buffer.NewSize(4096)
+	fields := TestFieldsN(100)
+
+	size, err := encodeMessageTable(buf, fields, false /* not big */)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	data := buf.Bytes()
+	table, err := decodeMessageTable(data, uint32(size), false /* not big */)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -33,17 +64,19 @@ func BenchmarkFieldTable_field(b *testing.B) {
 	}
 }
 
-func BenchmarkFieldTable_offset(b *testing.B) {
+// messageTable: offset_big
+
+func BenchmarkMessageTable_offset_big(b *testing.B) {
 	buf := buffer.NewSize(4096)
 	fields := TestFieldsN(100)
 
-	size, err := encodeMessageTable(buf, fields, false)
+	size, err := encodeMessageTable(buf, fields, true /* big */)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	data := buf.Bytes()
-	table, err := decodeMessageTable(data, uint32(size), false)
+	table, err := decodeMessageTable(data, uint32(size), true /* big */)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -53,10 +86,103 @@ func BenchmarkFieldTable_offset(b *testing.B) {
 
 	last := len(fields) - 1
 	tag := fields[last].Tag
+	offset := int(fields[last].Offset)
+
+	for i := 0; i < b.N; i++ {
+		end := table.offset_big(tag)
+		if end != offset {
+			b.Fatal()
+		}
+	}
+}
+
+func BenchmarkMessageTable_offset_big_safe(b *testing.B) {
+	buf := buffer.NewSize(4096)
+	fields := TestFieldsN(100)
+
+	size, err := encodeMessageTable(buf, fields, true)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	data := buf.Bytes()
+	table, err := decodeMessageTable(data, uint32(size), true)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	last := len(fields) - 1
+	tag := fields[last].Tag
+	offset := int(fields[last].Offset)
+
+	for i := 0; i < b.N; i++ {
+		end := table.offset_big_safe(tag)
+		if end != offset {
+			b.Fatal()
+		}
+	}
+}
+
+// messageTable: offset_small
+
+func BenchmarkMessageTable_offset_small(b *testing.B) {
+	buf := buffer.NewSize(4096)
+	fields := TestFieldsN(100)
+
+	size, err := encodeMessageTable(buf, fields, false /* not big */)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	data := buf.Bytes()
+	table, err := decodeMessageTable(data, uint32(size), false /* not big */)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	last := len(fields) - 1
+	tag := fields[last].Tag
+	offset := int(fields[last].Offset)
 
 	for i := 0; i < b.N; i++ {
 		end := table.offset_small(tag)
-		if end < 0 {
+		if end != offset {
+			b.Fatal()
+		}
+	}
+}
+
+func BenchmarkMessageTable_offset_small_safe(b *testing.B) {
+	buf := buffer.NewSize(4096)
+	fields := TestFieldsN(100)
+
+	size, err := encodeMessageTable(buf, fields, false /* not big */)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	data := buf.Bytes()
+	table, err := decodeMessageTable(data, uint32(size), false /* not big */)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	last := len(fields) - 1
+	tag := fields[last].Tag
+	offset := int(fields[last].Offset)
+
+	for i := 0; i < b.N; i++ {
+		end := table.offset_small_safe(tag)
+		if end != offset {
 			b.Fatal()
 		}
 	}

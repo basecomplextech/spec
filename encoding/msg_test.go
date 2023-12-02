@@ -97,7 +97,7 @@ func TestMessageTable_count_small__should_return_number_of_fields(t *testing.T) 
 	assert.Equal(t, 10, n)
 }
 
-// offset: big
+// offset_big
 
 func TestMessageTable_offset_big__should_return_start_end_offset_by_tag(t *testing.T) {
 	big := true
@@ -121,7 +121,7 @@ func TestMessageTable_offset_big__should_return_start_end_offset_by_tag(t *testi
 
 func TestMessageTable_offset_big__should_return_minus_one_when_field_not_found(t *testing.T) {
 	big := true
-	fields := TestFieldsSize(big)
+	fields := TestFieldsSizeN(big, 1000)
 
 	buf := buffer.New()
 	size, err := encodeMessageTable(buf, fields, big)
@@ -140,11 +140,11 @@ func TestMessageTable_offset_big__should_return_minus_one_when_field_not_found(t
 	assert.Equal(t, -1, end)
 }
 
-// offset: small
+// offset_big_safe
 
-func TestMessageTable_offset_small__should_return_start_end_offset_by_tag(t *testing.T) {
-	big := false
-	fields := TestFieldsSize(big)
+func TestMessageTable_offset_big_safe__should_return_start_end_offset_by_tag(t *testing.T) {
+	big := true
+	fields := TestFieldsSizeN(big, 1000)
 
 	buf := buffer.New()
 	size, err := encodeMessageTable(buf, fields, big)
@@ -157,22 +157,65 @@ func TestMessageTable_offset_small__should_return_start_end_offset_by_tag(t *tes
 	}
 
 	for _, field := range fields {
-		end := table.offset_small(field.Tag)
+		end := table.offset_big_safe(field.Tag)
 		require.Equal(t, int(field.Offset), end)
 	}
 }
 
-func TestMessageTable_offset_small__should_return_minus_one_when_field_not_found(t *testing.T) {
-	big := false
-	fields := TestFieldsSize(big)
+func TestMessageTable_offset_big_safe__should_return_minus_one_when_field_not_found(t *testing.T) {
+	big := true
+	fields := TestFieldsSizeN(big, 1000)
 
 	buf := buffer.New()
 	size, err := encodeMessageTable(buf, fields, big)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	table, err := decodeMessageTable(buf.Bytes(), uint32(size), big)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	end := table.offset_big_safe(0)
+	assert.Equal(t, -1, end)
+
+	end = table.offset_big_safe(math.MaxUint16)
+	assert.Equal(t, -1, end)
+}
+
+// offset_small
+
+func TestMessageTable_offset_small__should_return_start_end_offset_by_tag(t *testing.T) {
+	small := false /* not big */
+	fields := TestFieldsSizeN(small, 100)
+
+	buf := buffer.New()
+	size, err := encodeMessageTable(buf, fields, small)
+	if err != nil {
+		t.Fatal(err)
+	}
+	table, err := decodeMessageTable(buf.Bytes(), uint32(size), small)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, field := range fields {
+		end := table.offset_small(field.Tag)
+		require.Equal(t, int(field.Offset), end)
+	}
+}
+
+func TestMessageTable_offset_small__should_return_minus_one_when_field_not_found(t *testing.T) {
+	small := false /* not big */
+	fields := TestFieldsSizeN(small, 100)
+
+	buf := buffer.New()
+	size, err := encodeMessageTable(buf, fields, small)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	table, err := decodeMessageTable(buf.Bytes(), uint32(size), small)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,6 +224,50 @@ func TestMessageTable_offset_small__should_return_minus_one_when_field_not_found
 	assert.Equal(t, -1, end)
 
 	end = table.offset_small(math.MaxUint16)
+	assert.Equal(t, -1, end)
+}
+
+// offset_small_safe
+
+func TestMessageTable_offset_small_safe__should_return_start_end_offset_by_tag(t *testing.T) {
+	small := false
+	fields := TestFieldsSizeN(small, 100)
+
+	buf := buffer.New()
+	size, err := encodeMessageTable(buf, fields, small)
+	if err != nil {
+		t.Fatal(err)
+	}
+	table, err := decodeMessageTable(buf.Bytes(), uint32(size), small)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, field := range fields {
+		end := table.offset_small_safe(field.Tag)
+		require.Equal(t, int(field.Offset), end)
+	}
+}
+
+func TestMessageTable_offset_small_safe__should_return_minus_one_when_field_not_found(t *testing.T) {
+	small := false
+	fields := TestFieldsSizeN(small, 100)
+
+	buf := buffer.New()
+	size, err := encodeMessageTable(buf, fields, small)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	table, err := decodeMessageTable(buf.Bytes(), uint32(size), small)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	end := table.offset_small_safe(0)
+	assert.Equal(t, -1, end)
+
+	end = table.offset_small_safe(math.MaxUint16)
 	assert.Equal(t, -1, end)
 }
 

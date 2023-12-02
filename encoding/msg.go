@@ -3,6 +3,7 @@ package encoding
 import (
 	"encoding/binary"
 	"math"
+	"unsafe"
 )
 
 const (
@@ -107,7 +108,62 @@ func (t messageTable) count(big bool) int {
 
 // offset
 
+// offset_big returns a field end offset by a tag or -1.
+//
+// The method is an optimized version of offset_big_safe. Eliminating array bounds checks
+// reduces the function call from 13.5 ns/op to 7.5 ns/op for a 100-field table.
+// See benchmarks.
 func (t messageTable) offset_big(tag uint16) int {
+	if len(t) < messageFieldBigSize {
+		return -1
+	}
+
+	n := len(t) / messageFieldBigSize
+	ptr := unsafe.Pointer(&t[0])
+
+	// Binary search table
+	left, right := 0, (n - 1)
+	for left <= right {
+		// Middle
+		middle := int(uint(left+right) >> 1) // avoid overflow
+
+		// Offset
+		off := middle * messageFieldBigSize
+		ptr1 := unsafe.Add(ptr, off)
+
+		// Current tag (uint16)
+		var cur uint16
+		{
+			b0 := *(*byte)(ptr1)
+			b1 := *(*byte)(unsafe.Add(ptr1, 1))
+			cur = uint16(b1) | uint16(b0)<<8
+		}
+
+		// Check current
+		switch {
+		case cur < tag:
+			left = middle + 1
+
+		case cur > tag:
+			right = middle - 1
+
+		case cur == tag:
+			// Read offset (uint32) after tag (uint16)
+			b0 := *(*byte)(unsafe.Add(ptr1, 2))
+			b1 := *(*byte)(unsafe.Add(ptr1, 3))
+			b2 := *(*byte)(unsafe.Add(ptr1, 4))
+			b3 := *(*byte)(unsafe.Add(ptr1, 5))
+			return int(uint32(b3) |
+				uint32(b2)<<8 |
+				uint32(b1)<<16 |
+				uint32(b0)<<24)
+		}
+	}
+
+	return -1
+}
+
+func (t messageTable) offset_big_safe(tag uint16) int {
 	size := messageFieldBigSize
 	n := len(t) / size
 
@@ -141,7 +197,52 @@ func (t messageTable) offset_big(tag uint16) int {
 	return -1
 }
 
+// offset_small returns a field end offset by a tag or -1.
+//
+// The method is an optimized version of offset_small_safe. Eliminating array bounds checks
+// reduces the function call from 10 ns/op to 6.5 ns/op for a 100-field table.
+// See benchmarks.
 func (t messageTable) offset_small(tag uint16) int {
+	if len(t) < messageFieldSmallSize {
+		return -1
+	}
+
+	n := len(t) / messageFieldSmallSize
+	ptr := unsafe.Pointer(&t[0])
+
+	// Binary search table
+	left, right := 0, (n - 1)
+	for left <= right {
+		// Middle
+		middle := int(uint(left+right) >> 1) // avoid overflow
+
+		// Offset
+		off := middle * messageFieldSmallSize
+		ptr1 := unsafe.Add(ptr, off)
+
+		// Current tag (uint8)
+		cur := uint16(*(*byte)(ptr1))
+
+		// Check current
+		switch {
+		case cur < tag:
+			left = middle + 1
+
+		case cur > tag:
+			right = middle - 1
+
+		case cur == tag:
+			// Read offset (uint16) after tag (uint8)
+			b0 := *(*byte)(unsafe.Add(ptr1, 1))
+			b1 := *(*byte)(unsafe.Add(ptr1, 2))
+			return int(uint16(b1) | uint16(b0)<<8)
+		}
+	}
+
+	return -1
+}
+
+func (t messageTable) offset_small_safe(tag uint16) int {
 	size := messageFieldSmallSize
 	n := len(t) / size
 
