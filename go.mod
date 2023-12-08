@@ -1,6 +1,6 @@
 module github.com/basecomplextech/spec
 
-go 1.20
+go 1.21
 
 require (
 	github.com/basecomplextech/baselibrary v0.0.0-20230728082627-410508a32a8e
