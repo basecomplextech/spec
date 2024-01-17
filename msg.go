@@ -54,7 +54,7 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 
 	ln := m.Len()
 	for i := 0; i < ln; i++ {
-		b1 := m.FieldByIndex(i)
+		b1 := m.FieldAt(i)
 		if len(b1) == 0 {
 			continue
 		}
@@ -121,8 +121,8 @@ func (m Message) FieldBytes(tag uint16) []byte {
 	return m.bytes[:end]
 }
 
-// FieldByIndex returns field data by an index or nil.
-func (m Message) FieldByIndex(i int) Value {
+// FieldAt returns field data at an index or nil.
+func (m Message) FieldAt(i int) Value {
 	end := m.meta.OffsetByIndex(i)
 	size := m.meta.DataSize()
 
@@ -139,7 +139,7 @@ func (m Message) FieldByIndex(i int) Value {
 
 // Tags
 
-// TagByIndex returns a field tag by index or false.
+// TagByIndex returns a field tag by an index or false.
 func (m Message) TagByIndex(i int) (uint16, bool) {
 	field, ok := m.meta.Field(i)
 	if !ok {

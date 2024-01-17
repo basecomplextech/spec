@@ -249,7 +249,7 @@ func _computeSizeDistribution(b []byte, d *sizeDistrib) error {
 
 		// Read fields
 		for i := 0; i < msg.Len(); i++ {
-			field := msg.FieldByIndex(i)
+			field := msg.FieldAt(i)
 			if err := _computeSizeDistribution(field, d); err != nil {
 				return err
 			}
