@@ -125,7 +125,7 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R
 		}
 
 		st = status.Recover(e)
-		s.logger.ErrorStatus("RPC server request panic", st, "method", method)
+		s.logger.ErrorStatus("RPC server panic", st, "method", method)
 	}()
 
 	// Handle request
@@ -139,10 +139,10 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R
 	time := time.Since(start)
 	if st.OK() {
 		if s.logger.TraceEnabled() {
-			s.logger.Trace("RPC server request OK", "method", method, "time", time)
+			s.logger.Trace("RPC server request", "method", method, "time", time)
 		}
 	} else {
-		s.logger.ErrorStatus("RPC erver request error", st, "method", method, "time", time)
+		s.logger.ErrorStatus("RPC server error", st, "method", method, "time", time)
 	}
 	return result, st
 }
