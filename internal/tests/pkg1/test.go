@@ -61,9 +61,9 @@ func TestObject(t tests.T) *Object {
 		Float32: math.MaxFloat32,
 		Float64: math.MaxFloat64,
 
-		Bin64:  bin.Bin64FromInt(1),
-		Bin128: bin.Bin128FromInt(2),
-		Bin256: bin.Bin256FromInt(3),
+		Bin64:  bin.Int64(1),
+		Bin128: bin.Int128(0, 2),
+		Bin256: bin.Int256(0, 0, 0, 3),
 
 		String:   "hello, world",
 		Bytes1:   []byte("goodbye, world"),

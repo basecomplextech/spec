@@ -29,9 +29,9 @@ func TestWriteMessage__should_write_message(t *testing.T) {
 	assert.Equal(t, float32(math.MaxFloat32), m.Float32())
 	assert.Equal(t, float64(math.MaxFloat64), m.Float64())
 
-	assert.Equal(t, bin.Bin64FromInt(1), m.Bin64())
-	assert.Equal(t, bin.Bin128FromInt(2), m.Bin128())
-	assert.Equal(t, bin.Bin256FromInt(3), m.Bin256())
+	assert.Equal(t, bin.Int64(1), m.Bin64())
+	assert.Equal(t, bin.Int128(0, 2), m.Bin128())
+	assert.Equal(t, bin.Int256(0, 0, 0, 3), m.Bin256())
 
 	assert.Equal(t, "hello, world", m.String().Unwrap())
 	assert.Equal(t, []byte("goodbye, world"), m.Bytes1().Unwrap())

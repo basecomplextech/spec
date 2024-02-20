@@ -300,7 +300,7 @@ func TestService_Subservice(t *testing.T) {
 	server := testServer(t, logger, service)
 	client := testClient(t, logger, server)
 
-	sub, st := client.Subservice(bin.Bin128FromInt(123))
+	sub, st := client.Subservice(bin.Int128(0, 123))
 	if !st.OK() {
 		t.Fatal(st)
 	}

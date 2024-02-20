@@ -73,7 +73,7 @@ func (s *testService) Method10(cancel <-chan struct{}) (
 	_st status.Status,
 ) {
 	return true, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-		bin.Bin64FromInt(10), bin.Bin128FromInt(11), bin.Bin256FromInt(1),
+		bin.Int64(10), bin.Int128(0, 11), bin.Int256(0, 0, 0, 1),
 		status.OK
 }
 
