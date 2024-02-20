@@ -10,6 +10,11 @@ type Message struct {
 	bytes []byte
 }
 
+// MessageType is a type implemented by generated messages.
+type MessageType interface {
+	Unwrap() Message
+}
+
 // NewMessage returns a new message from bytes or an empty message when not a message.
 func NewMessage(b []byte) Message {
 	meta, n, err := encoding.DecodeMessageMeta(b)
