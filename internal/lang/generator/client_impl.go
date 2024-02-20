@@ -45,6 +45,7 @@ func (w *clientImplWriter) def(def *model.Definition) error {
 		w.linef(`type %v struct {`, name)
 		w.line(`client rpc.Client`)
 		w.line(`req *rpc.Request`)
+		w.line(`st status.Status`)
 		w.line(`}`)
 		w.line()
 	} else {
@@ -153,7 +154,7 @@ func (w *clientImplWriter) method_output(def *model.Definition, m *model.Method)
 
 	case m.Sub:
 		typeName := typeName(m.Output)
-		w.writef(`(_ %vClient, _st status.Status)`, typeName)
+		w.writef(`%vClient`, typeName)
 
 	case m.Chan:
 		name := clientChannel_name(m)
@@ -195,10 +196,30 @@ func (w *clientImplWriter) method_output(def *model.Definition, m *model.Method)
 	return nil
 }
 
+func (w *clientImplWriter) method_error(def *model.Definition, m *model.Method) error {
+	if !m.Sub {
+		w.line(`return`)
+		return nil
+	}
+
+	name := clientImplNewErr(m.Output)
+	w.linef(`return %v(_st)`, name)
+	return nil
+}
+
 func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) error {
+	// Subservice methods do not return status
+	if m.Sub {
+		w.line(`var _st status.Status`)
+		w.line(``)
+	}
+
 	// Begin request
 	if def.Service.Sub {
 		w.line(`// Continue request`)
+		w.line(`if _st = c.st; !_st.OK() {`)
+		w.method_error(def, m)
+		w.line(`}`)
 		w.line(`req := c.req`)
 		w.line(`c.req = nil`)
 	} else {
@@ -227,14 +248,14 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 		w.linef(`st := req.AddEmpty("%v")`, m.Name)
 		w.line(`if !st.OK() {`)
 		w.line(`_st = st`)
-		w.line(`return`)
+		w.method_error(def, m)
 		w.line(`}`)
 
 	case m.Input != nil:
 		w.linef(`st := req.AddMessage("%v", req_.Unwrap())`, m.Name)
 		w.line(`if !st.OK() {`)
 		w.line(`_st = st`)
-		w.line(`return`)
+		w.method_error(def, m)
 		w.line(`}`)
 
 	case m.InputFields != nil:
@@ -286,11 +307,11 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 		w.line()
 		w.line(`if err := in.End(); err != nil {`)
 		w.line(`_st = status.WrapError(err)`)
-		w.line(`return`)
+		w.method_error(def, m)
 		w.line(`}`)
 		w.line(`if err := call.End(); err != nil {`)
 		w.line(`_st = status.WrapError(err)`)
-		w.line(`return`)
+		w.method_error(def, m)
 		w.line(`}`)
 		w.line(`}`)
 	}
@@ -307,7 +328,7 @@ func (w *clientImplWriter) method_subservice(def *model.Definition, m *model.Met
 	w.line(`// Return subservice`)
 	w.linef(`sub := %v(c.client, req)`, newFunc)
 	w.line(`ok = true`)
-	w.linef(`return sub, status.OK`)
+	w.linef(`return sub`)
 	return nil
 }
 
@@ -739,6 +760,13 @@ func clientImplNew(typ *model.Type) string {
 		return fmt.Sprintf("%v.New%vClient", typ.ImportName, typ.Name)
 	}
 	return fmt.Sprintf("New%vClient", typ.Name)
+}
+
+func clientImplNewErr(typ *model.Type) string {
+	if typ.Import != nil {
+		return fmt.Sprintf("%v.New%vClientErr", typ.ImportName, typ.Name)
+	}
+	return fmt.Sprintf("New%vClientErr", typ.Name)
 }
 
 func clientChannelImpl_name(m *model.Method) string {

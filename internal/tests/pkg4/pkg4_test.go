@@ -300,11 +300,6 @@ func TestService_Subservice(t *testing.T) {
 	server := testServer(t, logger, service)
 	client := testClient(t, logger, server)
 
-	sub, st := client.Subservice(bin.Int128(0, 123))
-	if !st.OK() {
-		t.Fatal(st)
-	}
-
 	w := NewSubserviceHelloRequestWriter()
 	w.Msg("hello")
 	req, err := w.Build()
@@ -312,7 +307,7 @@ func TestService_Subservice(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, st := sub.Hello(nil, req)
+	resp, st := client.Subservice(bin.Int128(0, 123)).Hello(nil, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}

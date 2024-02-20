@@ -53,7 +53,12 @@ func (w *clientWriter) new_client(def *model.Definition) error {
 		w.linef(`return &%v{`, name)
 		w.linef(`client: client,`)
 		w.linef(`req: req,`)
+		w.linef(`st: status.OK,`)
 		w.linef(`}`)
+		w.linef(`}`)
+		w.line()
+		w.linef(`func New%vClientErr(st status.Status) %vClient {`, def.Name, def.Name)
+		w.linef(`return &%v{st: st}`, name)
 		w.linef(`}`)
 		w.line()
 	} else {
@@ -136,7 +141,7 @@ func (w *clientWriter) method_output(def *model.Definition, m *model.Method) err
 
 	case m.Sub:
 		typeName := typeName(m.Output)
-		w.linef(`(%vClient, status.Status)`, typeName)
+		w.linef(`%vClient`, typeName)
 
 	case m.Chan:
 		name := clientChannel_name(m)
