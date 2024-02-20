@@ -14,14 +14,19 @@ type Client interface {
 	// Options returns the client options.
 	Options() Options
 
+	// IsConnected returns true if the client is connected to the server.
+	IsConnected() bool
+
+	// Async
+
+	// Changed adds a connected/disconnected listener.
+	Changed() (<-chan struct{}, func())
+
 	// Connected indicates that the client is connected to the server.
 	Connected() <-chan struct{}
 
 	// Disconnected indicates that the client is disconnected from the server.
 	Disconnected() <-chan struct{}
-
-	// IsConnected returns true if the client is connected to the server.
-	IsConnected() bool
 
 	// Methods
 
@@ -58,10 +63,12 @@ type client struct {
 	connected_    *async.Flag
 	disconnected_ *async.Flag
 
-	mu        sync.Mutex
-	closed    bool
-	conn      *conn
+	mu     sync.Mutex
+	closed bool
+	conn   *conn
+
 	connector async.Routine[struct{}]
+	listeners map[chan struct{}]struct{}
 }
 
 func newClient(address string, logger logging.Logger, opts Options) *client {
@@ -73,12 +80,46 @@ func newClient(address string, logger logging.Logger, opts Options) *client {
 		closed_:       async.UnsetFlag(),
 		connected_:    async.UnsetFlag(),
 		disconnected_: async.SetFlag(),
+
+		listeners: make(map[chan struct{}]struct{}),
 	}
 }
 
 // Options returns the client options.
 func (c *client) Options() Options {
 	return c.options
+}
+
+// IsConnected returns true if the client is connected to the server.
+func (c *client) IsConnected() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.conn == nil {
+		return false
+	}
+
+	closed := c.conn.closed()
+	return !closed
+}
+
+// Async
+
+// Changed adds a connected/disconnected listener.
+func (c *client) Changed() (<-chan struct{}, func()) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	l := make(chan struct{}, 1)
+	c.listeners[l] = struct{}{}
+
+	unsub := func() {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		delete(c.listeners, l)
+	}
+	return l, unsub
 }
 
 // Connected indicates that the client is connected to the server.
@@ -95,19 +136,6 @@ func (c *client) Disconnected() <-chan struct{} {
 		return c.conn.disconnected()
 	}
 	return c.disconnected_.Wait()
-}
-
-// IsConnected returns true if the client is connected to the server.
-func (c *client) IsConnected() bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.conn == nil {
-		return false
-	}
-
-	closed := c.conn.closed()
-	return !closed
 }
 
 // Methods
@@ -310,25 +338,28 @@ func (c *client) doConnect(cancel <-chan struct{}) (st status.Status) {
 		defer c.mu.Unlock()
 
 		c.conn = nil
+		c.logger.Info("Client disconnected", "address", c.address)
+
 		c.connected_.Unset()
 		c.disconnected_.Set()
-		c.logger.Debug("Client disconnected", "address", c.address)
+		c.notifyLocked()
 	}()
 
 	// Connected
-	{
+	st = func() status.Status {
 		c.mu.Lock()
-		if c.closed {
-			c.mu.Unlock()
-			return status.Cancelled
-		}
+		defer c.mu.Unlock()
 
 		c.conn = conn
+		c.logger.Info("Client connected", "address", c.address)
+
 		c.connected_.Set()
 		c.disconnected_.Unset()
-		c.mu.Unlock()
-
-		c.logger.Debug("Client connected", "address", c.address)
+		c.notifyLocked()
+		return status.OK
+	}()
+	if !st.OK() {
+		return st
 	}
 
 	// Await cancel/close/disconnect
@@ -339,5 +370,14 @@ func (c *client) doConnect(cancel <-chan struct{}) (st status.Status) {
 		return status.Cancelled
 	case <-conn.disconnected():
 		return status.OK
+	}
+}
+
+func (c *client) notifyLocked() {
+	for l := range c.listeners {
+		select {
+		case l <- struct{}{}:
+		default:
+		}
 	}
 }

@@ -14,14 +14,19 @@ type Client interface {
 	// Options returns the client options.
 	Options() Options
 
+	// IsConnected returns true if the client is connected to the server.
+	IsConnected() bool
+
+	// Async
+
+	// Changed adds a connected/disconnected listener.
+	Changed() (<-chan struct{}, func())
+
 	// Connected indicates that the client is connected to the server.
 	Connected() <-chan struct{}
 
 	// Disconnected indicates that the client is disconnected from the server.
 	Disconnected() <-chan struct{}
-
-	// IsConnected returns true if the client is connected to the server.
-	IsConnected() bool
 
 	// Methods
 
@@ -36,6 +41,11 @@ type Client interface {
 
 	// Request sends a request and returns a response.
 	Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.Value], status.Status)
+
+	// Internal
+
+	// Unwrap returns the internal client.
+	Unwrap() tcp.Client
 }
 
 // NewClient returns a new client.
@@ -64,6 +74,18 @@ func (c *client) Options() Options {
 	return c.client.Options()
 }
 
+// IsConnected returns true if the client is connected to the server.
+func (c *client) IsConnected() bool {
+	return c.client.IsConnected()
+}
+
+// Async
+
+// Changed adds a connected/disconnected listener.
+func (c *client) Changed() (<-chan struct{}, func()) {
+	return c.client.Changed()
+}
+
 // Connected indicates that the client is connected to the server.
 func (c *client) Connected() <-chan struct{} {
 	return c.client.Connected()
@@ -72,11 +94,6 @@ func (c *client) Connected() <-chan struct{} {
 // Disconnected indicates that the client is disconnected from the server.
 func (c *client) Disconnected() <-chan struct{} {
 	return c.client.Disconnected()
-}
-
-// IsConnected returns true if the client is connected to the server.
-func (c *client) IsConnected() bool {
-	return c.client.IsConnected()
 }
 
 // Methods
@@ -159,6 +176,13 @@ func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.
 
 	// Read response
 	return ch.Response(cancel)
+}
+
+// Internal
+
+// Unwrap returns the internal client.
+func (c *client) Unwrap() tcp.Client {
+	return c.client
 }
 
 // private
