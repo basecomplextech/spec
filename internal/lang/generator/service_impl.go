@@ -494,6 +494,16 @@ func (w *serviceImplWriter) channel_write(def *model.Definition, m *model.Method
 	switch in.Kind {
 	case model.KindList, model.KindMessage:
 		w.line(`return c.ch.Write(cancel, msg.Unwrap().Raw())`)
+
+	case model.KindStruct:
+		writeFunc := typeWriteFunc(in)
+		w.line(`buf := alloc.NewBuffer()`)
+		w.line(`defer buf.Free()`)
+		w.linef(`if _, err := %v(buf, msg); err != nil {`, writeFunc)
+		w.line(`return status.WrapError(err)`)
+		w.line(`}`)
+		w.line(`return c.ch.Write(cancel, buf.Bytes())`)
+
 	default:
 		w.line(`return c.ch.Write(cancel, msg)`)
 	}
