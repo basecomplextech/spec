@@ -154,7 +154,7 @@ func (w *clientImplWriter) method_output(def *model.Definition, m *model.Method)
 
 	case m.Sub:
 		typeName := typeName(m.Output)
-		w.writef(`%vClient`, typeName)
+		w.writef(`%vCall`, typeName)
 
 	case m.Chan:
 		name := clientChannel_name(m)
@@ -752,21 +752,38 @@ func (w *clientImplWriter) channel_free(def *model.Definition, m *model.Method) 
 // util
 
 func clientImplName(def *model.Definition) string {
+	if def.Service.Sub {
+		return fmt.Sprintf("%vCall", toLowerCameCase(def.Name))
+	}
 	return fmt.Sprintf("%vClient", toLowerCameCase(def.Name))
 }
 
 func clientImplNew(typ *model.Type) string {
-	if typ.Import != nil {
-		return fmt.Sprintf("%v.New%vClient", typ.ImportName, typ.Name)
+	var name string
+	if typ.Ref.Service.Sub {
+		name = fmt.Sprintf("New%vCall", typ.Name)
+	} else {
+		name = fmt.Sprintf("New%vClient", typ.Name)
 	}
-	return fmt.Sprintf("New%vClient", typ.Name)
+
+	if typ.Import != nil {
+		return fmt.Sprintf("%v.%v", typ.ImportName, name)
+	}
+	return name
 }
 
 func clientImplNewErr(typ *model.Type) string {
-	if typ.Import != nil {
-		return fmt.Sprintf("%v.New%vClientErr", typ.ImportName, typ.Name)
+	var name string
+	if typ.Ref.Service.Sub {
+		name = fmt.Sprintf("New%vCallErr", typ.Name)
+	} else {
+		name = fmt.Sprintf("New%vClientErr", typ.Name)
 	}
-	return fmt.Sprintf("New%vClientErr", typ.Name)
+
+	if typ.Import != nil {
+		return fmt.Sprintf("%v.%v", typ.ImportName, name)
+	}
+	return name
 }
 
 func clientChannelImpl_name(m *model.Method) string {

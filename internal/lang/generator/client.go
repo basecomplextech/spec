@@ -36,10 +36,17 @@ func (w *clientWriter) client(def *model.Definition) error {
 // iface
 
 func (w *clientWriter) iface(def *model.Definition) error {
-	w.linef(`// %vClient`, def.Name)
-	w.line()
-	w.linef(`type %vClient interface {`, def.Name)
-	w.line()
+	if def.Service.Sub {
+		w.linef(`// %vCall`, def.Name)
+		w.line()
+		w.linef(`type %vCall interface {`, def.Name)
+		w.line()
+	} else {
+		w.linef(`// %vClient`, def.Name)
+		w.line()
+		w.linef(`type %vClient interface {`, def.Name)
+		w.line()
+	}
 	return nil
 }
 
@@ -49,7 +56,7 @@ func (w *clientWriter) new_client(def *model.Definition) error {
 	name := clientImplName(def)
 
 	if def.Service.Sub {
-		w.linef(`func New%vClient(client rpc.Client, req *rpc.Request) %vClient {`, def.Name, def.Name)
+		w.linef(`func New%vCall(client rpc.Client, req *rpc.Request) %vCall {`, def.Name, def.Name)
 		w.linef(`return &%v{`, name)
 		w.linef(`client: client,`)
 		w.linef(`req: req,`)
@@ -57,7 +64,7 @@ func (w *clientWriter) new_client(def *model.Definition) error {
 		w.linef(`}`)
 		w.linef(`}`)
 		w.line()
-		w.linef(`func New%vClientErr(st status.Status) %vClient {`, def.Name, def.Name)
+		w.linef(`func New%vCallErr(st status.Status) %vCall {`, def.Name, def.Name)
 		w.linef(`return &%v{st: st}`, name)
 		w.linef(`}`)
 		w.line()
@@ -141,7 +148,7 @@ func (w *clientWriter) method_output(def *model.Definition, m *model.Method) err
 
 	case m.Sub:
 		typeName := typeName(m.Output)
-		w.linef(`%vClient`, typeName)
+		w.linef(`%vCall`, typeName)
 
 	case m.Chan:
 		name := clientChannel_name(m)
