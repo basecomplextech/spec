@@ -11,6 +11,9 @@ import (
 
 // Client is a SpecRPC client.
 type Client interface {
+	// Address returns the server address.
+	Address() string
+
 	// Options returns the client options.
 	Options() Options
 
@@ -67,6 +70,11 @@ func newClient(address string, logger logging.Logger, opts Options) *client {
 		client: tcp.NewClient(address, logger, opts),
 		logger: logger,
 	}
+}
+
+// Address returns the server address.
+func (c *client) Address() string {
+	return c.client.Address()
 }
 
 // Options returns the client options.

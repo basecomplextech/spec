@@ -11,6 +11,9 @@ import (
 
 // Client is a SpecTCP client which manages outgoing connections.
 type Client interface {
+	// Address returns the server address.
+	Address() string
+
 	// Options returns the client options.
 	Options() Options
 
@@ -83,6 +86,11 @@ func newClient(address string, logger logging.Logger, opts Options) *client {
 
 		listeners: make(map[chan struct{}]struct{}),
 	}
+}
+
+// Address returns the server address.
+func (c *client) Address() string {
+	return c.address
 }
 
 // Options returns the client options.
