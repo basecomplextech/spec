@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
@@ -41,12 +42,12 @@ func testServer(t tests.T, handle HandleFunc) *server {
 }
 
 func testRequestServer(t tests.T) *server {
-	handle := func(ch Channel) status.Status {
-		msg, st := ch.ReadSync(nil)
+	handle := func(ctx async.Context, ch Channel) status.Status {
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			return st
 		}
-		return ch.WriteAndClose(nil, msg)
+		return ch.WriteAndClose(ctx, msg)
 	}
 
 	return testServer(t, handle)
@@ -63,7 +64,8 @@ func testConnect(t tests.T, s *server) *conn {
 }
 
 func testChannel(t tests.T, c Conn) *channel {
-	ch, st := c.Channel(nil)
+	ctx := async.NoContext()
+	ch, st := c.Channel(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -73,13 +75,13 @@ func testChannel(t tests.T, c Conn) *channel {
 // Open/Close
 
 func TestOpenClose(t *testing.T) {
-	handle := func(ch Channel) status.Status {
+	handle := func(ctx async.Context, ch Channel) status.Status {
 		for {
-			msg, st := ch.ReadSync(nil)
+			msg, st := ch.ReadSync(ctx)
 			if !st.OK() {
 				return st
 			}
-			if st := ch.Write(nil, msg); !st.OK() {
+			if st := ch.Write(ctx, msg); !st.OK() {
 				return st
 			}
 		}
@@ -89,19 +91,21 @@ func TestOpenClose(t *testing.T) {
 	conn := testConnect(t, server)
 	defer conn.Free()
 
+	ctx := async.NoContext()
 	msg0 := []byte("hello, world")
-	ch, st := conn.Channel(nil)
+
+	ch, st := conn.Channel(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	defer ch.Free()
 
-	st = ch.Write(nil, msg0)
+	st = ch.Write(ctx, msg0)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg1, st := ch.ReadSync(nil)
+	msg1, st := ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
@@ -43,8 +44,8 @@ func testServer(t tests.T, handle HandleFunc) *server {
 }
 
 func testEchoServer(t tests.T) *server {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		req, st := ch.Request(cancel)
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+		req, st := ch.Request(ctx)
 		if !st.OK() {
 			return nil, st
 		}
@@ -102,7 +103,7 @@ func testEchoRequest(t tests.T, msg string) prpc.Request {
 // handleRequest
 
 func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		panic("test panic")
 	}
 
@@ -110,15 +111,16 @@ func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *t
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	_, st := client.Request(nil, req)
+	_, st := client.Request(ctx, req)
 
 	assert.Equal(t, status.CodeError, st.Code)
 	assert.Equal(t, "test panic", st.Message)
 }
 
 func TestServer_handleRequest__should_handle_errors(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		return nil, status.Unauthorized("test unauthorized")
 	}
 
@@ -126,8 +128,9 @@ func TestServer_handleRequest__should_handle_errors(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	_, st := client.Request(nil, req)
+	_, st := client.Request(ctx, req)
 
 	assert.Equal(t, status.CodeUnauthorized, st.Code)
 	assert.Equal(t, "test unauthorized", st.Message)

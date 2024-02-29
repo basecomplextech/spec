@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func testChannelWrite(t *testing.T, ch Channel, msg string) {
-	st := ch.Write(nil, []byte(msg))
+func testChannelWrite(t *testing.T, ctx async.Context, ch Channel, msg string) {
+	st := ch.Write(ctx, []byte(msg))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -20,26 +21,27 @@ func testChannelWrite(t *testing.T, ch Channel, msg string) {
 // ReadSync
 
 func TestChannel_ReadSync__should_receive_message(t *testing.T) {
-	server := testServer(t, func(s Channel) status.Status {
-		st := s.Write(nil, []byte("hello, channel"))
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+		st := ch.Write(ctx, []byte("hello, channel"))
 		if !st.OK() {
 			return st
 		}
-		return s.Close()
+		return ch.Close()
 	})
 
+	ctx := async.NoContext()
 	conn := testConnect(t, server)
 	defer conn.Free()
 
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, server"))
+	st := ch.Write(ctx, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReadSync(nil)
+	msg, st := ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -48,43 +50,45 @@ func TestChannel_ReadSync__should_receive_message(t *testing.T) {
 }
 
 func TestChannel_ReadSync__should_return_end_when_channel_closed(t *testing.T) {
-	server := testServer(t, func(s Channel) status.Status {
-		return s.Close()
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+		return ch.Close()
 	})
 
+	ctx := async.NoContext()
 	conn := testConnect(t, server)
 	defer conn.Free()
 
 	ch := testChannel(t, conn)
 	ch.Close()
 
-	_, st := ch.ReadSync(nil)
+	_, st := ch.ReadSync(ctx)
 	assert.Equal(t, status.End, st)
 }
 
 func TestChannel_ReadSync__should_read_pending_messages_even_when_closed(t *testing.T) {
 	sent := make(chan struct{})
-	server := testServer(t, func(s Channel) status.Status {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(sent)
 
-		st := s.Write(nil, []byte("hello, channel"))
+		st := ch.Write(ctx, []byte("hello, channel"))
 		if !st.OK() {
 			return st
 		}
-		st = s.Write(nil, []byte("how are you?"))
+		st = ch.Write(ctx, []byte("how are you?"))
 		if !st.OK() {
 			return st
 		}
-		return s.Close()
+		return ch.Close()
 	})
 
+	ctx := async.NoContext()
 	conn := testConnect(t, server)
 	defer conn.Free()
 
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, server"))
+	st := ch.Write(ctx, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -95,44 +99,45 @@ func TestChannel_ReadSync__should_read_pending_messages_even_when_closed(t *test
 		t.Fatal("timeout")
 	}
 
-	msg, st := ch.ReadSync(nil)
+	msg, st := ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("hello, channel"), msg)
 
-	msg, st = ch.ReadSync(nil)
+	msg, st = ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("how are you?"), msg)
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	assert.Equal(t, status.End, st)
 }
 
 func TestChannel_ReadSync__should_increment_read_bytes(t *testing.T) {
-	server := testServer(t, func(s Channel) status.Status {
-		st := s.Write(nil, []byte("hello, channel"))
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+		st := ch.Write(ctx, []byte("hello, channel"))
 		if !st.OK() {
 			return st
 		}
-		return s.Close()
+		return ch.Close()
 	})
 
+	ctx := async.NoContext()
 	conn := testConnect(t, server)
 	defer conn.Free()
 
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, server"))
+	st := ch.Write(ctx, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, 0, ch.state.readBytes)
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -146,18 +151,19 @@ func TestChannel_Write__should_send_message(t *testing.T) {
 	var msg0 []byte
 	done := make(chan struct{})
 
-	server := testServer(t, func(s Channel) status.Status {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(done)
 
-		msg, st := s.ReadSync(nil)
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 
 		msg0 = bytes.Clone(msg)
-		return s.Close()
+		return ch.Close()
 	})
 
+	ctx := async.NoContext()
 	conn := testConnect(t, server)
 	defer conn.Free()
 
@@ -165,7 +171,7 @@ func TestChannel_Write__should_send_message(t *testing.T) {
 	defer ch.Free()
 
 	msg1 := []byte("hello, world")
-	st := ch.Write(nil, msg1)
+	st := ch.Write(ctx, msg1)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -189,7 +195,8 @@ func TestChannel_Write__should_send_new_message_if_not_sent(t *testing.T) {
 
 	assert.False(t, ch.state.newSent)
 
-	st := ch.Write(nil, []byte("hello, world"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -206,7 +213,8 @@ func TestChannel_Write__should_return_error_when_ch_closed(t *testing.T) {
 	defer ch.Free()
 	ch.Close()
 
-	st := ch.Write(nil, []byte("hello, world"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, world"))
 	assert.Equal(t, statusChannelClosed, st)
 }
 
@@ -219,7 +227,8 @@ func TestChannel_Write__should_decrement_write_window(t *testing.T) {
 	defer ch.Free()
 	assert.Equal(t, ch.state.window, ch.state.writeWindow)
 
-	st := ch.Write(nil, []byte("hello, world"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -238,31 +247,27 @@ func TestChannel_Write__should_block_when_write_window_not_enough(t *testing.T) 
 	assert.Equal(t, ch.state.window, ch.state.writeWindow)
 	msg := bytes.Repeat([]byte("a"), (ch.state.window / 3))
 
-	st := ch.Write(nil, msg)
+	ctx := async.NoContext()
+	st := ch.Write(ctx, msg)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	st = ch.Write(nil, msg)
+	st = ch.Write(ctx, msg)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	timeout := make(chan struct{})
-	go func() {
-		defer close(timeout)
-		time.Sleep(time.Millisecond * 100)
-	}()
-
-	st = ch.Write(timeout, msg)
-	assert.Equal(t, status.Cancelled, st)
+	ctx1 := async.NewContextTimeout(time.Millisecond * 100)
+	st = ch.Write(ctx1, msg)
+	assert.Equal(t, status.Timeout, st)
 }
 
 func TestChannel_Write__should_wait_write_window_increment(t *testing.T) {
-	server := testServer(t, func(ch Channel) status.Status {
-		if _, st := ch.ReadSync(nil); !st.OK() {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+		if _, st := ch.ReadSync(ctx); !st.OK() {
 			return st
 		}
-		if _, st := ch.ReadSync(nil); !st.OK() {
+		if _, st := ch.ReadSync(ctx); !st.OK() {
 			return st
 		}
 		return status.OK
@@ -276,12 +281,13 @@ func TestChannel_Write__should_wait_write_window_increment(t *testing.T) {
 	assert.Equal(t, ch.state.window, ch.state.writeWindow)
 	msg := bytes.Repeat([]byte("a"), (ch.state.window/2)+1)
 
-	st := ch.Write(nil, msg)
+	ctx := async.NoContext()
+	st := ch.Write(ctx, msg)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.Write(nil, msg)
+	st = ch.Write(ctx, msg)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -291,11 +297,11 @@ func TestChannel_Write__should_write_message_if_it_exceeds_half_window_size(t *t
 	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
 
-	server := testServer(t, func(ch Channel) status.Status {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		<-timer.C
 
-		ch.ReadSync(nil)
-		ch.ReadSync(nil)
+		ch.ReadSync(ctx)
+		ch.ReadSync(ctx)
 		return status.OK
 	})
 	conn := testConnect(t, server)
@@ -307,13 +313,14 @@ func TestChannel_Write__should_write_message_if_it_exceeds_half_window_size(t *t
 	assert.Equal(t, ch.state.window, ch.state.writeWindow)
 	msg0 := bytes.Repeat([]byte("a"), (ch.state.window/2)-100)
 
-	st := ch.Write(nil, msg0)
+	ctx := async.NoContext()
+	st := ch.Write(ctx, msg0)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
 	msg1 := bytes.Repeat([]byte("a"), (ch.state.window/2)+100)
-	st = ch.Write(nil, msg1)
+	st = ch.Write(ctx, msg1)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -325,21 +332,21 @@ func TestChannel_WriteAndClose__should_send_data_in_close_message(t *testing.T) 
 	var msg0 []byte
 	done := make(chan struct{})
 
-	server := testServer(t, func(s Channel) status.Status {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(done)
 
-		msg, st := s.ReadSync(nil)
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 		msg0 = append(msg0, msg...)
 
-		msg, st = s.ReadSync(nil)
+		msg, st = ch.ReadSync(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 		msg0 = append(msg0, msg...)
-		return s.Close()
+		return ch.Close()
 	})
 
 	conn := testConnect(t, server)
@@ -348,12 +355,13 @@ func TestChannel_WriteAndClose__should_send_data_in_close_message(t *testing.T) 
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, "))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, "))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.WriteAndClose(nil, []byte("world"))
+	st = ch.WriteAndClose(ctx, []byte("world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -372,10 +380,10 @@ func TestChannel_WriteAndClose__should_send_data_in_close_message(t *testing.T) 
 
 func TestChannel_Close__should_send_close_message(t *testing.T) {
 	closed := make(chan struct{})
-	server := testServer(t, func(s Channel) status.Status {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(closed)
 
-		_, st := s.ReadSync(nil)
+		_, st := ch.ReadSync(ctx)
 		return st
 	})
 
@@ -385,7 +393,8 @@ func TestChannel_Close__should_send_close_message(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, server"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -419,8 +428,8 @@ func TestChannel_Close__should_close_incoming_queue(t *testing.T) {
 }
 
 func TestChannel_Close__should_ignore_when_already_closed(t *testing.T) {
-	server := testServer(t, func(s Channel) status.Status {
-		_, st := s.ReadSync(nil)
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+		_, st := ch.ReadSync(ctx)
 		return st
 	})
 
@@ -430,7 +439,8 @@ func TestChannel_Close__should_ignore_when_already_closed(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, server"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}

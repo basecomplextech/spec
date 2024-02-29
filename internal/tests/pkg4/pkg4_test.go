@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/tests"
@@ -50,6 +51,7 @@ func testClient(t tests.T, logger logging.Logger, server rpc.Server) ServiceClie
 // Request
 
 func TestService_Request(t *testing.T) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(t)
 	service := newTestService()
 	server := testServer(t, logger, service)
@@ -57,7 +59,7 @@ func TestService_Request(t *testing.T) {
 
 	// method
 	{
-		st := client.Method(nil)
+		st := client.Method(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -72,7 +74,7 @@ func TestService_Request(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st := client.Method1(nil, req)
+		st := client.Method1(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -80,7 +82,7 @@ func TestService_Request(t *testing.T) {
 
 	// method2
 	{
-		a, b, c, st := client.Method2(nil, 1, 2, true)
+		a, b, c, st := client.Method2(ctx, 1, 2, true)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -100,7 +102,7 @@ func TestService_Request(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		resp, st := client.Method3(nil, req)
+		resp, st := client.Method3(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -121,7 +123,7 @@ func TestService_Request(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ok, st := client.Method4(nil, req)
+		ok, st := client.Method4(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -131,7 +133,7 @@ func TestService_Request(t *testing.T) {
 
 	// method10
 	{
-		_, _, _, _, _, _, _, _, _, _, _, _, _, st := client.Method10(nil)
+		_, _, _, _, _, _, _, _, _, _, _, _, _, st := client.Method10(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -139,7 +141,7 @@ func TestService_Request(t *testing.T) {
 
 	// method11
 	{
-		resp, st := client.Method11(nil)
+		resp, st := client.Method11(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -152,6 +154,7 @@ func TestService_Request(t *testing.T) {
 // Channel
 
 func TestService_Channel(t *testing.T) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(t)
 	service := newTestService()
 	server := testServer(t, logger, service)
@@ -159,13 +162,13 @@ func TestService_Channel(t *testing.T) {
 
 	// method20
 	{
-		ch, st := client.Method20(nil, 1, 2, true)
+		ch, st := client.Method20(ctx, 1, 2, true)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 		defer ch.Free()
 
-		a, b, c, st := ch.Response(nil)
+		a, b, c, st := ch.Response(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -184,13 +187,13 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ch, st := client.Method21(nil, req)
+		ch, st := client.Method21(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 		defer ch.Free()
 
-		msg, st := ch.ReadSync(nil)
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -198,7 +201,7 @@ func TestService_Channel(t *testing.T) {
 		assert.Equal(t, float64(2), msg.B())
 		assert.Equal(t, "3", msg.C().Unwrap())
 
-		resp, st := ch.Response(nil)
+		resp, st := ch.Response(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -216,7 +219,7 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ch, st := client.Method22(nil, req)
+		ch, st := client.Method22(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -231,12 +234,12 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st = ch.Write(nil, msg)
+		st = ch.Write(ctx, msg)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 
-		resp, st := ch.Response(nil)
+		resp, st := ch.Response(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -254,13 +257,13 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ch, st := client.Method23(nil, req)
+		ch, st := client.Method23(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 		defer ch.Free()
 
-		msg, st := ch.ReadSync(nil)
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -277,12 +280,12 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st = ch.Write(nil, msg1)
+		st = ch.Write(ctx, msg1)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 
-		resp, st := ch.Response(nil)
+		resp, st := ch.Response(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -295,6 +298,7 @@ func TestService_Channel(t *testing.T) {
 // Subservice
 
 func TestService_Subservice(t *testing.T) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(t)
 	service := newTestService()
 	server := testServer(t, logger, service)
@@ -307,7 +311,7 @@ func TestService_Subservice(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, st := client.Subservice(bin.Int128(0, 123)).Hello(nil, req)
+	resp, st := client.Subservice(bin.Int128(0, 123)).Hello(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}

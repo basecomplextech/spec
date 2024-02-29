@@ -3,6 +3,7 @@ package tcp
 import (
 	"testing"
 
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,8 @@ func TestConn_Open__should_open_new_channel(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, world"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -31,7 +33,8 @@ func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {
 	conn := testConnect(t, server)
 	conn.Free()
 
-	_, st := conn.Channel(nil)
+	ctx := async.NoContext()
+	_, st := conn.Channel(ctx)
 	assert.Equal(t, statusConnClosed, st)
 }
 
@@ -54,14 +57,15 @@ func TestConn_Free__should_close_channels(t *testing.T) {
 	ch := testChannel(t, conn)
 	conn.Free()
 
-	_, st := ch.ReadSync(nil)
+	ctx := async.NoContext()
+	_, st := ch.ReadSync(ctx)
 	assert.Equal(t, status.End, st)
 }
 
 // HandleChannel
 
 func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
-	server := testServer(t, func(ch Channel) status.Status {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		panic("test")
 	})
 	conn := testConnect(t, server)
@@ -70,17 +74,18 @@ func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, server"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	assert.Equal(t, status.End, st)
 }
 
 func TestConn_handleChannel__should_log_channel_errors(t *testing.T) {
-	server := testServer(t, func(ch Channel) status.Status {
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		return status.Errorf("test ch error")
 	})
 	conn := testConnect(t, server)
@@ -89,11 +94,12 @@ func TestConn_handleChannel__should_log_channel_errors(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	st := ch.Write(nil, []byte("hello, server"))
+	ctx := async.NoContext()
+	st := ch.Write(ctx, []byte("hello, server"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	assert.Equal(t, status.End, st)
 }

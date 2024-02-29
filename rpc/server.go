@@ -50,9 +50,9 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 }
 
 // HandleChannel handles an incoming TCP channel.
-func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
+func (s *server) HandleChannel(ctx async.Context, tch tcp.Channel) (st status.Status) {
 	// Receive message
-	b, st := tch.ReadSync(nil)
+	b, st := tch.ReadSync(ctx)
 	if !st.OK() {
 		return st
 	}
@@ -71,7 +71,7 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 	}
 
 	// Handle request
-	result, st := s.handleRequest(tch, msg.Req())
+	result, st := s.handleRequest(ctx, tch, msg.Req())
 	if result != nil {
 		defer result.Release()
 	}
@@ -108,12 +108,14 @@ func (s *server) HandleChannel(tch tcp.Channel) (st status.Status) {
 	}
 
 	// Write response
-	return tch.WriteAndClose(nil, resp)
+	return tch.WriteAndClose(ctx, resp)
 }
 
 // private
 
-func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R[[]byte], st status.Status) {
+func (s *server) handleRequest(ctx async.Context, tch tcp.Channel, req prpc.Request) (
+	result *ref.R[[]byte], st status.Status) {
+
 	start := time.Now()
 	method := requestMethod(req)
 
@@ -133,7 +135,7 @@ func (s *server) handleRequest(tch tcp.Channel, req prpc.Request) (result *ref.R
 	req = prpc.Request{}
 	defer ch.Free()
 
-	result, st = s.handler.Handle(nil, ch)
+	result, st = s.handler.Handle(ctx, ch)
 
 	// Log request
 	time := time.Since(start)

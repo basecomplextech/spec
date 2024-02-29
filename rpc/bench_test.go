@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
@@ -21,11 +22,12 @@ func BenchmarkRequest(b *testing.B) {
 	b.ResetTimer()
 	t0 := time.Now()
 
+	ctx := async.NoContext()
 	msg := "hello, world"
 	req := testEchoRequest(b, msg)
 
 	for i := 0; i < b.N; i++ {
-		result, st := client.Request(nil, req)
+		result, st := client.Request(ctx, req)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -50,13 +52,14 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 	b.SetParallelism(10)
 	t0 := time.Now()
 
+	ctx := async.NoContext()
 	msg := "hello, world"
 
 	b.RunParallel(func(p *testing.PB) {
 		req := testEchoRequest(b, msg)
 
 		for p.Next() {
-			result, st := client.Request(nil, req)
+			result, st := client.Request(ctx, req)
 			if !st.OK() {
 				b.Fatal(st)
 			}
@@ -78,9 +81,9 @@ func BenchmarkStream(b *testing.B) {
 	streamMsg := []byte("hello, world")
 	closeMsg := []byte("close")
 
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		for {
-			msg, st := ch.ReadSync(cancel)
+			msg, st := ch.ReadSync(ctx)
 			if !st.OK() {
 				return nil, st
 			}
@@ -99,6 +102,7 @@ func BenchmarkStream(b *testing.B) {
 		return ref.NewFreer(buf.Bytes(), buf), status.OK
 	}
 
+	ctx := async.NoContext()
 	server := testServer(b, handle)
 	client := testClient(b, server)
 	defer client.Close()
@@ -109,25 +113,25 @@ func BenchmarkStream(b *testing.B) {
 
 	{
 		req := testEchoRequest(b, "request")
-		ch, st := client.Channel(nil, req)
+		ch, st := client.Channel(ctx, req)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 		defer ch.Free()
 
 		for i := 0; i < b.N; i++ {
-			st = ch.Write(nil, streamMsg)
+			st = ch.Write(ctx, streamMsg)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 		}
 
-		st = ch.Write(nil, []byte(closeMsg))
+		st = ch.Write(ctx, []byte(closeMsg))
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		result, st := ch.Response(nil)
+		result, st := ch.Response(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}

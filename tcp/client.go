@@ -40,7 +40,7 @@ type Client interface {
 	Close() status.Status
 
 	// Channel returns a new channel.
-	Channel(cancel <-chan struct{}) (Channel, status.Status)
+	Channel(ctx async.Context) (Channel, status.Status)
 }
 
 // NewClient returns a new client.
@@ -194,18 +194,18 @@ func (c *client) Close() status.Status {
 }
 
 // Channel returns a new channel.
-func (c *client) Channel(cancel <-chan struct{}) (Channel, status.Status) {
-	conn, st := c.awaitConn(cancel)
+func (c *client) Channel(ctx async.Context) (Channel, status.Status) {
+	conn, st := c.awaitConn(ctx)
 	if !st.OK() {
 		return nil, st
 	}
-	return conn.Channel(cancel)
+	return conn.Channel(ctx)
 }
 
 // private
 
 // awaitConn returns a connection or waits for it, starts the connector if not running.
-func (c *client) awaitConn(cancel <-chan struct{}) (*conn, status.Status) {
+func (c *client) awaitConn(ctx async.Context) (*conn, status.Status) {
 	for {
 		conn, st := c.getConn()
 		switch st.Code {
@@ -217,8 +217,8 @@ func (c *client) awaitConn(cancel <-chan struct{}) (*conn, status.Status) {
 		}
 
 		select {
-		case <-cancel:
-			return nil, status.Cancelled
+		case <-ctx.Wait():
+			return nil, ctx.Status()
 		case <-c.closed_.Wait():
 			return nil, statusClientClosed
 		case <-c.connected_.Wait():
@@ -253,7 +253,7 @@ func (c *client) getConn() (*conn, status.Status) {
 }
 
 // connect runs the connect loop.
-func (c *client) connect(cancel <-chan struct{}) status.Status {
+func (c *client) connect(ctx async.Context) status.Status {
 	defer func() {
 		c.mu.Lock()
 		defer c.mu.Unlock()
@@ -262,7 +262,7 @@ func (c *client) connect(cancel <-chan struct{}) status.Status {
 	}()
 
 	for {
-		st := c.doConnect(cancel)
+		st := c.doConnect(ctx)
 		switch st.Code {
 		case status.CodeOK:
 		case status.CodeCancelled:
@@ -274,7 +274,7 @@ func (c *client) connect(cancel <-chan struct{}) status.Status {
 	}
 }
 
-func (c *client) doConnect(cancel <-chan struct{}) (st status.Status) {
+func (c *client) doConnect(ctx async.Context) (st status.Status) {
 	defer func() {
 		if e := recover(); e != nil {
 			st = status.Recover(e)
@@ -290,8 +290,8 @@ func (c *client) doConnect(cancel <-chan struct{}) (st status.Status) {
 	for {
 		select {
 		default:
-		case <-cancel:
-			return status.Cancelled
+		case <-ctx.Wait():
+			return ctx.Status()
 		}
 
 		// Connect
@@ -328,10 +328,10 @@ func (c *client) doConnect(cancel <-chan struct{}) (st status.Status) {
 			timer.Reset(timeout)
 		}
 
-		// Await timeout, cancel or close
+		// Await timeout, ctx or close
 		select {
-		case <-cancel:
-			return status.Cancelled
+		case <-ctx.Wait():
+			return ctx.Status()
 		case <-c.closed_.Wait():
 			return status.Cancelled
 		case <-timer.C:
@@ -370,10 +370,10 @@ func (c *client) doConnect(cancel <-chan struct{}) (st status.Status) {
 		return st
 	}
 
-	// Await cancel/close/disconnect
+	// Await ctx/close/disconnect
 	select {
-	case <-cancel:
-		return status.Cancelled
+	case <-ctx.Wait():
+		return ctx.Status()
 	case <-c.closed_.Wait():
 		return status.Cancelled
 	case <-conn.disconnected():

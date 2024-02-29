@@ -109,21 +109,21 @@ func (w *clientImplWriter) method(def *model.Definition, m *model.Method) error 
 }
 
 func (w *clientImplWriter) method_input(def *model.Definition, m *model.Method) error {
-	cancel := "cancel <-chan struct{}, "
+	ctx := "ctx async.Context, "
 	if m.Sub {
-		cancel = ""
+		ctx = ""
 	}
 
 	switch {
 	default:
-		w.writef(`(%v) `, cancel)
+		w.writef(`(%v) `, ctx)
 
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`(%v req_ %v) `, cancel, typeName)
+		w.writef(`(%v req_ %v) `, ctx, typeName)
 
 	case m.InputFields != nil:
-		w.writef(`(%v`, cancel)
+		w.writef(`(%v`, ctx)
 
 		fields := m.InputFields.List
 		multi := len(fields) > 3
@@ -345,7 +345,7 @@ func (w *clientImplWriter) method_channel(def *model.Definition, m *model.Method
 	// Open channel
 	name := clientChannelImpl_name(m)
 	w.line(`// Open channel`)
-	w.line(`ch, st := c.client.Channel(cancel, preq)`)
+	w.line(`ch, st := c.client.Channel(ctx, preq)`)
 	w.line(`if !st.OK() {`)
 	w.line(`_st = st`)
 	w.line(`return`)
@@ -366,7 +366,7 @@ func (w *clientImplWriter) method_request(def *model.Definition, m *model.Method
 
 	// Send request
 	w.line(`// Send request`)
-	w.line(`resp, st := c.client.Request(cancel, preq)`)
+	w.line(`resp, st := c.client.Request(ctx, preq)`)
 	w.line(`if !st.OK() {`)
 	w.line(`_st = st`)
 	w.line(`return`)
@@ -526,8 +526,8 @@ func (w *clientImplWriter) channel_read(def *model.Definition, m *model.Method) 
 	parseFunc := typeParseFunc(in)
 
 	// Read
-	w.linef(`func (c *%v) Read(cancel <-chan struct{}) (%v, bool, status.Status) {`, name, typeName)
-	w.line(`b, ok, st := c.ch.Read(cancel)`)
+	w.linef(`func (c *%v) Read(ctx async.Context) (%v, bool, status.Status) {`, name, typeName)
+	w.line(`b, ok, st := c.ch.Read(ctx)`)
 	w.line(`switch {`)
 	w.line(`case !st.OK():`)
 	w.linef(`return %v{}, false, st`, typeName)
@@ -543,8 +543,8 @@ func (w *clientImplWriter) channel_read(def *model.Definition, m *model.Method) 
 	w.line()
 
 	// ReadSync
-	w.linef(`func (c *%v) ReadSync(cancel <-chan struct{}) (%v, status.Status) {`, name, typeName)
-	w.line(`b, st := c.ch.ReadSync(cancel)`)
+	w.linef(`func (c *%v) ReadSync(ctx async.Context) (%v, status.Status) {`, name, typeName)
+	w.line(`b, st := c.ch.ReadSync(ctx)`)
 	w.line(`if !st.OK() {`)
 	w.linef(`return %v{}, st`, typeName)
 	w.line(`}`)
@@ -574,19 +574,19 @@ func (w *clientImplWriter) channel_write(def *model.Definition, m *model.Method)
 	typeName := typeName(out)
 
 	// Write
-	w.linef(`func (c *%v) Write(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
+	w.linef(`func (c *%v) Write(ctx async.Context, msg %v) status.Status {`, name, typeName)
 	switch out.Kind {
 	case model.KindList, model.KindMessage:
-		w.line(`return c.ch.Write(cancel, msg.Unwrap().Raw())`)
+		w.line(`return c.ch.Write(ctx, msg.Unwrap().Raw())`)
 	default:
-		w.line(`return c.ch.Write(cancel, msg)`)
+		w.line(`return c.ch.Write(ctx, msg)`)
 	}
 	w.line(`}`)
 	w.line()
 
 	// WriteEnd
-	w.linef(`func (c *%v) WriteEnd(cancel <-chan struct{}) status.Status {`, name)
-	w.line(`return c.ch.WriteEnd(cancel)`)
+	w.linef(`func (c *%v) WriteEnd(ctx async.Context) status.Status {`, name)
+	w.line(`return c.ch.WriteEnd(ctx)`)
 	w.line(`}`)
 	w.line()
 	return nil
@@ -608,7 +608,7 @@ func (w *clientImplWriter) channel_response(def *model.Definition, m *model.Meth
 func (w *clientImplWriter) channel_response_def(m *model.Method) error {
 	// Response method
 	name := clientChannelImpl_name(m)
-	w.writef(`func (c *%v) Response(cancel <-chan struct{}) `, name)
+	w.writef(`func (c *%v) Response(ctx async.Context) `, name)
 
 	switch {
 	default:
@@ -649,7 +649,7 @@ func (w *clientImplWriter) channel_response_def(m *model.Method) error {
 func (w *clientImplWriter) channel_response_receive(m *model.Method) error {
 	// Receive response
 	w.line(`// Receive response`)
-	w.line(`resp, st := c.ch.Response(cancel)`)
+	w.line(`resp, st := c.ch.Response(ctx)`)
 	w.line(`if !st.OK() {`)
 	w.line(`_st = st`)
 	w.line(`return`)

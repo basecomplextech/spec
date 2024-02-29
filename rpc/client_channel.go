@@ -18,12 +18,12 @@ type Channel interface {
 	// Read reads and returns a message, or false/end.
 	// The method does not block if no messages, and returns false instead.
 	// The message is valid until the next call to Read/Response.
-	Read(cancel <-chan struct{}) ([]byte, bool, status.Status)
+	Read(ctx async.Context) ([]byte, bool, status.Status)
 
 	// ReadSync reads and returns a message from the channel, or an end.
 	// The method blocks until a message is received, or the channel is closed.
 	// The message is valid until the next call to Read/Response.
-	ReadSync(cancel <-chan struct{}) ([]byte, status.Status)
+	ReadSync(ctx async.Context) ([]byte, status.Status)
 
 	// ReadWait returns a channel which is notified on a new message, or a channel close.
 	ReadWait() <-chan struct{}
@@ -31,15 +31,15 @@ type Channel interface {
 	// Write
 
 	// Write writes a message to the channel.
-	Write(cancel <-chan struct{}, message []byte) status.Status
+	Write(ctx async.Context, message []byte) status.Status
 
 	// WriteEnd writes an end message to the channel.
-	WriteEnd(cancel <-chan struct{}) status.Status
+	WriteEnd(ctx async.Context) status.Status
 
 	// Response
 
 	// Response receives a response and returns its status and result if status is OK.
-	Response(cancel <-chan struct{}) (*ref.R[spec.Value], status.Status)
+	Response(ctx async.Context) (*ref.R[spec.Value], status.Status)
 
 	// Internal
 
@@ -69,7 +69,7 @@ func newChannel(ch tcp.Channel, logger logging.Logger) *channel {
 }
 
 // Request sends a request to the server.
-func (ch *channel) Request(cancel <-chan struct{}, req prpc.Request) status.Status {
+func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return status.Closed
@@ -79,8 +79,8 @@ func (ch *channel) Request(cancel <-chan struct{}, req prpc.Request) status.Stat
 	// Write lock
 	select {
 	case <-s.writeLock:
-	case <-cancel:
-		return status.Cancelled
+	case <-ctx.Wait():
+		return ctx.Status()
 	}
 	defer s.writeLock.Unlock()
 
@@ -109,7 +109,7 @@ func (ch *channel) Request(cancel <-chan struct{}, req prpc.Request) status.Stat
 	// Send request
 	s.method = requestMethod(req)
 	s.writeReq = true
-	return ch.ch.Write(cancel, msg)
+	return ch.ch.Write(ctx, msg)
 }
 
 // Read
@@ -117,7 +117,7 @@ func (ch *channel) Request(cancel <-chan struct{}, req prpc.Request) status.Stat
 // Read reads and returns a message, or false/end.
 // The method does not block if no messages, and returns false instead.
 // The message is valid until the next call to Read/Receive/Response.
-func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
+func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil, false, status.Closed
@@ -127,8 +127,8 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	// Read lock
 	select {
 	case <-s.readLock:
-	case <-cancel:
-		return nil, false, status.Cancelled
+	case <-ctx.Wait():
+		return nil, false, ctx.Status()
 	}
 	defer s.readLock.Unlock()
 
@@ -141,7 +141,7 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	}
 
 	// Read message
-	msg, ok, st := ch.read(cancel)
+	msg, ok, st := ch.read(ctx)
 	switch {
 	case !st.OK():
 		s.readFail(st)
@@ -179,9 +179,9 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 // ReadSync reads and returns a message from the channel, or an end.
 // The method blocks until a message is received, or the channel is closed.
 // The message is valid until the next call to Read/Receive/Response.
-func (ch *channel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status) {
+func (ch *channel) ReadSync(ctx async.Context) ([]byte, status.Status) {
 	for {
-		msg, ok, st := ch.Read(cancel)
+		msg, ok, st := ch.Read(ctx)
 		switch {
 		case !st.OK():
 			return nil, st
@@ -190,8 +190,8 @@ func (ch *channel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status) {
 		}
 
 		select {
-		case <-cancel:
-			return nil, status.Cancelled
+		case <-ctx.Wait():
+			return nil, ctx.Status()
 		case <-ch.ch.ReadWait():
 		}
 	}
@@ -205,7 +205,7 @@ func (ch *channel) ReadWait() <-chan struct{} {
 // Write
 
 // Write writes a message to the channel.
-func (ch *channel) Write(cancel <-chan struct{}, message []byte) status.Status {
+func (ch *channel) Write(ctx async.Context, message []byte) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return status.Closed
@@ -215,8 +215,8 @@ func (ch *channel) Write(cancel <-chan struct{}, message []byte) status.Status {
 	// Write lock
 	select {
 	case <-s.writeLock:
-	case <-cancel:
-		return status.Cancelled
+	case <-ctx.Wait():
+		return ctx.Status()
 	}
 	defer s.writeLock.Unlock()
 
@@ -243,11 +243,11 @@ func (ch *channel) Write(cancel <-chan struct{}, message []byte) status.Status {
 	}
 
 	// Send message
-	return ch.ch.Write(cancel, msg)
+	return ch.ch.Write(ctx, msg)
 }
 
 // WriteEnd writes an end message to the channel.
-func (ch *channel) WriteEnd(cancel <-chan struct{}) status.Status {
+func (ch *channel) WriteEnd(ctx async.Context) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return status.Closed
@@ -257,8 +257,8 @@ func (ch *channel) WriteEnd(cancel <-chan struct{}) status.Status {
 	// Write lock
 	select {
 	case <-s.writeLock:
-	case <-cancel:
-		return status.Cancelled
+	case <-ctx.Wait():
+		return ctx.Status()
 	}
 	defer s.writeLock.Unlock()
 
@@ -285,13 +285,13 @@ func (ch *channel) WriteEnd(cancel <-chan struct{}) status.Status {
 
 	// Send message
 	s.writeEnd = true
-	return ch.ch.Write(cancel, msg)
+	return ch.ch.Write(ctx, msg)
 }
 
 // Response
 
 // Response receives a response and returns its status and result if status is OK.
-func (ch *channel) Response(cancel <-chan struct{}) (*ref.R[spec.Value], status.Status) {
+func (ch *channel) Response(ctx async.Context) (*ref.R[spec.Value], status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil, status.Closed
@@ -301,8 +301,8 @@ func (ch *channel) Response(cancel <-chan struct{}) (*ref.R[spec.Value], status.
 	// Read lock
 	select {
 	case <-s.readLock:
-	case <-cancel:
-		return nil, status.Cancelled
+	case <-ctx.Wait():
+		return nil, ctx.Status()
 	}
 	defer s.readLock.Unlock()
 
@@ -326,7 +326,7 @@ func (ch *channel) Response(cancel <-chan struct{}) (*ref.R[spec.Value], status.
 
 	// Read messages
 	for {
-		msg, st := ch.readSync(cancel)
+		msg, st := ch.readSync(ctx)
 		if !st.OK() {
 			s.readFail(st)
 			return nil, st
@@ -384,8 +384,8 @@ func (ch *channel) rlock() (*channelState, bool) {
 }
 
 // read reads, parses and returns the next message, or false.
-func (ch *channel) read(cancel <-chan struct{}) (prpc.Message, bool, status.Status) {
-	b, ok, st := ch.ch.Read(cancel)
+func (ch *channel) read(ctx async.Context) (prpc.Message, bool, status.Status) {
+	b, ok, st := ch.ch.Read(ctx)
 	switch {
 	case !st.OK():
 		return prpc.Message{}, false, st
@@ -401,8 +401,8 @@ func (ch *channel) read(cancel <-chan struct{}) (prpc.Message, bool, status.Stat
 }
 
 // readSync reads, parses and returns the next message, or blocks.
-func (ch *channel) readSync(cancel <-chan struct{}) (prpc.Message, status.Status) {
-	b, st := ch.ch.ReadSync(cancel)
+func (ch *channel) readSync(ctx async.Context) (prpc.Message, status.Status) {
+	b, st := ch.ch.ReadSync(ctx)
 	if !st.OK() {
 		return prpc.Message{}, st
 	}

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
@@ -15,17 +16,20 @@ type Channel interface {
 	// Close closes the channel and sends the close message.
 	Close() status.Status
 
+	// Context returns the channel context.
+	Context() async.Context
+
 	// Read
 
 	// Read reads and returns a message, or false/end.
 	// The message is valid until the next call to Read.
 	// The method does not block if no messages, and returns false instead.
-	Read(cancel <-chan struct{}) ([]byte, bool, status.Status)
+	Read(ctx async.Context) ([]byte, bool, status.Status)
 
 	// ReadSync reads and returns a message, or an end.
 	// The message is valid until the next call to Read.
 	// The method blocks until a message is received, or the channel is closed.
-	ReadSync(cancel <-chan struct{}) ([]byte, status.Status)
+	ReadSync(ctx async.Context) ([]byte, status.Status)
 
 	// ReadWait returns a channel that is notified on a new message, or a channel close.
 	ReadWait() <-chan struct{}
@@ -33,10 +37,10 @@ type Channel interface {
 	// Write
 
 	// Write writes a message to the channel.
-	Write(cancel <-chan struct{}, msg []byte) status.Status
+	Write(ctx async.Context, msg []byte) status.Status
 
 	// WriteAndClose writes a close message with a payload.
-	WriteAndClose(cancel <-chan struct{}, msg []byte) status.Status
+	WriteAndClose(ctx async.Context, msg []byte) status.Status
 
 	// Internal
 
@@ -101,7 +105,18 @@ func openedChannel(conn *conn, msg ptcp.OpenChannel) *channel {
 
 // Close closes the channel and sends the close message.
 func (ch *channel) Close() status.Status {
-	return ch.close(nil)
+	return ch.close(nil /* no data */)
+}
+
+// Context returns the channel context.
+func (ch *channel) Context() async.Context {
+	s, ok := ch.rlock()
+	if !ok {
+		return async.DoneContext()
+	}
+	defer ch.stateMu.RUnlock()
+
+	return s.context
 }
 
 // Read
@@ -109,7 +124,7 @@ func (ch *channel) Close() status.Status {
 // Read reads and returns a message, or false/end.
 // The message is valid until the next call to Read.
 // The method does not block if no messages, and returns false instead.
-func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
+func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil, false, statusChannelClosed
@@ -132,7 +147,7 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	// Parse message
 	msg, _, err := ptcp.ParseMessage(b)
 	if err != nil {
-		ch.close(nil)
+		ch.close(nil /* no data */)
 		return nil, false, tcpError(err)
 	}
 
@@ -141,14 +156,14 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 	switch code {
 	case ptcp.Code_OpenChannel:
 		data := msg.Open().Data()
-		if st := ch.incrementReadBytes(cancel, s, len(b)); !st.OK() {
+		if st := ch.incrementReadBytes(ctx, s, len(b)); !st.OK() {
 			return nil, false, st
 		}
 		return data, true, status.OK
 
 	case ptcp.Code_ChannelMessage:
 		data := msg.Message().Data()
-		if st := ch.incrementReadBytes(cancel, s, len(b)); !st.OK() {
+		if st := ch.incrementReadBytes(ctx, s, len(b)); !st.OK() {
 			return nil, false, st
 		}
 		return data, true, status.OK
@@ -182,9 +197,9 @@ func (ch *channel) Read(cancel <-chan struct{}) ([]byte, bool, status.Status) {
 // ReadSync reads and returns a message, or an end.
 // The message is valid until the next call to Read.
 // The method blocks until a message is received, or the channel is closed.
-func (ch *channel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status) {
+func (ch *channel) ReadSync(ctx async.Context) ([]byte, status.Status) {
 	for {
-		msg, ok, st := ch.Read(cancel)
+		msg, ok, st := ch.Read(ctx)
 		switch {
 		case !st.OK():
 			return nil, st
@@ -193,8 +208,8 @@ func (ch *channel) ReadSync(cancel <-chan struct{}) ([]byte, status.Status) {
 		}
 
 		select {
-		case <-cancel:
-			return nil, status.Cancelled
+		case <-ctx.Wait():
+			return nil, ctx.Status()
 		case <-ch.ReadWait():
 		}
 	}
@@ -214,7 +229,7 @@ func (ch *channel) ReadWait() <-chan struct{} {
 // Write
 
 // Write writes a message to the channel.
-func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
+func (ch *channel) Write(ctx async.Context, msg []byte) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -226,13 +241,13 @@ func (ch *channel) Write(cancel <-chan struct{}, msg []byte) status.Status {
 	}
 
 	if !s.newSent {
-		return ch.writeNew(cancel, s, msg)
+		return ch.writeNew(ctx, s, msg)
 	}
-	return ch.writeMessage(cancel, s, msg)
+	return ch.writeMessage(ctx, s, msg)
 }
 
 // WriteAndClose writes a close message with a payload.
-func (ch *channel) WriteAndClose(cancel <-chan struct{}, msg []byte) status.Status {
+func (ch *channel) WriteAndClose(ctx async.Context, msg []byte) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -244,10 +259,10 @@ func (ch *channel) WriteAndClose(cancel <-chan struct{}, msg []byte) status.Stat
 	}
 
 	if !s.newSent {
-		if st := ch.writeNew(cancel, s, msg); !st.OK() {
+		if st := ch.writeNew(ctx, s, msg); !st.OK() {
 			return st
 		}
-		return ch.close(nil)
+		return ch.close(nil /* no data */)
 	}
 	return ch.close(msg)
 }
@@ -256,7 +271,7 @@ func (ch *channel) WriteAndClose(cancel <-chan struct{}, msg []byte) status.Stat
 
 // Free closes the channel and releases its resources.
 func (ch *channel) Free() {
-	ch.close(nil)
+	ch.close(nil /* no data */)
 	ch.free()
 }
 
@@ -280,7 +295,7 @@ func (ch *channel) connClosed() {
 }
 
 // receiveMessage receives a message from the connection.
-func (ch *channel) receiveMessage(cancel <-chan struct{}, msg ptcp.Message) {
+func (ch *channel) receiveMessage(ctx async.Context, msg ptcp.Message) {
 	s, ok := ch.rlock()
 	if !ok {
 		return
@@ -296,7 +311,7 @@ func (ch *channel) receiveMessage(cancel <-chan struct{}, msg ptcp.Message) {
 }
 
 // receiveWindow receives a window increment from the connection.
-func (ch *channel) receiveWindow(cancel <-chan struct{}, msg ptcp.Message) {
+func (ch *channel) receiveWindow(ctx async.Context, msg ptcp.Message) {
 	s, ok := ch.rlock()
 	if !ok {
 		return
@@ -352,7 +367,7 @@ func (ch *channel) close(data []byte) status.Status {
 	if debug {
 		debugPrint(ch.client, "channel.close\t", ch.id)
 	}
-	return ch.writeClose(nil /* no cancel */, s, data)
+	return ch.writeClose(async.NoContext(), s, data)
 }
 
 // run
@@ -369,7 +384,8 @@ func (ch *channel) run() {
 	defer ch.Free()
 
 	// Handle channel
-	st := ch.conn.handler.HandleChannel(ch)
+	ctx := ch.Context()
+	st := ch.conn.handler.HandleChannel(ctx, ch)
 	switch st.Code {
 	case status.CodeOK,
 		status.CodeCancelled,
@@ -384,7 +400,7 @@ func (ch *channel) run() {
 
 // read bytes
 
-func (ch *channel) incrementReadBytes(cancel <-chan struct{}, s *channelState, n int) status.Status {
+func (ch *channel) incrementReadBytes(ctx async.Context, s *channelState, n int) status.Status {
 	s.readBytes += n
 	if s.readBytes < s.window/2 {
 		return status.OK
@@ -392,12 +408,12 @@ func (ch *channel) incrementReadBytes(cancel <-chan struct{}, s *channelState, n
 
 	delta := s.readBytes
 	s.readBytes = 0
-	return ch.writeWindow(cancel, s, delta)
+	return ch.writeWindow(ctx, s, delta)
 }
 
 // write
 
-func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState, data []byte) status.Status {
+func (ch *channel) writeNew(ctx async.Context, s *channelState, data []byte) status.Status {
 	if s.isClosed() {
 		return statusChannelClosed
 	}
@@ -428,7 +444,7 @@ func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState, data []byte
 	}
 
 	n := len(msg.Unwrap().Raw())
-	if st := ch.decrementWriteWindow(cancel, s, n); !st.OK() {
+	if st := ch.decrementWriteWindow(ctx, s, n); !st.OK() {
 		return st
 	}
 
@@ -439,10 +455,10 @@ func (ch *channel) writeNew(cancel <-chan struct{}, s *channelState, data []byte
 		debugPrint(ch.client, "channel.write\t", ch.id)
 	}
 
-	return ch.conn.write(cancel, msg)
+	return ch.conn.write(ctx, msg)
 }
 
-func (ch *channel) writeMessage(cancel <-chan struct{}, s *channelState, data []byte) status.Status {
+func (ch *channel) writeMessage(ctx async.Context, s *channelState, data []byte) status.Status {
 	if s.isClosed() {
 		return statusChannelClosed
 	}
@@ -470,7 +486,7 @@ func (ch *channel) writeMessage(cancel <-chan struct{}, s *channelState, data []
 	}
 
 	n := len(msg.Unwrap().Raw())
-	if st := ch.decrementWriteWindow(cancel, s, n); !st.OK() {
+	if st := ch.decrementWriteWindow(ctx, s, n); !st.OK() {
 		return st
 	}
 
@@ -481,10 +497,10 @@ func (ch *channel) writeMessage(cancel <-chan struct{}, s *channelState, data []
 		debugPrint(ch.client, "channel.write\t", ch.id)
 	}
 
-	return ch.conn.write(cancel, msg)
+	return ch.conn.write(ctx, msg)
 }
 
-func (ch *channel) writeWindow(cancel <-chan struct{}, s *channelState, delta int) status.Status {
+func (ch *channel) writeWindow(ctx async.Context, s *channelState, delta int) status.Status {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 
@@ -510,10 +526,10 @@ func (ch *channel) writeWindow(cancel <-chan struct{}, s *channelState, delta in
 		}
 	}
 
-	return ch.conn.write(cancel, msg)
+	return ch.conn.write(ctx, msg)
 }
 
-func (ch *channel) writeClose(cancel <-chan struct{}, s *channelState, data []byte) status.Status {
+func (ch *channel) writeClose(ctx async.Context, s *channelState, data []byte) status.Status {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 
@@ -539,12 +555,12 @@ func (ch *channel) writeClose(cancel <-chan struct{}, s *channelState, data []by
 		}
 	}
 
-	return ch.conn.write(cancel, msg)
+	return ch.conn.write(ctx, msg)
 }
 
 // write window
 
-func (ch *channel) decrementWriteWindow(cancel <-chan struct{}, s *channelState, n int) status.Status {
+func (ch *channel) decrementWriteWindow(ctx async.Context, s *channelState, n int) status.Status {
 	for {
 		// Decrement write window for normal small messages.
 		s.wmu.Lock()
@@ -566,8 +582,8 @@ func (ch *channel) decrementWriteWindow(cancel <-chan struct{}, s *channelState,
 
 		// Wait for write window increment.
 		select {
-		case <-cancel:
-			return status.Cancelled
+		case <-ctx.Wait():
+			return ctx.Status()
 		case <-s.writeWait:
 		}
 	}
@@ -590,10 +606,9 @@ func (ch *channel) incrementWriteWindow(s *channelState, delta int) {
 
 // state
 
-var statePool = &sync.Pool{}
-
 type channelState struct {
-	window int // Initial window size
+	context async.Context
+	window  int // Initial window size
 
 	readQueue alloc.MQueue
 	readBytes int // Read bytes since last window increment
@@ -610,12 +625,14 @@ type channelState struct {
 	newSent bool
 }
 
+var statePool = &sync.Pool{
+	New: func() any {
+		return newChannelState()
+	},
+}
+
 func acquireState() *channelState {
-	v := statePool.Get()
-	if v != nil {
-		return v.(*channelState)
-	}
-	return newChannelState()
+	return statePool.Get().(*channelState)
 }
 
 func releaseState(s *channelState) {
@@ -627,6 +644,7 @@ func newChannelState() *channelState {
 	buf := alloc.NewBuffer()
 
 	return &channelState{
+		context:   async.NewContext(),
 		readQueue: alloc.NewMQueue(),
 		writeBuf:  buf,
 		writer:    spec.NewWriterBuffer(buf),
@@ -643,6 +661,7 @@ func (s *channelState) close() bool {
 	}
 
 	s.closed = true
+	s.context.Cancel()
 	s.readQueue.Close()
 	return true
 }
@@ -670,6 +689,8 @@ func (s *channelState) reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	s.context.Free()
+	s.context = async.NewContext()
 	s.window = 0
 
 	s.readQueue.Reset()

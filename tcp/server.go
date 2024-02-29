@@ -83,7 +83,7 @@ func (s *server) Options() Options {
 
 // internal
 
-func (s *server) run(cancel <-chan struct{}) (st status.Status) {
+func (s *server) run(ctx async.Context) (st status.Status) {
 	s.logger.Debug("Server started")
 	defer s.stop()
 
@@ -100,8 +100,8 @@ func (s *server) run(cancel <-chan struct{}) (st status.Status) {
 
 	// Wait
 	select {
-	case <-cancel:
-		st = status.Cancelled
+	case <-ctx.Wait():
+		st = ctx.Status()
 		s.logger.Debug("Server received stop request")
 
 	case <-server.Wait():
@@ -136,7 +136,7 @@ func (s *server) listen() status.Status {
 	return status.OK
 }
 
-func (s *server) serve(cancel <-chan struct{}) status.Status {
+func (s *server) serve(ctx async.Context) status.Status {
 	delay := time.Duration(0)
 	timeout := false
 
@@ -181,9 +181,9 @@ func (s *server) serve(cancel <-chan struct{}) status.Status {
 		t := time.NewTimer(delay)
 		select {
 		case <-t.C:
-		case <-cancel:
+		case <-ctx.Wait():
 			t.Stop()
-			return status.Cancelled
+			return ctx.Status()
 		}
 	}
 }

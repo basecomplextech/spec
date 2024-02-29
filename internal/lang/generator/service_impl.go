@@ -47,15 +47,15 @@ func (w *serviceImplWriter) handle(def *model.Definition) error {
 	name := handler_name(def)
 
 	if def.Service.Sub {
-		w.linef(`func (h *%v) Handle(cancel <-chan struct{}, ch rpc.ServerChannel, index int) (*ref.R[[]byte], status.Status) {`,
+		w.linef(`func (h *%v) Handle(ctx async.Context, ch rpc.ServerChannel, index int) (*ref.R[[]byte], status.Status) {`,
 			name)
 	} else {
-		w.linef(`func (h *%v) Handle(cancel <-chan struct{}, ch rpc.ServerChannel) (*ref.R[[]byte], status.Status) {`,
+		w.linef(`func (h *%v) Handle(ctx async.Context, ch rpc.ServerChannel) (*ref.R[[]byte], status.Status) {`,
 			name)
 		w.line(`index := 0`)
 	}
 
-	w.line(`req, st := ch.Request(cancel)`)
+	w.line(`req, st := ch.Request(ctx)`)
 	w.line(`if !st.OK() {`)
 	w.line(`return nil, st`)
 	w.line(`}`)
@@ -71,7 +71,7 @@ func (w *serviceImplWriter) handle(def *model.Definition) error {
 	w.line(`switch method {`)
 	for _, m := range def.Service.Methods {
 		w.linef(`case %q:`, m.Name)
-		w.linef(`return h._%v(cancel, ch, call, index)`, toLowerCameCase(m.Name))
+		w.linef(`return h._%v(ctx, ch, call, index)`, toLowerCameCase(m.Name))
 	}
 	w.line(`}`)
 	w.line()
@@ -94,7 +94,7 @@ func (w *serviceImplWriter) methods(def *model.Definition) error {
 func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error {
 	// Declare method
 	name := handler_name(def)
-	w.linef(`func (h *%v) _%v(cancel <-chan struct{}, ch rpc.ServerChannel, call prpc.Call, index int) (`,
+	w.linef(`func (h *%v) _%v(ctx async.Context, ch rpc.ServerChannel, call prpc.Call, index int) (`,
 		name, toLowerCameCase(m.Name))
 	w.line(`*ref.R[[]byte], status.Status) {`)
 
@@ -187,13 +187,13 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	// Call method
 	switch {
 	case m.Chan:
-		w.linef(`h.service.%v(cancel, ch1)`, toUpperCamelCase(m.Name))
+		w.linef(`h.service.%v(ctx, ch1)`, toUpperCamelCase(m.Name))
 
 	case m.Input != nil:
-		w.linef(`h.service.%v(cancel, in)`, toUpperCamelCase(m.Name))
+		w.linef(`h.service.%v(ctx, in)`, toUpperCamelCase(m.Name))
 
 	case m.InputFields != nil:
-		w.writef(`h.service.%v(cancel, `, toUpperCamelCase(m.Name))
+		w.writef(`h.service.%v(ctx, `, toUpperCamelCase(m.Name))
 		fields := m.InputFields.List
 		for _, f := range fields {
 			w.writef(`%v_, `, toLowerCameCase(f.Name))
@@ -201,7 +201,7 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line(`)`)
 
 	default:
-		w.linef(`h.service.%v(cancel)`, toUpperCamelCase(m.Name))
+		w.linef(`h.service.%v(ctx)`, toUpperCamelCase(m.Name))
 	}
 
 	// Handle output
@@ -214,7 +214,7 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line()
 		w.line(`// Call subservice`)
 		w.linef(`h1 := %v(sub)`, newFunc)
-		w.line(`return h1.Handle(cancel, ch, index+1)`)
+		w.line(`return h1.Handle(ctx, ch, index+1)`)
 
 	case m.Output != nil:
 		w.line(`if result != nil { `)
@@ -442,8 +442,8 @@ func (w *serviceImplWriter) channel_read(def *model.Definition, m *model.Method)
 	parseFunc := typeParseFunc(out)
 
 	// Read
-	w.linef(`func (c *%v) Read(cancel <-chan struct{}) (%v, bool, status.Status) {`, name, typeName)
-	w.line(`b, ok, st := c.ch.Read(cancel)`)
+	w.linef(`func (c *%v) Read(ctx async.Context) (%v, bool, status.Status) {`, name, typeName)
+	w.line(`b, ok, st := c.ch.Read(ctx)`)
 	w.line(`switch {`)
 	w.line(`case !st.OK():`)
 	w.linef(`return %v{}, false, st`, typeName)
@@ -459,8 +459,8 @@ func (w *serviceImplWriter) channel_read(def *model.Definition, m *model.Method)
 	w.line()
 
 	// ReadSync
-	w.linef(`func (c *%v) ReadSync(cancel <-chan struct{}) (%v, status.Status) {`, name, typeName)
-	w.line(`b, st := c.ch.ReadSync(cancel)`)
+	w.linef(`func (c *%v) ReadSync(ctx async.Context) (%v, status.Status) {`, name, typeName)
+	w.line(`b, st := c.ch.ReadSync(ctx)`)
 	w.line(`if !st.OK() {`)
 	w.linef(`return %v{}, st`, typeName)
 	w.line(`}`)
@@ -490,10 +490,10 @@ func (w *serviceImplWriter) channel_write(def *model.Definition, m *model.Method
 	typeName := typeName(in)
 
 	// Write
-	w.linef(`func (c *%v) Write(cancel <-chan struct{}, msg %v) status.Status {`, name, typeName)
+	w.linef(`func (c *%v) Write(ctx async.Context, msg %v) status.Status {`, name, typeName)
 	switch in.Kind {
 	case model.KindList, model.KindMessage:
-		w.line(`return c.ch.Write(cancel, msg.Unwrap().Raw())`)
+		w.line(`return c.ch.Write(ctx, msg.Unwrap().Raw())`)
 
 	case model.KindStruct:
 		writeFunc := typeWriteFunc(in)
@@ -502,17 +502,17 @@ func (w *serviceImplWriter) channel_write(def *model.Definition, m *model.Method
 		w.linef(`if _, err := %v(buf, msg); err != nil {`, writeFunc)
 		w.line(`return status.WrapError(err)`)
 		w.line(`}`)
-		w.line(`return c.ch.Write(cancel, buf.Bytes())`)
+		w.line(`return c.ch.Write(ctx, buf.Bytes())`)
 
 	default:
-		w.line(`return c.ch.Write(cancel, msg)`)
+		w.line(`return c.ch.Write(ctx, msg)`)
 	}
 	w.line(`}`)
 	w.line()
 
 	// WriteEnd
-	w.linef(`func (c *%v) WriteEnd(cancel <-chan struct{}) status.Status {`, name)
-	w.line(`return c.ch.WriteEnd(cancel)`)
+	w.linef(`func (c *%v) WriteEnd(ctx async.Context) status.Status {`, name)
+	w.line(`return c.ch.WriteEnd(ctx)`)
 	w.line(`}`)
 	w.line()
 	return nil

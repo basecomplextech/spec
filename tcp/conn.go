@@ -18,7 +18,7 @@ type Conn interface {
 	Close() status.Status
 
 	// Channel opens a new channel.
-	Channel(cancel <-chan struct{}) (Channel, status.Status)
+	Channel(ctx async.Context) (Channel, status.Status)
 
 	// Internal
 
@@ -57,8 +57,8 @@ func connect(address string, logger logging.Logger, opts Options) (*conn, status
 	}
 
 	// Noop incoming handler
-	h := HandleFunc(func(c Channel) status.Status {
-		return c.Close()
+	h := HandleFunc(func(ctx async.Context, ch Channel) status.Status {
+		return ch.Close()
 	})
 
 	// Make connection
@@ -99,7 +99,7 @@ func (c *conn) Close() status.Status {
 }
 
 // Channel opens a new channel.
-func (c *conn) Channel(cancel <-chan struct{}) (Channel, status.Status) {
+func (c *conn) Channel(ctx async.Context) (Channel, status.Status) {
 	return c.channels.open(c)
 }
 
@@ -342,7 +342,7 @@ func (c *conn) connectServer() status.Status {
 
 // read
 
-func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
+func (c *conn) readLoop(ctx async.Context) status.Status {
 	for {
 		// Receive message
 		msg, st := c.reader.readMessage()
@@ -360,7 +360,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			if !st.OK() {
 				return st
 			}
-			ch.receiveMessage(cancel, msg)
+			ch.receiveMessage(ctx, msg)
 
 		case ptcp.Code_CloseChannel:
 			m := msg.Close()
@@ -370,7 +370,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			if !ok {
 				continue
 			}
-			ch.receiveMessage(cancel, msg)
+			ch.receiveMessage(ctx, msg)
 
 		case ptcp.Code_ChannelMessage:
 			m := msg.Message()
@@ -380,7 +380,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			if !ok {
 				continue
 			}
-			ch.receiveMessage(cancel, msg)
+			ch.receiveMessage(ctx, msg)
 
 		case ptcp.Code_ChannelWindow:
 			m := msg.Window()
@@ -390,7 +390,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 			if !ok {
 				continue
 			}
-			ch.receiveWindow(cancel, msg)
+			ch.receiveWindow(ctx, msg)
 
 		default:
 			return tcpErrorf("unexpected tpc message code %d", code)
@@ -400,7 +400,7 @@ func (c *conn) readLoop(cancel <-chan struct{}) status.Status {
 
 // write
 
-func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
+func (c *conn) writeLoop(ctx async.Context) status.Status {
 	for {
 		b, ok, st := c.writeq.Read()
 		switch {
@@ -430,15 +430,15 @@ func (c *conn) writeLoop(cancel <-chan struct{}) status.Status {
 
 		// Wait for messages
 		select {
-		case <-cancel:
-			return status.Cancelled
+		case <-ctx.Wait():
+			return ctx.Status()
 		case <-c.writeq.ReadWait():
 		}
 	}
 }
 
 // write pushes an outgoing message to the write queue, or returns a connection closed error.
-func (c *conn) write(cancel <-chan struct{}, msg ptcp.Message) status.Status {
+func (c *conn) write(ctx async.Context, msg ptcp.Message) status.Status {
 	b := msg.Unwrap().Raw()
 
 	for {
@@ -452,8 +452,8 @@ func (c *conn) write(cancel <-chan struct{}, msg ptcp.Message) status.Status {
 
 		// Wait for space
 		select {
-		case <-cancel:
-			return status.Cancelled
+		case <-ctx.Wait():
+			return ctx.Status()
 		case <-c.writeq.WriteWait(len(b)):
 			continue
 		}

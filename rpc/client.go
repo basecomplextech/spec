@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
@@ -40,10 +41,10 @@ type Client interface {
 	Close() status.Status
 
 	// Channel opens a channels and sends a request.
-	Channel(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status)
+	Channel(ctx async.Context, req prpc.Request) (Channel, status.Status)
 
 	// Request sends a request and returns a response.
-	Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.Value], status.Status)
+	Request(ctx async.Context, req prpc.Request) (*ref.R[spec.Value], status.Status)
 
 	// Internal
 
@@ -117,9 +118,9 @@ func (c *client) Close() status.Status {
 }
 
 // Channel opens a channels and sends a request.
-func (c *client) Channel(cancel <-chan struct{}, req prpc.Request) (Channel, status.Status) {
+func (c *client) Channel(ctx async.Context, req prpc.Request) (Channel, status.Status) {
 	// Open channel
-	ch, st := c.channel(cancel)
+	ch, st := c.channel(ctx)
 	switch st.Code {
 	case status.CodeOK:
 	case status.CodeCancelled:
@@ -139,7 +140,7 @@ func (c *client) Channel(cancel <-chan struct{}, req prpc.Request) (Channel, sta
 	}()
 
 	// Send request
-	st = ch.Request(cancel, req)
+	st = ch.Request(ctx, req)
 	switch st.Code {
 	case status.CodeOK:
 	case status.CodeCancelled:
@@ -156,9 +157,9 @@ func (c *client) Channel(cancel <-chan struct{}, req prpc.Request) (Channel, sta
 }
 
 // Request sends a request and returns a response.
-func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.Value], status.Status) {
+func (c *client) Request(ctx async.Context, req prpc.Request) (*ref.R[spec.Value], status.Status) {
 	// Open channel
-	ch, st := c.channel(cancel)
+	ch, st := c.channel(ctx)
 	switch st.Code {
 	case status.CodeOK:
 	case status.CodeCancelled:
@@ -171,7 +172,7 @@ func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.
 	defer ch.Free()
 
 	// Send request
-	st = ch.Request(cancel, req)
+	st = ch.Request(ctx, req)
 	switch st.Code {
 	case status.CodeOK:
 	case status.CodeCancelled:
@@ -183,7 +184,7 @@ func (c *client) Request(cancel <-chan struct{}, req prpc.Request) (*ref.R[spec.
 	}
 
 	// Read response
-	return ch.Response(cancel)
+	return ch.Response(ctx)
 }
 
 // Internal
@@ -195,8 +196,8 @@ func (c *client) Unwrap() tcp.Client {
 
 // private
 
-func (c *client) channel(cancel <-chan struct{}) (*channel, status.Status) {
-	tch, st := c.client.Channel(cancel)
+func (c *client) channel(ctx async.Context) (*channel, status.Status) {
+	tch, st := c.client.Channel(ctx)
 	if !st.OK() {
 		return nil, st
 	}

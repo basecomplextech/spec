@@ -2,6 +2,7 @@ package pkg4
 
 import (
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
@@ -16,19 +17,19 @@ func newTestService() *testService {
 	return &testService{}
 }
 
-func (s *testService) Subservice(cancel <-chan struct{}, id_ bin.Bin128) (Subservice, status.Status) {
+func (s *testService) Subservice(ctx async.Context, id_ bin.Bin128) (Subservice, status.Status) {
 	return &testSubservice{}, status.OK
 }
 
-func (s *testService) Method(cancel <-chan struct{}) status.Status {
+func (s *testService) Method(ctx async.Context) status.Status {
 	return status.OK
 }
 
-func (s *testService) Method1(cancel <-chan struct{}, req ServiceMethod1Request) status.Status {
+func (s *testService) Method1(ctx async.Context, req ServiceMethod1Request) status.Status {
 	return status.OK
 }
 
-func (s *testService) Method2(cancel <-chan struct{}, a_ int64, b_ float64, c_ bool) (
+func (s *testService) Method2(ctx async.Context, a_ int64, b_ float64, c_ bool) (
 	_a int64,
 	_b float64,
 	_c bool,
@@ -37,7 +38,7 @@ func (s *testService) Method2(cancel <-chan struct{}, a_ int64, b_ float64, c_ b
 	return a_, b_, c_, status.OK
 }
 
-func (s *testService) Method3(cancel <-chan struct{}, req Request) (*ref.R[Response], status.Status) {
+func (s *testService) Method3(ctx async.Context, req Request) (*ref.R[Response], status.Status) {
 	msg := req.Msg()
 
 	buf := alloc.NewBuffer()
@@ -51,12 +52,12 @@ func (s *testService) Method3(cancel <-chan struct{}, req Request) (*ref.R[Respo
 	return ref.NewFreer(resp, buf), status.OK
 }
 
-func (s *testService) Method4(cancel <-chan struct{}, req ServiceMethod4Request) (
+func (s *testService) Method4(ctx async.Context, req ServiceMethod4Request) (
 	_ok bool, _st status.Status) {
 	return true, status.OK
 }
 
-func (s *testService) Method10(cancel <-chan struct{}) (
+func (s *testService) Method10(ctx async.Context) (
 	_a00 bool,
 	_a01 byte,
 	_a10 int16,
@@ -77,7 +78,7 @@ func (s *testService) Method10(cancel <-chan struct{}) (
 		status.OK
 }
 
-func (s *testService) Method11(cancel <-chan struct{}) (*ref.R[ServiceMethod11Response], status.Status) {
+func (s *testService) Method11(ctx async.Context) (*ref.R[ServiceMethod11Response], status.Status) {
 	w := NewServiceMethod11ResponseWriter()
 	w.A50("hello")
 	w.A51([]byte("world"))
@@ -91,7 +92,7 @@ func (s *testService) Method11(cancel <-chan struct{}) (*ref.R[ServiceMethod11Re
 	return ref.NewNoFreer(resp), status.OK
 }
 
-func (s *testService) Method20(cancel <-chan struct{}, ch ServiceMethod20Channel) (
+func (s *testService) Method20(ctx async.Context, ch ServiceMethod20Channel) (
 	_a int64,
 	_b float64,
 	_c bool,
@@ -104,7 +105,7 @@ func (s *testService) Method20(cancel <-chan struct{}, ch ServiceMethod20Channel
 	return a_, b_, c_, status.OK
 }
 
-func (s *testService) Method21(cancel <-chan struct{}, ch ServiceMethod21Channel) (*ref.R[Response], status.Status) {
+func (s *testService) Method21(ctx async.Context, ch ServiceMethod21Channel) (*ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
@@ -119,7 +120,7 @@ func (s *testService) Method21(cancel <-chan struct{}, ch ServiceMethod21Channel
 		msg, err := w.Build()
 		if err != nil {
 		}
-		if st := ch.Write(cancel, msg); !st.OK() {
+		if st := ch.Write(ctx, msg); !st.OK() {
 			return nil, st
 		}
 	}
@@ -133,14 +134,14 @@ func (s *testService) Method21(cancel <-chan struct{}, ch ServiceMethod21Channel
 	return ref.NewNoFreer(resp), status.OK
 }
 
-func (s *testService) Method22(cancel <-chan struct{}, ch ServiceMethod22Channel) (*ref.R[Response], status.Status) {
+func (s *testService) Method22(ctx async.Context, ch ServiceMethod22Channel) (*ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
 	}
 	str := req.Msg().Unwrap()
 
-	_, st = ch.ReadSync(cancel)
+	_, st = ch.ReadSync(ctx)
 	if !st.OK() {
 		return nil, st
 	}
@@ -154,7 +155,7 @@ func (s *testService) Method22(cancel <-chan struct{}, ch ServiceMethod22Channel
 	return ref.NewNoFreer(resp), status.OK
 }
 
-func (s *testService) Method23(cancel <-chan struct{}, ch ServiceMethod23Channel) (*ref.R[Response], status.Status) {
+func (s *testService) Method23(ctx async.Context, ch ServiceMethod23Channel) (*ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
@@ -169,12 +170,12 @@ func (s *testService) Method23(cancel <-chan struct{}, ch ServiceMethod23Channel
 		msg, err := w.Build()
 		if err != nil {
 		}
-		if st := ch.Write(cancel, msg); !st.OK() {
+		if st := ch.Write(ctx, msg); !st.OK() {
 			return nil, st
 		}
 	}
 
-	_, st = ch.ReadSync(cancel)
+	_, st = ch.ReadSync(ctx)
 	if !st.OK() {
 		return nil, st
 	}
@@ -192,7 +193,7 @@ var _ Subservice = (*testSubservice)(nil)
 
 type testSubservice struct{}
 
-func (s *testSubservice) Hello(cancel <-chan struct{}, req SubserviceHelloRequest) (
+func (s *testSubservice) Hello(ctx async.Context, req SubserviceHelloRequest) (
 	*ref.R[SubserviceHelloResponse], status.Status) {
 	msg := req.Msg().Clone()
 

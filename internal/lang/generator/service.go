@@ -60,18 +60,18 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 
 	switch {
 	default:
-		w.write(`(cancel <-chan struct{}) `)
+		w.write(`(ctx async.Context) `)
 
 	case m.Chan:
 		channel := serviceChannel_name(m)
-		w.writef(`(cancel <-chan struct{}, ch %v) `, channel)
+		w.writef(`(ctx async.Context, ch %v) `, channel)
 
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`(cancel <-chan struct{}, req %v) `, typeName)
+		w.writef(`(ctx async.Context, req %v) `, typeName)
 
 	case m.InputFields != nil:
-		w.writef(`(cancel <-chan struct{}, `)
+		w.writef(`(ctx async.Context, `)
 
 		fields := m.InputFields.List
 		multi := len(fields) > 3
@@ -193,16 +193,16 @@ func (w *serviceWriter) channel(def *model.Definition, m *model.Method) error {
 	// Read methods
 	if out := m.Channel.Out; out != nil {
 		typeName := typeName(out)
-		w.linef(`Read(cancel <-chan struct{}) (%v, bool, status.Status)`, typeName)
-		w.linef(`ReadSync(cancel <-chan struct{}) (%v, status.Status)`, typeName)
+		w.linef(`Read(ctx async.Context) (%v, bool, status.Status)`, typeName)
+		w.linef(`ReadSync(ctx async.Context) (%v, status.Status)`, typeName)
 		w.line(`ReadWait() <-chan struct{}`)
 	}
 
 	// Write methods
 	if in := m.Channel.In; in != nil {
 		typeName := typeName(in)
-		w.linef(`Write(cancel <-chan struct{}, msg %v) status.Status`, typeName)
-		w.line(`WriteEnd(cancel <-chan struct{}) status.Status`)
+		w.linef(`Write(ctx async.Context, msg %v) status.Status`, typeName)
+		w.line(`WriteEnd(ctx async.Context) status.Status`)
 	}
 
 	w.linef(`}`)

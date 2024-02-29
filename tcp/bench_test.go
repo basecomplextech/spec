@@ -5,24 +5,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/status"
 )
 
 const benchMsgSize = 16
 
 func BenchmarkRequest(b *testing.B) {
-	handle := func(ch Channel) status.Status {
-		msg, st := ch.ReadSync(nil)
+	handle := func(ctx async.Context, ch Channel) status.Status {
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			return st
 		}
-		return ch.WriteAndClose(nil, msg)
+		return ch.WriteAndClose(ctx, msg)
 	}
 
 	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
 
+	ctx := async.NoContext()
 	msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 	b.ReportAllocs()
@@ -30,17 +32,17 @@ func BenchmarkRequest(b *testing.B) {
 	t0 := time.Now()
 
 	for i := 0; i < b.N; i++ {
-		ch, st := conn.Channel(nil)
+		ch, st := conn.Channel(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		st = ch.Write(nil, msg)
+		st = ch.Write(ctx, msg)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		msg1, st := ch.ReadSync(nil)
+		msg1, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -63,14 +65,15 @@ func BenchmarkRequest(b *testing.B) {
 }
 
 func BenchmarkRequest_Parallel(b *testing.B) {
-	handle := func(ch Channel) status.Status {
-		msg, st := ch.ReadSync(nil)
+	handle := func(ctx async.Context, ch Channel) status.Status {
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			return st
 		}
-		return ch.WriteAndClose(nil, msg)
+		return ch.WriteAndClose(ctx, msg)
 	}
 
+	ctx := async.NoContext()
 	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
@@ -84,17 +87,17 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 		msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 		for p.Next() {
-			ch, st := conn.Channel(nil)
+			ch, st := conn.Channel(ctx)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 
-			st = ch.Write(nil, msg)
+			st = ch.Write(ctx, msg)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 
-			msg1, st := ch.ReadSync(nil)
+			msg1, st := ch.ReadSync(ctx)
 			if !st.OK() {
 				b.Fatal(st)
 			}
@@ -121,9 +124,9 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 
 func BenchmarkStream(b *testing.B) {
 	closeMsg := []byte("close")
-	handle := func(ch Channel) status.Status {
+	handle := func(ctx async.Context, ch Channel) status.Status {
 		for {
-			msg, st := ch.ReadSync(nil)
+			msg, st := ch.ReadSync(ctx)
 			if !st.OK() {
 				return st
 			}
@@ -134,13 +137,14 @@ func BenchmarkStream(b *testing.B) {
 			break
 		}
 
-		st := ch.Write(nil, closeMsg)
+		st := ch.Write(ctx, closeMsg)
 		if !st.OK() {
 			return st
 		}
 		return ch.Close()
 	}
 
+	ctx := async.NoContext()
 	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
@@ -150,7 +154,7 @@ func BenchmarkStream(b *testing.B) {
 	b.ResetTimer()
 	t0 := time.Now()
 
-	ch, st := conn.Channel(nil)
+	ch, st := conn.Channel(ctx)
 	if !st.OK() {
 		b.Fatal(st)
 	}
@@ -158,18 +162,18 @@ func BenchmarkStream(b *testing.B) {
 
 	msg := bytes.Repeat([]byte("a"), benchMsgSize)
 	for i := 0; i < b.N; i++ {
-		st = ch.Write(nil, msg)
+		st = ch.Write(ctx, msg)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 	}
 
-	st = ch.Write(nil, closeMsg)
+	st = ch.Write(ctx, closeMsg)
 	if !st.OK() {
 		b.Fatal(st)
 	}
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	if !st.OK() {
 		b.Fatal(st)
 	}
@@ -185,9 +189,9 @@ func BenchmarkStream_16kb(b *testing.B) {
 	close := []byte("close")
 	benchMsgSize := 16 * 1024
 
-	handle := func(ch Channel) status.Status {
+	handle := func(ctx async.Context, ch Channel) status.Status {
 		for {
-			msg, st := ch.ReadSync(nil)
+			msg, st := ch.ReadSync(ctx)
 			if !st.OK() {
 				return st
 			}
@@ -198,13 +202,14 @@ func BenchmarkStream_16kb(b *testing.B) {
 			break
 		}
 
-		st := ch.Write(nil, close)
+		st := ch.Write(ctx, close)
 		if !st.OK() {
 			return st
 		}
 		return ch.Close()
 	}
 
+	ctx := async.NoContext()
 	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
@@ -214,7 +219,7 @@ func BenchmarkStream_16kb(b *testing.B) {
 	b.ResetTimer()
 	t0 := time.Now()
 
-	ch, st := conn.Channel(nil)
+	ch, st := conn.Channel(ctx)
 	if !st.OK() {
 		b.Fatal(st)
 	}
@@ -223,18 +228,18 @@ func BenchmarkStream_16kb(b *testing.B) {
 	msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 	for i := 0; i < b.N; i++ {
-		st = ch.Write(nil, msg)
+		st = ch.Write(ctx, msg)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 	}
 
-	st = ch.Write(nil, close)
+	st = ch.Write(ctx, close)
 	if !st.OK() {
 		b.Fatal(st)
 	}
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	if !st.OK() {
 		b.Fatal(st)
 	}
@@ -248,9 +253,9 @@ func BenchmarkStream_16kb(b *testing.B) {
 
 func BenchmarkStream_Parallel(b *testing.B) {
 	closeMsg := []byte("close")
-	handle := func(ch Channel) status.Status {
+	handle := func(ctx async.Context, ch Channel) status.Status {
 		for {
-			msg, st := ch.ReadSync(nil)
+			msg, st := ch.ReadSync(ctx)
 			if !st.OK() {
 				return st
 			}
@@ -261,13 +266,14 @@ func BenchmarkStream_Parallel(b *testing.B) {
 			break
 		}
 
-		st := ch.Write(nil, closeMsg)
+		st := ch.Write(ctx, closeMsg)
 		if !st.OK() {
 			return st
 		}
 		return ch.Close()
 	}
 
+	ctx := async.NoContext()
 	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
@@ -278,7 +284,7 @@ func BenchmarkStream_Parallel(b *testing.B) {
 	t0 := time.Now()
 
 	b.RunParallel(func(p *testing.PB) {
-		ch, st := conn.Channel(nil)
+		ch, st := conn.Channel(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -287,18 +293,18 @@ func BenchmarkStream_Parallel(b *testing.B) {
 		msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 		for p.Next() {
-			st = ch.Write(nil, msg)
+			st = ch.Write(ctx, msg)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 		}
 
-		st = ch.Write(nil, closeMsg)
+		st = ch.Write(ctx, closeMsg)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		_, st = ch.ReadSync(nil)
+		_, st = ch.ReadSync(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -315,9 +321,9 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 	close := []byte("close")
 	benchMsgSize := 16 * 1024
 
-	handle := func(ch Channel) status.Status {
+	handle := func(ctx async.Context, ch Channel) status.Status {
 		for {
-			msg, st := ch.ReadSync(nil)
+			msg, st := ch.ReadSync(ctx)
 			if !st.OK() {
 				return st
 			}
@@ -328,13 +334,14 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 			break
 		}
 
-		st := ch.Write(nil, close)
+		st := ch.Write(ctx, close)
 		if !st.OK() {
 			return st
 		}
 		return ch.Close()
 	}
 
+	ctx := async.NoContext()
 	server := testServer(b, handle)
 	conn := testConnect(b, server)
 	defer conn.Free()
@@ -345,7 +352,7 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 	t0 := time.Now()
 
 	b.RunParallel(func(p *testing.PB) {
-		ch, st := conn.Channel(nil)
+		ch, st := conn.Channel(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -354,18 +361,18 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 		msg := bytes.Repeat([]byte("a"), benchMsgSize)
 
 		for p.Next() {
-			st = ch.Write(nil, msg)
+			st = ch.Write(ctx, msg)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 		}
 
-		st = ch.Write(nil, close)
+		st = ch.Write(ctx, close)
 		if !st.OK() {
 			b.Fatal(st)
 		}
 
-		_, st = ch.ReadSync(nil)
+		_, st = ch.ReadSync(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}

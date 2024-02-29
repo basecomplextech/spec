@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
@@ -38,10 +39,11 @@ func TestClient_Request__should_send_request_receive_response(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	msg := "hello, world"
 	req := testEchoRequest(t, msg)
 
-	result, st := client.Request(nil, req)
+	result, st := client.Request(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -56,8 +58,8 @@ func TestClient_Write__should_send_client_message_to_server(t *testing.T) {
 	done := make(chan struct{})
 	var message []byte
 
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		msg, st := ch.ReadSync(cancel)
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			return nil, st
 		}
@@ -71,13 +73,15 @@ func TestClient_Write__should_send_client_message_to_server(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	ch, st := client.Channel(nil, req)
+
+	ch, st := client.Channel(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.Write(nil, []byte("hello, world"))
+	st = ch.Write(ctx, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -95,14 +99,14 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 	done := make(chan struct{})
 	ended := false
 
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		msg, st := ch.ReadSync(nil)
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			return nil, st
 		}
 		assert.Equal(t, []byte("client message"), msg)
 
-		_, st = ch.ReadSync(cancel)
+		_, st = ch.ReadSync(ctx)
 		assert.Equal(t, status.CodeEnd, st.Code)
 
 		close(done)
@@ -114,18 +118,20 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	ch, st := client.Channel(nil, req)
+
+	ch, st := client.Channel(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.Write(nil, []byte("client message"))
+	st = ch.Write(ctx, []byte("client message"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.WriteEnd(nil)
+	st = ch.WriteEnd(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -142,8 +148,8 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 // ReadSync
 
 func TestClient_ReadSync__should_read_server_message(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Write(cancel, []byte("hello, world"))
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+		st := ch.Write(ctx, []byte("hello, world"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -154,13 +160,15 @@ func TestClient_ReadSync__should_read_server_message(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	ch, st := client.Channel(nil, req)
+
+	ch, st := client.Channel(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReadSync(nil)
+	msg, st := ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -169,8 +177,8 @@ func TestClient_ReadSync__should_read_server_message(t *testing.T) {
 }
 
 func TestClient_ReadSync__should_return_end_on_response(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Write(cancel, []byte("server message"))
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+		st := ch.Write(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -188,22 +196,24 @@ func TestClient_ReadSync__should_return_end_on_response(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	ch, st := client.Channel(nil, req)
+
+	ch, st := client.Channel(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReadSync(nil)
+	msg, st := ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("server message"), msg)
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	assert.Equal(t, status.End, st)
 
-	result, st := ch.Response(nil)
+	result, st := ch.Response(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -215,7 +225,7 @@ func TestClient_ReadSync__should_return_end_on_response(t *testing.T) {
 // Response
 
 func TestClient_Response__should_receive_server_response(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
 		buf := alloc.NewBuffer()
 		w := spec.NewValueWriterBuffer(buf)
 		w.String("hello, world")
@@ -229,13 +239,15 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	ch, st := client.Channel(nil, req)
+
+	ch, st := client.Channel(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	result, st := ch.Response(nil)
+	result, st := ch.Response(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -245,8 +257,8 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 }
 
 func TestClient_Response__should_skip_message(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Write(cancel, []byte("server message"))
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+		st := ch.Write(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -264,13 +276,15 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	ch, st := client.Channel(nil, req)
+
+	ch, st := client.Channel(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	result, st := ch.Response(nil)
+	result, st := ch.Response(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -282,22 +296,22 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 // Full
 
 func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
-	handle := func(cancel <-chan struct{}, ch ServerChannel) (*ref.R[[]byte], status.Status) {
-		st := ch.Write(cancel, []byte("server message"))
+	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+		st := ch.Write(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
 
-		msg, st := ch.ReadSync(cancel)
+		msg, st := ch.ReadSync(ctx)
 		if !st.OK() {
 			return nil, st
 		}
 		assert.Equal(t, []byte("client message"), msg)
 
-		_, st = ch.ReadSync(cancel)
+		_, st = ch.ReadSync(ctx)
 		assert.Equal(t, status.End, st)
 
-		st = ch.WriteEnd(nil)
+		st = ch.WriteEnd(ctx)
 		if !st.OK() {
 			return nil, st
 		}
@@ -315,32 +329,34 @@ func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
+	ctx := async.NoContext()
 	req := testEchoRequest(t, "request")
-	ch, st := client.Channel(nil, req)
+
+	ch, st := client.Channel(ctx, req)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReadSync(nil)
+	msg, st := ch.ReadSync(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("server message"), msg)
 
-	st = ch.Write(nil, []byte("client message"))
+	st = ch.Write(ctx, []byte("client message"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.WriteEnd(nil)
+	st = ch.WriteEnd(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	_, st = ch.ReadSync(nil)
+	_, st = ch.ReadSync(ctx)
 	assert.Equal(t, status.End, st)
 
-	result, st := ch.Response(nil)
+	result, st := ch.Response(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}

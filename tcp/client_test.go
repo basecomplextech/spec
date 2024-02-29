@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/stretchr/testify/assert"
 )
@@ -77,11 +78,12 @@ func TestClient_Close__should_close_connection(t *testing.T) {
 	defer client.Close()
 
 	{
-		ch, st := client.Channel(nil)
+		ctx := async.NoContext()
+		ch, st := client.Channel(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
-		testChannelWrite(t, ch, "hello, world")
+		testChannelWrite(t, ctx, ch, "hello, world")
 		ch.Free()
 	}
 
@@ -99,13 +101,14 @@ func TestClient_Channel__should_connect_to_server(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
-	ch, st := client.Channel(nil)
+	ctx := async.NoContext()
+	ch, st := client.Channel(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	defer ch.Free()
 
-	testChannelWrite(t, ch, "hello, world")
+	testChannelWrite(t, ctx, ch, "hello, world")
 }
 
 func TestClient_Channel__should_reuse_open_connection(t *testing.T) {
@@ -114,14 +117,16 @@ func TestClient_Channel__should_reuse_open_connection(t *testing.T) {
 	client := testClient(t, server)
 	defer client.Close()
 
-	ch0, st := client.Channel(nil)
+	ctx := async.NoContext()
+	ch0, st := client.Channel(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	defer ch0.Free()
-	testChannelWrite(t, ch0, "hello, world")
 
-	ch1, st := client.Channel(nil)
+	testChannelWrite(t, ctx, ch0, "hello, world")
+
+	ch1, st := client.Channel(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -138,7 +143,8 @@ func TestClient_Channel__should_return_error_if_client_is_closed(t *testing.T) {
 	client := testClient(t, server)
 	client.Close()
 
-	_, st := client.Channel(nil)
+	ctx := async.NoContext()
+	_, st := client.Channel(ctx)
 	assert.Equal(t, statusClientClosed, st)
 }
 
@@ -149,12 +155,13 @@ func TestClient_Channel__should_reconnect_if_connection_closed(t *testing.T) {
 	defer client.Close()
 
 	{
-		ch, st := client.Channel(nil)
+		ctx := async.NoContext()
+		ch, st := client.Channel(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 
-		testChannelWrite(t, ch, "hello, world")
+		testChannelWrite(t, ctx, ch, "hello, world")
 		ch.Free()
 	}
 
@@ -163,12 +170,14 @@ func TestClient_Channel__should_reconnect_if_connection_closed(t *testing.T) {
 		conn.Close()
 	}
 
-	ch, st := client.Channel(nil)
+	ctx := async.NoContext()
+	ch, st := client.Channel(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	defer ch.Free()
-	testChannelWrite(t, ch, "hello, world")
+
+	testChannelWrite(t, ctx, ch, "hello, world")
 }
 
 func TestClient_Channel__should_await_connection(t *testing.T) {
@@ -195,10 +204,12 @@ func TestClient_Channel__should_await_connection(t *testing.T) {
 		client.address = server.Address()
 	}()
 
-	ch, st := client.Channel(nil)
+	ctx := async.NoContext()
+	ch, st := client.Channel(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	defer ch.Free()
-	testChannelWrite(t, ch, "hello, world")
+
+	testChannelWrite(t, ctx, ch, "hello, world")
 }

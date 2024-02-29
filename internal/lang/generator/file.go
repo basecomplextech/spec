@@ -20,6 +20,7 @@ func (w *fileWriter) file(file *model.File) error {
 	// Imports
 	w.line("import (")
 	w.line(`"github.com/basecomplextech/baselibrary/alloc"`)
+	w.line(`"github.com/basecomplextech/baselibrary/async"`)
 	w.line(`"github.com/basecomplextech/baselibrary/bin"`)
 	w.line(`"github.com/basecomplextech/baselibrary/buffer"`)
 	w.line(`"github.com/basecomplextech/baselibrary/ref"`)
@@ -42,6 +43,7 @@ func (w *fileWriter) file(file *model.File) error {
 	// Empty values for imports
 	w.line(`var (`)
 	w.line(`_ alloc.Buffer`)
+	w.line(`_ async.Context`)
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.Type`)
