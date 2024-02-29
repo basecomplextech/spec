@@ -497,7 +497,7 @@ func (w *serviceImplWriter) channel_write(def *model.Definition, m *model.Method
 
 	case model.KindStruct:
 		writeFunc := typeWriteFunc(in)
-		w.line(`buf := alloc.NewBuffer()`)
+		w.line(`buf := alloc.AcquireBuffer()`)
 		w.line(`defer buf.Free()`)
 		w.linef(`if _, err := %v(buf, msg); err != nil {`, writeFunc)
 		w.line(`return status.WrapError(err)`)
