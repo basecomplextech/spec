@@ -206,6 +206,11 @@ func (w *messageWriter) methods(def *model.Definition) error {
 	w.writef(`}`)
 	w.line()
 
+	w.writef(`func (m %v) CloneTo(b buffer.Buffer) %v {`, def.Name, def.Name)
+	w.writef(`return %v{m.msg.CloneTo(b)}`, def.Name)
+	w.writef(`}`)
+	w.line()
+
 	w.writef(`func (m %v) Unwrap() spec.Message {`, def.Name)
 	w.writef(`return m.msg`)
 	w.writef(`}`)
