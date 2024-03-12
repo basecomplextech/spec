@@ -59,14 +59,9 @@ func (c *compiler) Compile(dir string) (*model.Package, error) {
 	// Clean directory path
 	dir = filepath.Clean(dir)
 
-	// Get absolute path relative to cwd
-	path, err := filepath.Abs(dir)
-	if err != nil {
-		return nil, err
-	}
-
 	// Compute id from directory when empty
 	id := dir
+	var err error
 	if id == "" || id == "." {
 		id, err = getCurrentDirectoryName()
 		if err != nil {
@@ -74,7 +69,7 @@ func (c *compiler) Compile(dir string) (*model.Package, error) {
 		}
 	}
 
-	return c.compilePackage(id, path)
+	return c.compilePackage(id, dir)
 }
 
 // private
