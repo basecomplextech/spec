@@ -257,7 +257,7 @@ func TestChannel_Write__should_block_when_write_window_not_enough(t *testing.T) 
 		t.Fatal(st)
 	}
 
-	ctx1 := async.NewContextTimeout(time.Millisecond * 100)
+	ctx1 := async.TimeoutContext(time.Millisecond * 100)
 	st = ch.Write(ctx1, msg)
 	assert.Equal(t, status.Timeout, st)
 }

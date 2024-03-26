@@ -226,7 +226,7 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line()
 		w.line(`// Return bytes`)
 		w.line(`bytes := result.Unwrap().Unwrap().Raw()`)
-		w.line(`return ref.NewParentRetain(bytes, result), status.OK`)
+		w.line(`return ref.NextRetain(bytes, result), status.OK`)
 
 	case m.OutputFields != nil:
 		w.line(`if !st.OK() {`)

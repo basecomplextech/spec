@@ -389,7 +389,7 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 		w.line(`_st = status.WrapError(err)`)
 		w.line(`return`)
 		w.line(`}`)
-		w.line(`return ref.NewParentRetain(result, resp), status.OK`)
+		w.line(`return ref.NextRetain(result, resp), status.OK`)
 
 	case m.OutputFields != nil:
 		w.line(`// Parse results`)
@@ -673,7 +673,7 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 		w.line(`_st = status.WrapError(err)`)
 		w.line(`return`)
 		w.line(`}`)
-		w.line(`return ref.NewParentRetain(result, resp), status.OK`)
+		w.line(`return ref.NextRetain(result, resp), status.OK`)
 
 	case m.OutputFields != nil:
 		w.line(`// Parse results`)
