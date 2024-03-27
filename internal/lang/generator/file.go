@@ -46,7 +46,7 @@ func (w *fileWriter) file(file *model.File) error {
 	w.line(`_ async.Context`)
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
-	w.line(`_ encoding.Type`)
+	w.line(`_ encoding.MessageMeta`)
 	w.line(`_ ref.Ref`)
 
 	if !w.skipRPC {

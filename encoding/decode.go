@@ -9,24 +9,24 @@ import (
 
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/encoding/compactint"
-	"github.com/basecomplextech/spec/internal/types"
+	"github.com/basecomplextech/spec/internal/core"
 )
 
 // DecodeType decodes a value type.
-func DecodeType(b []byte) (Type, int, error) {
+func DecodeType(b []byte) (core.Type, int, error) {
 	v, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, fmt.Errorf("decode type: invalid data")
 	}
 
 	size := n
-	return Type(v), size, nil
+	return core.Type(v), size, nil
 }
 
 // DecodeTypeSize decodes a value type and its total size, returns 0, 0 on error.
-func DecodeTypeSize(b []byte) (Type, int, error) {
+func DecodeTypeSize(b []byte) (core.Type, int, error) {
 	if len(b) == 0 {
-		return TypeUndefined, 0, nil
+		return core.TypeUndefined, 0, nil
 	}
 
 	t, n := decodeType(b)
@@ -38,10 +38,10 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 	v := b[:end]
 
 	switch t {
-	case TypeTrue, TypeFalse:
+	case core.TypeTrue, core.TypeFalse:
 		return t, n, nil
 
-	case TypeByte:
+	case core.TypeByte:
 		if len(v) < 1 {
 			return 0, 0, fmt.Errorf("decode byte: invalid data")
 		}
@@ -49,7 +49,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// Int
 
-	case TypeInt16, TypeInt32, TypeInt64:
+	case core.TypeInt16, core.TypeInt32, core.TypeInt64:
 		m := compactint.ReverseSize(v)
 		if m <= 0 {
 			return 0, 0, fmt.Errorf("decode int: invalid data")
@@ -58,7 +58,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// Uint
 
-	case TypeUint16, TypeUint32, TypeUint64:
+	case core.TypeUint16, core.TypeUint32, core.TypeUint64:
 		m := compactint.ReverseSize(v)
 		if m <= 0 {
 			return 0, 0, fmt.Errorf("decode uint: invalid data")
@@ -67,14 +67,14 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// Float
 
-	case TypeFloat32:
+	case core.TypeFloat32:
 		m := 4
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode float32: invalid data")
 		}
 		return t, n + m, nil
 
-	case TypeFloat64:
+	case core.TypeFloat64:
 		m := 8
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode float64: invalid data")
@@ -83,21 +83,21 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// Bin
 
-	case TypeBin64:
+	case core.TypeBin64:
 		m := 8
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode bin64: invalid data")
 		}
 		return t, n + m, nil
 
-	case TypeBin128:
+	case core.TypeBin128:
 		m := 16
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode bin128: invalid data")
 		}
 		return t, n + m, nil
 
-	case TypeBin256:
+	case core.TypeBin256:
 		m := 32
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode bin256: invalid data")
@@ -106,7 +106,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// Bytes/string
 
-	case TypeBytes:
+	case core.TypeBytes:
 		dataSize, m := decodeSize(v)
 		if m < 0 {
 			return 0, 0, errors.New("decode bytes: invalid data size")
@@ -117,7 +117,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 		}
 		return t, size, nil
 
-	case TypeString:
+	case core.TypeString:
 		dataSize, m := decodeSize(v)
 		if m < 0 {
 			return 0, 0, errors.New("decode string: invalid data size")
@@ -130,7 +130,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// List
 
-	case TypeList, TypeBigList:
+	case core.TypeList, core.TypeBigList:
 		size := n
 
 		// Table size
@@ -156,7 +156,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// Message
 
-	case TypeMessage, TypeBigMessage:
+	case core.TypeMessage, core.TypeBigMessage:
 		size := n
 
 		// Table size
@@ -182,7 +182,7 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 
 	// Struct
 
-	case TypeStruct:
+	case core.TypeStruct:
 		size := n
 
 		// Data size
@@ -201,13 +201,13 @@ func DecodeTypeSize(b []byte) (Type, int, error) {
 	return 0, 0, fmt.Errorf("decode: invalid type, type=%d", t)
 }
 
-func decodeType(b []byte) (Type, int) {
+func decodeType(b []byte) (core.Type, int) {
 	if len(b) == 0 {
-		return TypeUndefined, 0
+		return core.TypeUndefined, 0
 	}
 
 	v := b[len(b)-1]
-	return Type(v), 1
+	return core.Type(v), 1
 }
 
 // Byte
@@ -221,7 +221,7 @@ func DecodeByte(b []byte) (byte, int, error) {
 	if n < 0 {
 		return 0, 0, errors.New("decode byte: invalid data")
 	}
-	if typ != TypeByte {
+	if typ != core.TypeByte {
 		return 0, 0, fmt.Errorf("decode byte: invalid type, type=%v:%d", typ, typ)
 	}
 
@@ -244,7 +244,7 @@ func DecodeBool(b []byte) (bool, int, error) {
 		return false, 0, errors.New("decode bool: invalid data")
 	}
 
-	v := typ == TypeTrue
+	v := typ == core.TypeTrue
 	size := n
 	return v, size, nil
 }
@@ -263,7 +263,7 @@ func DecodeInt16(b []byte) (int16, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeInt16, TypeInt32:
+	case core.TypeInt16, core.TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int16: invalid data")
@@ -279,7 +279,7 @@ func DecodeInt16(b []byte) (int16, int, error) {
 		n += m
 		return int16(v), n, nil
 
-	case TypeInt64:
+	case core.TypeInt64:
 		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int16: invalid data")
@@ -311,7 +311,7 @@ func DecodeInt32(b []byte) (int32, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeInt16, TypeInt32:
+	case core.TypeInt16, core.TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int32: invalid data")
@@ -320,7 +320,7 @@ func DecodeInt32(b []byte) (int32, int, error) {
 		n += m
 		return v, n, nil
 
-	case TypeInt64:
+	case core.TypeInt64:
 		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int32: invalid data")
@@ -352,7 +352,7 @@ func DecodeInt64(b []byte) (int64, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeInt16, TypeInt32:
+	case core.TypeInt16, core.TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int64: invalid data")
@@ -360,7 +360,7 @@ func DecodeInt64(b []byte) (int64, int, error) {
 		n += m
 		return int64(v), n, nil
 
-	case TypeInt64:
+	case core.TypeInt64:
 		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int64: invalid data")
@@ -386,7 +386,7 @@ func DecodeUint16(b []byte) (uint16, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeUint16, TypeUint32:
+	case core.TypeUint16, core.TypeUint32:
 		v, m := compactint.ReverseUint32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint16: invalid data")
@@ -399,7 +399,7 @@ func DecodeUint16(b []byte) (uint16, int, error) {
 		n += m
 		return uint16(v), n, nil
 
-	case TypeUint64:
+	case core.TypeUint64:
 		v, m := compactint.ReverseUint64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint16: invalid data")
@@ -428,7 +428,7 @@ func DecodeUint32(b []byte) (uint32, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeUint16, TypeUint32:
+	case core.TypeUint16, core.TypeUint32:
 		v, m := compactint.ReverseUint32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint32: invalid data")
@@ -436,7 +436,7 @@ func DecodeUint32(b []byte) (uint32, int, error) {
 		n += m
 		return v, n, nil
 
-	case TypeUint64:
+	case core.TypeUint64:
 		v, m := compactint.ReverseUint64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint32: invalid data")
@@ -465,7 +465,7 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case TypeUint16, TypeUint32:
+	case core.TypeUint16, core.TypeUint32:
 		v, m := compactint.ReverseUint32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint64: invalid data")
@@ -473,7 +473,7 @@ func DecodeUint64(b []byte) (uint64, int, error) {
 		n += m
 		return uint64(v), n, nil
 
-	case TypeUint64:
+	case core.TypeUint64:
 		v, m := compactint.ReverseUint64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode uint64: invalid data")
@@ -497,7 +497,7 @@ func DecodeBin64(b []byte) (_ bin.Bin64, size int, err error) {
 		err = errors.New("decode bin64: invalid data")
 		return
 	}
-	if typ != TypeBin64 {
+	if typ != core.TypeBin64 {
 		err = fmt.Errorf("decode bin64: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -530,7 +530,7 @@ func DecodeBin128(b []byte) (_ bin.Bin128, size int, err error) {
 		err = errors.New("decode bin128: invalid data")
 		return
 	}
-	if typ != TypeBin128 {
+	if typ != core.TypeBin128 {
 		err = fmt.Errorf("decode bin128: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -563,7 +563,7 @@ func DecodeBin256(b []byte) (_ bin.Bin256, size int, err error) {
 		err = errors.New("decode bin256: invalid data")
 		return
 	}
-	if typ != TypeBin256 {
+	if typ != core.TypeBin256 {
 		err = fmt.Errorf("decode bin256: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -629,7 +629,7 @@ func decodeFloat64(b []byte) (float64, int) {
 	}
 
 	switch t {
-	case TypeFloat32:
+	case core.TypeFloat32:
 		start := len(b) - 5
 		if start < 0 {
 			return 0, -1
@@ -639,7 +639,7 @@ func decodeFloat64(b []byte) (float64, int) {
 		f := math.Float32frombits(v)
 		return float64(f), 5
 
-	case TypeFloat64:
+	case core.TypeFloat64:
 		start := len(b) - 9
 		if start < 0 {
 			return 0, -1
@@ -655,18 +655,18 @@ func decodeFloat64(b []byte) (float64, int) {
 
 // Bytes
 
-func DecodeBytes(b []byte) (_ types.Bytes, size int, err error) {
+func DecodeBytes(b []byte) (_ core.Bytes, size int, err error) {
 	if len(b) == 0 {
 		return nil, 0, nil
 	}
 
-	// Type
+	// core.Type
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bytes: invalid data")
 		return
 	}
-	if typ != TypeBytes {
+	if typ != core.TypeBytes {
 		err = fmt.Errorf("decode bytes: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -703,18 +703,18 @@ func decodeBytesData(b []byte, size uint32) ([]byte, error) {
 
 // String
 
-func DecodeString(b []byte) (_ types.String, size int, err error) {
+func DecodeString(b []byte) (_ core.String, size int, err error) {
 	if len(b) == 0 {
 		return "", 0, nil
 	}
 
-	// Type
+	// core.Type
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode string: invalid data")
 		return
 	}
-	if typ != TypeString {
+	if typ != core.TypeString {
 		err = fmt.Errorf("decode string: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -738,7 +738,7 @@ func DecodeString(b []byte) (_ types.String, size int, err error) {
 	}
 
 	size += int(dataSize)
-	return types.String(data), size, nil
+	return core.String(data), size, nil
 }
 
 func DecodeStringClone(b []byte) (_ string, size int, err error) {
@@ -773,7 +773,7 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 		err = errors.New("decode struct: invalid type")
 		return
 	}
-	if typ != TypeStruct {
+	if typ != core.TypeStruct {
 		err = fmt.Errorf("decode struct: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -806,7 +806,7 @@ func DecodeListMeta(b []byte) (_ ListMeta, size int, err error) {
 		err = errors.New("decode list: invalid data")
 		return
 	}
-	if typ != TypeList && typ != TypeBigList {
+	if typ != core.TypeList && typ != core.TypeBigList {
 		err = fmt.Errorf("decode list: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -814,7 +814,7 @@ func DecodeListMeta(b []byte) (_ ListMeta, size int, err error) {
 	// Start
 	size = n
 	end := len(b) - n
-	big := typ == TypeBigList
+	big := typ == core.TypeBigList
 
 	// Table size
 	tableSize, n := decodeSize(b[:end])
@@ -897,7 +897,7 @@ func DecodeMessageMeta(b []byte) (_ MessageMeta, size int, err error) {
 		return
 	}
 	switch typ {
-	case TypeMessage, TypeBigMessage:
+	case core.TypeMessage, core.TypeBigMessage:
 	default:
 		err = fmt.Errorf("decode message: invalid type, type=%v:%d", typ, typ)
 		return
@@ -906,7 +906,7 @@ func DecodeMessageMeta(b []byte) (_ MessageMeta, size int, err error) {
 	// Start
 	size = n
 	end := len(b) - size
-	big := typ == TypeBigMessage
+	big := typ == core.TypeBigMessage
 
 	// Table size
 	tableSize, m := decodeSize(b[:end])

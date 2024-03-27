@@ -1,4 +1,4 @@
-package spec
+package types
 
 import (
 	"github.com/basecomplextech/baselibrary/buffer"

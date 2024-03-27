@@ -1,6 +1,9 @@
 package writer
 
-import "github.com/basecomplextech/baselibrary/bin"
+import (
+	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/spec/internal/types"
+)
 
 // MessageWriter writes a message.
 type MessageWriter struct {
@@ -18,8 +21,12 @@ func (m MessageWriter) HasField(field uint16) bool {
 	return m.w.hasField(field)
 }
 
+// Copy copies absent fields from the given message.
+func (m MessageWriter) Copy(src types.Message) error {
+	return nil
+}
+
 // Build ends the message and returns its bytes.
-// TODO: Return Message instead of []byte.
 func (m MessageWriter) Build() ([]byte, error) {
 	return m.w.end()
 }

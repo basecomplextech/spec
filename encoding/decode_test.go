@@ -6,6 +6,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/buffer"
+	"github.com/basecomplextech/spec/internal/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,7 @@ import (
 
 func TestDecodeType__should_return_type(t *testing.T) {
 	b := []byte{}
-	b = append(b, byte(TypeString))
+	b = append(b, byte(core.TypeString))
 
 	v, n, err := DecodeType(b)
 	if err != nil {
@@ -22,7 +23,7 @@ func TestDecodeType__should_return_type(t *testing.T) {
 	}
 
 	assert.Equal(t, n, len(b))
-	assert.Equal(t, v, TypeString)
+	assert.Equal(t, v, core.TypeString)
 }
 
 func TestDecodeType__should_return_undefined_when_empty(t *testing.T) {
@@ -34,13 +35,13 @@ func TestDecodeType__should_return_undefined_when_empty(t *testing.T) {
 	}
 
 	assert.Zero(t, n)
-	assert.Equal(t, v, TypeUndefined)
+	assert.Equal(t, v, core.TypeUndefined)
 }
 
 // DecodeBool
 
 func TestDecodeBool__should_decode_bool_value(t *testing.T) {
-	b := []byte{byte(TypeTrue)}
+	b := []byte{byte(core.TypeTrue)}
 	v, n, err := DecodeBool(b)
 	if err != nil {
 		t.Fatal(err)
@@ -49,7 +50,7 @@ func TestDecodeBool__should_decode_bool_value(t *testing.T) {
 	assert.Equal(t, n, len(b))
 	assert.Equal(t, true, v)
 
-	b = []byte{byte(TypeFalse)}
+	b = []byte{byte(core.TypeFalse)}
 	v, n, err = DecodeBool(b)
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +63,7 @@ func TestDecodeBool__should_decode_bool_value(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeFalse, typ)
+	assert.Equal(t, core.TypeFalse, typ)
 	assert.Equal(t, size, len(b))
 }
 
@@ -84,7 +85,7 @@ func TestDecodeByte__should_decode_byte(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeByte, typ)
+	assert.Equal(t, core.TypeByte, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -107,7 +108,7 @@ func TestDecodeInt16__should_decode_int16(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeInt16, typ)
+	assert.Equal(t, core.TypeInt16, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -129,7 +130,7 @@ func TestDecodeInt32__should_decode_int32(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeInt32, typ)
+	assert.Equal(t, core.TypeInt32, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -151,7 +152,7 @@ func TestDecodeInt64__should_decode_int64(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeInt64, typ)
+	assert.Equal(t, core.TypeInt64, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -186,7 +187,7 @@ func TestDecodeUint16__should_decode_int16(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeUint16, typ)
+	assert.Equal(t, core.TypeUint16, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -208,7 +209,7 @@ func TestDecodeUint32__should_decode_int32(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeUint32, typ)
+	assert.Equal(t, core.TypeUint32, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -230,7 +231,7 @@ func TestDecodeUint64__should_decode_int64(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeUint64, typ)
+	assert.Equal(t, core.TypeUint64, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -265,7 +266,7 @@ func TestDecodeFloat32__should_decode_float32(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeFloat32, typ)
+	assert.Equal(t, core.TypeFloat32, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -300,7 +301,7 @@ func TestDecodeFloat64__should_decode_float64(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeFloat64, typ)
+	assert.Equal(t, core.TypeFloat64, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -337,7 +338,7 @@ func TestDecodeBin64__should_decode_bin64(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeBin64, typ)
+	assert.Equal(t, core.TypeBin64, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -358,7 +359,7 @@ func TestDecodeBin128__should_decode_bin128(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeBin128, typ)
+	assert.Equal(t, core.TypeBin128, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -379,7 +380,7 @@ func TestDecodeBin256__should_decode_bin256(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeBin256, typ)
+	assert.Equal(t, core.TypeBin256, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -406,7 +407,7 @@ func TestDecodeBytes__should_decode_bytes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeBytes, typ)
+	assert.Equal(t, core.TypeBytes, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -433,7 +434,7 @@ func TestDecodeString__should_decode_string(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeString, typ)
+	assert.Equal(t, core.TypeString, typ)
 	assert.Equal(t, size, len(p))
 }
 
@@ -456,7 +457,7 @@ func TestDecodeListMeta__should_decode_list(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeList, typ)
+	assert.Equal(t, core.TypeList, typ)
 	assert.Equal(t, size, len(b))
 }
 
@@ -488,7 +489,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_type(t *testing.T) {
 	dataSize := 100
 
 	b := testEncodeListMeta(t, dataSize, elements)
-	b[len(b)-1] = byte(TypeMessage)
+	b[len(b)-1] = byte(core.TypeMessage)
 
 	_, _, err := DecodeListMeta(b)
 	require.Error(t, err)
@@ -498,7 +499,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_type(t *testing.T) {
 func TestDecodeListMeta__should_return_error_when_invalid_table_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff)
-	b = append(b, byte(TypeList))
+	b = append(b, byte(core.TypeList))
 
 	_, _, err := DecodeListMeta(b)
 	require.Error(t, err)
@@ -510,7 +511,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_data_size(t *testing.T
 	b := []byte{}
 	b = append(b, 0xff)
 	b = appendSize(b, big, 1000)
-	b = append(b, byte(TypeList))
+	b = append(b, byte(core.TypeList))
 
 	_, _, err := DecodeListMeta(b)
 	require.Error(t, err)
@@ -528,7 +529,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_table(t *testing.T) {
 	b := buf.Bytes()
 	b = appendSize(b, big, 0)    // data size
 	b = appendSize(b, big, 1000) // table size
-	b = append(b, byte(TypeList))
+	b = append(b, byte(core.TypeList))
 
 	_, _, err = DecodeListMeta(b)
 	require.Error(t, err)
@@ -546,7 +547,7 @@ func TestDecodeListMeta__should_return_error_when_invalid_data(t *testing.T) {
 	b := buf.Bytes()
 	b = appendSize(b, big, 1000) // data size
 	b = appendSize(b, big, 0)    // table size
-	b = append(b, byte(TypeList))
+	b = append(b, byte(core.TypeList))
 
 	_, _, err = DecodeListMeta(b)
 	require.Error(t, err)
@@ -572,7 +573,7 @@ func TestDecodeMessageMeta__should_decode_message_meta(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, TypeMessage, typ)
+	assert.Equal(t, core.TypeMessage, typ)
 	assert.Equal(t, size, len(b))
 }
 
@@ -603,7 +604,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_type(t *testing.T) 
 	dataSize := 100
 
 	b := testEncodeMessageMeta(t, dataSize, fields)
-	b[len(b)-1] = byte(TypeList)
+	b[len(b)-1] = byte(core.TypeList)
 
 	_, _, err := DecodeMessageMeta(b)
 	require.Error(t, err)
@@ -613,7 +614,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_type(t *testing.T) 
 func TestDecodeMessageMeta__should_return_error_when_invalid_table_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff)
-	b = append(b, byte(TypeMessage))
+	b = append(b, byte(core.TypeMessage))
 
 	_, _, err := DecodeMessageMeta(b)
 	require.Error(t, err)
@@ -625,7 +626,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_data_size(t *testin
 	b := []byte{}
 	b = append(b, 0xff)
 	b = appendSize(b, big, 1000)
-	b = append(b, byte(TypeMessage))
+	b = append(b, byte(core.TypeMessage))
 
 	_, _, err := DecodeMessageMeta(b)
 	require.Error(t, err)
@@ -643,7 +644,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T)
 	b := buf.Bytes()
 	b = appendSize(b, big, 0)    // data size
 	b = appendSize(b, big, 1000) // table size
-	b = append(b, byte(TypeMessage))
+	b = append(b, byte(core.TypeMessage))
 
 	_, _, err = DecodeMessageMeta(b)
 	require.Error(t, err)
@@ -662,7 +663,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_data(t *testing.T) 
 	b := buf.Bytes()
 	b = appendSize(b, big, 1000)
 	b = appendSize(b, big, 0)
-	b = append(b, byte(TypeMessage))
+	b = append(b, byte(core.TypeMessage))
 
 	_, _, err = DecodeMessageMeta(b)
 	require.Error(t, err)

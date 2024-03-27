@@ -7,7 +7,7 @@ type TypedList[T any] struct {
 
 // NewTypedList returns a typed list or an empty list on error.
 func NewTypedList[T any](b []byte, element func([]byte) (T, int, error)) TypedList[T] {
-	l, _, _ := decodeList(b)
+	l := NewList(b)
 
 	return TypedList[T]{
 		list:    l,
@@ -15,9 +15,23 @@ func NewTypedList[T any](b []byte, element func([]byte) (T, int, error)) TypedLi
 	}
 }
 
+// NewTypedListErr returns a typed list, or an error.
+func NewTypedListErr[T any](b []byte, element func([]byte) (T, int, error)) (_ TypedList[T], err error) {
+	l, err := NewListErr(b)
+	if err != nil {
+		return
+	}
+
+	l1 := TypedList[T]{
+		list:    l,
+		element: element,
+	}
+	return l1, nil
+}
+
 // ParseTypedList decodes, recursively validates and returns a list.
 func ParseTypedList[T any](b []byte, element func([]byte) (T, int, error)) (_ TypedList[T], size int, err error) {
-	l, size, err := decodeList(b)
+	l, size, err := ParseList(b)
 	if err != nil {
 		return
 	}
@@ -48,7 +62,7 @@ func (l TypedList[T]) Len() int {
 
 // Raw returns the exact list bytes.
 func (l TypedList[T]) Raw() []byte {
-	return l.list.bytes
+	return l.list.Raw()
 }
 
 // Empty returns true if bytes are empty or list has no elements.

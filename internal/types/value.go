@@ -1,10 +1,11 @@
-package spec
+package types
 
 import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/core"
 )
 
 // Value is a raw value.
@@ -38,60 +39,60 @@ func NewValueErr(b []byte) (Value, error) {
 
 // ParseValue recursively parses and returns a value.
 func ParseValue(b []byte) (_ Value, n int, err error) {
-	t, n, err := encoding.DecodeType(b)
+	typ, n, err := encoding.DecodeType(b)
 	if err != nil {
 		return
 	}
 
-	switch t {
-	case TypeTrue, TypeFalse:
+	switch typ {
+	case core.TypeTrue, core.TypeFalse:
 		// Pass
 
-	case TypeByte:
+	case core.TypeByte:
 		_, n, err = encoding.DecodeByte(b)
 
-	case TypeInt16:
+	case core.TypeInt16:
 		_, n, err = encoding.DecodeInt16(b)
-	case TypeInt32:
+	case core.TypeInt32:
 		_, n, err = encoding.DecodeInt32(b)
-	case TypeInt64:
+	case core.TypeInt64:
 		_, n, err = encoding.DecodeInt64(b)
 
-	case TypeUint16:
+	case core.TypeUint16:
 		_, n, err = encoding.DecodeUint16(b)
-	case TypeUint32:
+	case core.TypeUint32:
 		_, n, err = encoding.DecodeUint32(b)
-	case TypeUint64:
+	case core.TypeUint64:
 		_, n, err = encoding.DecodeUint64(b)
 
-	case TypeBin64:
+	case core.TypeBin64:
 		_, n, err = encoding.DecodeBin64(b)
-	case TypeBin128:
+	case core.TypeBin128:
 		_, n, err = encoding.DecodeBin128(b)
-	case TypeBin256:
+	case core.TypeBin256:
 		_, n, err = encoding.DecodeBin256(b)
 
-	case TypeFloat32:
+	case core.TypeFloat32:
 		_, n, err = encoding.DecodeFloat32(b)
-	case TypeFloat64:
+	case core.TypeFloat64:
 		_, n, err = encoding.DecodeFloat64(b)
 
-	case TypeBytes:
+	case core.TypeBytes:
 		_, n, err = encoding.DecodeBytes(b)
-	case TypeString:
+	case core.TypeString:
 		_, n, err = encoding.DecodeString(b)
 
-	case TypeList, TypeBigList:
+	case core.TypeList, core.TypeBigList:
 		_, n, err = ParseList(b)
 
-	case TypeMessage, TypeBigMessage:
+	case core.TypeMessage, core.TypeBigMessage:
 		_, n, err = ParseMessage(b)
 
-	case TypeStruct:
+	case core.TypeStruct:
 		_, n, err = encoding.DecodeStruct(b)
 
 	default:
-		n, err = 0, fmt.Errorf("unsupported type %d", t)
+		n, err = 0, fmt.Errorf("unsupported type %d", typ)
 	}
 	if err != nil {
 		return nil, n, err
@@ -103,7 +104,7 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 // Types
 
 // Type decodes and returns a type or undefined.
-func (v Value) Type() Type {
+func (v Value) Type() core.Type {
 	p, _, _ := encoding.DecodeType(v)
 	return p
 }
@@ -275,27 +276,27 @@ func (v Value) Bin256Err() (bin.Bin256, error) {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() Bytes {
+func (v Value) Bytes() core.Bytes {
 	p, _, _ := encoding.DecodeBytes(v)
 	return p
 }
 
 // BytesErr decodes and returns bytes or an error.
-func (v Value) BytesErr() (Bytes, error) {
+func (v Value) BytesErr() (core.Bytes, error) {
 	p, _, err := encoding.DecodeBytes(v)
 	return p, err
 }
 
 // String decodes and returns a string or an empty string.
-func (v Value) String() String {
+func (v Value) String() core.String {
 	p, _, _ := encoding.DecodeString(v)
-	return String(p)
+	return core.String(p)
 }
 
 // StringErr decodes and returns a string or an error.
-func (v Value) StringErr() (String, error) {
+func (v Value) StringErr() (core.String, error) {
 	p, _, err := encoding.DecodeString(v)
-	return String(p), err
+	return core.String(p), err
 }
 
 // List/message
