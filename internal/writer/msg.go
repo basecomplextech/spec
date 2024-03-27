@@ -23,6 +23,23 @@ func (m MessageWriter) HasField(field uint16) bool {
 
 // Copy copies absent fields from the given message.
 func (m MessageWriter) Copy(src types.Message) error {
+	n := src.Len()
+
+	for i := 0; i < n; i++ {
+		tag, ok := src.TagAt(i)
+		if !ok {
+			continue // impossible
+		}
+
+		if m.HasField(tag) {
+			continue
+		}
+
+		value := src.FieldAt(i)
+		if err := m.w.fieldAny(tag, value); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

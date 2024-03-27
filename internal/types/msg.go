@@ -108,23 +108,9 @@ func (m Message) Field(tag uint16) Value {
 		return nil
 	}
 
+	// TODO: Truncate bytes to the end of the value, use NewValue.
 	b := m.bytes[:end]
 	return Value(b)
-}
-
-// FieldBytes returns field data by a tag or nil.
-func (m Message) FieldBytes(tag uint16) []byte {
-	end := m.meta.Offset(tag)
-	size := m.meta.DataSize()
-
-	switch {
-	case end < 0:
-		return nil
-	case end > int(size):
-		return nil
-	}
-
-	return m.bytes[:end]
 }
 
 // FieldAt returns field data at an index or nil.
@@ -143,10 +129,26 @@ func (m Message) FieldAt(i int) Value {
 	return NewValue(b)
 }
 
+// FieldBytes returns field data by a tag or nil.
+func (m Message) FieldBytes(tag uint16) []byte {
+	end := m.meta.Offset(tag)
+	size := m.meta.DataSize()
+
+	switch {
+	case end < 0:
+		return nil
+	case end > int(size):
+		return nil
+	}
+
+	// TODO: Truncate bytes to the end of the value, use NewValue.
+	return m.bytes[:end]
+}
+
 // Tags
 
-// TagByIndex returns a field tag by an index or false.
-func (m Message) TagByIndex(i int) (uint16, bool) {
+// TagAt returns a field tag at an index or false.
+func (m Message) TagAt(i int) (uint16, bool) {
 	field, ok := m.meta.Field(i)
 	if !ok {
 		return 0, false
