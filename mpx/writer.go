@@ -1,4 +1,4 @@
-package tcp
+package mpx
 
 import (
 	"bufio"
@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec/proto/ptcp"
+	"github.com/basecomplextech/spec/proto/pmpx"
 	"github.com/pierrec/lz4/v4"
 )
 
@@ -71,7 +71,7 @@ func (w *writer) writeString(s string) status.Status {
 }
 
 // writeRequest writes a connect request and flushes the writer.
-func (w *writer) writeRequest(req ptcp.ConnectRequest) status.Status {
+func (w *writer) writeRequest(req pmpx.ConnectRequest) status.Status {
 	msg := req.Unwrap().Raw()
 	head := w.head[:]
 
@@ -93,7 +93,7 @@ func (w *writer) writeRequest(req ptcp.ConnectRequest) status.Status {
 }
 
 // writeRequest writes a connect response and flushes the writer.
-func (w *writer) writeResponse(resp ptcp.ConnectResponse) status.Status {
+func (w *writer) writeResponse(resp pmpx.ConnectResponse) status.Status {
 	msg := resp.Unwrap().Raw()
 	head := w.head[:]
 
@@ -130,16 +130,16 @@ func (w *writer) writeMessage(msg []byte) status.Status {
 	}
 
 	if debug {
-		m := ptcp.NewMessage(msg)
+		m := pmpx.NewMessage(msg)
 		code := m.Code()
 		switch code {
-		case ptcp.Code_OpenChannel:
+		case pmpx.Code_OpenChannel:
 			debugPrint(w.client, "-> open\t", m.Open().Id())
-		case ptcp.Code_CloseChannel:
+		case pmpx.Code_CloseChannel:
 			debugPrint(w.client, "-> close\t", m.Close().Id())
-		case ptcp.Code_ChannelMessage:
+		case pmpx.Code_ChannelMessage:
 			debugPrint(w.client, "-> message\t", m.Message().Id())
-		case ptcp.Code_ChannelWindow:
+		case pmpx.Code_ChannelWindow:
 			debugPrint(w.client, "-> window\t", m.Window().Id(), m.Window().Delta())
 		default:
 			debugPrint(w.client, "-> unknown", code)

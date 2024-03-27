@@ -6,8 +6,8 @@ import (
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
+	"github.com/basecomplextech/spec/mpx"
 	"github.com/basecomplextech/spec/proto/prpc"
-	"github.com/basecomplextech/spec/tcp"
 )
 
 // Client is a SpecRPC client.
@@ -49,7 +49,7 @@ type Client interface {
 	// Internal
 
 	// Unwrap returns the internal client.
-	Unwrap() tcp.Client
+	Unwrap() mpx.Client
 }
 
 // NewClient returns a new client.
@@ -62,13 +62,13 @@ func NewClient(address string, logger logging.Logger, opts Options) Client {
 var _ Client = (*client)(nil)
 
 type client struct {
-	client tcp.Client
+	client mpx.Client
 	logger logging.Logger
 }
 
 func newClient(address string, logger logging.Logger, opts Options) *client {
 	return &client{
-		client: tcp.NewClient(address, logger, opts),
+		client: mpx.NewClient(address, logger, opts),
 		logger: logger,
 	}
 }
@@ -190,7 +190,7 @@ func (c *client) Request(ctx async.Context, req prpc.Request) (*ref.R[spec.Value
 // Internal
 
 // Unwrap returns the internal client.
-func (c *client) Unwrap() tcp.Client {
+func (c *client) Unwrap() mpx.Client {
 	return c.client
 }
 

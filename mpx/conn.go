@@ -1,4 +1,4 @@
-package tcp
+package mpx
 
 import (
 	"net"
@@ -9,7 +9,7 @@ import (
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec/proto/ptcp"
+	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
 // Conn is a TCP network connection.
@@ -190,15 +190,15 @@ func (c *conn) connectClient() status.Status {
 
 	// Write connect request
 	{
-		w := ptcp.NewConnectRequestWriter()
+		w := pmpx.NewConnectRequestWriter()
 
 		vv := w.Versions()
-		vv.Add(ptcp.Version_Version10)
+		vv.Add(pmpx.Version_Version10)
 		vv.End()
 
 		if c.options.Compress {
 			cc := w.Compress()
-			cc.Add(ptcp.Compress_Lz4)
+			cc.Add(pmpx.Compress_Lz4)
 			cc.End()
 		}
 
@@ -235,15 +235,15 @@ func (c *conn) connectClient() status.Status {
 
 	// Check version
 	v := resp.Version()
-	if v != ptcp.Version_Version10 {
+	if v != pmpx.Version_Version10 {
 		return tcpErrorf("server returned unsupported version %d", v)
 	}
 
 	// Init compression
 	comp := resp.Compress()
 	switch comp {
-	case ptcp.Compress_None:
-	case ptcp.Compress_Lz4:
+	case pmpx.Compress_None:
+	case pmpx.Compress_Lz4:
 		if st := c.reader.initLZ4(); !st.OK() {
 			return st
 		}
@@ -282,13 +282,13 @@ func (c *conn) connectServer() status.Status {
 	versions := req.Versions()
 	for i := 0; i < versions.Len(); i++ {
 		v := versions.Get(i)
-		if v == ptcp.Version_Version10 {
+		if v == pmpx.Version_Version10 {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		w := ptcp.NewConnectResponseWriter()
+		w := pmpx.NewConnectResponseWriter()
 		w.Ok(false)
 		w.Error("unsupported protocol versions")
 
@@ -300,21 +300,21 @@ func (c *conn) connectServer() status.Status {
 	}
 
 	// Select compression
-	comp := ptcp.Compress_None
+	comp := pmpx.Compress_None
 	comps := req.Compress()
 	for i := 0; i < comps.Len(); i++ {
 		c := comps.Get(i)
-		if c == ptcp.Compress_Lz4 {
-			comp = ptcp.Compress_Lz4
+		if c == pmpx.Compress_Lz4 {
+			comp = pmpx.Compress_Lz4
 			break
 		}
 	}
 
 	// Return response
 	{
-		w := ptcp.NewConnectResponseWriter()
+		w := pmpx.NewConnectResponseWriter()
 		w.Ok(true)
-		w.Version(ptcp.Version_Version10)
+		w.Version(pmpx.Version_Version10)
 		w.Compress(comp)
 
 		resp, err := w.Build()
@@ -328,8 +328,8 @@ func (c *conn) connectServer() status.Status {
 
 	// Init compression
 	switch comp {
-	case ptcp.Compress_None:
-	case ptcp.Compress_Lz4:
+	case pmpx.Compress_None:
+	case pmpx.Compress_Lz4:
 		if st := c.reader.initLZ4(); !st.OK() {
 			return st
 		}
@@ -353,7 +353,7 @@ func (c *conn) readLoop(ctx async.Context) status.Status {
 		// Handle message
 		code := msg.Code()
 		switch code {
-		case ptcp.Code_OpenChannel:
+		case pmpx.Code_OpenChannel:
 			m := msg.Open()
 
 			ch, st := c.channels.opened(c, m)
@@ -362,7 +362,7 @@ func (c *conn) readLoop(ctx async.Context) status.Status {
 			}
 			ch.receiveMessage(ctx, msg)
 
-		case ptcp.Code_CloseChannel:
+		case pmpx.Code_CloseChannel:
 			m := msg.Close()
 			id := m.Id()
 
@@ -372,7 +372,7 @@ func (c *conn) readLoop(ctx async.Context) status.Status {
 			}
 			ch.receiveMessage(ctx, msg)
 
-		case ptcp.Code_ChannelMessage:
+		case pmpx.Code_ChannelMessage:
 			m := msg.Message()
 			id := m.Id()
 
@@ -382,7 +382,7 @@ func (c *conn) readLoop(ctx async.Context) status.Status {
 			}
 			ch.receiveMessage(ctx, msg)
 
-		case ptcp.Code_ChannelWindow:
+		case pmpx.Code_ChannelWindow:
 			m := msg.Window()
 			id := m.Id()
 
@@ -408,10 +408,10 @@ func (c *conn) writeLoop(ctx async.Context) status.Status {
 			return st
 
 		case ok:
-			msg := ptcp.NewMessage(b)
+			msg := pmpx.NewMessage(b)
 			code := msg.Code()
 
-			if code == ptcp.Code_CloseChannel {
+			if code == pmpx.Code_CloseChannel {
 				id := msg.Close().Id()
 				c.channels.remove(id)
 			}
@@ -438,7 +438,7 @@ func (c *conn) writeLoop(ctx async.Context) status.Status {
 }
 
 // write pushes an outgoing message to the write queue, or returns a connection closed error.
-func (c *conn) write(ctx async.Context, msg ptcp.Message) status.Status {
+func (c *conn) write(ctx async.Context, msg pmpx.Message) status.Status {
 	b := msg.Unwrap().Raw()
 
 	for {
@@ -574,7 +574,7 @@ func (c *connChannels) open(conn *conn) (*channel, status.Status) {
 	return ch, status.OK
 }
 
-func (c *connChannels) opened(conn *conn, msg ptcp.OpenChannel) (*channel, status.Status) {
+func (c *connChannels) opened(conn *conn, msg pmpx.OpenChannel) (*channel, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

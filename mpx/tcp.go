@@ -1,4 +1,4 @@
-package tcp
+package mpx
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ProtocolLine = "SpecTCP/1\n"
+	ProtocolLine = "SpecMPX/1\n"
 )
 
 const (

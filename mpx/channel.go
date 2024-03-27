@@ -1,4 +1,4 @@
-package tcp
+package mpx
 
 import (
 	"sync"
@@ -8,7 +8,7 @@ import (
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
-	"github.com/basecomplextech/spec/proto/ptcp"
+	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
 // Channel is a single channel in a TCP connection.
@@ -80,7 +80,7 @@ func openChannel(conn *conn, id bin.Bin128, window int) *channel {
 	}
 }
 
-func openedChannel(conn *conn, msg ptcp.OpenChannel) *channel {
+func openedChannel(conn *conn, msg pmpx.OpenChannel) *channel {
 	id := msg.Id()
 	window := int(msg.Window())
 
@@ -145,7 +145,7 @@ func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 	}
 
 	// Parse message
-	msg, _, err := ptcp.ParseMessage(b)
+	msg, _, err := pmpx.ParseMessage(b)
 	if err != nil {
 		ch.close(nil /* no data */)
 		return nil, false, tcpError(err)
@@ -154,21 +154,21 @@ func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 	// Handle message
 	code := msg.Code()
 	switch code {
-	case ptcp.Code_OpenChannel:
+	case pmpx.Code_OpenChannel:
 		data := msg.Open().Data()
 		if st := ch.incrementReadBytes(ctx, s, len(b)); !st.OK() {
 			return nil, false, st
 		}
 		return data, true, status.OK
 
-	case ptcp.Code_ChannelMessage:
+	case pmpx.Code_ChannelMessage:
 		data := msg.Message().Data()
 		if st := ch.incrementReadBytes(ctx, s, len(b)); !st.OK() {
 			return nil, false, st
 		}
 		return data, true, status.OK
 
-	case ptcp.Code_ChannelWindow:
+	case pmpx.Code_ChannelWindow:
 		delta := msg.Window().Delta()
 		ch.incrementWriteWindow(s, int(delta))
 
@@ -177,7 +177,7 @@ func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 		}
 		return nil, false, status.OK
 
-	case ptcp.Code_CloseChannel:
+	case pmpx.Code_CloseChannel:
 		s.close()
 
 		if debug {
@@ -295,7 +295,7 @@ func (ch *channel) connClosed() {
 }
 
 // receiveMessage receives a message from the connection.
-func (ch *channel) receiveMessage(ctx async.Context, msg ptcp.Message) {
+func (ch *channel) receiveMessage(ctx async.Context, msg pmpx.Message) {
 	s, ok := ch.rlock()
 	if !ok {
 		return
@@ -311,7 +311,7 @@ func (ch *channel) receiveMessage(ctx async.Context, msg ptcp.Message) {
 }
 
 // receiveWindow receives a window increment from the connection.
-func (ch *channel) receiveWindow(ctx async.Context, msg ptcp.Message) {
+func (ch *channel) receiveWindow(ctx async.Context, msg pmpx.Message) {
 	s, ok := ch.rlock()
 	if !ok {
 		return
@@ -419,13 +419,13 @@ func (ch *channel) writeNew(ctx async.Context, s *channelState, data []byte) sta
 	}
 	s.newSent = true
 
-	var msg ptcp.Message
+	var msg pmpx.Message
 	{
 		s.writeBuf.Reset()
 		s.writer.Reset(s.writeBuf)
 
-		w0 := ptcp.NewMessageWriterTo(s.writer.Message())
-		w0.Code(ptcp.Code_OpenChannel)
+		w0 := pmpx.NewMessageWriterTo(s.writer.Message())
+		w0.Code(pmpx.Code_OpenChannel)
 
 		w1 := w0.Open()
 		w1.Id(ch.id)
@@ -463,13 +463,13 @@ func (ch *channel) writeMessage(ctx async.Context, s *channelState, data []byte)
 		return statusChannelClosed
 	}
 
-	var msg ptcp.Message
+	var msg pmpx.Message
 	{
 		s.writeBuf.Reset()
 		s.writer.Reset(s.writeBuf)
 
-		w0 := ptcp.NewMessageWriterTo(s.writer.Message())
-		w0.Code(ptcp.Code_ChannelMessage)
+		w0 := pmpx.NewMessageWriterTo(s.writer.Message())
+		w0.Code(pmpx.Code_ChannelMessage)
 
 		w1 := w0.Message()
 		w1.Id(ch.id)
@@ -504,13 +504,13 @@ func (ch *channel) writeWindow(ctx async.Context, s *channelState, delta int) st
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 
-	var msg ptcp.Message
+	var msg pmpx.Message
 	{
 		s.writeBuf.Reset()
 		s.writer.Reset(s.writeBuf)
 
-		w0 := ptcp.NewMessageWriterTo(s.writer.Message())
-		w0.Code(ptcp.Code_ChannelWindow)
+		w0 := pmpx.NewMessageWriterTo(s.writer.Message())
+		w0.Code(pmpx.Code_ChannelWindow)
 
 		w1 := w0.Window()
 		w1.Id(ch.id)
@@ -533,13 +533,13 @@ func (ch *channel) writeClose(ctx async.Context, s *channelState, data []byte) s
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 
-	var msg ptcp.Message
+	var msg pmpx.Message
 	{
 		s.writeBuf.Reset()
 		s.writer.Reset(s.writeBuf)
 
-		w0 := ptcp.NewMessageWriterTo(s.writer.Message())
-		w0.Code(ptcp.Code_CloseChannel)
+		w0 := pmpx.NewMessageWriterTo(s.writer.Message())
+		w0.Code(pmpx.Code_CloseChannel)
 
 		w1 := w0.Close()
 		w1.Id(ch.id)

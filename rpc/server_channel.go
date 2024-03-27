@@ -7,8 +7,8 @@ import (
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
+	"github.com/basecomplextech/spec/mpx"
 	"github.com/basecomplextech/spec/proto/prpc"
-	"github.com/basecomplextech/spec/tcp"
 )
 
 // ServerChannel is a server RPC channel.
@@ -45,13 +45,13 @@ type ServerChannel interface {
 var _ ServerChannel = (*serverChannel)(nil)
 
 type serverChannel struct {
-	ch tcp.Channel
+	ch mpx.Channel
 
 	stateMu sync.RWMutex
 	state   *serverChannelState
 }
 
-func newServerChannel(ch tcp.Channel, req prpc.Request) *serverChannel {
+func newServerChannel(ch mpx.Channel, req prpc.Request) *serverChannel {
 	s := acquireServerState()
 	s.readReq = req
 

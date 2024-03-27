@@ -9,8 +9,8 @@ import (
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
+	"github.com/basecomplextech/spec/mpx"
 	"github.com/basecomplextech/spec/proto/prpc"
-	"github.com/basecomplextech/spec/tcp"
 )
 
 // Channel is a client RPC channel.
@@ -52,13 +52,13 @@ type Channel interface {
 var _ Channel = (*channel)(nil)
 
 type channel struct {
-	ch tcp.Channel
+	ch mpx.Channel
 
 	stateMu sync.RWMutex
 	state   *channelState
 }
 
-func newChannel(ch tcp.Channel, logger logging.Logger) *channel {
+func newChannel(ch mpx.Channel, logger logging.Logger) *channel {
 	s := acquireState()
 	s.logger = logger
 

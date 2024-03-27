@@ -1,4 +1,4 @@
-package tcp
+package mpx
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec/proto/ptcp"
+	"github.com/basecomplextech/spec/proto/pmpx"
 	"github.com/pierrec/lz4/v4"
 )
 
@@ -74,15 +74,15 @@ func (r *reader) readLine() (string, status.Status) {
 }
 
 // readRequest reads and parses a connect request, the message is valid until the next read call.
-func (r *reader) readRequest() (ptcp.ConnectRequest, status.Status) {
+func (r *reader) readRequest() (pmpx.ConnectRequest, status.Status) {
 	buf, st := r.read()
 	if !st.OK() {
-		return ptcp.ConnectRequest{}, st
+		return pmpx.ConnectRequest{}, st
 	}
 
-	req, _, err := ptcp.ParseConnectRequest(buf)
+	req, _, err := pmpx.ParseConnectRequest(buf)
 	if err != nil {
-		return ptcp.ConnectRequest{}, tcpErrorf("failed to parse connect request: %v", err)
+		return pmpx.ConnectRequest{}, tcpErrorf("failed to parse connect request: %v", err)
 	}
 
 	if debug {
@@ -92,15 +92,15 @@ func (r *reader) readRequest() (ptcp.ConnectRequest, status.Status) {
 }
 
 // readResponse reads and parses a connect response, the message is valid until the next read call.
-func (r *reader) readResponse() (ptcp.ConnectResponse, status.Status) {
+func (r *reader) readResponse() (pmpx.ConnectResponse, status.Status) {
 	buf, st := r.read()
 	if !st.OK() {
-		return ptcp.ConnectResponse{}, st
+		return pmpx.ConnectResponse{}, st
 	}
 
-	resp, _, err := ptcp.ParseConnectResponse(buf)
+	resp, _, err := pmpx.ParseConnectResponse(buf)
 	if err != nil {
-		return ptcp.ConnectResponse{}, tcpErrorf("failed to parse connect response: %v", err)
+		return pmpx.ConnectResponse{}, tcpErrorf("failed to parse connect response: %v", err)
 	}
 
 	if debug {
@@ -110,28 +110,28 @@ func (r *reader) readResponse() (ptcp.ConnectResponse, status.Status) {
 }
 
 // readMessage reads and parses the next message, the message is valid until the next read call.
-func (r *reader) readMessage() (ptcp.Message, status.Status) {
+func (r *reader) readMessage() (pmpx.Message, status.Status) {
 	buf, st := r.read()
 	if !st.OK() {
-		return ptcp.Message{}, st
+		return pmpx.Message{}, st
 	}
 
 	// Parse message
-	msg, _, err := ptcp.ParseMessage(buf)
+	msg, _, err := pmpx.ParseMessage(buf)
 	if err != nil {
-		return ptcp.Message{}, tcpError(err)
+		return pmpx.Message{}, tcpError(err)
 	}
 
 	if debug {
 		code := msg.Code()
 		switch code {
-		case ptcp.Code_OpenChannel:
+		case pmpx.Code_OpenChannel:
 			debugPrint(r.client, "<- open\t", msg.Open().Id())
-		case ptcp.Code_CloseChannel:
+		case pmpx.Code_CloseChannel:
 			debugPrint(r.client, "<- close\t", msg.Close().Id())
-		case ptcp.Code_ChannelMessage:
+		case pmpx.Code_ChannelMessage:
 			debugPrint(r.client, "<- message\t", msg.Message().Id())
-		case ptcp.Code_ChannelWindow:
+		case pmpx.Code_ChannelWindow:
 			debugPrint(r.client, "<- window\t", msg.Window().Id(), msg.Window().Delta())
 		default:
 			debugPrint(r.client, "<- unknown", code)

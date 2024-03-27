@@ -1,11 +1,11 @@
 package rpc
 
-import "github.com/basecomplextech/spec/tcp"
+import "github.com/basecomplextech/spec/mpx"
 
 // Options is a type alias for SpecTCP options.
-type Options = tcp.Options
+type Options = mpx.Options
 
 // Default returns default options.
 func Default() Options {
-	return tcp.Default()
+	return mpx.Default()
 }

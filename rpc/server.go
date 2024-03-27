@@ -8,8 +8,8 @@ import (
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
+	"github.com/basecomplextech/spec/mpx"
 	"github.com/basecomplextech/spec/proto/prpc"
-	"github.com/basecomplextech/spec/tcp"
 )
 
 // Server is an RPC server.
@@ -34,7 +34,7 @@ func NewServer(address string, handler Handler, logger logging.Logger, opts Opti
 // internal
 
 type server struct {
-	tcp.Server
+	mpx.Server
 
 	handler Handler
 	logger  logging.Logger
@@ -45,12 +45,12 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 		handler: handler,
 		logger:  logger,
 	}
-	s.Server = tcp.NewServer(address, s, logger, opts)
+	s.Server = mpx.NewServer(address, s, logger, opts)
 	return s
 }
 
 // HandleChannel handles an incoming TCP channel.
-func (s *server) HandleChannel(ctx async.Context, tch tcp.Channel) (st status.Status) {
+func (s *server) HandleChannel(ctx async.Context, tch mpx.Channel) (st status.Status) {
 	// Receive message
 	b, st := tch.ReadSync(ctx)
 	if !st.OK() {
@@ -113,7 +113,7 @@ func (s *server) HandleChannel(ctx async.Context, tch tcp.Channel) (st status.St
 
 // private
 
-func (s *server) handleRequest(ctx async.Context, tch tcp.Channel, req prpc.Request) (
+func (s *server) handleRequest(ctx async.Context, tch mpx.Channel, req prpc.Request) (
 	result *ref.R[[]byte], st status.Status) {
 
 	start := time.Now()
