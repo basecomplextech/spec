@@ -9,7 +9,7 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
-// Client is a SpecTCP client which manages outgoing connections.
+// Client is a SpecMPX client which manages outgoing connections.
 type Client interface {
 	// Address returns the server address.
 	Address() string
