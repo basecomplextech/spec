@@ -206,8 +206,13 @@ func (w *messageWriter) methods(def *model.Definition) error {
 	w.writef(`}`)
 	w.line()
 
-	w.writef(`func (m %v) CloneTo(b buffer.Buffer) %v {`, def.Name, def.Name)
-	w.writef(`return %v{m.msg.CloneTo(b)}`, def.Name)
+	w.writef(`func (m %v) CloneToArena(a alloc.Arena) %v {`, def.Name, def.Name)
+	w.writef(`return %v{m.msg.CloneToArena(a)}`, def.Name)
+	w.writef(`}`)
+	w.line()
+
+	w.writef(`func (m %v) CloneToBuffer(b buffer.Buffer) %v {`, def.Name, def.Name)
+	w.writef(`return %v{m.msg.CloneToBuffer(b)}`, def.Name)
 	w.writef(`}`)
 	w.line()
 

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/spec/encoding"
 )
@@ -165,22 +166,30 @@ func (m Message) Clone() Message {
 	return NewMessage(b)
 }
 
-// CloneToBuffer clones a message into a buffer, grows the buffer.
-func (m Message) CloneTo(buf buffer.Buffer) Message {
-	ln := len(m.bytes)
-	b := buf.Grow(ln)
-	copy(b, m.bytes)
-	return NewMessage(b)
-}
-
-// CloneTo clones a message into a slice.
-func (m Message) CloneToBytes(b []byte) Message {
+// CloneTo clones a message into a slice, allocates a new slice when needed.
+func (m Message) CloneTo(b []byte) Message {
 	ln := len(m.bytes)
 	if cap(b) < ln {
 		b = make([]byte, ln)
 	}
 	b = b[:ln]
 
+	copy(b, m.bytes)
+	return NewMessage(b)
+}
+
+// CloneToArena clones a message into an arena.
+func (m Message) CloneToArena(a alloc.Arena) Message {
+	n := len(m.bytes)
+	buf := alloc.Bytes(a, n)
+	copy(buf, m.bytes)
+	return NewMessage(buf)
+}
+
+// CloneToBuffer clones a message into a buffer, grows the buffer.
+func (m Message) CloneToBuffer(buf buffer.Buffer) Message {
+	ln := len(m.bytes)
+	b := buf.Grow(ln)
 	copy(b, m.bytes)
 	return NewMessage(b)
 }

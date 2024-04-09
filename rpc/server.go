@@ -139,12 +139,19 @@ func (s *server) handleRequest(ctx async.Context, tch mpx.Channel, req prpc.Requ
 
 	// Log request
 	time := time.Since(start)
-	if st.OK() {
+	switch st.Code {
+	case status.CodeOK:
 		if s.logger.TraceEnabled() {
 			s.logger.Trace("RPC server request", "method", method, "time", time)
 		}
-	} else {
-		s.logger.ErrorStatus("RPC server error", st, "method", method, "time", time)
+	case status.CodeError:
+		if s.logger.ErrorEnabled() {
+			s.logger.ErrorStatus("RPC server error", st, "method", method, "time", time)
+		}
+	default:
+		if s.logger.DebugEnabled() {
+			s.logger.Debug("RPC server request", "method", method, "time", time)
+		}
 	}
 	return result, st
 }
