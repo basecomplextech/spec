@@ -19,7 +19,7 @@ type Server interface {
 	Address() string
 
 	// Listening indicates that the server is listening.
-	Listening() <-chan struct{}
+	Listening() async.Flag
 
 	// Options returns the server options.
 	Options() Options
@@ -40,7 +40,7 @@ type server struct {
 	logger  logging.Logger
 	options Options
 
-	listening *async.Flag
+	listening async.MutFlag
 
 	mu sync.Mutex
 	ln net.Listener
@@ -72,8 +72,8 @@ func (s *server) Address() string {
 }
 
 // Listening indicates that the server is listening.
-func (s *server) Listening() <-chan struct{} {
-	return s.listening.Wait()
+func (s *server) Listening() async.Flag {
+	return s.listening
 }
 
 // Options returns the server options.

@@ -23,15 +23,15 @@ func TestClient_Connect__should_start_connector(t *testing.T) {
 	client.Connect()
 
 	select {
-	case <-client.Connected():
+	case <-client.Connected().Wait():
 	case <-time.After(time.Second):
 		t.Fatal("connect timeout")
 	}
 
 	assert.NotNil(t, client.conn)
 	assert.NotNil(t, client.connector)
-	assert.True(t, client.connected_.IsSet())
-	assert.False(t, client.disconnected_.IsSet())
+	assert.True(t, client.connected_.Get())
+	assert.False(t, client.disconnected_.Get())
 }
 
 // Flags
@@ -43,7 +43,7 @@ func TestClient_Connected_Disconnected__should_signal_on_state_changes(t *testin
 	client.Connect()
 
 	select {
-	case <-client.Connected():
+	case <-client.Connected().Wait():
 	case <-time.After(time.Second):
 		t.Fatal("connect timeout")
 	}
@@ -54,7 +54,7 @@ func TestClient_Connected_Disconnected__should_signal_on_state_changes(t *testin
 	}()
 
 	select {
-	case <-client.Disconnected():
+	case <-client.Disconnected().Wait():
 	case <-time.After(time.Second):
 		t.Fatal("disconnect timeout")
 	}
@@ -196,7 +196,7 @@ func TestClient_Channel__should_await_connection(t *testing.T) {
 		server.Start()
 
 		select {
-		case <-server.Listening():
+		case <-server.Listening().Wait():
 		case <-time.After(time.Second):
 			t.Fatal("start timeout")
 		}

@@ -23,13 +23,14 @@ type Client interface {
 	// Async
 
 	// Changed adds a connected/disconnected listener.
+	// TODO: Maybe remove, obsole.
 	Changed() (<-chan struct{}, func())
 
 	// Connected indicates that the client is connected to the server.
-	Connected() <-chan struct{}
+	Connected() async.Flag
 
 	// Disconnected indicates that the client is disconnected from the server.
-	Disconnected() <-chan struct{}
+	Disconnected() async.Flag
 
 	// Methods
 
@@ -62,9 +63,9 @@ type client struct {
 	logger  logging.Logger
 	options Options
 
-	closed_       *async.Flag
-	connected_    *async.Flag
-	disconnected_ *async.Flag
+	closed_       async.MutFlag
+	connected_    async.MutFlag
+	disconnected_ async.MutFlag
 
 	mu     sync.Mutex
 	closed bool
@@ -131,19 +132,19 @@ func (c *client) Changed() (<-chan struct{}, func()) {
 }
 
 // Connected indicates that the client is connected to the server.
-func (c *client) Connected() <-chan struct{} {
-	return c.connected_.Wait()
+func (c *client) Connected() async.Flag {
+	return c.connected_
 }
 
 // Disconnected indicates that the client is disconnected from the server.
-func (c *client) Disconnected() <-chan struct{} {
+func (c *client) Disconnected() async.Flag {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.conn != nil {
 		return c.conn.disconnected()
 	}
-	return c.disconnected_.Wait()
+	return c.disconnected_
 }
 
 // Methods
@@ -376,7 +377,7 @@ func (c *client) doConnect(ctx async.Context) (st status.Status) {
 		return ctx.Status()
 	case <-c.closed_.Wait():
 		return status.Cancelled
-	case <-conn.disconnected():
+	case <-conn.disconnected().Wait():
 		return status.OK
 	}
 }

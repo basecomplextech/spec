@@ -168,8 +168,8 @@ func (c *conn) closed() bool {
 	return c.socket.closed()
 }
 
-func (c *conn) disconnected() <-chan struct{} {
-	return c.socket.disconnected.Wait()
+func (c *conn) disconnected() async.Flag {
+	return c.socket.disconnected
 }
 
 // connect
@@ -463,7 +463,7 @@ func (c *conn) write(ctx async.Context, msg pmpx.Message) status.Status {
 // socket
 
 type connSocket struct {
-	disconnected *async.Flag
+	disconnected async.MutFlag
 
 	mu     sync.Mutex
 	st     status.Status

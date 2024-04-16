@@ -27,10 +27,10 @@ type Client interface {
 	Changed() (<-chan struct{}, func())
 
 	// Connected indicates that the client is connected to the server.
-	Connected() <-chan struct{}
+	Connected() async.Flag
 
 	// Disconnected indicates that the client is disconnected from the server.
-	Disconnected() <-chan struct{}
+	Disconnected() async.Flag
 
 	// Methods
 
@@ -96,12 +96,12 @@ func (c *client) Changed() (<-chan struct{}, func()) {
 }
 
 // Connected indicates that the client is connected to the server.
-func (c *client) Connected() <-chan struct{} {
+func (c *client) Connected() async.Flag {
 	return c.client.Connected()
 }
 
 // Disconnected indicates that the client is disconnected from the server.
-func (c *client) Disconnected() <-chan struct{} {
+func (c *client) Disconnected() async.Flag {
 	return c.client.Disconnected()
 }
 

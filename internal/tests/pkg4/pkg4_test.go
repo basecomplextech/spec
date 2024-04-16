@@ -34,7 +34,7 @@ func testServer(t tests.T, logger logging.Logger, service Service) rpc.Server {
 	t.Cleanup(cleanup)
 
 	select {
-	case <-server.Listening():
+	case <-server.Listening().Wait():
 	case <-time.After(time.Second):
 		t.Fatal("server not listening")
 	}

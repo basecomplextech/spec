@@ -20,7 +20,7 @@ type Server interface {
 	Address() string
 
 	// Listening indicates that the server is listening.
-	Listening() <-chan struct{}
+	Listening() async.Flag
 
 	// Options returns the server options.
 	Options() Options
