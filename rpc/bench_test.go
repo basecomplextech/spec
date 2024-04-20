@@ -81,7 +81,7 @@ func BenchmarkStream(b *testing.B) {
 	streamMsg := []byte("hello, world")
 	closeMsg := []byte("close")
 
-	handle := func(ctx async.Context, ch ServerChannel) (*ref.R[[]byte], status.Status) {
+	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		for {
 			msg, st := ch.ReadSync(ctx)
 			if !st.OK() {

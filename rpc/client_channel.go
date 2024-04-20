@@ -39,7 +39,7 @@ type Channel interface {
 	// Response
 
 	// Response receives a response and returns its status and result if status is OK.
-	Response(ctx async.Context) (*ref.R[spec.Value], status.Status)
+	Response(ctx async.Context) (ref.R[spec.Value], status.Status)
 
 	// Internal
 
@@ -291,7 +291,7 @@ func (ch *channel) WriteEnd(ctx async.Context) status.Status {
 // Response
 
 // Response receives a response and returns its status and result if status is OK.
-func (ch *channel) Response(ctx async.Context) (*ref.R[spec.Value], status.Status) {
+func (ch *channel) Response(ctx async.Context) (ref.R[spec.Value], status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil, status.Closed
@@ -436,7 +436,7 @@ type channelState struct {
 	readError  status.Status
 
 	// temp result stores result until Response is called
-	result   *ref.R[spec.Value]
+	result   ref.R[spec.Value]
 	resultOK bool
 	resultSt status.Status
 }
@@ -509,16 +509,23 @@ func (s *channelState) readFail(st status.Status) {
 	switch st.Code {
 	case status.CodeOK,
 		status.CodeCancelled,
+		status.CodeExternalError,
 		status.CodeEnd,
-		status.CodeClosed:
-	default:
+		status.CodeWait:
+
+	case status.CodeError, status.CodeCorrupted:
 		s.logger.ErrorStatus("RPC client request error", st, "method", s.method)
+
+	default:
+		if s.logger.DebugEnabled() {
+			s.logger.Debug("RPC client request error", "status", st, "method", s.method)
+		}
 	}
 }
 
 // util
 
-func parseResult(resp prpc.Response) (*ref.R[spec.Value], status.Status) {
+func parseResult(resp prpc.Response) (ref.R[spec.Value], status.Status) {
 	// Parse status
 	st := parseStatus(resp.Status())
 	if !st.OK() {
@@ -528,7 +535,7 @@ func parseResult(resp prpc.Response) (*ref.R[spec.Value], status.Status) {
 	// Return nil when no result
 	result := resp.Result()
 	if len(result) == 0 {
-		return ref.NewNoFreer[spec.Value](nil), status.OK
+		return ref.NewNoop[spec.Value](nil), status.OK
 	}
 
 	// Copy result to buffer

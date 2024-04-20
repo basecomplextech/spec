@@ -38,7 +38,7 @@ func (s *testService) Method2(ctx async.Context, a_ int64, b_ float64, c_ bool) 
 	return a_, b_, c_, status.OK
 }
 
-func (s *testService) Method3(ctx async.Context, req Request) (*ref.R[Response], status.Status) {
+func (s *testService) Method3(ctx async.Context, req Request) (ref.R[Response], status.Status) {
 	msg := req.Msg()
 
 	buf := alloc.NewBuffer()
@@ -78,7 +78,7 @@ func (s *testService) Method10(ctx async.Context) (
 		status.OK
 }
 
-func (s *testService) Method11(ctx async.Context) (*ref.R[ServiceMethod11Response], status.Status) {
+func (s *testService) Method11(ctx async.Context) (ref.R[ServiceMethod11Response], status.Status) {
 	w := NewServiceMethod11ResponseWriter()
 	w.A50("hello")
 	w.A51([]byte("world"))
@@ -89,7 +89,7 @@ func (s *testService) Method11(ctx async.Context) (*ref.R[ServiceMethod11Respons
 		return nil, status.WrapError(err)
 	}
 
-	return ref.NewNoFreer(resp), status.OK
+	return ref.NewNoop(resp), status.OK
 }
 
 func (s *testService) Method20(ctx async.Context, ch ServiceMethod20Channel) (
@@ -105,7 +105,7 @@ func (s *testService) Method20(ctx async.Context, ch ServiceMethod20Channel) (
 	return a_, b_, c_, status.OK
 }
 
-func (s *testService) Method21(ctx async.Context, ch ServiceMethod21Channel) (*ref.R[Response], status.Status) {
+func (s *testService) Method21(ctx async.Context, ch ServiceMethod21Channel) (ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
@@ -131,10 +131,10 @@ func (s *testService) Method21(ctx async.Context, ch ServiceMethod21Channel) (*r
 	if err != nil {
 		return nil, status.WrapError(err)
 	}
-	return ref.NewNoFreer(resp), status.OK
+	return ref.NewNoop(resp), status.OK
 }
 
-func (s *testService) Method22(ctx async.Context, ch ServiceMethod22Channel) (*ref.R[Response], status.Status) {
+func (s *testService) Method22(ctx async.Context, ch ServiceMethod22Channel) (ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
@@ -152,10 +152,10 @@ func (s *testService) Method22(ctx async.Context, ch ServiceMethod22Channel) (*r
 	if err != nil {
 		return nil, status.WrapError(err)
 	}
-	return ref.NewNoFreer(resp), status.OK
+	return ref.NewNoop(resp), status.OK
 }
 
-func (s *testService) Method23(ctx async.Context, ch ServiceMethod23Channel) (*ref.R[Response], status.Status) {
+func (s *testService) Method23(ctx async.Context, ch ServiceMethod23Channel) (ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
 		return nil, st
@@ -186,7 +186,7 @@ func (s *testService) Method23(ctx async.Context, ch ServiceMethod23Channel) (*r
 	if err != nil {
 		return nil, status.WrapError(err)
 	}
-	return ref.NewNoFreer(resp), status.OK
+	return ref.NewNoop(resp), status.OK
 }
 
 var _ Subservice = (*testSubservice)(nil)
@@ -194,7 +194,7 @@ var _ Subservice = (*testSubservice)(nil)
 type testSubservice struct{}
 
 func (s *testSubservice) Hello(ctx async.Context, req SubserviceHelloRequest) (
-	*ref.R[SubserviceHelloResponse], status.Status) {
+	ref.R[SubserviceHelloResponse], status.Status) {
 	msg := req.Msg().Clone()
 
 	w := NewSubserviceHelloResponseWriter()
@@ -204,5 +204,5 @@ func (s *testSubservice) Hello(ctx async.Context, req SubserviceHelloRequest) (
 	if err != nil {
 		return nil, status.WrapError(err)
 	}
-	return ref.NewNoFreer(resp), status.OK
+	return ref.NewNoop(resp), status.OK
 }

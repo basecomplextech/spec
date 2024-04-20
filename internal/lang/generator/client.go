@@ -156,7 +156,7 @@ func (w *clientWriter) method_output(def *model.Definition, m *model.Method) err
 
 	case m.Output != nil:
 		typeName := typeName(m.Output)
-		w.linef(`(*ref.R[%v], status.Status)`, typeName)
+		w.linef(`(ref.R[%v], status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List
@@ -243,7 +243,7 @@ func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
 
 		case m.Output != nil:
 			typeName := typeName(m.Output)
-			w.linef(`(*ref.R[%v], status.Status)`, typeName)
+			w.linef(`(ref.R[%v], status.Status)`, typeName)
 
 		case m.OutputFields != nil:
 			fields := m.OutputFields.List

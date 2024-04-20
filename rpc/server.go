@@ -114,7 +114,7 @@ func (s *server) HandleChannel(ctx async.Context, tch mpx.Channel) (st status.St
 // private
 
 func (s *server) handleRequest(ctx async.Context, tch mpx.Channel, req prpc.Request) (
-	result *ref.R[[]byte], st status.Status) {
+	result ref.R[[]byte], st status.Status) {
 
 	start := time.Now()
 	method := requestMethod(req)

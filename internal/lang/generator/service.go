@@ -108,7 +108,7 @@ func (w *serviceWriter) method_output(def *model.Definition, m *model.Method) er
 
 	case m.Output != nil:
 		typeName := typeName(out)
-		w.writef(`(*ref.R[%v], status.Status)`, typeName)
+		w.writef(`(ref.R[%v], status.Status)`, typeName)
 
 	case m.OutputFields != nil:
 		fields := m.OutputFields.List

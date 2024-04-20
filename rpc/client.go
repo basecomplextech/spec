@@ -44,7 +44,7 @@ type Client interface {
 	Channel(ctx async.Context, req prpc.Request) (Channel, status.Status)
 
 	// Request sends a request and returns a response.
-	Request(ctx async.Context, req prpc.Request) (*ref.R[spec.Value], status.Status)
+	Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value], status.Status)
 
 	// Internal
 
@@ -157,7 +157,7 @@ func (c *client) Channel(ctx async.Context, req prpc.Request) (Channel, status.S
 }
 
 // Request sends a request and returns a response.
-func (c *client) Request(ctx async.Context, req prpc.Request) (*ref.R[spec.Value], status.Status) {
+func (c *client) Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value], status.Status) {
 	// Open channel
 	ch, st := c.channel(ctx)
 	switch st.Code {
