@@ -23,7 +23,7 @@ func testServer(t tests.T, logger logging.Logger, service Service) rpc.Server {
 	}
 
 	cleanup := func() {
-		routine.Cancel()
+		routine.Stop()
 
 		select {
 		case <-routine.Wait():

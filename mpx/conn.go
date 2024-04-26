@@ -133,7 +133,7 @@ func (c *conn) run() {
 	// Run loops
 	reader := async.Go(c.readLoop)
 	writer := async.Go(c.writeLoop)
-	defer async.CancelWaitAll(reader, writer)
+	defer async.StopWaitAll(reader, writer)
 	defer c.close()
 
 	// Wait exit

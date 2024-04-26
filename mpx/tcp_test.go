@@ -22,7 +22,7 @@ func testServer(t tests.T, handle HandleFunc) *server {
 	}
 
 	cleanup := func() {
-		routine.Cancel()
+		routine.Stop()
 
 		select {
 		case <-routine.Wait():

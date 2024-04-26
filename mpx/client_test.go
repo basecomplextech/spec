@@ -183,7 +183,7 @@ func TestClient_Channel__should_reconnect_if_connection_closed(t *testing.T) {
 func TestClient_Channel__should_await_connection(t *testing.T) {
 	server := testRequestServer(t)
 	select {
-	case <-server.Stop().Wait():
+	case <-server.Stop():
 	case <-time.After(time.Second):
 		t.Fatal("stop timeout")
 	}

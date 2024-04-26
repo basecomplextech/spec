@@ -30,11 +30,8 @@ func TestServer_Cancel__should_stop_server(t *testing.T) {
 		t.Fatal("server not listening")
 	}
 
-	main := server.Routine()
-	main.Cancel()
-
 	select {
-	case <-main.Wait():
+	case <-server.Stop():
 	case <-time.After(time.Second):
 		t.Fatal("server not stopped")
 	}

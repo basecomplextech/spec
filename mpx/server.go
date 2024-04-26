@@ -95,7 +95,7 @@ func (s *server) run(ctx async.Context) (st status.Status) {
 
 	// Serve
 	server := async.Go(s.serve)
-	defer async.CancelWait(server)
+	defer async.StopWait(server)
 	defer s.ln.Close() // double close is OK
 
 	// Wait

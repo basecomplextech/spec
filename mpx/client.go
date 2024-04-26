@@ -188,7 +188,7 @@ func (c *client) Close() status.Status {
 
 	// Stop connector
 	if c.connector != nil {
-		c.connector.Cancel()
+		c.connector.Stop()
 		c.connector = nil
 	}
 	return status.OK
