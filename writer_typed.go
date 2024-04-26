@@ -24,6 +24,12 @@ func (b MessageListWriter[T]) Add() (_ T) {
 	return b.next(msg)
 }
 
+// Copy adds a message copy to the list.
+func (b MessageListWriter[T]) Copy(msg MessageType) error {
+	raw := msg.Unwrap().Raw()
+	return b.w.Any(raw)
+}
+
 // Len returns the number of written elements.
 // The method is only valid when there is no pending element.
 func (b MessageListWriter[T]) Len() int {

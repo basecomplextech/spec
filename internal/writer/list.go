@@ -39,6 +39,13 @@ func WriteElement[T any](w ListWriter, value T, write WriteFunc[T]) error {
 
 // Elements
 
+func (l ListWriter) Any(v []byte) error {
+	if err := l.w.Value().Any(v); err != nil {
+		return err
+	}
+	return l.w.element()
+}
+
 func (l ListWriter) Bool(v bool) error {
 	if err := l.w.Value().Bool(v); err != nil {
 		return err
