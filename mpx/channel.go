@@ -6,6 +6,7 @@ import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/pmpx"
@@ -625,14 +626,10 @@ type channelState struct {
 	newSent bool
 }
 
-var statePool = &sync.Pool{
-	New: func() any {
-		return newChannelState()
-	},
-}
+var statePool = pools.MakePool(newChannelState)
 
 func acquireState() *channelState {
-	return statePool.Get().(*channelState)
+	return statePool.New()
 }
 
 func releaseState(s *channelState) {

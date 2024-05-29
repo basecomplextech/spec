@@ -6,6 +6,7 @@ import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
+	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
@@ -416,7 +417,7 @@ func (ch *channel) readSync(ctx async.Context) (prpc.Message, status.Status) {
 
 // state
 
-var statePool = &sync.Pool{}
+var statePool = pools.MakePool(newChannelState)
 
 type channelState struct {
 	logger logging.Logger
@@ -442,12 +443,7 @@ type channelState struct {
 }
 
 func acquireState() *channelState {
-	v := statePool.Get()
-	if v != nil {
-		return v.(*channelState)
-	}
-
-	return newChannelState()
+	return statePool.New()
 }
 
 func releaseState(s *channelState) {

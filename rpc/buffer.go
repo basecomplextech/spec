@@ -1,9 +1,8 @@
 package rpc
 
 import (
-	"sync"
-
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/spec"
 )
 
@@ -15,14 +14,10 @@ func NewBuffer() *alloc.Buffer {
 
 // buffer pool
 
-var bufferPool = &sync.Pool{}
+var bufferPool = pools.MakePool(alloc.NewBuffer)
 
 func acquireBuffer() *alloc.Buffer {
-	v := bufferPool.Get()
-	if v == nil {
-		return alloc.NewBuffer()
-	}
-	return v.(*alloc.Buffer)
+	return bufferPool.New()
 }
 
 func releaseBuffer(buf *alloc.Buffer) {
@@ -56,14 +51,10 @@ func (w *bufferWriter) reset() {
 
 // buffer writer pool
 
-var bufferWriterPool = &sync.Pool{}
+var bufferWriterPool = pools.MakePool(newBufferWriter)
 
 func acquireBufferWriter() *bufferWriter {
-	v := bufferWriterPool.Get()
-	if v == nil {
-		return newBufferWriter()
-	}
-	return v.(*bufferWriter)
+	return bufferWriterPool.New()
 }
 
 func releaseBufferWriter(w *bufferWriter) {

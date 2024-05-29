@@ -5,6 +5,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
+	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/mpx"
@@ -295,7 +296,7 @@ func (ch *serverChannel) rlock() (*serverChannelState, bool) {
 
 // state
 
-var serverStatePool = &sync.Pool{}
+var serverStatePool = pools.MakePool(newServerChannelState)
 
 type serverChannelState struct {
 	writeLock async.Lock
@@ -312,12 +313,7 @@ type serverChannelState struct {
 }
 
 func acquireServerState() *serverChannelState {
-	v := serverStatePool.Get()
-	if v != nil {
-		return v.(*serverChannelState)
-	}
-
-	return newServerChannelState()
+	return serverStatePool.New()
 }
 
 func releaseServerState(s *serverChannelState) {

@@ -1,9 +1,8 @@
 package rpc
 
 import (
-	"sync"
-
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
@@ -105,7 +104,7 @@ func (r *Request) state() *requestState {
 
 // state
 
-var requestStatePool = &sync.Pool{}
+var requestStatePool = pools.MakePool(newRequestState)
 
 type requestState struct {
 	buf    *alloc.Buffer
@@ -117,11 +116,7 @@ type requestState struct {
 }
 
 func acquireRequestState() *requestState {
-	s := requestStatePool.Get()
-	if s == nil {
-		return newRequestState()
-	}
-	return s.(*requestState)
+	return requestStatePool.New()
 }
 
 func releaseRequestState(s *requestState) {
