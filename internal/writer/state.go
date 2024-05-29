@@ -1,9 +1,8 @@
 package writer
 
 import (
-	"sync"
-
 	"github.com/basecomplextech/baselibrary/buffer"
+	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/spec/encoding"
 )
 
@@ -44,14 +43,10 @@ func (s *writerState) reset() {
 
 // state pool
 
-var writerStatePool = &sync.Pool{
-	New: func() any {
-		return newWriterState()
-	},
-}
+var writerStatePool = pools.MakePool(newWriterState)
 
 func acquireWriterState() *writerState {
-	return writerStatePool.Get().(*writerState)
+	return writerStatePool.New()
 }
 
 func releaseWriterState(s *writerState) {

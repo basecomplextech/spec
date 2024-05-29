@@ -2,8 +2,10 @@ package types
 
 import (
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/core"
 )
 
 // Message is a raw message.
@@ -61,7 +63,7 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 
 	ln := m.Len()
 	for i := 0; i < ln; i++ {
-		b1 := m.FieldAt(i)
+		b1 := m.fieldAt(i)
 		if len(b1) == 0 {
 			continue
 		}
@@ -97,32 +99,12 @@ func (m Message) HasField(tag uint16) bool {
 	return end >= 0 && end <= int(size)
 }
 
-// Field returns field data by a tag or nil.
+// Field returns a truncated field data as a value or nil.
 func (m Message) Field(tag uint16) Value {
 	end := m.meta.Offset(tag)
 	size := m.meta.DataSize()
 
-	switch {
-	case end < 0:
-		return nil
-	case end > int(size):
-		return nil
-	}
-
-	// TODO: Truncate bytes to the end of the value, use NewValue.
-	b := m.bytes[:end]
-	return Value(b)
-}
-
-// FieldAt returns field data at an index or nil.
-func (m Message) FieldAt(i int) Value {
-	end := m.meta.OffsetByIndex(i)
-	size := m.meta.DataSize()
-
-	switch {
-	case end < 0:
-		return nil
-	case end > int(size):
+	if end < 0 || end > int(size) {
 		return nil
 	}
 
@@ -130,19 +112,29 @@ func (m Message) FieldAt(i int) Value {
 	return NewValue(b)
 }
 
-// FieldBytes returns field data by a tag or nil.
-func (m Message) FieldBytes(tag uint16) []byte {
-	end := m.meta.Offset(tag)
+// FieldAt returns field data at an index or nil.
+func (m Message) FieldAt(i int) Value {
+	end := m.meta.OffsetByIndex(i)
 	size := m.meta.DataSize()
 
-	switch {
-	case end < 0:
-		return nil
-	case end > int(size):
+	if end < 0 || end > int(size) {
 		return nil
 	}
 
-	// TODO: Truncate bytes to the end of the value, use NewValue.
+	b := m.bytes[:end]
+	return NewValue(b)
+}
+
+// FieldRaw returns a raw untruncated field data by a tag or nil.
+// The data is larger than the field value, when not the first field.
+func (m Message) FieldRaw(tag uint16) []byte {
+	end := m.meta.Offset(tag)
+	size := m.meta.DataSize()
+
+	if end < 0 || end > int(size) {
+		return nil
+	}
+
 	return m.bytes[:end]
 }
 
@@ -192,4 +184,145 @@ func (m Message) CloneToBuffer(buf buffer.Buffer) Message {
 	b := buf.Grow(ln)
 	copy(b, m.bytes)
 	return NewMessage(b)
+}
+
+// Types
+
+// Bool decodes and returns a bool or false.
+func (m Message) Bool(tag uint16) bool {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeBool(b)
+	return v
+}
+
+// Byte decodes and returns a byte or 0.
+func (m Message) Byte(tag uint16) byte {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeByte(b)
+	return v
+}
+
+// Int
+
+// Int16 decodes and returns an int16 or 0.
+func (m Message) Int16(tag uint16) int16 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeInt16(b)
+	return v
+}
+
+// Int32 decodes and returns an int32 or 0.
+func (m Message) Int32(tag uint16) int32 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeInt32(b)
+	return v
+}
+
+// Int64 decodes and returns an int64 or 0.
+func (m Message) Int64(tag uint16) int64 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeInt64(b)
+	return v
+}
+
+// Uint
+
+// Uint16 decodes and returns a uint16 or 0.
+func (m Message) Uint16(tag uint16) uint16 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeUint16(b)
+	return v
+}
+
+// Uint32 decodes and returns a uint32 or 0.
+func (m Message) Uint32(tag uint16) uint32 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeUint32(b)
+	return v
+}
+
+// Uint64 decodes and returns a uint64 or 0.
+func (m Message) Uint64(tag uint16) uint64 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeUint64(b)
+	return v
+}
+
+// Float
+
+// Float32 decodes and returns a float32 or 0.
+func (m Message) Float32(tag uint16) float32 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeFloat32(b)
+	return v
+}
+
+// Float64 decodes and returns a float64 or 0.
+func (m Message) Float64(tag uint16) float64 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeFloat64(b)
+	return v
+}
+
+// Bin
+
+// Bin64 decodes and returns a bin64 or a zero value.
+func (m Message) Bin64(tag uint16) bin.Bin64 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeBin64(b)
+	return v
+}
+
+// Bin128 decodes and returns a bin128 or a zero value.
+func (m Message) Bin128(tag uint16) bin.Bin128 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeBin128(b)
+	return v
+}
+
+// Bin256 decodes and returns a bin256 or a zero value.
+func (m Message) Bin256(tag uint16) bin.Bin256 {
+	b := m.field(tag)
+	v, _, _ := encoding.DecodeBin256(b)
+	return v
+}
+
+// Bytes/string
+
+// Bytes decodes and returns bytes or nil.
+func (m Message) Bytes(tag uint16) core.Bytes {
+	b := m.field(tag)
+	p, _, _ := encoding.DecodeBytes(b)
+	return p
+}
+
+// String decodes and returns a string or an empty string.
+func (m Message) String(tag uint16) core.String {
+	b := m.field(tag)
+	p, _, _ := encoding.DecodeString(b)
+	return core.String(p)
+}
+
+// internal
+
+func (m Message) field(tag uint16) []byte {
+	end := m.meta.Offset(tag)
+	size := m.meta.DataSize()
+
+	if end < 0 || end > int(size) {
+		return nil
+	}
+
+	return m.bytes[:end]
+}
+
+func (m Message) fieldAt(i int) []byte {
+	end := m.meta.OffsetByIndex(i)
+	size := m.meta.DataSize()
+
+	if end < 0 || end > int(size) {
+		return nil
+	}
+
+	return m.bytes[:end]
 }

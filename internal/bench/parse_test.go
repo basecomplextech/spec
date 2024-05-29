@@ -5,7 +5,6 @@ import (
 	"compress/zlib"
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/basecomplextech/spec/internal/tests/pkg1"
 )
@@ -25,7 +24,6 @@ func BenchmarkParseMessage(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
 		_, _, err := pkg1.ParseMessage(bytes)
 		if err != nil {
@@ -33,11 +31,77 @@ func BenchmarkParseMessage(b *testing.B) {
 		}
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
-	b.ReportMetric(ops, "ops")
+	b.ReportMetric(ops/1000_000, "mops")
+	b.ReportMetric(float64(size), "size")
+	b.ReportMetric(float64(compressed), "size-zlib")
+}
+
+// ReadMessage
+
+func BenchmarkReadMessage(b *testing.B) {
+	obj := pkg1.TestObject(b)
+	msg, err := obj.Write(pkg1.NewMessageWriter())
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	bytes := msg.Unwrap().Raw()
+	size := len(bytes)
+	compressed := compressedSize(bytes)
+
+	b.SetBytes(int64(size))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		m, err := pkg1.NewMessageErr(bytes)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		_ = m.Bool()
+		_ = m.Byte()
+
+		_ = m.Int16()
+		_ = m.Int32()
+		_ = m.Int64()
+
+		_ = m.Uint16()
+		_ = m.Uint32()
+		_ = m.Uint64()
+
+		_ = m.Float32()
+		_ = m.Float64()
+
+		_ = m.Bin64()
+		_ = m.Bin128()
+		_ = m.Bin256()
+
+		_ = m.String()
+		_ = m.Bytes1()
+
+		_ = m.Message1()
+		_ = m.Enum1()
+		_ = m.Struct1()
+		_ = m.Submessage()
+		_ = m.Submessage1()
+
+		_ = m.Ints()
+		_ = m.Strings()
+		_ = m.Structs()
+		_ = m.Submessages()
+		_ = m.Submessages1()
+
+		_ = m.Any()
+	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops/1000_000, "mops")
 	b.ReportMetric(float64(size), "size")
 	b.ReportMetric(float64(compressed), "size-zlib")
 }
@@ -59,7 +123,6 @@ func BenchmarkNewMessage(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
 		msg := pkg1.NewMessage(bytes)
 		if len(msg.Unwrap().Raw()) == 0 {
@@ -67,8 +130,7 @@ func BenchmarkNewMessage(b *testing.B) {
 		}
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.ReportMetric(ops, "ops")
@@ -90,8 +152,6 @@ func BenchmarkJSON_Unmarshal(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	t0 := time.Now()
-
 	msg1 := &pkg1.Object{}
 	for i := 0; i < b.N; i++ {
 		if err := json.Unmarshal(data, msg1); err != nil {
@@ -99,8 +159,7 @@ func BenchmarkJSON_Unmarshal(b *testing.B) {
 		}
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.ReportMetric(ops, "ops")

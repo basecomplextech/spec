@@ -65,6 +65,8 @@ type MessageField struct {
 	Offset uint32
 }
 
+// internal
+
 // messageTable is a serialized array of message fields ordered by tags.
 // the serialization format depends on whether the message is big or small, see isBigMessage().
 //

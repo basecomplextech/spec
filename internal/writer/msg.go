@@ -43,6 +43,11 @@ func (m MessageWriter) Copy(src types.Message) error {
 	return nil
 }
 
+// Merge copies absent fields from the given message.
+func (m MessageWriter) Merge(src types.Message) error {
+	return m.Copy(src)
+}
+
 // Build ends the message and returns its bytes.
 func (m MessageWriter) Build() ([]byte, error) {
 	return m.w.end()

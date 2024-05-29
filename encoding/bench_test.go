@@ -62,6 +62,10 @@ func BenchmarkMessageTable_field_small(b *testing.B) {
 			b.Fatal()
 		}
 	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+	b.ReportMetric(ops/1000_000, "mops")
 }
 
 // messageTable: offset_big
@@ -94,6 +98,10 @@ func BenchmarkMessageTable_offset_big(b *testing.B) {
 			b.Fatal()
 		}
 	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+	b.ReportMetric(ops/1000_000, "mops")
 }
 
 func BenchmarkMessageTable_offset_big_safe(b *testing.B) {
@@ -124,6 +132,10 @@ func BenchmarkMessageTable_offset_big_safe(b *testing.B) {
 			b.Fatal()
 		}
 	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+	b.ReportMetric(ops/1000_000, "mops")
 }
 
 // messageTable: offset_small
@@ -156,6 +168,10 @@ func BenchmarkMessageTable_offset_small(b *testing.B) {
 			b.Fatal()
 		}
 	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+	b.ReportMetric(ops/1000_000, "mops")
 }
 
 func BenchmarkMessageTable_offset_small_safe(b *testing.B) {
@@ -186,4 +202,8 @@ func BenchmarkMessageTable_offset_small_safe(b *testing.B) {
 			b.Fatal()
 		}
 	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+	b.ReportMetric(ops/1000_000, "mops")
 }

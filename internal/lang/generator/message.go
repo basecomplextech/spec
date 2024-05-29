@@ -104,40 +104,40 @@ func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 
 		switch kind {
 		case model.KindBool:
-			w.writef(`return m.msg.Field(%d).Bool()`, tag)
+			w.writef(`return m.msg.Bool(%d)`, tag)
 		case model.KindByte:
-			w.writef(`return m.msg.Field(%d).Byte()`, tag)
+			w.writef(`return m.msg.Byte(%d)`, tag)
 
 		case model.KindInt16:
-			w.writef(`return m.msg.Field(%d).Int16()`, tag)
+			w.writef(`return m.msg.Int16(%d)`, tag)
 		case model.KindInt32:
-			w.writef(`return m.msg.Field(%d).Int32()`, tag)
+			w.writef(`return m.msg.Int32(%d)`, tag)
 		case model.KindInt64:
-			w.writef(`return m.msg.Field(%d).Int64()`, tag)
+			w.writef(`return m.msg.Int64(%d)`, tag)
 
 		case model.KindUint16:
-			w.writef(`return m.msg.Field(%d).Uint16()`, tag)
+			w.writef(`return m.msg.Uint16(%d)`, tag)
 		case model.KindUint32:
-			w.writef(`return m.msg.Field(%d).Uint32()`, tag)
+			w.writef(`return m.msg.Uint32(%d)`, tag)
 		case model.KindUint64:
-			w.writef(`return m.msg.Field(%d).Uint64()`, tag)
+			w.writef(`return m.msg.Uint64(%d)`, tag)
 
 		case model.KindBin64:
-			w.writef(`return m.msg.Field(%d).Bin64()`, tag)
+			w.writef(`return m.msg.Bin64(%d)`, tag)
 		case model.KindBin128:
-			w.writef(`return m.msg.Field(%d).Bin128()`, tag)
+			w.writef(`return m.msg.Bin128(%d)`, tag)
 		case model.KindBin256:
-			w.writef(`return m.msg.Field(%d).Bin256()`, tag)
+			w.writef(`return m.msg.Bin256(%d)`, tag)
 
 		case model.KindFloat32:
-			w.writef(`return m.msg.Field(%d).Float32()`, tag)
+			w.writef(`return m.msg.Float32(%d)`, tag)
 		case model.KindFloat64:
-			w.writef(`return m.msg.Field(%d).Float64()`, tag)
+			w.writef(`return m.msg.Float64(%d)`, tag)
 
 		case model.KindBytes:
-			w.writef(`return m.msg.Field(%d).Bytes()`, tag)
+			w.writef(`return m.msg.Bytes(%d)`, tag)
 		case model.KindString:
-			w.writef(`return m.msg.Field(%d).String()`, tag)
+			w.writef(`return m.msg.String(%d)`, tag)
 
 		case model.KindAny:
 			w.writef(`return m.msg.Field(%d)`, tag)
@@ -152,7 +152,7 @@ func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 		decodeFunc := typeDecodeRefFunc(field.Type.Element)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
-		w.writef(`return spec.NewTypedList(m.msg.FieldBytes(%d), %v)`, tag, decodeFunc)
+		w.writef(`return spec.NewTypedList(m.msg.FieldRaw(%d), %v)`, tag, decodeFunc)
 		w.writef(`}`)
 		w.line()
 
@@ -162,7 +162,7 @@ func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 		newFunc := typeNewFunc(field.Type)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
-		w.writef(`return %v(m.msg.FieldBytes(%d))`, newFunc, tag)
+		w.writef(`return %v(m.msg.FieldRaw(%d))`, newFunc, tag)
 		w.writef(`}`)
 		w.line()
 	}
@@ -235,7 +235,7 @@ func (w *messageWriter) messageWriter(def *model.Definition) error {
 	if err := w.writer_fields(def); err != nil {
 		return err
 	}
-	if err := w.writer_build(def); err != nil {
+	if err := w.writer_end(def); err != nil {
 		return err
 	}
 	return nil
@@ -271,7 +271,12 @@ func (w *messageWriter) writer_new_method(def *model.Definition) error {
 	return nil
 }
 
-func (w *messageWriter) writer_build(def *model.Definition) error {
+func (w *messageWriter) writer_end(def *model.Definition) error {
+	w.linef(`func (w %vWriter) MergeMessage(msg %v) error {`, def.Name, def.Name)
+	w.linef(`return w.w.Merge(msg.Unwrap())`)
+	w.linef(`}`)
+	w.line()
+
 	w.linef(`func (w %vWriter) End() error {`, def.Name)
 	w.linef(`return w.w.End()`)
 	w.linef(`}`)
