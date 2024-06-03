@@ -264,43 +264,45 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 		w.line(`in := call.Input().Message()`)
 
 		for _, f := range m.InputFields.List {
+			fname := toLowerCameCase(f.Name)
+
 			typ := f.Type
 			switch typ.Kind {
 			case model.KindBool:
-				w.linef(`in.Field(%d).Bool(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Bool(%v_)`, f.Tag, fname)
 			case model.KindByte:
-				w.linef(`in.Field(%d).Byte(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Byte(%v_)`, f.Tag, fname)
 
 			case model.KindInt16:
-				w.linef(`in.Field(%d).Int16(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Int16(%v_)`, f.Tag, fname)
 			case model.KindInt32:
-				w.linef(`in.Field(%d).Int32(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Int32(%v_)`, f.Tag, fname)
 			case model.KindInt64:
-				w.linef(`in.Field(%d).Int64(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Int64(%v_)`, f.Tag, fname)
 
 			case model.KindUint16:
-				w.linef(`in.Field(%d).Uint16(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Uint16(%v_)`, f.Tag, fname)
 			case model.KindUint32:
-				w.linef(`in.Field(%d).Uint32(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Uint32(%v_)`, f.Tag, fname)
 			case model.KindUint64:
-				w.linef(`in.Field(%d).Uint64(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Uint64(%v_)`, f.Tag, fname)
 
 			case model.KindBin64:
-				w.linef(`in.Field(%d).Bin64(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Bin64(%v_)`, f.Tag, fname)
 			case model.KindBin128:
-				w.linef(`in.Field(%d).Bin128(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Bin128(%v_)`, f.Tag, fname)
 			case model.KindBin256:
-				w.linef(`in.Field(%d).Bin256(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Bin256(%v_)`, f.Tag, fname)
 
 			case model.KindFloat32:
-				w.linef(`in.Field(%d).Float32(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Float32(%v_)`, f.Tag, fname)
 			case model.KindFloat64:
-				w.linef(`in.Field(%d).Float64(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Float64(%v_)`, f.Tag, fname)
 
 			case model.KindString:
-				w.linef(`in.Field(%d).String(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).String(%v_)`, f.Tag, fname)
 			case model.KindBytes:
-				w.linef(`in.Field(%d).Bytes(%v_)`, f.Tag, f.Name)
+				w.linef(`in.Field(%d).Bytes(%v_)`, f.Tag, fname)
 			}
 		}
 
