@@ -41,20 +41,70 @@ var (
 
 type conn struct {
 	conn    net.Conn
-	client  bool
+	handler Handler
 	logger  logging.Logger
 	options Options
 
+	client     bool
 	closed     async.MutFlag
 	negotiated async.MutFlag
-
-	channelMu     sync.Mutex
-	channels      map[bin.Bin128]internalChannel
-	channelClosed bool
 
 	reader *reader
 	writer *writer
 	writeq alloc.MQueue
+
+	channelMu     sync.Mutex
+	channels      map[bin.Bin128]internalChannel
+	channelClosed bool
+}
+
+func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
+	opts = opts.clean()
+
+	// Dial address
+	nc, err := net.DialTimeout("tcp", address, opts.DialTimeout)
+	if err != nil {
+		return nil, mpxError(err)
+	}
+
+	// Noop incoming handler
+	h := HandleFunc(func(ch Channel) status.Status {
+		ch.Free()
+		return status.OK
+	})
+
+	// Make connection
+	c := newConn(nc, true /* client */, h, logger, opts)
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				st := status.Recover(e)
+				logger.ErrorStatus("Connection panic", st)
+			}
+		}()
+
+		c.run()
+	}()
+	return c, status.OK
+}
+
+func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, opts Options) *conn {
+	return &conn{
+		conn:    c,
+		handler: handler,
+		logger:  logger,
+		options: opts.clean(),
+
+		client:     client,
+		closed:     async.UnsetFlag(),
+		negotiated: async.UnsetFlag(),
+
+		reader: newReader(c, client, int(opts.ReadBufferSize)),
+		writer: newWriter(c, client, int(opts.WriteBufferSize)),
+		writeq: alloc.NewMQueueCap(int(opts.WriteQueueSize)),
+
+		channels: make(map[bin.Bin128]internalChannel),
+	}
 }
 
 // Close closes the connection and frees its internal resources.
@@ -263,6 +313,8 @@ func (c *conn) negotiateClient() status.Status {
 	default:
 		return mpxErrorf("server returned unsupported compression %d", comp)
 	}
+
+	c.negotiated.Set()
 	return status.OK
 }
 
@@ -347,6 +399,8 @@ func (c *conn) negotiateServer() status.Status {
 			return st
 		}
 	}
+
+	c.negotiated.Set()
 	return status.OK
 }
 
@@ -364,15 +418,25 @@ func (c *conn) receiveLoop(ctx async.Context) status.Status {
 		code := msg.Code()
 		switch code {
 		case pmpx.Code_ChannelOpen:
-			c.receiveOpen(msg)
+			if st := c.receiveOpen(msg); !st.OK() {
+				return st
+			}
 		case pmpx.Code_ChannelClose:
-			c.receiveClose(msg)
+			if st := c.receiveClose(msg); !st.OK() {
+				return st
+			}
 		case pmpx.Code_ChannelEnd:
-			c.receiveEnd(msg)
+			if st := c.receiveEnd(msg); !st.OK() {
+				return st
+			}
 		case pmpx.Code_ChannelMessage:
-			c.receiveMessage(msg)
+			if st := c.receiveMessage(msg); !st.OK() {
+				return st
+			}
 		case pmpx.Code_ChannelWindow:
-			c.receiveWindow(msg)
+			if st := c.receiveWindow(msg); !st.OK() {
+				return st
+			}
 
 		default:
 			return mpxErrorf("unexpected mpx message, code=%d", code)
@@ -411,7 +475,8 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 		return st
 	}
 
-	// TODO: Start handler
+	// Start handler
+	go c.handler.HandleChannel(ch)
 	done = true
 	return st
 }

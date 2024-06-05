@@ -405,7 +405,7 @@ func (ch *channel) sendWindow(delta uint32) status.Status {
 	}
 
 	// Write message
-	ctx := async.NoContext() // TODO: Fix me
+	ctx := async.NoContext()
 	return s.conn.SendMessage(ctx, msg)
 }
 
@@ -472,6 +472,11 @@ func (ch *channel) receiveOpen(msg pmpx.Message) status.Status {
 	if len(data) != 0 {
 		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
 	}
+
+	// Maybe close queue
+	if end {
+		s.recvQueue.Close()
+	}
 	return status.OK
 }
 
@@ -503,6 +508,9 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 	if len(data) != 0 {
 		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
 	}
+
+	// Close queue
+	s.recvQueue.Close()
 	return status.OK
 }
 
@@ -527,12 +535,16 @@ func (ch *channel) receiveEnd(msg pmpx.Message) status.Status {
 	size := len(msg.Unwrap().Raw())
 
 	s.recvEnd = true
+	s.recvQueue.Close()
 	s.decrementRecvWindow(size)
 
 	// Maybe write data
 	if len(data) != 0 {
 		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
 	}
+
+	// Close queue
+	s.recvQueue.Close()
 	return status.OK
 }
 
@@ -607,6 +619,7 @@ func (ch *channel) receiveFree() {
 	s.recvClose = true
 	s.recvEnd = true
 	s.recvFree = true
+	s.recvQueue.Close()
 }
 
 // windows
@@ -715,15 +728,18 @@ func (s *channelState) reset() {
 	s.sendOpen = false
 	s.sendClose = false
 	s.sendEnd = false
+	s.sendFree = false
 
 	// Reset receive
 	s.recvMu.Lock()
 	defer s.recvMu.Unlock()
 
 	s.recvQueue.Reset()
+
 	s.recvOpen = false
 	s.recvClose = false
 	s.recvEnd = false
+	s.recvFree = false
 
 	// Reset windows
 	s.windowMu.Lock()
