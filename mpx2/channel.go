@@ -65,10 +65,10 @@ type Channel interface {
 // internal
 
 type internalChannel interface {
-	// ConnClosed is called when the connection is closed.
-	ConnClosed()
+	// ReceiveFree is called when the channel is freed by the connection.
+	ReceiveFree()
 
-	// ReceiveMessage is called when a message is received.
+	// ReceiveMessage is called when the channel receives a message from the connection.
 	ReceiveMessage(msg pmpx.Message) status.Status
 }
 
@@ -97,6 +97,7 @@ type channelState struct {
 	sendOpen  bool // open message sent
 	sendClose bool // close message sent
 	sendEnd   bool // end message sent
+	sendFree  bool // freed by user
 
 	// receive
 	recvMu    sync.Mutex
@@ -105,12 +106,23 @@ type channelState struct {
 	recvOpen  bool // open message received
 	recvClose bool // close message received
 	recvEnd   bool // end message received
+	recvFree  bool // freed by connection
 
 	// windows
 	windowMu   sync.Mutex
 	windowSend int           // remaining send window, can become negative on sending large messages
 	windowRecv int           // remaining recv window, can become negative on receiving large messages
 	windowWait chan struct{} // wait for send window increment
+}
+
+// newChannel returns a new channel.
+func newChannel(c internalConn, id bin.Bin128, client bool) *channel {
+	s := acquireChannelState()
+	s.id = id
+	s.conn = c
+	s.client = client
+
+	return &channel{state: s}
 }
 
 func newChannelState() *channelState {
@@ -254,15 +266,17 @@ func (ch *channel) SendClose(ctx async.Context) status.Status {
 
 // Free closes the channel and releases its resources.
 func (ch *channel) Free() {
+	ctx := async.NoContext()
 
+	ch.sendMessage(ctx, pmpx.SendMessageInput{Close: true}) // ignore error
+	ch.sendFree()
+	ch.free()
 }
 
-// internal
-
-// ConnClosed is called when the connection is closed.
-func (ch *channel) ConnClosed() {
-	msg := pmpx.Message{}
-	ch.receiveClose(msg)
+// ReceiveFree is called when the channel is freed by the connection.
+func (ch *channel) ReceiveFree() {
+	ch.receiveFree()
+	ch.free()
 }
 
 // ReceiveMessage is called when a message is received.
@@ -299,6 +313,23 @@ func (ch *channel) ReceiveMessage(msg pmpx.Message) status.Status {
 }
 
 // private
+
+func (ch *channel) free() {
+	ch.stateMu.Lock()
+	defer ch.stateMu.Unlock()
+
+	s := ch.state
+	if s == nil {
+		return
+	}
+
+	if !s.sendFree || s.recvFree {
+		return
+	}
+
+	ch.state = nil
+	releaseChannelState(s)
+}
 
 func (ch *channel) rlock() (*channelState, bool) {
 	ch.stateMu.RLock()
@@ -350,7 +381,7 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 	}
 
 	// Write message
-	return s.conn.write(msg)
+	return s.conn.SendMessage(ctx, msg)
 }
 
 func (ch *channel) sendWindow(delta uint32) status.Status {
@@ -374,7 +405,25 @@ func (ch *channel) sendWindow(delta uint32) status.Status {
 	}
 
 	// Write message
-	return s.conn.write(msg)
+	ctx := async.NoContext() // TODO: Fix me
+	return s.conn.SendMessage(ctx, msg)
+}
+
+func (ch *channel) sendFree() {
+	s, ok := ch.rlock()
+	if !ok {
+		return
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Lock send
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
+
+	// Close and free send
+	s.sendClose = true
+	s.sendEnd = true
+	s.sendFree = true
 }
 
 // receive
@@ -402,26 +451,24 @@ func (ch *channel) receiveOpen(msg pmpx.Message) status.Status {
 		return mpxErrorf("received duplicate open message, channel=%v", s.id)
 	}
 
-	// Handle message
+	// Handle open
 	m := msg.Open()
 	data := m.Data()
 	close := m.Close()
 	end := m.End_()
 	window := m.Window()
 
-	// Set send
+	// Init state
 	s.sendOpen = true
 
-	// Set receive
 	s.recvOpen = true
 	s.recvClose = close
 	s.recvEnd = end
 
-	// Set windows
 	s.windowSend = int(window)
 	s.windowRecv = int(window)
 
-	// Write payload if any
+	// Maybe write data
 	if len(data) != 0 {
 		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
 	}
@@ -443,7 +490,7 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 		return mpxErrorf("received duplicate close message, channel=%v", s.id)
 	}
 
-	// Handle message
+	// Handle close
 	m := msg.Close()
 	data := m.Data()
 	size := len(msg.Unwrap().Raw())
@@ -474,7 +521,7 @@ func (ch *channel) receiveEnd(msg pmpx.Message) status.Status {
 		return mpxErrorf("received duplicate end message, channel=%v", s.id)
 	}
 
-	// Handle message
+	// Handle end
 	m := msg.End_()
 	data := m.Data()
 	size := len(msg.Unwrap().Raw())
@@ -536,6 +583,30 @@ func (ch *channel) receiveWindow(msg pmpx.Message) status.Status {
 	delta := int(m.Delta())
 	s.incrementSendWindow(delta)
 	return status.OK
+}
+
+func (ch *channel) receiveFree() {
+	s, ok := ch.rlock()
+	if !ok {
+		return
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Lock send/receive
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
+
+	s.recvMu.Lock()
+	defer s.recvMu.Unlock()
+
+	// Close send
+	s.sendClose = true
+	s.sendEnd = true
+
+	// Close and free recv
+	s.recvClose = true
+	s.recvEnd = true
+	s.recvFree = true
 }
 
 // windows
