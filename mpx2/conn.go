@@ -482,7 +482,7 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Start handler
-	go c.handler.HandleChannel(ch.Context(), ch)
+	go c.handleChannel(ch)
 	done = true
 	return st
 }
@@ -656,4 +656,30 @@ func (c *conn) removeChannel(id bin.Bin128) {
 
 	defer ch.ReceiveFree()
 	delete(c.channels, id)
+}
+
+func (c *conn) handleChannel(ch Channel) {
+	// No need to use async.Go here, because we don't need the result/cancellation,
+	// and recover panics manually.
+	defer func() {
+		if e := recover(); e != nil {
+			st := status.Recover(e)
+			c.logger.ErrorStatus("Channel panic", st)
+		}
+	}()
+	defer ch.Free()
+
+	// Handle channel
+	ctx := ch.Context()
+	st := c.handler.HandleChannel(ctx, ch)
+	switch st.Code {
+	case status.CodeOK,
+		status.CodeCancelled,
+		status.CodeEnd,
+		status.CodeClosed:
+		return
+	}
+
+	// Log errors
+	c.logger.ErrorStatus("Channel error", st)
 }
