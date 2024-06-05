@@ -18,9 +18,9 @@ func testChannelSend(t *testing.T, ctx async.Context, ch Channel, msg string) {
 	}
 }
 
-// ReceiveSync
+// Receive
 
-func TestChannel_ReceiveSync__should_receive_message(t *testing.T) {
+func TestChannel_Receive__should_receive_message(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		st := ch.Send(ctx, []byte("hello, channel"))
 		if !st.OK() {
@@ -41,7 +41,7 @@ func TestChannel_ReceiveSync__should_receive_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReceiveSync(ctx)
+	msg, st := ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -49,7 +49,7 @@ func TestChannel_ReceiveSync__should_receive_message(t *testing.T) {
 	assert.Equal(t, []byte("hello, channel"), msg)
 }
 
-func TestChannel_ReceiveSync__should_return_end_when_channel_closed(t *testing.T) {
+func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		return ch.SendClose(ctx)
 	})
@@ -61,11 +61,11 @@ func TestChannel_ReceiveSync__should_return_end_when_channel_closed(t *testing.T
 	ch := testChannel(t, conn)
 	ch.SendClose(ctx)
 
-	_, st := ch.ReceiveSync(ctx)
+	_, st := ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 }
 
-func TestChannel_ReceiveSync__should_read_pending_messages_even_when_closed(t *testing.T) {
+func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testing.T) {
 	sent := make(chan struct{})
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(sent)
@@ -99,23 +99,23 @@ func TestChannel_ReceiveSync__should_read_pending_messages_even_when_closed(t *t
 		t.Fatal("timeout")
 	}
 
-	msg, st := ch.ReceiveSync(ctx)
+	msg, st := ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("hello, channel"), msg)
 
-	msg, st = ch.ReceiveSync(ctx)
+	msg, st = ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("how are you?"), msg)
 
-	_, st = ch.ReceiveSync(ctx)
+	_, st = ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 }
 
-func TestChannel_ReceiveSync__should_decrement_recv_window(t *testing.T) {
+func TestChannel_Receive__should_decrement_recv_window(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		st := ch.Send(ctx, []byte("hello, channel"))
 		if !st.OK() {
@@ -139,7 +139,7 @@ func TestChannel_ReceiveSync__should_decrement_recv_window(t *testing.T) {
 	window := ch.state.window
 	assert.Equal(t, window, ch.state.windowRecv)
 
-	_, st = ch.ReceiveSync(ctx)
+	_, st = ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -156,7 +156,7 @@ func TestChannel_Send__should_send_message(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(done)
 
-		msg, st := ch.ReceiveSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -273,10 +273,10 @@ func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
 
 func TestChannel_Send__should_wait_send_window_increment(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
-		if _, st := ch.ReceiveSync(ctx); !st.OK() {
+		if _, st := ch.Receive(ctx); !st.OK() {
 			return st
 		}
-		if _, st := ch.ReceiveSync(ctx); !st.OK() {
+		if _, st := ch.Receive(ctx); !st.OK() {
 			return st
 		}
 		return status.OK
@@ -309,8 +309,8 @@ func TestChannel_Send__should_write_message_if_it_exceeds_half_window_size(t *te
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		<-timer.C
 
-		ch.ReceiveSync(ctx)
-		ch.ReceiveSync(ctx)
+		ch.Receive(ctx)
+		ch.Receive(ctx)
 		return status.OK
 	})
 	conn := testConnect(t, server)
@@ -344,13 +344,13 @@ func TestChannel_SendAndClose__should_send_data_in_close_message(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(done)
 
-		msg, st := ch.ReceiveSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 		msg0 = append(msg0, msg...)
 
-		msg, st = ch.ReceiveSync(ctx)
+		msg, st = ch.Receive(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -392,7 +392,7 @@ func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		defer close(closed)
 
-		_, st := ch.ReceiveSync(ctx)
+		_, st := ch.Receive(ctx)
 		return st
 	})
 
@@ -440,7 +440,7 @@ func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 
 func TestChannel_SendClose__should_return_error_when_already_closed(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
-		_, st := ch.ReceiveSync(ctx)
+		_, st := ch.Receive(ctx)
 		return st
 	})
 

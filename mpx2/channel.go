@@ -18,17 +18,17 @@ type Channel interface {
 
 	// Receive
 
-	// Receive receives and returns a message, or false/end.
-	//
-	// The message is valid until the next call to Receive.
-	// The method does not block if no messages, and returns false instead.
-	Receive(ctx async.Context) ([]byte, bool, status.Status)
-
-	// ReceiveSync receives and returns a message, or an end.
+	// Receive receives and returns a message, or an end.
 	//
 	// The message is valid until the next call to Receive.
 	// The method blocks until a message is received, or the channel is closed.
-	ReceiveSync(ctx async.Context) ([]byte, status.Status)
+	Receive(ctx async.Context) ([]byte, status.Status)
+
+	// ReceiveAsync receives and returns a message, or false/end.
+	//
+	// The message is valid until the next call to Receive.
+	// The method does not block if no messages, and returns false instead.
+	ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 
 	// ReceiveWait returns a channel that is notified on a new message, or a channel close.
 	ReceiveWait() <-chan struct{}
@@ -115,8 +115,8 @@ type channelState struct {
 	windowWait chan struct{} // wait for send window increment
 }
 
-// newOutgoingChannel creates a new outgoing channel.
-func newOutgoingChannel(c internalConn, client bool, id bin.Bin128, window int) *channel {
+// createChannel creates a new outgoing channel.
+func createChannel(c internalConn, client bool, id bin.Bin128, window int) *channel {
 	s := acquireChannelState()
 	s.id = id
 	s.conn = c
@@ -177,10 +177,35 @@ func (ch *channel) Context() async.Context {
 
 // Receive
 
-// Receive receives and returns a message, or false/end.
+// Receive receives and returns a message, or an end.
+//
+// The message is valid until the next call to Receive.
+// The method blocks until a message is received, or the channel is closed.
+func (ch *channel) Receive(ctx async.Context) ([]byte, status.Status) {
+	for {
+		// Poll channel
+		data, ok, st := ch.ReceiveAsync(ctx)
+		switch {
+		case !st.OK():
+			return nil, st
+		case ok:
+			return data, status.OK
+		}
+
+		// Await new message or close
+		select {
+		case <-ctx.Wait():
+			return nil, ctx.Status()
+		case <-ch.ReceiveWait():
+		}
+	}
+}
+
+// ReceiveAsync receives and returns a message, or false/end.
+//
 // The message is valid until the next call to Receive.
 // The method does not block if no messages, and returns false instead.
-func (ch *channel) Receive(ctx async.Context) ([]byte, bool, status.Status) {
+func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status) {
 	// RLock state
 	s, ok := ch.rlock()
 	if !ok {
@@ -206,29 +231,6 @@ func (ch *channel) Receive(ctx async.Context) ([]byte, bool, status.Status) {
 		return nil, false, status.End
 	}
 	return nil, false, status.OK
-}
-
-// ReceiveSync receives and returns a message, or an end.
-// The message is valid until the next call to Receive.
-// The method blocks until a message is received, or the channel is closed.
-func (ch *channel) ReceiveSync(ctx async.Context) ([]byte, status.Status) {
-	for {
-		// Poll channel
-		data, ok, st := ch.Receive(ctx)
-		switch {
-		case !st.OK():
-			return nil, st
-		case ok:
-			return data, status.OK
-		}
-
-		// Await new message or close
-		select {
-		case <-ctx.Wait():
-			return nil, ctx.Status()
-		case <-ch.ReceiveWait():
-		}
-	}
 }
 
 // ReceiveWait returns a channel that is notified on a new message, or a channel close.
@@ -280,10 +282,7 @@ func (ch *channel) SendEnd(ctx async.Context) status.Status {
 
 // SendClose sends a close message, and closes the channel.
 func (ch *channel) SendClose(ctx async.Context) status.Status {
-	input := pmpx.SendMessageInput{
-		Close: true,
-	}
-	return ch.sendMessage(ctx, input)
+	return ch.sendClose(ctx)
 }
 
 // Internal
@@ -350,7 +349,7 @@ func (ch *channel) free() {
 		return
 	}
 
-	if !s.sendFree || s.recvFree {
+	if !s.sendFree || !s.recvFree {
 		return
 	}
 
@@ -594,7 +593,8 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
 	}
 
-	// Close queue
+	// Cancel context, close queue
+	// TODO: s.ctx.Cancel()
 	s.recvQueue.Close()
 	return status.OK
 }

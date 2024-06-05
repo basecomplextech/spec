@@ -64,7 +64,7 @@ func TestConn_Free__should_close_channels(t *testing.T) {
 	conn.Free()
 
 	ctx := async.NoContext()
-	_, st := ch.ReceiveSync(ctx)
+	_, st := ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 }
 
@@ -86,7 +86,7 @@ func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	_, st = ch.ReceiveSync(ctx)
+	_, st = ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 }
 
@@ -106,6 +106,6 @@ func TestConn_handleChannel__should_log_channel_errors(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	_, st = ch.ReceiveSync(ctx)
+	_, st = ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 }

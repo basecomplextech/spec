@@ -469,6 +469,7 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	done := false
 	defer func() {
 		if !done {
+			ch.Free()
 			ch.ReceiveFree()
 		}
 	}()
@@ -589,14 +590,15 @@ func (c *conn) sendMessage(b []byte) status.Status {
 	code := msg.Code()
 	switch code {
 	case pmpx.Code_ChannelOpen:
-		id := msg.Open().Id()
-		close := msg.Open().Close()
+		m := msg.Open()
+		id := m.Id()
+		close := m.Close()
 		if close {
 			c.removeChannel(id)
 		}
 
 	case pmpx.Code_ChannelClose:
-		id := msg.Open().Id()
+		id := msg.Close().Id()
 		c.removeChannel(id)
 	}
 
@@ -635,7 +637,7 @@ func (c *conn) createChannel() (Channel, bool, status.Status) {
 	id := bin.Random128()
 	window := int(c.options.ChannelWindowSize)
 
-	ch := newOutgoingChannel(c, c.client, id, window)
+	ch := createChannel(c, c.client, id, window)
 	c.channels[id] = ch
 	return ch, true, status.OK
 }

@@ -43,7 +43,7 @@ func testServer(t tests.T, handle HandleFunc) *server {
 
 func testRequestServer(t tests.T) *server {
 	handle := func(ctx async.Context, ch Channel) status.Status {
-		msg, st := ch.ReceiveSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return st
 		}
@@ -77,7 +77,7 @@ func testChannel(t tests.T, c Conn) *channel {
 func TestOpenClose(t *testing.T) {
 	handle := func(ctx async.Context, ch Channel) status.Status {
 		for {
-			msg, st := ch.ReceiveSync(ctx)
+			msg, st := ch.Receive(ctx)
 			if !st.OK() {
 				return st
 			}
@@ -105,7 +105,7 @@ func TestOpenClose(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	msg1, st := ch.ReceiveSync(ctx)
+	msg1, st := ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
