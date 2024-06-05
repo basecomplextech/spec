@@ -452,7 +452,6 @@ func (c *conn) receiveLoop(ctx async.Context) status.Status {
 func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	m := msg.Open()
 	id := m.Id()
-	window := int(m.Window())
 
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
@@ -463,7 +462,7 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Make channel
-	ch := newIncomingChannel(c, id, c.client, window)
+	ch := openChannel(c, c.client, m)
 	c.channels[id] = ch
 
 	// Free on error
@@ -636,7 +635,7 @@ func (c *conn) createChannel() (Channel, bool, status.Status) {
 	id := bin.Random128()
 	window := int(c.options.ChannelWindowSize)
 
-	ch := newOutgoingChannel(c, id, c.client, window)
+	ch := newOutgoingChannel(c, c.client, id, window)
 	c.channels[id] = ch
 	return ch, true, status.OK
 }

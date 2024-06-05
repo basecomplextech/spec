@@ -90,6 +90,12 @@ func TestClient_Close__should_close_connection(t *testing.T) {
 	conn := client.conn
 	client.Close()
 
+	select {
+	case <-conn.closed.Wait():
+	case <-time.After(time.Second):
+		t.Fatal("close timeout")
+	}
+
 	assert.True(t, conn.closed.Get())
 }
 

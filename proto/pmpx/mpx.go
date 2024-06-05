@@ -8,8 +8,10 @@ import (
 )
 
 type SendMessageInput struct {
-	ID    bin.Bin128
-	Data  []byte
+	ID     bin.Bin128
+	Data   []byte
+	Window int32
+
 	Open  bool
 	Close bool
 	End   bool
@@ -20,6 +22,8 @@ func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, e
 
 	id := input.ID
 	data := input.Data
+	window := input.Window
+
 	open := input.Open
 	close := input.Close
 	end := input.End
@@ -31,6 +35,8 @@ func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, e
 
 		w1 := w.Open()
 		w1.Id(id)
+		w1.Window(window)
+
 		if data != nil {
 			w1.Data(data)
 		}
