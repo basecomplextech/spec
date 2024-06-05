@@ -27,29 +27,39 @@ message ConnectResponse {
 
 enum Code {
     UNDEFINED = 0;
-    OPEN_CHANNEL = 1;
-    CLOSE_CHANNEL = 2;
-    CHANNEL_MESSAGE = 3;
-    CHANNEL_WINDOW = 4;
+    CHANNEL_OPEN = 1;
+    CHANNEL_CLOSE = 2;
+    CHANNEL_END = 3;
+    CHANNEL_MESSAGE = 4;
+    CHANNEL_WINDOW = 5;
 }
 
 message Message {
-    code    Code            1;
-    open    OpenChannel     2;
-    close   CloseChannel    3;
-    message ChannelMessage  4;
-    window  ChannelWindow   5;
+    code        Code                1;
+    open        ChannelOpen         2;
+    close       ChannelClose        3;
+    end_        ChannelEnd          4;
+    message     ChannelMessage      5;
+    window      ChannelWindow       6;
 }
 
-// Channels
+// Channel
 
-message OpenChannel {
+message ChannelOpen {
     id      bin128  1;
     window  int32   2; // Channel read/write window, 0 means unlimited
-    data    bytes   3;
+    data    bytes   3; // Optional data
+
+    end_    bool    4; // Channel ended, no more data
+    close   bool    5; // Channel closed
 }
 
-message CloseChannel {
+message ChannelEnd {
+    id      bin128  1;
+    data    bytes   2;
+}
+
+message ChannelClose {
     id      bin128  1;
     data    bytes   2;
 }

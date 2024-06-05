@@ -133,9 +133,9 @@ func (w *writer) writeMessage(msg []byte) status.Status {
 		m := pmpx.NewMessage(msg)
 		code := m.Code()
 		switch code {
-		case pmpx.Code_OpenChannel:
+		case pmpx.Code_ChannelOpen:
 			debugPrint(w.client, "-> open\t", m.Open().Id())
-		case pmpx.Code_CloseChannel:
+		case pmpx.Code_ChannelClose:
 			debugPrint(w.client, "-> close\t", m.Close().Id())
 		case pmpx.Code_ChannelMessage:
 			debugPrint(w.client, "-> message\t", m.Message().Id())

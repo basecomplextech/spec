@@ -81,7 +81,7 @@ func openChannel(conn *conn, id bin.Bin128, window int) *channel {
 	}
 }
 
-func openedChannel(conn *conn, msg pmpx.OpenChannel) *channel {
+func openedChannel(conn *conn, msg pmpx.ChannelOpen) *channel {
 	id := msg.Id()
 	window := int(msg.Window())
 
@@ -113,7 +113,7 @@ func (ch *channel) Close() status.Status {
 func (ch *channel) Context() async.Context {
 	s, ok := ch.rlock()
 	if !ok {
-		return async.DoneContext()
+		return async.CancelledContext()
 	}
 	defer ch.stateMu.RUnlock()
 
@@ -155,7 +155,7 @@ func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 	// Handle message
 	code := msg.Code()
 	switch code {
-	case pmpx.Code_OpenChannel:
+	case pmpx.Code_ChannelOpen:
 		data := msg.Open().Data()
 		if st := ch.incrementReadBytes(ctx, s, len(b)); !st.OK() {
 			return nil, false, st
@@ -178,7 +178,7 @@ func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 		}
 		return nil, false, status.OK
 
-	case pmpx.Code_CloseChannel:
+	case pmpx.Code_ChannelClose:
 		s.close()
 
 		if debug {
@@ -426,7 +426,7 @@ func (ch *channel) writeNew(ctx async.Context, s *channelState, data []byte) sta
 		s.writer.Reset(s.writeBuf)
 
 		w0 := pmpx.NewMessageWriterTo(s.writer.Message())
-		w0.Code(pmpx.Code_OpenChannel)
+		w0.Code(pmpx.Code_ChannelOpen)
 
 		w1 := w0.Open()
 		w1.Id(ch.id)
@@ -540,7 +540,7 @@ func (ch *channel) writeClose(ctx async.Context, s *channelState, data []byte) s
 		s.writer.Reset(s.writeBuf)
 
 		w0 := pmpx.NewMessageWriterTo(s.writer.Message())
-		w0.Code(pmpx.Code_CloseChannel)
+		w0.Code(pmpx.Code_ChannelClose)
 
 		w1 := w0.Close()
 		w1.Id(ch.id)

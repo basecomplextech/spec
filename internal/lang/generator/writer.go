@@ -70,7 +70,15 @@ func toUpperCamelCase(s string) string {
 		part = strings.Title(part)
 		parts[i] = part
 	}
-	return strings.Join(parts, "")
+
+	s1 := strings.Join(parts, "")
+	if strings.HasPrefix(s, "_") {
+		s1 = "_" + s1
+	}
+	if strings.HasSuffix(s, "_") {
+		s1 += "_"
+	}
+	return s1
 }
 
 func toLowerCameCase(s string) string {

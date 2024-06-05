@@ -14,16 +14,17 @@ const (
 )
 
 const (
-	codeError status.Code = "tcp_error"
+	codeError status.Code = "mpx_error"
 )
 
 var (
-	statusClientClosed  = status.Closedf("client closed")
-	statusConnClosed    = status.Closedf("connection closed")
-	statusChannelClosed = status.Closedf("channel closed")
+	statusClientClosed  = status.Closedf("mpx client closed")
+	statusConnClosed    = status.Closedf("mpx connection closed")
+	statusChannelClosed = status.Closedf("mpx channel closed")
+	statusChannelEnded  = status.Closedf("mpx channel ended")
 )
 
-func tcpError(err error) status.Status {
+func mpxError(err error) status.Status {
 	if err == nil {
 		return status.OK
 	}
@@ -56,6 +57,6 @@ func tcpError(err error) status.Status {
 	return status.WrapError(err).WithCode(codeError)
 }
 
-func tcpErrorf(format string, args ...any) status.Status {
+func mpxErrorf(format string, args ...any) status.Status {
 	return status.Newf(codeError, format, args...)
 }

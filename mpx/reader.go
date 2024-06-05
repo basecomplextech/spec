@@ -125,9 +125,9 @@ func (r *reader) readMessage() (pmpx.Message, status.Status) {
 	if debug {
 		code := msg.Code()
 		switch code {
-		case pmpx.Code_OpenChannel:
+		case pmpx.Code_ChannelOpen:
 			debugPrint(r.client, "<- open\t", msg.Open().Id())
-		case pmpx.Code_CloseChannel:
+		case pmpx.Code_ChannelClose:
 			debugPrint(r.client, "<- close\t", msg.Close().Id())
 		case pmpx.Code_ChannelMessage:
 			debugPrint(r.client, "<- message\t", msg.Message().Id())

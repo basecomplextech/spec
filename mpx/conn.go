@@ -353,7 +353,7 @@ func (c *conn) readLoop(ctx async.Context) status.Status {
 		// Handle message
 		code := msg.Code()
 		switch code {
-		case pmpx.Code_OpenChannel:
+		case pmpx.Code_ChannelOpen:
 			m := msg.Open()
 
 			ch, st := c.channels.opened(c, m)
@@ -362,7 +362,7 @@ func (c *conn) readLoop(ctx async.Context) status.Status {
 			}
 			ch.receiveMessage(ctx, msg)
 
-		case pmpx.Code_CloseChannel:
+		case pmpx.Code_ChannelClose:
 			m := msg.Close()
 			id := m.Id()
 
@@ -411,7 +411,7 @@ func (c *conn) writeLoop(ctx async.Context) status.Status {
 			msg := pmpx.NewMessage(b)
 			code := msg.Code()
 
-			if code == pmpx.Code_CloseChannel {
+			if code == pmpx.Code_ChannelClose {
 				id := msg.Close().Id()
 				c.channels.remove(id)
 			}
@@ -574,7 +574,7 @@ func (c *connChannels) open(conn *conn) (*channel, status.Status) {
 	return ch, status.OK
 }
 
-func (c *connChannels) opened(conn *conn, msg pmpx.OpenChannel) (*channel, status.Status) {
+func (c *connChannels) opened(conn *conn, msg pmpx.ChannelOpen) (*channel, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
