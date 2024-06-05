@@ -126,13 +126,35 @@ func (r *reader) readMessage() (pmpx.Message, status.Status) {
 		code := msg.Code()
 		switch code {
 		case pmpx.Code_ChannelOpen:
-			debugPrint(r.client, "<- open\t", msg.Open().Id())
+			m := msg.Open()
+			id := m.Id()
+			data := string(m.Data())
+			debugPrint(r.client, "<- open\t", id, data)
+
 		case pmpx.Code_ChannelClose:
-			debugPrint(r.client, "<- close\t", msg.Close().Id())
+			m := msg.Close()
+			id := m.Id()
+			data := string(m.Data())
+			debugPrint(r.client, "<- close\t", id, data)
+
+		case pmpx.Code_ChannelEnd:
+			m := msg.End_()
+			id := m.Id()
+			data := string(m.Data())
+			debugPrint(r.client, "<- end\t", id, data)
+
 		case pmpx.Code_ChannelMessage:
-			debugPrint(r.client, "<- message\t", msg.Message().Id())
+			m := msg.Message()
+			id := m.Id()
+			data := string(m.Data())
+			debugPrint(r.client, "<- message\t", id, data)
+
 		case pmpx.Code_ChannelWindow:
-			debugPrint(r.client, "<- window\t", msg.Window().Id(), msg.Window().Delta())
+			m := msg.Window()
+			id := m.Id()
+			delta := m.Delta()
+			debugPrint(r.client, "<- window\t", id, delta)
+
 		default:
 			debugPrint(r.client, "<- unknown", code)
 		}

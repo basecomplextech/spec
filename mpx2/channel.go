@@ -115,12 +115,31 @@ type channelState struct {
 	windowWait chan struct{} // wait for send window increment
 }
 
-// newChannel returns a new channel.
-func newChannel(c internalConn, id bin.Bin128, client bool) *channel {
+// newOutgoingChannel creates a new outgoing channel.
+func newOutgoingChannel(c internalConn, id bin.Bin128, client bool, window int) *channel {
 	s := acquireChannelState()
 	s.id = id
 	s.conn = c
 	s.client = client
+
+	s.window = window
+	s.windowRecv = window
+	s.windowSend = window
+
+	s.recvOpen = true
+
+	return &channel{state: s}
+}
+
+// newIncomingChannel opens a new incoming channel.
+func newIncomingChannel(c internalConn, id bin.Bin128, client bool, window int) *channel {
+	s := acquireChannelState()
+	s.id = id
+	s.conn = c
+	s.client = client
+	s.window = window
+
+	s.sendOpen = true
 
 	return &channel{state: s}
 }
@@ -202,7 +221,6 @@ func (ch *channel) ReceiveSync(ctx async.Context) ([]byte, status.Status) {
 		case <-ctx.Wait():
 			return nil, ctx.Status()
 		case <-ch.ReceiveWait():
-			return nil, status.OK
 		}
 	}
 }
@@ -213,7 +231,7 @@ func (ch *channel) ReceiveWait() <-chan struct{} {
 	if !ok {
 		return closedChan
 	}
-	defer ch.stateMu.Unlock()
+	defer ch.stateMu.RUnlock()
 
 	return s.recvQueue.ReadWait()
 }
@@ -381,10 +399,18 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 	}
 
 	// Write message
-	return s.conn.SendMessage(ctx, msg)
+	if st := s.conn.SendMessage(ctx, msg); !st.OK() {
+		return st
+	}
+
+	// Update state
+	s.sendOpen = true
+	s.sendClose = s.sendClose || input.Close
+	s.sendEnd = s.sendEnd || input.End
+	return status.OK
 }
 
-func (ch *channel) sendWindow(delta uint32) status.Status {
+func (ch *channel) sendWindow(delta int32) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -667,7 +693,7 @@ func (s *channelState) decrementSendWindow(ctx async.Context, n int, wait bool) 
 	}
 }
 
-func (ch *channel) incrementRecvWindow() (uint32, status.Status) {
+func (ch *channel) incrementRecvWindow() (int32, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return 0, statusChannelClosed
@@ -685,7 +711,7 @@ func (ch *channel) incrementRecvWindow() (uint32, status.Status) {
 	// Increment recv window
 	delta := s.window - s.windowRecv
 	s.windowRecv += delta
-	return uint32(delta), status.OK
+	return int32(delta), status.OK
 }
 
 func (s *channelState) decrementRecvWindow(delta int) bool {

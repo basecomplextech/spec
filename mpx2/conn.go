@@ -12,7 +12,7 @@ import (
 	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
-type Connection interface {
+type Conn interface {
 	// Close closes the connection and frees its internal resources.
 	Close() status.Status
 
@@ -24,8 +24,13 @@ type Connection interface {
 
 	// Internal
 
-	// Free closes and frees the connection, allows to wrap the connection into ref.R[Connection].
+	// Free closes and frees the connection, allows to wrap the connection into ref.R[Conn].
 	Free()
+}
+
+// Connect dials an address and returns a connection.
+func Connect(address string, logger logging.Logger, opts Options) (Conn, status.Status) {
+	return connect(address, logger, opts)
 }
 
 // internal
@@ -35,7 +40,7 @@ type internalConn interface {
 }
 
 var (
-	_ Connection   = (*conn)(nil)
+	_ Conn         = (*conn)(nil)
 	_ internalConn = (*conn)(nil)
 )
 
@@ -68,7 +73,7 @@ func connect(address string, logger logging.Logger, opts Options) (*conn, status
 	}
 
 	// Noop incoming handler
-	h := HandleFunc(func(ch Channel) status.Status {
+	h := HandleFunc(func(_ async.Context, ch Channel) status.Status {
 		ch.Free()
 		return status.OK
 	})
@@ -79,7 +84,7 @@ func connect(address string, logger logging.Logger, opts Options) (*conn, status
 		defer func() {
 			if e := recover(); e != nil {
 				st := status.Recover(e)
-				logger.ErrorStatus("Connection panic", st)
+				logger.ErrorStatus("Conn panic", st)
 			}
 		}()
 
@@ -190,7 +195,7 @@ func (c *conn) run() {
 		status.CodeClosed:
 		return
 	default:
-		c.logger.ErrorStatus("Connection error", st)
+		c.logger.ErrorStatus("Conn error", st)
 		return
 	}
 
@@ -215,7 +220,7 @@ func (c *conn) run() {
 		status.CodeEnd,
 		status.CodeClosed:
 	default:
-		c.logger.ErrorStatus("Connection error", st)
+		c.logger.ErrorStatus("Conn error", st)
 	}
 }
 
@@ -447,6 +452,7 @@ func (c *conn) receiveLoop(ctx async.Context) status.Status {
 func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	m := msg.Open()
 	id := m.Id()
+	window := int(m.Window())
 
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
@@ -457,7 +463,7 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Make channel
-	ch := newChannel(c, id, c.client)
+	ch := newIncomingChannel(c, id, c.client, window)
 	c.channels[id] = ch
 
 	// Free on error
@@ -476,7 +482,7 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Start handler
-	go c.handler.HandleChannel(ch)
+	go c.handler.HandleChannel(ch.Context(), ch)
 	done = true
 	return st
 }
@@ -628,7 +634,9 @@ func (c *conn) createChannel() (Channel, bool, status.Status) {
 	}
 
 	id := bin.Random128()
-	ch := newChannel(c, id, c.client)
+	window := int(c.options.ChannelWindowSize)
+
+	ch := newOutgoingChannel(c, id, c.client, window)
 	c.channels[id] = ch
 	return ch, true, status.OK
 }

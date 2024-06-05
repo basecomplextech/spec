@@ -17,6 +17,7 @@ type SendMessageInput struct {
 
 func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, error) {
 	w := NewMessageWriterTo(dst)
+
 	id := input.ID
 	data := input.Data
 	open := input.Open
@@ -78,6 +79,7 @@ func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, e
 	// Data message
 	default:
 		w.Code(Code_ChannelMessage)
+
 		w1 := w.Message()
 		w1.Id(id)
 		w1.Data(data)
@@ -88,6 +90,15 @@ func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, e
 	}
 }
 
-func MakeSendWindow(dst spec.MessageWriter, id bin.Bin128, delta uint32) (Message, error) {
-	return Message{}, nil
+func MakeSendWindow(dst spec.MessageWriter, id bin.Bin128, delta int32) (Message, error) {
+	w := NewMessageWriterTo(dst)
+	w.Code(Code_ChannelWindow)
+
+	w1 := w.Window()
+	w1.Id(id)
+	w1.Delta(delta)
+	if err := w1.End(); err != nil {
+		return Message{}, err
+	}
+	return w.Build()
 }
