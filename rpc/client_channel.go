@@ -55,23 +55,12 @@ type Channel interface {
 var _ Channel = (*channel)(nil)
 
 type channel struct {
-	ch mpx.Channel
-
 	stateMu sync.RWMutex
 	state   *channelState
 }
 
-func newChannel(ch mpx.Channel, logger logging.Logger) *channel {
-	s := acquireState()
-	s.logger = logger
-
-	return &channel{
-		ch:    ch,
-		state: s,
-	}
-}
-
 type channelState struct {
+	ch     mpx.Channel
 	logger logging.Logger
 	method string
 
@@ -94,6 +83,14 @@ type channelState struct {
 	result   ref.R[spec.Value]
 	resultOK bool
 	resultSt status.Status
+}
+
+func newChannel(ch mpx.Channel, logger logging.Logger) *channel {
+	s := acquireState()
+	s.ch = ch
+	s.logger = logger
+
+	return &channel{state: s}
 }
 
 func newChannelState() *channelState {
@@ -149,7 +146,7 @@ func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	// Send request
 	s.method = requestMethod(req)
 	s.sendReq = true
-	return ch.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, msg)
 }
 
 // Receive
@@ -171,7 +168,7 @@ func (ch *channel) Receive(ctx async.Context) ([]byte, status.Status) {
 		select {
 		case <-ctx.Wait():
 			return nil, ctx.Status()
-		case <-ch.ch.ReceiveWait():
+		case <-ch.ReceiveWait():
 		}
 	}
 }
@@ -204,7 +201,7 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 	}
 
 	// Read message
-	msg, ok, st := ch.read(ctx)
+	msg, ok, st := s.receiveAsync(ctx)
 	switch {
 	case !st.OK():
 		s.receiveFail(st)
@@ -241,7 +238,13 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 
 // ReceiveWait returns a channel which is notified on a new message, or a channel close.
 func (ch *channel) ReceiveWait() <-chan struct{} {
-	return ch.ch.ReceiveWait()
+	s, ok := ch.rlock()
+	if !ok {
+		return closedChan
+	}
+	defer ch.stateMu.RUnlock()
+
+	return s.ch.ReceiveWait()
 }
 
 // Send
@@ -285,7 +288,7 @@ func (ch *channel) Send(ctx async.Context, message []byte) status.Status {
 	}
 
 	// Send message
-	return ch.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, msg)
 }
 
 // SendEnd sends an end message to the channel.
@@ -327,7 +330,7 @@ func (ch *channel) SendEnd(ctx async.Context) status.Status {
 
 	// Send message
 	s.sendEnd = true
-	return ch.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, msg)
 }
 
 // Response
@@ -368,7 +371,7 @@ func (ch *channel) Response(ctx async.Context) (ref.R[spec.Value], status.Status
 
 	// Read messages
 	for {
-		msg, st := ch.readSync(ctx)
+		msg, st := s.receive(ctx)
 		if !st.OK() {
 			s.receiveFail(st)
 			return nil, st
@@ -402,12 +405,12 @@ func (ch *channel) Free() {
 	ch.stateMu.Lock()
 	defer ch.stateMu.Unlock()
 
-	if ch.state == nil {
+	s := ch.state
+	if s == nil {
 		return
 	}
-	defer ch.ch.Free()
 
-	s := ch.state
+	defer s.ch.Free()
 	ch.state = nil
 	releaseState(s)
 }
@@ -425,23 +428,9 @@ func (ch *channel) rlock() (*channelState, bool) {
 	return ch.state, true
 }
 
-// read reads, parses and returns the next message, or false.
-func (ch *channel) read(ctx async.Context) (prpc.Message, bool, status.Status) {
-	b, ok, st := ch.ch.ReceiveAsync(ctx)
-	if !ok || !st.OK() {
-		return prpc.Message{}, false, st
-	}
-
-	msg, _, err := prpc.ParseMessage(b)
-	if err != nil {
-		return prpc.Message{}, false, WrapError(err)
-	}
-	return msg, true, status.OK
-}
-
-// readSync reads, parses and returns the next message, or blocks.
-func (ch *channel) readSync(ctx async.Context) (prpc.Message, status.Status) {
-	b, st := ch.ch.Receive(ctx)
+// receive receives, parses and returns the next message, or blocks.
+func (s *channelState) receive(ctx async.Context) (prpc.Message, status.Status) {
+	b, st := s.ch.Receive(ctx)
 	if !st.OK() {
 		return prpc.Message{}, st
 	}
@@ -451,6 +440,20 @@ func (ch *channel) readSync(ctx async.Context) (prpc.Message, status.Status) {
 		return prpc.Message{}, WrapError(err)
 	}
 	return msg, status.OK
+}
+
+// receiveAsync receives, parses and returns the next message, or false.
+func (s *channelState) receiveAsync(ctx async.Context) (prpc.Message, bool, status.Status) {
+	b, ok, st := s.ch.ReceiveAsync(ctx)
+	if !ok || !st.OK() {
+		return prpc.Message{}, false, st
+	}
+
+	msg, _, err := prpc.ParseMessage(b)
+	if err != nil {
+		return prpc.Message{}, false, WrapError(err)
+	}
+	return msg, true, status.OK
 }
 
 // state
@@ -476,6 +479,7 @@ func (s *channelState) reset() {
 	default:
 	}
 
+	s.ch = nil
 	s.logger = nil
 	s.method = ""
 
@@ -538,18 +542,14 @@ func parseResult(resp prpc.Response) (ref.R[spec.Value], status.Status) {
 	}
 
 	// Copy result to buffer
-	buf := acquireBuffer()
-	buf.Write(resp.Result())
-	free := func() {
-		releaseBuffer(buf)
-	}
-
-	ok := false
+	buf := alloc.AcquireBuffer()
+	done := false
 	defer func() {
-		if !ok {
-			free()
+		if !done {
+			buf.Free()
 		}
 	}()
+	buf.Write(resp.Result())
 
 	// Parse result
 	v, err := spec.NewValueErr(buf.Bytes())
@@ -558,7 +558,7 @@ func parseResult(resp prpc.Response) (ref.R[spec.Value], status.Status) {
 	}
 
 	// Wrap into ref
-	ref := ref.NewFree(v, free)
-	ok = true
+	ref := ref.NewFreer(v, buf)
+	done = true
 	return ref, status.OK
 }

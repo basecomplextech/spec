@@ -12,19 +12,6 @@ func NewBuffer() *alloc.Buffer {
 	return alloc.NewBuffer()
 }
 
-// buffer pool
-
-var bufferPool = pools.MakePool(alloc.NewBuffer)
-
-func acquireBuffer() *alloc.Buffer {
-	return bufferPool.New()
-}
-
-func releaseBuffer(buf *alloc.Buffer) {
-	buf.Reset()
-	bufferPool.Put(buf)
-}
-
 // buffer writer
 
 type bufferWriter struct {

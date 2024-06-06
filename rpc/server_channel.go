@@ -48,13 +48,13 @@ type ServerChannel interface {
 var _ ServerChannel = (*serverChannel)(nil)
 
 type serverChannel struct {
-	ch mpx.Channel
-
 	stateMu sync.RWMutex
 	state   *serverChannelState
 }
 
 type serverChannelState struct {
+	ch mpx.Channel
+
 	// send
 	sendLock async.Lock
 	sendReq  bool // request sent
@@ -72,12 +72,9 @@ type serverChannelState struct {
 
 func newServerChannel(ch mpx.Channel, req prpc.Request) *serverChannel {
 	s := acquireServerState()
+	s.ch = ch
 	s.recvReq = req
-
-	return &serverChannel{
-		ch:    ch,
-		state: s,
-	}
+	return &serverChannel{state: s}
 }
 
 func newServerChannelState() *serverChannelState {
@@ -135,7 +132,7 @@ func (ch *serverChannel) Receive(ctx async.Context) ([]byte, status.Status) {
 		select {
 		case <-ctx.Wait():
 			return nil, ctx.Status()
-		case <-ch.ch.ReceiveWait():
+		case <-ch.ReceiveWait():
 		}
 	}
 }
@@ -175,7 +172,7 @@ func (ch *serverChannel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.S
 	// Read message
 	var msg prpc.Message
 	{
-		b, ok, st := ch.ch.ReceiveAsync(ctx)
+		b, ok, st := s.ch.ReceiveAsync(ctx)
 		if !ok || !st.OK() {
 			return nil, false, st
 		}
@@ -205,7 +202,13 @@ func (ch *serverChannel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.S
 
 // ReceiveWait returns a channel which is notified on a new message, or a channel close.
 func (ch *serverChannel) ReceiveWait() <-chan struct{} {
-	return ch.ch.ReceiveWait()
+	s, ok := ch.rlock()
+	if !ok {
+		return closedChan
+	}
+	defer ch.stateMu.RUnlock()
+
+	return s.ch.ReceiveWait()
 }
 
 // Send
@@ -249,7 +252,7 @@ func (ch *serverChannel) Send(ctx async.Context, message []byte) status.Status {
 	}
 
 	// Send message
-	return ch.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, msg)
 }
 
 // SendEnd sends an end message to the channel.
@@ -291,7 +294,7 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 
 	// Send message
 	s.sendEnd = true
-	return ch.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, msg)
 }
 
 // Internal
@@ -345,6 +348,8 @@ func (s *serverChannelState) reset() {
 	case s.recvLock <- struct{}{}:
 	default:
 	}
+
+	s.ch = nil
 
 	s.sendReq = false
 	s.sendEnd = false
