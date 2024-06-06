@@ -71,6 +71,43 @@ func newChannel(ch mpx.Channel, logger logging.Logger) *channel {
 	}
 }
 
+type channelState struct {
+	logger logging.Logger
+	method string
+
+	// send
+	sendLock async.Lock
+	sendReq  bool // request sent
+	sendEnd  bool // end sent
+	sendBuf  *alloc.Buffer
+	sendMsg  spec.Writer
+
+	// rev
+	recvLock async.Lock
+	recvEnd  bool // end received
+	recvResp bool // response received
+
+	recvFailed bool
+	recvError  status.Status
+
+	// temp result stores result until Response is called
+	result   ref.R[spec.Value]
+	resultOK bool
+	resultSt status.Status
+}
+
+func newChannelState() *channelState {
+	sendBuf := alloc.NewBuffer()
+
+	return &channelState{
+		sendLock: async.NewLock(),
+		sendBuf:  sendBuf,
+		sendMsg:  spec.NewWriterBuffer(sendBuf),
+
+		recvLock: async.NewLock(),
+	}
+}
+
 // Request sends a request to the server.
 func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	s, ok := ch.rlock()
@@ -79,25 +116,25 @@ func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Write lock
+	// Lock send
 	select {
-	case <-s.writeLock:
+	case <-s.sendLock:
 	case <-ctx.Wait():
 		return ctx.Status()
 	}
-	defer s.writeLock.Unlock()
+	defer s.sendLock.Unlock()
 
-	if s.writeReq {
+	if s.sendReq {
 		return Error("request already sent")
 	}
 
 	// Make request
 	var msg []byte
 	{
-		s.writeBuf.Reset()
-		s.writeMsg.Reset(s.writeBuf)
+		s.sendBuf.Reset()
+		s.sendMsg.Reset(s.sendBuf)
 
-		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
+		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
 		w.Type(prpc.MessageType_Request)
 		w.CopyReq(req)
 
@@ -111,7 +148,7 @@ func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 
 	// Send request
 	s.method = requestMethod(req)
-	s.writeReq = true
+	s.sendReq = true
 	return ch.ch.Send(ctx, msg)
 }
 
@@ -150,19 +187,19 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Read lock
+	// Lock receive
 	select {
-	case <-s.readLock:
+	case <-s.recvLock:
 	case <-ctx.Wait():
 		return nil, false, ctx.Status()
 	}
-	defer s.readLock.Unlock()
+	defer s.recvLock.Unlock()
 
 	// Check state
 	switch {
-	case s.readFailed:
-		return nil, false, s.readError
-	case s.readEnd:
+	case s.recvFailed:
+		return nil, false, s.recvError
+	case s.recvEnd:
 		return nil, false, status.End
 	}
 
@@ -170,7 +207,7 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 	msg, ok, st := ch.read(ctx)
 	switch {
 	case !st.OK():
-		s.readFail(st)
+		s.receiveFail(st)
 		return nil, false, st
 	case !ok:
 		return nil, false, status.OK
@@ -183,12 +220,12 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 		return msg.Msg(), true, status.OK
 
 	case prpc.MessageType_End:
-		s.readEnd = true
+		s.recvEnd = true
 		return nil, false, status.End
 
 	case prpc.MessageType_Response:
-		s.readEnd = true
-		s.readResp = true
+		s.recvEnd = true
+		s.recvResp = true
 
 		result, st := parseResult(msg.Resp())
 		s.result = result
@@ -198,7 +235,7 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 	}
 
 	st = Errorf("unexpected message type %d", typ)
-	s.readFail(st)
+	s.receiveFail(st)
 	return nil, false, st
 }
 
@@ -217,25 +254,25 @@ func (ch *channel) Send(ctx async.Context, message []byte) status.Status {
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Write lock
+	// Lock send
 	select {
-	case <-s.writeLock:
+	case <-s.sendLock:
 	case <-ctx.Wait():
 		return ctx.Status()
 	}
-	defer s.writeLock.Unlock()
+	defer s.sendLock.Unlock()
 
-	if s.writeEnd {
+	if s.sendEnd {
 		return Error("end already sent")
 	}
 
 	// Make message
 	var msg []byte
 	{
-		s.writeBuf.Reset()
-		s.writeMsg.Reset(s.writeBuf)
+		s.sendBuf.Reset()
+		s.sendMsg.Reset(s.sendBuf)
 
-		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
+		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
 		w.Type(prpc.MessageType_Message)
 		w.Msg(message)
 
@@ -259,25 +296,25 @@ func (ch *channel) SendEnd(ctx async.Context) status.Status {
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Write lock
+	// Lock send
 	select {
-	case <-s.writeLock:
+	case <-s.sendLock:
 	case <-ctx.Wait():
 		return ctx.Status()
 	}
-	defer s.writeLock.Unlock()
+	defer s.sendLock.Unlock()
 
-	if s.writeEnd {
+	if s.sendEnd {
 		return Error("end already sent")
 	}
 
 	// Make message
 	var msg []byte
 	{
-		s.writeBuf.Reset()
-		s.writeMsg.Reset(s.writeBuf)
+		s.sendBuf.Reset()
+		s.sendMsg.Reset(s.sendBuf)
 
-		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
+		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
 		w.Type(prpc.MessageType_End)
 
 		p, err := w.Build()
@@ -289,7 +326,7 @@ func (ch *channel) SendEnd(ctx async.Context) status.Status {
 	}
 
 	// Send message
-	s.writeEnd = true
+	s.sendEnd = true
 	return ch.ch.Send(ctx, msg)
 }
 
@@ -303,20 +340,20 @@ func (ch *channel) Response(ctx async.Context) (ref.R[spec.Value], status.Status
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Read lock
+	// Lock receive
 	select {
-	case <-s.readLock:
+	case <-s.recvLock:
 	case <-ctx.Wait():
 		return nil, ctx.Status()
 	}
-	defer s.readLock.Unlock()
+	defer s.recvLock.Unlock()
 
 	// Check state
 	switch {
-	case s.readFailed:
-		return nil, s.readError
+	case s.recvFailed:
+		return nil, s.recvError
 
-	case s.readResp:
+	case s.recvResp:
 		if !s.resultOK {
 			return nil, Error("response already received")
 		}
@@ -333,7 +370,7 @@ func (ch *channel) Response(ctx async.Context) (ref.R[spec.Value], status.Status
 	for {
 		msg, st := ch.readSync(ctx)
 		if !st.OK() {
-			s.readFail(st)
+			s.receiveFail(st)
 			return nil, st
 		}
 
@@ -344,16 +381,16 @@ func (ch *channel) Response(ctx async.Context) (ref.R[spec.Value], status.Status
 			continue // Skip messages until response
 
 		case prpc.MessageType_End:
-			s.readEnd = true
+			s.recvEnd = true
 			continue // Skip messages until response
 
 		case prpc.MessageType_Response:
-			s.readResp = true
+			s.recvResp = true
 			return parseResult(msg.Resp())
 		}
 
 		st = Errorf("unexpected message type %d", typ)
-		s.readFail(st)
+		s.receiveFail(st)
 		return nil, st
 	}
 }
@@ -420,29 +457,6 @@ func (ch *channel) readSync(ctx async.Context) (prpc.Message, status.Status) {
 
 var statePool = pools.MakePool(newChannelState)
 
-type channelState struct {
-	logger logging.Logger
-	method string
-
-	writeLock async.Lock
-	writeReq  bool // request sent
-	writeEnd  bool // end sent
-	writeBuf  *alloc.Buffer
-	writeMsg  spec.Writer
-
-	readLock async.Lock
-	readEnd  bool // end received
-	readResp bool // response received
-
-	readFailed bool
-	readError  status.Status
-
-	// temp result stores result until Response is called
-	result   ref.R[spec.Value]
-	resultOK bool
-	resultSt status.Status
-}
-
 func acquireState() *channelState {
 	return statePool.New()
 }
@@ -452,40 +466,28 @@ func releaseState(s *channelState) {
 	statePool.Put(s)
 }
 
-func newChannelState() *channelState {
-	writeBuf := alloc.NewBuffer()
-
-	return &channelState{
-		writeLock: async.NewLock(),
-		writeBuf:  writeBuf,
-		writeMsg:  spec.NewWriterBuffer(writeBuf),
-
-		readLock: async.NewLock(),
-	}
-}
-
 func (s *channelState) reset() {
 	select {
-	case s.writeLock <- struct{}{}:
+	case s.sendLock <- struct{}{}:
 	default:
 	}
 	select {
-	case s.readLock <- struct{}{}:
+	case s.recvLock <- struct{}{}:
 	default:
 	}
 
 	s.logger = nil
 	s.method = ""
 
-	s.writeReq = false
-	s.writeEnd = false
-	s.writeBuf.Reset()
-	s.writeMsg.Reset(s.writeBuf)
+	s.sendReq = false
+	s.sendEnd = false
+	s.sendBuf.Reset()
+	s.sendMsg.Reset(s.sendBuf)
 
-	s.readEnd = false
-	s.readResp = false
-	s.readFailed = false
-	s.readError = status.None
+	s.recvEnd = false
+	s.recvResp = false
+	s.recvFailed = false
+	s.recvError = status.None
 
 	if s.result != nil {
 		s.result.Release()
@@ -495,13 +497,13 @@ func (s *channelState) reset() {
 	}
 }
 
-func (s *channelState) readFail(st status.Status) {
-	if s.readFailed {
+func (s *channelState) receiveFail(st status.Status) {
+	if s.recvFailed {
 		return
 	}
 
-	s.readFailed = true
-	s.readError = st
+	s.recvFailed = true
+	s.recvError = st
 
 	switch st.Code {
 	case status.CodeOK,

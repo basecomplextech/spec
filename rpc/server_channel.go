@@ -54,13 +54,41 @@ type serverChannel struct {
 	state   *serverChannelState
 }
 
+type serverChannelState struct {
+	// send
+	sendLock async.Lock
+	sendReq  bool // request sent
+	sendEnd  bool // end sent
+	sendBuf  *alloc.Buffer
+	sendMsg  spec.Writer
+
+	// receive
+	recvLock   async.Lock
+	recvReq    prpc.Request
+	recvEnd    bool // end received
+	recvFailed bool
+	recvError  status.Status
+}
+
 func newServerChannel(ch mpx.Channel, req prpc.Request) *serverChannel {
 	s := acquireServerState()
-	s.readReq = req
+	s.recvReq = req
 
 	return &serverChannel{
 		ch:    ch,
 		state: s,
+	}
+}
+
+func newServerChannelState() *serverChannelState {
+	sendBuf := alloc.NewBuffer()
+
+	return &serverChannelState{
+		sendLock: async.NewLock(),
+		sendBuf:  sendBuf,
+		sendMsg:  spec.NewWriterBuffer(sendBuf),
+
+		recvLock: async.NewLock(),
 	}
 }
 
@@ -72,20 +100,20 @@ func (ch *serverChannel) Request(ctx async.Context) (prpc.Request, status.Status
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Read lock
+	// Lock receive
 	select {
-	case <-s.readLock:
+	case <-s.recvLock:
 	case <-ctx.Wait():
 		return prpc.Request{}, ctx.Status()
 	}
-	defer s.readLock.Unlock()
+	defer s.recvLock.Unlock()
 
 	// Check state
-	if s.readReq.IsEmpty() {
+	if s.recvReq.IsEmpty() {
 		return prpc.Request{}, Error("request already received")
 	}
 
-	return s.readReq, status.OK
+	return s.recvReq, status.OK
 }
 
 // Receive
@@ -123,25 +151,25 @@ func (ch *serverChannel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.S
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Read lock
+	// Lock receive
 	select {
-	case <-s.readLock:
+	case <-s.recvLock:
 	case <-ctx.Wait():
 		return nil, false, ctx.Status()
 	}
-	defer s.readLock.Unlock()
+	defer s.recvLock.Unlock()
 
 	// Check state
 	switch {
-	case s.readFailed:
-		return nil, false, s.readError
-	case s.readEnd:
+	case s.recvFailed:
+		return nil, false, s.recvError
+	case s.recvEnd:
 		return nil, false, status.End
 	}
 
 	// Clear request
-	if !s.readReq.IsEmpty() {
-		s.readReq = prpc.Request{}
+	if !s.recvReq.IsEmpty() {
+		s.recvReq = prpc.Request{}
 	}
 
 	// Read message
@@ -166,7 +194,7 @@ func (ch *serverChannel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.S
 		return msg.Msg(), true, status.OK
 
 	case prpc.MessageType_End:
-		s.readEnd = true
+		s.recvEnd = true
 		return nil, false, status.End
 	}
 
@@ -190,25 +218,25 @@ func (ch *serverChannel) Send(ctx async.Context, message []byte) status.Status {
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Write lock
+	// Lock send
 	select {
-	case <-s.writeLock:
+	case <-s.sendLock:
 	case <-ctx.Wait():
 		return ctx.Status()
 	}
-	defer s.writeLock.Unlock()
+	defer s.sendLock.Unlock()
 
-	if s.writeEnd {
+	if s.sendEnd {
 		return Error("end already sent")
 	}
 
 	// Make message
 	var msg []byte
 	{
-		s.writeBuf.Reset()
-		s.writeMsg.Reset(s.writeBuf)
+		s.sendBuf.Reset()
+		s.sendMsg.Reset(s.sendBuf)
 
-		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
+		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
 		w.Type(prpc.MessageType_Message)
 		w.Msg(message)
 
@@ -232,25 +260,25 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 	}
 	defer ch.stateMu.RUnlock()
 
-	// Write lock
+	// Lock send
 	select {
-	case <-s.writeLock:
+	case <-s.sendLock:
 	case <-ctx.Wait():
 		return ctx.Status()
 	}
-	defer s.writeLock.Unlock()
+	defer s.sendLock.Unlock()
 
-	if s.writeEnd {
+	if s.sendEnd {
 		return Error("end already sent")
 	}
 
 	// Make message
 	var msg []byte
 	{
-		s.writeBuf.Reset()
-		s.writeMsg.Reset(s.writeBuf)
+		s.sendBuf.Reset()
+		s.sendMsg.Reset(s.sendBuf)
 
-		w := prpc.NewMessageWriterTo(s.writeMsg.Message())
+		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
 		w.Type(prpc.MessageType_End)
 
 		p, err := w.Build()
@@ -262,7 +290,7 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 	}
 
 	// Send message
-	s.writeEnd = true
+	s.sendEnd = true
 	return ch.ch.Send(ctx, msg)
 }
 
@@ -299,20 +327,6 @@ func (ch *serverChannel) rlock() (*serverChannelState, bool) {
 
 var serverStatePool = pools.MakePool(newServerChannelState)
 
-type serverChannelState struct {
-	writeLock async.Lock
-	writeReq  bool // request sent
-	writeEnd  bool // end sent
-	writeBuf  *alloc.Buffer
-	writeMsg  spec.Writer
-
-	readLock   async.Lock
-	readReq    prpc.Request
-	readEnd    bool // end received
-	readFailed bool
-	readError  status.Status
-}
-
 func acquireServerState() *serverChannelState {
 	return serverStatePool.New()
 }
@@ -322,40 +336,28 @@ func releaseServerState(s *serverChannelState) {
 	serverStatePool.Put(s)
 }
 
-func newServerChannelState() *serverChannelState {
-	writeBuf := alloc.NewBuffer()
-
-	return &serverChannelState{
-		writeLock: async.NewLock(),
-		writeBuf:  writeBuf,
-		writeMsg:  spec.NewWriterBuffer(writeBuf),
-
-		readLock: async.NewLock(),
-	}
-}
-
 func (s *serverChannelState) reset() {
 	select {
-	case s.writeLock <- struct{}{}:
+	case s.sendLock <- struct{}{}:
 	default:
 	}
 	select {
-	case s.readLock <- struct{}{}:
+	case s.recvLock <- struct{}{}:
 	default:
 	}
 
-	s.writeReq = false
-	s.writeEnd = false
-	s.writeBuf.Reset()
-	s.writeMsg.Reset(s.writeBuf)
+	s.sendReq = false
+	s.sendEnd = false
+	s.sendBuf.Reset()
+	s.sendMsg.Reset(s.sendBuf)
 
-	s.readReq = prpc.Request{}
-	s.readEnd = false
-	s.readFailed = false
-	s.readError = status.None
+	s.recvReq = prpc.Request{}
+	s.recvEnd = false
+	s.recvFailed = false
+	s.recvError = status.None
 }
 
 func (s *serverChannelState) readFail(st status.Status) {
-	s.readFailed = true
-	s.readError = st
+	s.recvFailed = true
+	s.recvError = st
 }
