@@ -83,7 +83,7 @@ func BenchmarkStream(b *testing.B) {
 
 	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		for {
-			msg, st := ch.ReadSync(ctx)
+			msg, st := ch.Receive(ctx)
 			if !st.OK() {
 				return nil, st
 			}
@@ -120,13 +120,13 @@ func BenchmarkStream(b *testing.B) {
 		defer ch.Free()
 
 		for i := 0; i < b.N; i++ {
-			st = ch.Write(ctx, streamMsg)
+			st = ch.Send(ctx, streamMsg)
 			if !st.OK() {
 				b.Fatal(st)
 			}
 		}
 
-		st = ch.Write(ctx, []byte(closeMsg))
+		st = ch.Send(ctx, []byte(closeMsg))
 		if !st.OK() {
 			b.Fatal(st)
 		}

@@ -16,26 +16,28 @@ import (
 
 // Channel is a client RPC channel.
 type Channel interface {
-	// Read reads and returns a message, or false/end.
-	// The method does not block if no messages, and returns false instead.
-	// The message is valid until the next call to Read/Response.
-	Read(ctx async.Context) ([]byte, bool, status.Status)
-
-	// ReadSync reads and returns a message from the channel, or an end.
+	// Receive receives and returns a message from the channel, or an end.
+	//
 	// The method blocks until a message is received, or the channel is closed.
-	// The message is valid until the next call to Read/Response.
-	ReadSync(ctx async.Context) ([]byte, status.Status)
+	// The message is valid until the next call to Receive/ReceiveAsync.
+	Receive(ctx async.Context) ([]byte, status.Status)
 
-	// ReadWait returns a channel which is notified on a new message, or a channel close.
-	ReadWait() <-chan struct{}
+	// ReceiveAsync receives and returns a message, or false/end.
+	//
+	// The method does not block if no messages, and returns false instead.
+	// The message is valid until the next call to Receive/ReceiveAsync.
+	ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 
-	// Write
+	// ReceiveWait returns a channel which is notified on a new message, or a channel close.
+	ReceiveWait() <-chan struct{}
 
-	// Write writes a message to the channel.
-	Write(ctx async.Context, message []byte) status.Status
+	// Send
 
-	// WriteEnd writes an end message to the channel.
-	WriteEnd(ctx async.Context) status.Status
+	// Send sends a message to the channel.
+	Send(ctx async.Context, message []byte) status.Status
+
+	// SendEnd sends an end message to the channel.
+	SendEnd(ctx async.Context) status.Status
 
 	// Response
 
@@ -113,12 +115,35 @@ func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	return ch.ch.Send(ctx, msg)
 }
 
-// Read
+// Receive
 
-// Read reads and returns a message, or false/end.
+// Receive receives and returns a message from the channel, or an end.
+//
+// The method blocks until a message is received, or the channel is closed.
+// The message is valid until the next call to Receive/ReceiveAsync.
+func (ch *channel) Receive(ctx async.Context) ([]byte, status.Status) {
+	for {
+		msg, ok, st := ch.ReceiveAsync(ctx)
+		switch {
+		case !st.OK():
+			return nil, st
+		case ok:
+			return msg, status.OK
+		}
+
+		select {
+		case <-ctx.Wait():
+			return nil, ctx.Status()
+		case <-ch.ch.ReceiveWait():
+		}
+	}
+}
+
+// ReceiveAsync receives and returns a message, or false/end.
+//
 // The method does not block if no messages, and returns false instead.
-// The message is valid until the next call to Read/Receive/Response.
-func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
+// The message is valid until the next call to Receive/ReceiveAsync.
+func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil, false, status.Closed
@@ -177,36 +202,15 @@ func (ch *channel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 	return nil, false, st
 }
 
-// ReadSync reads and returns a message from the channel, or an end.
-// The method blocks until a message is received, or the channel is closed.
-// The message is valid until the next call to Read/Receive/Response.
-func (ch *channel) ReadSync(ctx async.Context) ([]byte, status.Status) {
-	for {
-		msg, ok, st := ch.Read(ctx)
-		switch {
-		case !st.OK():
-			return nil, st
-		case ok:
-			return msg, status.OK
-		}
-
-		select {
-		case <-ctx.Wait():
-			return nil, ctx.Status()
-		case <-ch.ch.ReceiveWait():
-		}
-	}
-}
-
-// ReadWait returns a channel which is notified on a new message, or a channel close.
-func (ch *channel) ReadWait() <-chan struct{} {
+// ReceiveWait returns a channel which is notified on a new message, or a channel close.
+func (ch *channel) ReceiveWait() <-chan struct{} {
 	return ch.ch.ReceiveWait()
 }
 
-// Write
+// Send
 
-// Write writes a message to the channel.
-func (ch *channel) Write(ctx async.Context, message []byte) status.Status {
+// Send sends a message to the channel.
+func (ch *channel) Send(ctx async.Context, message []byte) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return status.Closed
@@ -247,8 +251,8 @@ func (ch *channel) Write(ctx async.Context, message []byte) status.Status {
 	return ch.ch.Send(ctx, msg)
 }
 
-// WriteEnd writes an end message to the channel.
-func (ch *channel) WriteEnd(ctx async.Context) status.Status {
+// SendEnd sends an end message to the channel.
+func (ch *channel) SendEnd(ctx async.Context) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return status.Closed

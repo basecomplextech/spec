@@ -52,14 +52,14 @@ func TestClient_Request__should_send_request_receive_response(t *testing.T) {
 	assert.Equal(t, msg, result.Unwrap().String().Unwrap())
 }
 
-// Write
+// Send
 
-func TestClient_Write__should_send_client_message_to_server(t *testing.T) {
+func TestClient_Send__should_send_client_message_to_server(t *testing.T) {
 	done := make(chan struct{})
 	var message []byte
 
 	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
-		msg, st := ch.ReadSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return nil, st
 		}
@@ -81,7 +81,7 @@ func TestClient_Write__should_send_client_message_to_server(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	st = ch.Write(ctx, []byte("hello, world"))
+	st = ch.Send(ctx, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -95,18 +95,18 @@ func TestClient_Write__should_send_client_message_to_server(t *testing.T) {
 	assert.Equal(t, []byte("hello, world"), message)
 }
 
-func TestClient_End__should_send_end_message_to_server(t *testing.T) {
+func TestClient_SendEnd__should_send_end_message_to_server(t *testing.T) {
 	done := make(chan struct{})
 	ended := false
 
 	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
-		msg, st := ch.ReadSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return nil, st
 		}
 		assert.Equal(t, []byte("client message"), msg)
 
-		_, st = ch.ReadSync(ctx)
+		_, st = ch.Receive(ctx)
 		assert.Equal(t, status.CodeEnd, st.Code)
 
 		close(done)
@@ -126,12 +126,12 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	st = ch.Write(ctx, []byte("client message"))
+	st = ch.Send(ctx, []byte("client message"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.WriteEnd(ctx)
+	st = ch.SendEnd(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -145,11 +145,11 @@ func TestClient_End__should_send_end_message_to_server(t *testing.T) {
 	assert.True(t, ended)
 }
 
-// ReadSync
+// Receive
 
-func TestClient_ReadSync__should_read_server_message(t *testing.T) {
+func TestClient_Receive__should_read_server_message(t *testing.T) {
 	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
-		st := ch.Write(ctx, []byte("hello, world"))
+		st := ch.Send(ctx, []byte("hello, world"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -168,7 +168,7 @@ func TestClient_ReadSync__should_read_server_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReadSync(ctx)
+	msg, st := ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -176,9 +176,9 @@ func TestClient_ReadSync__should_read_server_message(t *testing.T) {
 	assert.Equal(t, []byte("hello, world"), msg)
 }
 
-func TestClient_ReadSync__should_return_end_on_response(t *testing.T) {
+func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
-		st := ch.Write(ctx, []byte("server message"))
+		st := ch.Send(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -204,13 +204,13 @@ func TestClient_ReadSync__should_return_end_on_response(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReadSync(ctx)
+	msg, st := ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("server message"), msg)
 
-	_, st = ch.ReadSync(ctx)
+	_, st = ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 
 	result, st := ch.Response(ctx)
@@ -258,7 +258,7 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 
 func TestClient_Response__should_skip_message(t *testing.T) {
 	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
-		st := ch.Write(ctx, []byte("server message"))
+		st := ch.Send(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
@@ -297,21 +297,21 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 
 func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
-		st := ch.Write(ctx, []byte("server message"))
+		st := ch.Send(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
 		}
 
-		msg, st := ch.ReadSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return nil, st
 		}
 		assert.Equal(t, []byte("client message"), msg)
 
-		_, st = ch.ReadSync(ctx)
+		_, st = ch.Receive(ctx)
 		assert.Equal(t, status.End, st)
 
-		st = ch.WriteEnd(ctx)
+		st = ch.SendEnd(ctx)
 		if !st.OK() {
 			return nil, st
 		}
@@ -337,23 +337,23 @@ func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	msg, st := ch.ReadSync(ctx)
+	msg, st := ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	assert.Equal(t, []byte("server message"), msg)
 
-	st = ch.Write(ctx, []byte("client message"))
+	st = ch.Send(ctx, []byte("client message"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.WriteEnd(ctx)
+	st = ch.SendEnd(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	_, st = ch.ReadSync(ctx)
+	_, st = ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 
 	result, st := ch.Response(ctx)
