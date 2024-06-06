@@ -8,7 +8,6 @@ import (
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
@@ -76,25 +75,22 @@ type channelState struct {
 	id     bin.Bin128
 	ctx    async.Context
 	conn   internalConn
-	client bool // distinguishes client and server channels
+	client bool // client or server channel
 	window int  // initial window size
 
 	// send
-	sendMu     sync.Mutex
-	sendWriter spec.Writer
-	sendBuffer *alloc.Buffer
-
-	sendOpen  bool // open message sent
-	sendClose bool // close message sent
-	sendFree  bool // freed by user
+	sendMu      sync.Mutex
+	sendOpen    bool // open message sent
+	sendClose   bool // close message sent
+	sendFree    bool // freed by user
+	sendBuilder *builder
 
 	// receive
 	recvMu    sync.Mutex
-	recvQueue alloc.MQueue
-
 	recvOpen  bool // open message received
 	recvClose bool // close message received
 	recvFree  bool // freed by connection
+	recvQueue alloc.MQueue
 
 	// windows
 	windowMu   sync.Mutex
@@ -139,16 +135,13 @@ func openChannel(c internalConn, client bool, msg pmpx.ChannelOpen) *channel {
 }
 
 func newChannelState() *channelState {
-	sendBuffer := alloc.NewBuffer()
 
 	return &channelState{
 		ctx: async.NewContext(),
 
-		sendBuffer: sendBuffer,
-		sendWriter: spec.NewWriterBuffer(sendBuffer),
-
-		recvQueue:  alloc.NewMQueue(),
-		windowWait: make(chan struct{}, 1),
+		sendBuilder: newBuilder(),
+		recvQueue:   alloc.NewMQueue(),
+		windowWait:  make(chan struct{}, 1),
 	}
 }
 
@@ -226,17 +219,17 @@ func (ch *channel) ReceiveWait() <-chan struct{} {
 
 // Send sends a message to the channel.
 func (ch *channel) Send(ctx async.Context, data []byte) status.Status {
-	input := pmpx.SendMessageInput{
-		Data: data,
+	input := messageInput{
+		data: data,
 	}
 	return ch.sendMessage(ctx, input)
 }
 
 // SendAndClose sends a close message with a payload.
 func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
-	input := pmpx.SendMessageInput{
-		Data:  data,
-		Close: true,
+	input := messageInput{
+		data:  data,
+		close: true,
 	}
 	return ch.sendMessage(ctx, input)
 }
@@ -253,7 +246,7 @@ func (ch *channel) Free() {
 	ctx := async.NoContext()
 
 	ch.sendClose(ctx)
-	ch.sendFree()
+	ch.freeSend()
 	ch.free()
 }
 
@@ -333,7 +326,7 @@ func (ch *channel) receive() ([]byte, bool, status.Status) {
 
 // send
 
-func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) status.Status {
+func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -349,20 +342,17 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 	}
 
 	// Make message
-	input.ID = s.id
-	input.Open = !s.sendOpen
-	input.Window = int32(s.window)
+	input.id = s.id
+	input.open = !s.sendOpen
+	input.window = int32(s.window)
 
-	s.sendBuffer.Reset()
-	s.sendWriter.Reset(s.sendBuffer)
-
-	msg, err := pmpx.MakeSendMessage(s.sendWriter.Message(), input)
+	msg, err := s.sendBuilder.buildMessage(input)
 	if err != nil {
 		return mpxError(err)
 	}
 
 	// Decrement send window
-	size := len(input.Data)
+	size := len(input.data)
 	if st := s.decrementSendWindow(ctx, size, true /* wait */); !st.OK() {
 		return st
 	}
@@ -374,7 +364,7 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 
 	// Update state
 	s.sendOpen = true
-	s.sendClose = s.sendClose || input.Close
+	s.sendClose = s.sendClose || input.close
 	return status.OK
 }
 
@@ -400,20 +390,16 @@ func (ch *channel) sendClose(ctx async.Context) status.Status {
 	}
 
 	// Make message
-	input := pmpx.SendMessageInput{
-		ID:    s.id,
-		Close: true,
+	input := messageInput{
+		id:    s.id,
+		close: true,
 	}
-
-	s.sendBuffer.Reset()
-	s.sendWriter.Reset(s.sendBuffer)
-
-	msg, err := pmpx.MakeSendMessage(s.sendWriter.Message(), input)
+	msg, err := s.sendBuilder.buildMessage(input)
 	if err != nil {
 		return mpxError(err)
 	}
 
-	// Decrement send window, no wait
+	// Decrement send window
 	n := len(msg.Unwrap().Raw())
 	if st := s.decrementSendWindow(ctx, n, false /* no wait, force */); !st.OK() {
 		return st
@@ -441,10 +427,7 @@ func (ch *channel) sendWindow(delta int32) status.Status {
 	defer s.sendMu.Unlock()
 
 	// Make message
-	s.sendBuffer.Reset()
-	s.sendWriter.Reset(s.sendBuffer)
-
-	msg, err := pmpx.MakeSendWindow(s.sendWriter.Message(), s.id, delta)
+	msg, err := s.sendBuilder.buildWindow(s.id, delta)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -454,7 +437,7 @@ func (ch *channel) sendWindow(delta int32) status.Status {
 	return s.conn.SendMessage(ctx, msg)
 }
 
-func (ch *channel) sendFree() {
+func (ch *channel) freeSend() {
 	s, ok := ch.rlock()
 	if !ok {
 		return
@@ -465,7 +448,6 @@ func (ch *channel) sendFree() {
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
 
-	// Close and free send
 	s.sendClose = true
 	s.sendFree = true
 }
@@ -710,22 +692,19 @@ func (s *channelState) reset() {
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
 
-	s.sendBuffer.Reset()
-	s.sendWriter.Reset(s.sendBuffer)
-
 	s.sendOpen = false
 	s.sendClose = false
 	s.sendFree = false
+	s.sendBuilder.reset()
 
 	// Reset receive
 	s.recvMu.Lock()
 	defer s.recvMu.Unlock()
 
-	s.recvQueue.Reset()
-
 	s.recvOpen = false
 	s.recvClose = false
 	s.recvFree = false
+	s.recvQueue.Reset()
 
 	// Reset windows
 	s.windowMu.Lock()
