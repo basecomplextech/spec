@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"io"
 	"strings"
-	"sync"
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/status"
@@ -15,13 +14,12 @@ import (
 
 type reader struct {
 	src    *bufio.Reader
-	comp   *lz4.Reader // Nil when no compression
-	reader io.Reader   // Points to src or comp
+	comp   *lz4.Reader // nil when no compression
+	reader io.Reader   // points to src or comp
 
 	client bool
 	freed  bool
 
-	mu   sync.Mutex
 	head [4]byte
 	buf  *alloc.Buffer
 }
@@ -38,9 +36,6 @@ func newReader(r io.Reader, client bool, bufferSize int) *reader {
 }
 
 func (r *reader) free() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	if r.freed {
 		return
 	}
@@ -162,9 +157,6 @@ func (r *reader) readMessage() (pmpx.Message, status.Status) {
 
 // read reads the next message bytes, the bytes are valid until the next read call.
 func (r *reader) read() ([]byte, status.Status) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	head := r.head[:]
 
 	// Read size
