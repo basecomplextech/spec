@@ -120,7 +120,7 @@ func (s *testService) Method21(ctx async.Context, ch ServiceMethod21Channel) (re
 		msg, err := w.Build()
 		if err != nil {
 		}
-		if st := ch.Write(ctx, msg); !st.OK() {
+		if st := ch.Send(ctx, msg); !st.OK() {
 			return nil, st
 		}
 	}
@@ -141,7 +141,7 @@ func (s *testService) Method22(ctx async.Context, ch ServiceMethod22Channel) (re
 	}
 	str := req.Msg().Unwrap()
 
-	_, st = ch.ReadSync(ctx)
+	_, st = ch.Receive(ctx)
 	if !st.OK() {
 		return nil, st
 	}
@@ -170,12 +170,12 @@ func (s *testService) Method23(ctx async.Context, ch ServiceMethod23Channel) (re
 		msg, err := w.Build()
 		if err != nil {
 		}
-		if st := ch.Write(ctx, msg); !st.OK() {
+		if st := ch.Send(ctx, msg); !st.OK() {
 			return nil, st
 		}
 	}
 
-	_, st = ch.ReadSync(ctx)
+	_, st = ch.Receive(ctx)
 	if !st.OK() {
 		return nil, st
 	}

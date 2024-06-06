@@ -486,10 +486,10 @@ func (w *clientImplWriter) channel(def *model.Definition, m *model.Method) error
 	if err := w.channel_def(def, m); err != nil {
 		return err
 	}
-	if err := w.channel_read(def, m); err != nil {
+	if err := w.channel_receive(def, m); err != nil {
 		return err
 	}
-	if err := w.channel_write(def, m); err != nil {
+	if err := w.channel_send(def, m); err != nil {
 		return err
 	}
 	if err := w.channel_response(def, m); err != nil {
@@ -517,7 +517,7 @@ func (w *clientImplWriter) channel_def(def *model.Definition, m *model.Method) e
 	return nil
 }
 
-func (w *clientImplWriter) channel_read(def *model.Definition, m *model.Method) error {
+func (w *clientImplWriter) channel_receive(def *model.Definition, m *model.Method) error {
 	in := m.Channel.In
 	if in == nil {
 		return nil
@@ -527,9 +527,23 @@ func (w *clientImplWriter) channel_read(def *model.Definition, m *model.Method) 
 	typeName := typeName(in)
 	parseFunc := typeParseFunc(in)
 
-	// Read
-	w.linef(`func (c *%v) Read(ctx async.Context) (%v, bool, status.Status) {`, name, typeName)
-	w.line(`b, ok, st := c.ch.Read(ctx)`)
+	// Receive
+	w.linef(`func (c *%v) Receive(ctx async.Context) (%v, status.Status) {`, name, typeName)
+	w.line(`b, st := c.ch.Receive(ctx)`)
+	w.line(`if !st.OK() {`)
+	w.linef(`return %v{}, st`, typeName)
+	w.line(`}`)
+	w.linef(`msg, _, err := %v(b)`, parseFunc)
+	w.line(`if err != nil {`)
+	w.linef(`return %v{}, status.WrapError(err)`, typeName)
+	w.line(`}`)
+	w.line(`return msg, status.OK`)
+	w.line(`}`)
+	w.line()
+
+	// ReceiveAsync
+	w.linef(`func (c *%v) ReceiveAsync(ctx async.Context) (%v, bool, status.Status) {`, name, typeName)
+	w.line(`b, ok, st := c.ch.ReceiveAsync(ctx)`)
 	w.line(`switch {`)
 	w.line(`case !st.OK():`)
 	w.linef(`return %v{}, false, st`, typeName)
@@ -544,29 +558,15 @@ func (w *clientImplWriter) channel_read(def *model.Definition, m *model.Method) 
 	w.line(`}`)
 	w.line()
 
-	// ReadSync
-	w.linef(`func (c *%v) ReadSync(ctx async.Context) (%v, status.Status) {`, name, typeName)
-	w.line(`b, st := c.ch.ReadSync(ctx)`)
-	w.line(`if !st.OK() {`)
-	w.linef(`return %v{}, st`, typeName)
-	w.line(`}`)
-	w.linef(`msg, _, err := %v(b)`, parseFunc)
-	w.line(`if err != nil {`)
-	w.linef(`return %v{}, status.WrapError(err)`, typeName)
-	w.line(`}`)
-	w.line(`return msg, status.OK`)
-	w.line(`}`)
-	w.line()
-
-	// ReadWait
-	w.linef(`func (c *%v) ReadWait() <-chan struct{} {`, name)
-	w.line(`return c.ch.ReadWait()`)
+	// ReceiveWait
+	w.linef(`func (c *%v) ReceiveWait() <-chan struct{} {`, name)
+	w.line(`return c.ch.ReceiveWait()`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
-func (w *clientImplWriter) channel_write(def *model.Definition, m *model.Method) error {
+func (w *clientImplWriter) channel_send(def *model.Definition, m *model.Method) error {
 	out := m.Channel.Out
 	if out == nil {
 		return nil
@@ -575,20 +575,20 @@ func (w *clientImplWriter) channel_write(def *model.Definition, m *model.Method)
 	name := clientChannelImpl_name(m)
 	typeName := typeName(out)
 
-	// Write
-	w.linef(`func (c *%v) Write(ctx async.Context, msg %v) status.Status {`, name, typeName)
+	// Send
+	w.linef(`func (c *%v) Send(ctx async.Context, msg %v) status.Status {`, name, typeName)
 	switch out.Kind {
 	case model.KindList, model.KindMessage:
-		w.line(`return c.ch.Write(ctx, msg.Unwrap().Raw())`)
+		w.line(`return c.ch.Send(ctx, msg.Unwrap().Raw())`)
 	default:
-		w.line(`return c.ch.Write(ctx, msg)`)
+		w.line(`return c.ch.Send(ctx, msg)`)
 	}
 	w.line(`}`)
 	w.line()
 
-	// WriteEnd
-	w.linef(`func (c *%v) WriteEnd(ctx async.Context) status.Status {`, name)
-	w.line(`return c.ch.WriteEnd(ctx)`)
+	// SendEnd
+	w.linef(`func (c *%v) SendEnd(ctx async.Context) status.Status {`, name)
+	w.line(`return c.ch.SendEnd(ctx)`)
 	w.line(`}`)
 	w.line()
 	return nil

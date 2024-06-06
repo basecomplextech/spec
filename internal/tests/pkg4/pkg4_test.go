@@ -193,7 +193,7 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		msg, st := ch.ReadSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -234,7 +234,7 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st = ch.Write(ctx, msg)
+		st = ch.Send(ctx, msg)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -263,7 +263,7 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		msg, st := ch.ReadSync(ctx)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -280,7 +280,7 @@ func TestService_Channel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		st = ch.Write(ctx, msg1)
+		st = ch.Send(ctx, msg1)
 		if !st.OK() {
 			t.Fatal(st)
 		}
