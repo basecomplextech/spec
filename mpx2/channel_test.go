@@ -147,7 +147,7 @@ func TestChannel_Receive__should_decrement_recv_window(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.Equal(t, window-87, ch.state.windowRecv)
+	assert.Equal(t, len("hello, channel"), window-ch.state.windowRecv)
 }
 
 // Send
@@ -243,7 +243,7 @@ func TestChannel_Send__should_decrement_send_window(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.Equal(t, window-60, ch.state.windowSend)
+	assert.Equal(t, len("hello, world"), window-ch.state.windowSend)
 }
 
 func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
@@ -265,7 +265,9 @@ func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
 	window := ch.state.window
 	assert.Equal(t, window, ch.state.windowSend)
 
-	msg := bytes.Repeat([]byte("a"), (ch.state.window / 3))
+	size := int(float64(ch.state.window) / 2.5)
+	msg := bytes.Repeat([]byte("a"), size)
+
 	st := ch.Send(ctx, msg)
 	if !st.OK() {
 		t.Fatal(st)
@@ -318,8 +320,12 @@ func TestChannel_Send__should_write_message_if_it_exceeds_half_window_size(t *te
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		<-timer.C
 
-		ch.Receive(ctx)
-		ch.Receive(ctx)
+		if _, st := ch.Receive(ctx); !st.OK() {
+			return st
+		}
+		if _, st := ch.Receive(ctx); !st.OK() {
+			return st
+		}
 		return status.OK
 	})
 	conn := testConnect(t, server)

@@ -194,19 +194,21 @@ func (ch *channel) Receive(ctx async.Context) ([]byte, status.Status) {
 // The message is valid until the next call to Receive.
 // The method does not block if no messages, and returns false instead.
 func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status) {
-	// RLock state
-	s, ok := ch.rlock()
-	if !ok {
-		return nil, false, statusChannelClosed
+	data, ok, st := ch.receive()
+	if !ok || !st.OK() {
+		return nil, false, st
 	}
-	defer ch.stateMu.RUnlock()
 
-	// Lock receive
-	s.recvMu.Lock()
-	defer s.recvMu.Unlock()
+	delta := ch.incrementRecvWindow()
+	if delta == 0 {
+		return data, true, status.OK
+	}
 
-	// Poll queue
-	return s.recvQueue.Read()
+	st = ch.sendWindow(delta)
+	if !st.OK() && st != statusChannelClosed {
+		return nil, false, st
+	}
+	return data, true, status.OK
 }
 
 // ReceiveWait returns a channel that is notified on a new message, or a channel close.
@@ -267,29 +269,13 @@ func (ch *channel) Receive1(msg pmpx.Message) status.Status {
 
 	switch code {
 	case pmpx.Code_ChannelOpen:
-		if st := ch.receiveOpen(msg); !st.OK() {
-			return st
-		}
-		delta, st := ch.incrementRecvWindow()
-		if delta <= 0 || !st.OK() {
-			return st
-		}
-		return ch.sendWindow(delta)
-
+		return ch.receiveOpen(msg.Open())
 	case pmpx.Code_ChannelClose:
-		return ch.receiveClose(msg)
+		return ch.receiveClose(msg.Close())
 	case pmpx.Code_ChannelWindow:
-		return ch.receiveWindow(msg)
-
+		return ch.receiveWindow(msg.Window())
 	case pmpx.Code_ChannelMessage:
-		if st := ch.receiveMessage(msg); !st.OK() {
-			return st
-		}
-		delta, st := ch.incrementRecvWindow()
-		if delta <= 0 || !st.OK() {
-			return st
-		}
-		return ch.sendWindow(delta)
+		return ch.receiveMessage(msg.Message())
 	}
 
 	return mpxErrorf("received unexpected message, code=%v", code)
@@ -324,6 +310,27 @@ func (ch *channel) rlock() (*channelState, bool) {
 	return s, true
 }
 
+// receive
+
+func (ch *channel) receive() ([]byte, bool, status.Status) {
+	// RLock state
+	s, ok := ch.rlock()
+	if !ok {
+		return nil, false, statusChannelClosed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Poll queue
+	data, ok, st := s.recvQueue.Read()
+	if !ok || !st.OK() {
+		return nil, false, st
+	}
+
+	// Decrement recv window
+	s.decrementRecvWindow(len(data))
+	return data, true, status.OK
+}
+
 // send
 
 func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) status.Status {
@@ -337,7 +344,6 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
 
-	// Check closed
 	if s.sendClose {
 		return statusChannelClosed
 	}
@@ -355,9 +361,9 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 		return mpxError(err)
 	}
 
-	// Decrement send window, or wait
-	n := len(msg.Unwrap().Raw())
-	if st := s.decrementSendWindow(ctx, n, true /* wait */); !st.OK() {
+	// Decrement send window
+	size := len(input.Data)
+	if st := s.decrementSendWindow(ctx, size, true /* wait */); !st.OK() {
 		return st
 	}
 
@@ -387,7 +393,7 @@ func (ch *channel) sendClose(ctx async.Context) status.Status {
 		return status.OK
 	}
 
-	// Mark as closed if not open
+	// Maybe not open
 	if !s.sendOpen {
 		s.sendClose = true
 		return status.OK
@@ -464,9 +470,9 @@ func (ch *channel) sendFree() {
 	s.sendFree = true
 }
 
-// receive
+// internal receive
 
-func (ch *channel) receiveOpen(msg pmpx.Message) status.Status {
+func (ch *channel) receiveOpen(msg pmpx.ChannelOpen) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -490,15 +496,11 @@ func (ch *channel) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Handle open
-	m := msg.Open()
-	data := m.Data()
-	close := m.Close()
-	size := len(msg.Unwrap().Raw())
+	data := msg.Data()
+	close := msg.Close()
 
-	// Update state
 	s.recvOpen = true
 	s.recvClose = close
-	s.decrementRecvWindow(size)
 
 	// Maybe write data
 	if len(data) != 0 {
@@ -512,7 +514,7 @@ func (ch *channel) receiveOpen(msg pmpx.Message) status.Status {
 	return status.OK
 }
 
-func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
+func (ch *channel) receiveClose(msg pmpx.ChannelClose) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -528,12 +530,8 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 	}
 
 	// Handle close
-	m := msg.Close()
-	data := m.Data()
-	size := len(msg.Unwrap().Raw())
-
+	data := msg.Data()
 	s.recvClose = true
-	s.decrementRecvWindow(size)
 
 	// Maybe write data
 	if len(data) != 0 {
@@ -546,7 +544,7 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 	return status.OK
 }
 
-func (ch *channel) receiveMessage(msg pmpx.Message) status.Status {
+func (ch *channel) receiveMessage(msg pmpx.ChannelMessage) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -561,18 +559,13 @@ func (ch *channel) receiveMessage(msg pmpx.Message) status.Status {
 		return mpxErrorf("received message after close, channel=%v", s.id)
 	}
 
-	// Handle message
-	m := msg.Message()
-	data := m.Data()
-	size := len(msg.Unwrap().Raw())
-	s.decrementRecvWindow(size)
-
 	// Write data
+	data := msg.Data()
 	_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
 	return status.OK
 }
 
-func (ch *channel) receiveWindow(msg pmpx.Message) status.Status {
+func (ch *channel) receiveWindow(msg pmpx.ChannelWindow) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -587,9 +580,8 @@ func (ch *channel) receiveWindow(msg pmpx.Message) status.Status {
 		return mpxErrorf("received window after close, channel=%v", s.id)
 	}
 
-	// Handle message
-	m := msg.Window()
-	delta := int(m.Delta())
+	// Increment window
+	delta := int(msg.Delta())
 	s.incrementSendWindow(delta)
 	return status.OK
 }
@@ -664,10 +656,10 @@ func (s *channelState) decrementSendWindow(ctx async.Context, n int, wait bool) 
 
 // recv window
 
-func (ch *channel) incrementRecvWindow() (int32, status.Status) {
+func (ch *channel) incrementRecvWindow() int32 {
 	s, ok := ch.rlock()
 	if !ok {
-		return 0, statusChannelClosed
+		return 0
 	}
 	defer ch.stateMu.RUnlock()
 
@@ -676,20 +668,20 @@ func (ch *channel) incrementRecvWindow() (int32, status.Status) {
 	defer s.windowMu.Unlock()
 
 	if s.windowRecv > s.window/2 {
-		return 0, status.OK
+		return 0
 	}
 
 	// Increment recv window
 	delta := s.window - s.windowRecv
 	s.windowRecv += delta
-	return int32(delta), status.OK
+	return int32(delta)
 }
 
-func (s *channelState) decrementRecvWindow(delta int) {
+func (s *channelState) decrementRecvWindow(size int) {
 	s.windowMu.Lock()
 	defer s.windowMu.Unlock()
 
-	s.windowRecv -= delta
+	s.windowRecv -= size
 }
 
 // state pool
