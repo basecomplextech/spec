@@ -137,16 +137,14 @@ func (w *writer) writeMessage(msg []byte) status.Status {
 			m1 := m.Open()
 			id := m1.Id()
 			data := string(m1.Data())
-			debugPrint(w.client, "-> open\t", id, data)
+			cmd := "-> open\t"
+			if m1.Close() {
+				cmd = "-> open-close\t"
+			}
+			debugPrint(w.client, cmd, id, data)
 
 		case pmpx.Code_ChannelClose:
 			m1 := m.Close()
-			id := m1.Id()
-			data := string(m1.Data())
-			debugPrint(w.client, "-> close\t", id, data)
-
-		case pmpx.Code_ChannelEnd:
-			m1 := m.End_()
 			id := m1.Id()
 			data := string(m1.Data())
 			debugPrint(w.client, "-> close\t", id, data)

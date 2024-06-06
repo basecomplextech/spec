@@ -38,22 +38,12 @@ type Channel interface {
 	// Send sends a message to the channel.
 	Send(ctx async.Context, msg []byte) status.Status
 
-	// SendAndEnd sends an end message with a payload.
-	SendAndEnd(ctx async.Context, msg []byte) status.Status
-
 	// SendAndClose sends a close message with a payload.
 	SendAndClose(ctx async.Context, msg []byte) status.Status
 
-	// SendEnd sends an end message.
-	//
-	// The channel is still open after an end message.
-	// No more messages can be sent, but messages can still be received.
-	SendEnd(ctx async.Context) status.Status
-
 	// SendClose sends a close message, and closes the channel.
 	//
-	// The channel is closed after a close message.
-	// No more messages can be sent or received.
+	// No more messages can be sent after this call.
 	SendClose(ctx async.Context) status.Status
 
 	// Internal
@@ -96,7 +86,6 @@ type channelState struct {
 
 	sendOpen  bool // open message sent
 	sendClose bool // close message sent
-	sendEnd   bool // end message sent
 	sendFree  bool // freed by user
 
 	// receive
@@ -105,7 +94,6 @@ type channelState struct {
 
 	recvOpen  bool // open message received
 	recvClose bool // close message received
-	recvEnd   bool // end message received
 	recvFree  bool // freed by connection
 
 	// windows
@@ -218,19 +206,7 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 	defer s.recvMu.Unlock()
 
 	// Poll queue
-	data, ok, st := s.recvQueue.Read()
-	switch {
-	case !st.OK():
-		return nil, false, st
-	case ok:
-		return data, true, status.OK
-	}
-
-	// Maybe ended
-	if s.recvEnd {
-		return nil, false, status.End
-	}
-	return nil, false, status.OK
+	return s.recvQueue.Read()
 }
 
 // ReceiveWait returns a channel that is notified on a new message, or a channel close.
@@ -254,28 +230,11 @@ func (ch *channel) Send(ctx async.Context, data []byte) status.Status {
 	return ch.sendMessage(ctx, input)
 }
 
-// SendAndEnd sends an end message with a payload.
-func (ch *channel) SendAndEnd(ctx async.Context, msg []byte) status.Status {
-	input := pmpx.SendMessageInput{
-		Data: msg,
-		End:  true,
-	}
-	return ch.sendMessage(ctx, input)
-}
-
 // SendAndClose sends a close message with a payload.
 func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
 	input := pmpx.SendMessageInput{
 		Data:  data,
 		Close: true,
-	}
-	return ch.sendMessage(ctx, input)
-}
-
-// SendEnd sends an end message.
-func (ch *channel) SendEnd(ctx async.Context) status.Status {
-	input := pmpx.SendMessageInput{
-		End: true,
 	}
 	return ch.sendMessage(ctx, input)
 }
@@ -319,8 +278,6 @@ func (ch *channel) ReceiveMessage(msg pmpx.Message) status.Status {
 
 	case pmpx.Code_ChannelClose:
 		return ch.receiveClose(msg)
-	case pmpx.Code_ChannelEnd:
-		return ch.receiveEnd(msg)
 	case pmpx.Code_ChannelWindow:
 		return ch.receiveWindow(msg)
 
@@ -380,12 +337,9 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
 
-	// Check closed/ended
-	switch {
-	case s.sendClose:
+	// Check closed
+	if s.sendClose {
 		return statusChannelClosed
-	case s.sendEnd:
-		return statusChannelEnded
 	}
 
 	// Make message
@@ -415,7 +369,6 @@ func (ch *channel) sendMessage(ctx async.Context, input pmpx.SendMessageInput) s
 	// Update state
 	s.sendOpen = true
 	s.sendClose = s.sendClose || input.Close
-	s.sendEnd = s.sendEnd || input.End
 	return status.OK
 }
 
@@ -437,7 +390,6 @@ func (ch *channel) sendClose(ctx async.Context) status.Status {
 	// Mark as closed if not open
 	if !s.sendOpen {
 		s.sendClose = true
-		s.sendEnd = true
 		return status.OK
 	}
 
@@ -468,7 +420,6 @@ func (ch *channel) sendClose(ctx async.Context) status.Status {
 
 	// Update state
 	s.sendClose = true
-	s.sendEnd = true
 	return status.OK
 }
 
@@ -510,7 +461,6 @@ func (ch *channel) sendFree() {
 
 	// Close and free send
 	s.sendClose = true
-	s.sendEnd = true
 	s.sendFree = true
 }
 
@@ -543,13 +493,11 @@ func (ch *channel) receiveOpen(msg pmpx.Message) status.Status {
 	m := msg.Open()
 	data := m.Data()
 	close := m.Close()
-	end := m.End_()
 	size := len(msg.Unwrap().Raw())
 
 	// Update state
 	s.recvOpen = true
 	s.recvClose = close
-	s.recvEnd = end
 	s.decrementRecvWindow(size)
 
 	// Maybe write data
@@ -558,7 +506,7 @@ func (ch *channel) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Maybe close queue
-	if end {
+	if close {
 		s.recvQueue.Close()
 	}
 	return status.OK
@@ -585,7 +533,6 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 	size := len(msg.Unwrap().Raw())
 
 	s.recvClose = true
-	s.recvEnd = true
 	s.decrementRecvWindow(size)
 
 	// Maybe write data
@@ -595,40 +542,6 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 
 	// Cancel context, close queue
 	// TODO: s.ctx.Cancel()
-	s.recvQueue.Close()
-	return status.OK
-}
-
-func (ch *channel) receiveEnd(msg pmpx.Message) status.Status {
-	s, ok := ch.rlock()
-	if !ok {
-		return statusChannelClosed
-	}
-	defer ch.stateMu.RUnlock()
-
-	// Lock receive
-	s.recvMu.Lock()
-	defer s.recvMu.Unlock()
-
-	if s.recvEnd {
-		return mpxErrorf("received duplicate end message, channel=%v", s.id)
-	}
-
-	// Handle end
-	m := msg.End_()
-	data := m.Data()
-	size := len(msg.Unwrap().Raw())
-
-	s.recvEnd = true
-	s.recvQueue.Close()
-	s.decrementRecvWindow(size)
-
-	// Maybe write data
-	if len(data) != 0 {
-		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
-	}
-
-	// Close queue
 	s.recvQueue.Close()
 	return status.OK
 }
@@ -644,8 +557,8 @@ func (ch *channel) receiveMessage(msg pmpx.Message) status.Status {
 	s.recvMu.Lock()
 	defer s.recvMu.Unlock()
 
-	if s.recvClose || s.recvEnd {
-		return mpxErrorf("received message after close/end, channel=%v", s.id)
+	if s.recvClose {
+		return mpxErrorf("received message after close, channel=%v", s.id)
 	}
 
 	// Handle message
@@ -670,8 +583,8 @@ func (ch *channel) receiveWindow(msg pmpx.Message) status.Status {
 	s.recvMu.Lock()
 	defer s.recvMu.Unlock()
 
-	if s.recvClose || s.recvEnd {
-		return mpxErrorf("received window after close/end, channel=%v", s.id)
+	if s.recvClose {
+		return mpxErrorf("received window after close, channel=%v", s.id)
 	}
 
 	// Handle message
@@ -697,11 +610,9 @@ func (ch *channel) receiveFree() {
 
 	// Close send
 	s.sendClose = true
-	s.sendEnd = true
 
 	// Close and free recv
 	s.recvClose = true
-	s.recvEnd = true
 	s.recvFree = true
 	s.recvQueue.Close()
 }
@@ -812,7 +723,6 @@ func (s *channelState) reset() {
 
 	s.sendOpen = false
 	s.sendClose = false
-	s.sendEnd = false
 	s.sendFree = false
 
 	// Reset receive
@@ -823,7 +733,6 @@ func (s *channelState) reset() {
 
 	s.recvOpen = false
 	s.recvClose = false
-	s.recvEnd = false
 	s.recvFree = false
 
 	// Reset windows

@@ -129,19 +129,17 @@ func (r *reader) readMessage() (pmpx.Message, status.Status) {
 			m := msg.Open()
 			id := m.Id()
 			data := string(m.Data())
-			debugPrint(r.client, "<- open\t", id, data)
+			cmd := "<- open\t"
+			if m.Close() {
+				cmd = "<- open-close\t"
+			}
+			debugPrint(r.client, cmd, id, data)
 
 		case pmpx.Code_ChannelClose:
 			m := msg.Close()
 			id := m.Id()
 			data := string(m.Data())
 			debugPrint(r.client, "<- close\t", id, data)
-
-		case pmpx.Code_ChannelEnd:
-			m := msg.End_()
-			id := m.Id()
-			data := string(m.Data())
-			debugPrint(r.client, "<- end\t", id, data)
 
 		case pmpx.Code_ChannelMessage:
 			m := msg.Message()

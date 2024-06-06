@@ -29,18 +29,16 @@ enum Code {
     UNDEFINED = 0;
     CHANNEL_OPEN = 1;
     CHANNEL_CLOSE = 2;
-    CHANNEL_END = 3;
-    CHANNEL_MESSAGE = 4;
-    CHANNEL_WINDOW = 5;
+    CHANNEL_MESSAGE = 3;
+    CHANNEL_WINDOW = 4;
 }
 
 message Message {
     code        Code                1;
     open        ChannelOpen         2;
     close       ChannelClose        3;
-    end_        ChannelEnd          4;
-    message     ChannelMessage      5;
-    window      ChannelWindow       6;
+    message     ChannelMessage      4;
+    window      ChannelWindow       5;
 }
 
 // Channel
@@ -49,14 +47,7 @@ message ChannelOpen {
     id      bin128  1;
     window  int32   2; // Channel read/write window, 0 means unlimited
     data    bytes   3; // Optional data
-
-    end_    bool    4; // Channel ended, no more data
-    close   bool    5; // Channel closed
-}
-
-message ChannelEnd {
-    id      bin128  1;
-    data    bytes   2;
+    close   bool    4; // Channel closed
 }
 
 message ChannelClose {

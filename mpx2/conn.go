@@ -430,10 +430,6 @@ func (c *conn) receiveLoop(ctx async.Context) status.Status {
 			if st := c.receiveClose(msg); !st.OK() {
 				return st
 			}
-		case pmpx.Code_ChannelEnd:
-			if st := c.receiveEnd(msg); !st.OK() {
-				return st
-			}
 		case pmpx.Code_ChannelMessage:
 			if st := c.receiveMessage(msg); !st.OK() {
 				return st
@@ -501,21 +497,6 @@ func (c *conn) receiveClose(msg pmpx.Message) status.Status {
 
 	defer ch.ReceiveFree()
 	delete(c.channels, id)
-
-	return ch.ReceiveMessage(msg)
-}
-
-func (c *conn) receiveEnd(msg pmpx.Message) status.Status {
-	m := msg.End_()
-	id := m.Id()
-
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	ch, ok := c.channels[id]
-	if !ok {
-		return status.OK
-	}
 
 	return ch.ReceiveMessage(msg)
 }

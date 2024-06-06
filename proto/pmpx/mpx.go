@@ -14,7 +14,6 @@ type SendMessageInput struct {
 
 	Open  bool
 	Close bool
-	End   bool
 }
 
 func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, error) {
@@ -26,7 +25,6 @@ func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, e
 
 	open := input.Open
 	close := input.Close
-	end := input.End
 
 	switch {
 	// Open message
@@ -39,9 +37,6 @@ func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, e
 
 		if data != nil {
 			w1.Data(data)
-		}
-		if end {
-			w1.End_(end)
 		}
 		if close {
 			w1.Close(close)
@@ -57,21 +52,6 @@ func MakeSendMessage(dst spec.MessageWriter, input SendMessageInput) (Message, e
 		w.Code(Code_ChannelClose)
 
 		w1 := w.Close()
-		w1.Id(id)
-		if data != nil {
-			w1.Data(data)
-		}
-
-		if err := w1.End(); err != nil {
-			return Message{}, err
-		}
-		return w.Build()
-
-	// End message
-	case end:
-		w.Code(Code_ChannelEnd)
-
-		w1 := w.End_()
 		w1.Id(id)
 		if data != nil {
 			w1.Data(data)
