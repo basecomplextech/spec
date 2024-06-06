@@ -465,13 +465,13 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	done := false
 	defer func() {
 		if !done {
+			ch.Free1()
 			ch.Free()
-			ch.ReceiveFree()
 		}
 	}()
 
 	// Handle message
-	st := ch.ReceiveMessage(msg)
+	st := ch.Receive1(msg)
 	if !st.OK() {
 		delete(c.channels, id)
 		return st
@@ -495,10 +495,10 @@ func (c *conn) receiveClose(msg pmpx.Message) status.Status {
 		return status.OK
 	}
 
-	defer ch.ReceiveFree()
+	defer ch.Free1()
 	delete(c.channels, id)
 
-	return ch.ReceiveMessage(msg)
+	return ch.Receive1(msg)
 }
 
 func (c *conn) receiveMessage(msg pmpx.Message) status.Status {
@@ -513,7 +513,7 @@ func (c *conn) receiveMessage(msg pmpx.Message) status.Status {
 		return status.OK
 	}
 
-	return ch.ReceiveMessage(msg)
+	return ch.Receive1(msg)
 }
 
 func (c *conn) receiveWindow(msg pmpx.Message) status.Status {
@@ -528,7 +528,7 @@ func (c *conn) receiveWindow(msg pmpx.Message) status.Status {
 		return status.OK
 	}
 
-	return ch.ReceiveMessage(msg)
+	return ch.Receive1(msg)
 }
 
 // send
@@ -599,7 +599,7 @@ func (c *conn) closeChannels() {
 	c.channelClosed = true
 
 	for _, ch := range c.channels {
-		ch.ReceiveFree()
+		ch.Free1()
 	}
 	c.channels = nil
 }
@@ -636,7 +636,7 @@ func (c *conn) removeChannel(id bin.Bin128) {
 		return
 	}
 
-	defer ch.ReceiveFree()
+	defer ch.Free1()
 	delete(c.channels, id)
 }
 

@@ -55,11 +55,11 @@ type Channel interface {
 // internal
 
 type internalChannel interface {
-	// ReceiveFree is called when the channel is freed by the connection.
-	ReceiveFree()
+	// Free1 is called when the channel is freed by the connection.
+	Free1()
 
-	// ReceiveMessage is called when the channel receives a message from the connection.
-	ReceiveMessage(msg pmpx.Message) status.Status
+	// Receive1 is called when the channel receives a message from the connection.
+	Receive1(msg pmpx.Message) status.Status
 }
 
 var (
@@ -255,14 +255,14 @@ func (ch *channel) Free() {
 	ch.free()
 }
 
-// ReceiveFree is called when the channel is freed by the connection.
-func (ch *channel) ReceiveFree() {
+// Free1 is called when the channel is freed by the connection.
+func (ch *channel) Free1() {
 	ch.receiveFree()
 	ch.free()
 }
 
-// ReceiveMessage is called when a message is received.
-func (ch *channel) ReceiveMessage(msg pmpx.Message) status.Status {
+// Receive1 is called when a message is received.
+func (ch *channel) Receive1(msg pmpx.Message) status.Status {
 	code := msg.Code()
 
 	switch code {
