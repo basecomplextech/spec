@@ -243,16 +243,14 @@ func (ch *channel) SendClose(ctx async.Context) status.Status {
 
 // Free closes the channel and releases its resources.
 func (ch *channel) Free() {
-	ctx := async.NoContext()
-
-	ch.sendClose(ctx)
+	_ = ch.sendClose(nil /* use channel context */) // ignore closed status
 	ch.freeSend()
 	ch.free()
 }
 
 // Free1 is called when the channel is freed by the connection.
 func (ch *channel) Free1() {
-	ch.receiveFree()
+	ch.freeReceive()
 	ch.free()
 }
 
@@ -333,6 +331,12 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 	}
 	defer ch.stateMu.RUnlock()
 
+	// Decrement window
+	size := len(input.data)
+	if st := s.decrementSendWindow(ctx, size, true /* wait */); !st.OK() {
+		return st
+	}
+
 	// Lock send
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
@@ -351,12 +355,6 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 		return mpxError(err)
 	}
 
-	// Decrement send window
-	size := len(input.data)
-	if st := s.decrementSendWindow(ctx, size, true /* wait */); !st.OK() {
-		return st
-	}
-
 	// Write message
 	if st := s.conn.SendMessage(ctx, msg); !st.OK() {
 		return st
@@ -368,23 +366,27 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 	return status.OK
 }
 
-func (ch *channel) sendClose(ctx async.Context) status.Status {
+func (ch *channel) sendClose(ctxOrNil async.Context) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
 	}
 	defer ch.stateMu.RUnlock()
 
+	// Context is nil in Free
+	ctx := ctxOrNil
+	if ctx == nil {
+		ctx = s.ctx
+	}
+
 	// Lock send
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
 
-	if s.sendClose {
+	switch {
+	case s.sendClose:
 		return status.OK
-	}
-
-	// Maybe not open
-	if !s.sendOpen {
+	case !s.sendOpen:
 		s.sendClose = true
 		return status.OK
 	}
@@ -399,7 +401,7 @@ func (ch *channel) sendClose(ctx async.Context) status.Status {
 		return mpxError(err)
 	}
 
-	// Decrement send window
+	// Decrement window
 	n := len(msg.Unwrap().Raw())
 	if st := s.decrementSendWindow(ctx, n, false /* no wait, force */); !st.OK() {
 		return st
@@ -448,7 +450,10 @@ func (ch *channel) freeSend() {
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
 
-	s.sendClose = true
+	if !s.sendClose {
+		panic("cannot free open cannel")
+	}
+
 	s.sendFree = true
 }
 
@@ -510,12 +515,10 @@ func (ch *channel) receiveClose(msg pmpx.ChannelClose) status.Status {
 	if s.recvClose {
 		return mpxErrorf("received duplicate close message, channel=%v", s.id)
 	}
-
-	// Handle close
-	data := msg.Data()
 	s.recvClose = true
 
 	// Maybe write data
+	data := msg.Data()
 	if len(data) != 0 {
 		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
 	}
@@ -568,7 +571,7 @@ func (ch *channel) receiveWindow(msg pmpx.ChannelWindow) status.Status {
 	return status.OK
 }
 
-func (ch *channel) receiveFree() {
+func (ch *channel) freeReceive() {
 	s, ok := ch.rlock()
 	if !ok {
 		return
@@ -585,10 +588,13 @@ func (ch *channel) receiveFree() {
 	// Close send
 	s.sendClose = true
 
-	// Close and free recv
+	// Close/free receive
 	s.recvClose = true
 	s.recvFree = true
 	s.recvQueue.Close()
+
+	// Cancel context
+	s.ctx.Cancel()
 }
 
 // send window
@@ -630,7 +636,7 @@ func (s *channelState) decrementSendWindow(ctx async.Context, n int, wait bool) 
 		case <-ctx.Wait():
 			return ctx.Status()
 		case <-s.ctx.Wait():
-			return s.ctx.Status()
+			return statusChannelClosed
 		case <-s.windowWait:
 		}
 	}
