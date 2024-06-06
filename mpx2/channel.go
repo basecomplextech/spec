@@ -231,7 +231,12 @@ func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
 		data:  data,
 		close: true,
 	}
-	return ch.sendMessage(ctx, input)
+	if st := ch.sendMessage(ctx, input); !st.OK() {
+		return st
+	}
+
+	// Call again in case the previous message was an open message
+	return ch.sendClose(ctx)
 }
 
 // SendClose sends a close message, and closes the channel.
@@ -349,6 +354,9 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 	input.id = s.id
 	input.open = !s.sendOpen
 	input.window = int32(s.window)
+	if input.open {
+		input.close = false
+	}
 
 	msg, err := s.sendBuilder.buildMessage(input)
 	if err != nil {
@@ -450,10 +458,13 @@ func (ch *channel) freeSend() {
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
 
+	if s.sendFree {
+		return
+	}
+
 	if !s.sendClose {
 		panic("cannot free open cannel")
 	}
-
 	s.sendFree = true
 }
 
@@ -484,19 +495,11 @@ func (ch *channel) receiveOpen(msg pmpx.ChannelOpen) status.Status {
 
 	// Handle open
 	data := msg.Data()
-	close := msg.Close()
-
 	s.recvOpen = true
-	s.recvClose = close
 
 	// Maybe write data
 	if len(data) != 0 {
 		_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
-	}
-
-	// Maybe close queue
-	if close {
-		s.recvQueue.Close()
 	}
 	return status.OK
 }
@@ -584,6 +587,10 @@ func (ch *channel) freeReceive() {
 
 	s.recvMu.Lock()
 	defer s.recvMu.Unlock()
+
+	if s.recvFree {
+		return
+	}
 
 	// Close send
 	s.sendClose = true

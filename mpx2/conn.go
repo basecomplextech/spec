@@ -569,16 +569,7 @@ func (c *conn) sendMessage(b []byte) status.Status {
 
 	// Maybe delete and free channel
 	code := msg.Code()
-	switch code {
-	case pmpx.Code_ChannelOpen:
-		m := msg.Open()
-		id := m.Id()
-		close := m.Close()
-		if close {
-			c.removeChannel(id)
-		}
-
-	case pmpx.Code_ChannelClose:
+	if code == pmpx.Code_ChannelClose {
 		id := msg.Close().Id()
 		c.removeChannel(id)
 	}

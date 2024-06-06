@@ -46,6 +46,9 @@ func (b *builder) buildMessage(input messageInput) (pmpx.Message, error) {
 
 	open := input.open
 	close := input.close
+	if open && close {
+		panic("open and close cannot be true at the same time")
+	}
 
 	switch {
 	// Open message
@@ -58,9 +61,6 @@ func (b *builder) buildMessage(input messageInput) (pmpx.Message, error) {
 
 		if data != nil {
 			w1.Data(data)
-		}
-		if close {
-			w1.Close(close)
 		}
 
 		if err := w1.End(); err != nil {
