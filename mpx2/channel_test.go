@@ -59,9 +59,12 @@ func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
 	defer conn.Free()
 
 	ch := testChannel(t, conn)
-	ch.SendClose(ctx)
+	st := ch.Send(ctx, nil)
+	if !st.OK() {
+		t.Fatal(st)
+	}
 
-	_, st := ch.Receive(ctx)
+	_, st = ch.Receive(ctx)
 	assert.Equal(t, status.End, st)
 }
 
@@ -245,7 +248,13 @@ func TestChannel_Send__should_decrement_send_window(t *testing.T) {
 
 func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
 	ctx := async.NoContext()
-	server := testRequestServer(t)
+	done := make(chan struct{})
+	defer close(done)
+
+	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+		<-done
+		return status.OK
+	})
 
 	conn := testConnect(t, server)
 	defer conn.Free()
@@ -420,6 +429,7 @@ func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 	}
 }
 
+// TODO: Uncomment test
 // func TestChannel_SendClose__should_close_recv_queue(t *testing.T) {
 // 	ctx := async.NoContext()
 // 	server := testRequestServer(t)
@@ -438,7 +448,7 @@ func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 // 	assert.True(t, ch.state.recvQueue.Closed())
 // }
 
-func TestChannel_SendClose__should_return_error_when_already_closed(t *testing.T) {
+func TestChannel_SendClose__should_return_ignore_when_already_closed(t *testing.T) {
 	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
 		_, st := ch.Receive(ctx)
 		return st
@@ -462,5 +472,5 @@ func TestChannel_SendClose__should_return_error_when_already_closed(t *testing.T
 	}
 
 	st = ch.SendClose(ctx)
-	assert.Equal(t, statusChannelClosed, st)
+	assert.Equal(t, status.OK, st)
 }

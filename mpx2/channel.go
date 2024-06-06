@@ -541,7 +541,7 @@ func (ch *channel) receiveClose(msg pmpx.Message) status.Status {
 	}
 
 	// Cancel context, close queue
-	// TODO: s.ctx.Cancel()
+	s.ctx.Cancel()
 	s.recvQueue.Close()
 	return status.OK
 }

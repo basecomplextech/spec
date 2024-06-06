@@ -2,10 +2,7 @@ package mpx
 
 import "fmt"
 
-const (
-	debug        = false
-	debugChannel = false
-)
+const debug = false
 
 func debugPrint(client bool, a ...any) {
 	if !debug {
@@ -22,4 +19,14 @@ func debugPrint(client bool, a ...any) {
 	args = append(args, a...)
 
 	fmt.Println(args...)
+}
+
+func debugString(b []byte) string {
+	switch {
+	case b == nil:
+		return "nil"
+	case len(b) <= 64:
+		return string(b)
+	}
+	return string(b[:64]) + "..."
 }
