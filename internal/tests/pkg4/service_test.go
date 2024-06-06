@@ -17,7 +17,7 @@ func newTestService() *testService {
 	return &testService{}
 }
 
-func (s *testService) Subservice(ctx async.Context, id_ bin.Bin128) (Subservice, status.Status) {
+func (s *testService) Subservice(ctx async.Context, req ServiceSubserviceRequest) (Subservice, status.Status) {
 	return &testSubservice{}, status.OK
 }
 
@@ -29,13 +29,16 @@ func (s *testService) Method1(ctx async.Context, req ServiceMethod1Request) stat
 	return status.OK
 }
 
-func (s *testService) Method2(ctx async.Context, a_ int64, b_ float64, c_ bool) (
-	_a int64,
-	_b float64,
-	_c bool,
-	_st status.Status,
-) {
-	return a_, b_, c_, status.OK
+func (s *testService) Method2(ctx async.Context, req ServiceMethod2Request) (ref.R[ServiceMethod2Response], status.Status) {
+	w := NewServiceMethod2ResponseWriter()
+	w.A(req.A())
+	w.B(req.B())
+	w.C(req.C())
+	resp, err := w.Build()
+	if err != nil {
+		return nil, status.WrapError(err)
+	}
+	return ref.NewNoop(resp), status.OK
 }
 
 func (s *testService) Method3(ctx async.Context, req Request) (ref.R[Response], status.Status) {
@@ -52,30 +55,38 @@ func (s *testService) Method3(ctx async.Context, req Request) (ref.R[Response], 
 	return ref.NewFreer(resp, buf), status.OK
 }
 
-func (s *testService) Method4(ctx async.Context, req ServiceMethod4Request) (
-	_ok bool, _st status.Status) {
-	return true, status.OK
+func (s *testService) Method4(ctx async.Context, req ServiceMethod4Request) (ref.R[ServiceMethod4Response], status.Status) {
+	w := NewServiceMethod4ResponseWriter()
+	w.Ok(true)
+
+	resp, err := w.Build()
+	if err != nil {
+		return nil, status.WrapError(err)
+	}
+	return ref.NewNoop(resp), status.OK
 }
 
-func (s *testService) Method10(ctx async.Context) (
-	_a00 bool,
-	_a01 byte,
-	_a10 int16,
-	_a11 int32,
-	_a12 int64,
-	_a20 uint16,
-	_a21 uint32,
-	_a22 uint64,
-	_a30 float32,
-	_a31 float64,
-	_a40 bin.Bin64,
-	_a41 bin.Bin128,
-	_a42 bin.Bin256,
-	_st status.Status,
-) {
-	return true, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-		bin.Int64(10), bin.Int128(0, 11), bin.Int256(0, 0, 0, 1),
-		status.OK
+func (s *testService) Method10(ctx async.Context) (ref.R[ServiceMethod10Response], status.Status) {
+	w := NewServiceMethod10ResponseWriter()
+	w.A00(true)
+	w.A01(1)
+	w.A10(2)
+	w.A11(3)
+	w.A12(4)
+	w.A20(5)
+	w.A21(6)
+	w.A21(7)
+	w.A30(8)
+	w.A31(9)
+	w.A40(bin.Int64(10))
+	w.A41(bin.Int128(0, 11))
+	w.A42(bin.Int256(0, 0, 0, 1))
+
+	resp, err := w.Build()
+	if err != nil {
+		return nil, status.WrapError(err)
+	}
+	return ref.NewNoop(resp), status.OK
 }
 
 func (s *testService) Method11(ctx async.Context) (ref.R[ServiceMethod11Response], status.Status) {
@@ -88,21 +99,25 @@ func (s *testService) Method11(ctx async.Context) (ref.R[ServiceMethod11Response
 	if err != nil {
 		return nil, status.WrapError(err)
 	}
-
 	return ref.NewNoop(resp), status.OK
 }
 
-func (s *testService) Method20(ctx async.Context, ch ServiceMethod20Channel) (
-	_a int64,
-	_b float64,
-	_c bool,
-	_st status.Status,
-) {
-	a_, b_, c_, st := ch.Request()
+func (s *testService) Method20(ctx async.Context, ch ServiceMethod20Channel) (ref.R[ServiceMethod20Response], status.Status) {
+	req, st := ch.Request()
 	if !st.OK() {
-		return 0, 0, false, st
+		return nil, st
 	}
-	return a_, b_, c_, status.OK
+
+	w := NewServiceMethod20ResponseWriter()
+	w.A(req.A())
+	w.B(req.B())
+	w.C(req.C())
+
+	resp, err := w.Build()
+	if err != nil {
+		return nil, status.WrapError(err)
+	}
+	return ref.NewNoop(resp), status.OK
 }
 
 func (s *testService) Method21(ctx async.Context, ch ServiceMethod21Channel) (ref.R[Response], status.Status) {

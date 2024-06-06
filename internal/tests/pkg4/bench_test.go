@@ -4,11 +4,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 )
 
 func BenchmarkEmpty(b *testing.B) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(b)
+
 	service := newTestService()
 	server := testServer(b, logger, service)
 	client := testClient(b, logger, server)
@@ -18,7 +22,7 @@ func BenchmarkEmpty(b *testing.B) {
 	t0 := time.Now()
 
 	for i := 0; i < b.N; i++ {
-		st := client.Method(nil)
+		st := client.Method(ctx)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -32,7 +36,9 @@ func BenchmarkEmpty(b *testing.B) {
 }
 
 func BenchmarkEmpty_Parallel(b *testing.B) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(b)
+
 	service := newTestService()
 	server := testServer(b, logger, service)
 	client := testClient(b, logger, server)
@@ -44,7 +50,7 @@ func BenchmarkEmpty_Parallel(b *testing.B) {
 
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			st := client.Method(nil)
+			st := client.Method(ctx)
 			if !st.OK() {
 				b.Fatal(st)
 			}
@@ -61,7 +67,9 @@ func BenchmarkEmpty_Parallel(b *testing.B) {
 // Request fields
 
 func BenchmarkRequestFields(b *testing.B) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(b)
+
 	service := newTestService()
 	server := testServer(b, logger, service)
 	client := testClient(b, logger, server)
@@ -70,11 +78,26 @@ func BenchmarkRequestFields(b *testing.B) {
 	b.ResetTimer()
 	t0 := time.Now()
 
+	buf := alloc.NewBuffer()
+
 	for i := 0; i < b.N; i++ {
-		_, _, _, st := client.Method2(nil, 1, 2, true)
+		buf.Reset()
+
+		w := NewServiceMethod2RequestWriterBuffer(buf)
+		w.A(1)
+		w.B(2)
+		w.C(true)
+
+		req, err := w.Build()
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		resp, st := client.Method2(ctx, req)
 		if !st.OK() {
 			b.Fatal(st)
 		}
+		resp.Release()
 	}
 
 	t1 := time.Now()
@@ -85,7 +108,9 @@ func BenchmarkRequestFields(b *testing.B) {
 }
 
 func BenchmarkRequestFields_Parallel(b *testing.B) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(b)
+
 	service := newTestService()
 	server := testServer(b, logger, service)
 	client := testClient(b, logger, server)
@@ -96,11 +121,26 @@ func BenchmarkRequestFields_Parallel(b *testing.B) {
 	t0 := time.Now()
 
 	b.RunParallel(func(p *testing.PB) {
+		buf := alloc.NewBuffer()
+
 		for p.Next() {
-			_, _, _, st := client.Method2(nil, 1, 2, true)
+			buf.Reset()
+
+			w := NewServiceMethod2RequestWriterBuffer(buf)
+			w.A(1)
+			w.B(2)
+			w.C(true)
+
+			req, err := w.Build()
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			resp, st := client.Method2(ctx, req)
 			if !st.OK() {
 				b.Fatal(st)
 			}
+			resp.Release()
 		}
 	})
 
@@ -114,7 +154,9 @@ func BenchmarkRequestFields_Parallel(b *testing.B) {
 // Request
 
 func BenchmarkRequest(b *testing.B) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(b)
+
 	service := newTestService()
 	server := testServer(b, logger, service)
 	client := testClient(b, logger, server)
@@ -131,7 +173,7 @@ func BenchmarkRequest(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		resp, st := client.Method3(nil, req)
+		resp, st := client.Method3(ctx, req)
 		if !st.OK() {
 			b.Fatal(st)
 		}
@@ -146,7 +188,9 @@ func BenchmarkRequest(b *testing.B) {
 }
 
 func BenchmarkRequest_Parallel(b *testing.B) {
+	ctx := async.NoContext()
 	logger := logging.TestLogger(b)
+
 	service := newTestService()
 	server := testServer(b, logger, service)
 	client := testClient(b, logger, server)
@@ -165,7 +209,7 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 		}
 
 		for p.Next() {
-			resp, st := client.Method3(nil, req)
+			resp, st := client.Method3(ctx, req)
 			if !st.OK() {
 				b.Fatal(st)
 			}

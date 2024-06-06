@@ -98,16 +98,6 @@ func (f *Fields) GetByTag(tag int) *Field {
 
 // internal
 
-// primitive returns true if all fields are primitive types.
-func (f *Fields) primitive() bool {
-	for _, field := range f.List {
-		if !field.Type.primitive() {
-			return false
-		}
-	}
-	return true
-}
-
 func (f *Fields) resolve(file *File) error {
 	for _, field := range f.List {
 		if err := field.resolve(file); err != nil {

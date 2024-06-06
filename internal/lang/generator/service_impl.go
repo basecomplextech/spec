@@ -114,57 +114,6 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line(`return nil, rpc.WrapError(err)`)
 		w.line(`}`)
 		w.line()
-
-	case m.InputFields != nil:
-		w.line(`// Parse input`)
-		w.linef(`in, err := call.Input().MessageErr()`)
-		w.line(`if err != nil {`)
-		w.line(`return nil, rpc.WrapError(err)`)
-		w.line(`}`)
-
-		fields := m.InputFields.List
-		for _, f := range fields {
-			typ := f.Type
-			name := toLowerCameCase(f.Name)
-
-			switch typ.Kind {
-			case model.KindBool:
-				w.linef(`%v_, err := in.Field(%d).BoolErr()`, name, f.Tag)
-			case model.KindByte:
-				w.linef(`%v_, err := in.Field(%d).ByteErr()`, name, f.Tag)
-
-			case model.KindInt16:
-				w.linef(`%v_, err := in.Field(%d).Int16Err()`, name, f.Tag)
-			case model.KindInt32:
-				w.linef(`%v_, err := in.Field(%d).Int32Err()`, name, f.Tag)
-			case model.KindInt64:
-				w.linef(`%v_, err := in.Field(%d).Int64Err()`, name, f.Tag)
-
-			case model.KindUint16:
-				w.linef(`%v_, err := in.Field(%d).Uint16Err()`, name, f.Tag)
-			case model.KindUint32:
-				w.linef(`%v_, err := in.Field(%d).Uint32Err()`, name, f.Tag)
-			case model.KindUint64:
-				w.linef(`%v_, err := in.Field(%d).Uint64Err()`, name, f.Tag)
-
-			case model.KindBin64:
-				w.linef(`%v_, err := in.Field(%d).Bin64Err()`, name, f.Tag)
-			case model.KindBin128:
-				w.linef(`%v_, err := in.Field(%d).Bin128Err()`, name, f.Tag)
-			case model.KindBin256:
-				w.linef(`%v_, err := in.Field(%d).Bin256Err()`, name, f.Tag)
-
-			case model.KindFloat32:
-				w.linef(`%v_, err := in.Field(%d).Float32Err()`, name, f.Tag)
-			case model.KindFloat64:
-				w.linef(`%v_, err := in.Field(%d).Float64Err()`, name, f.Tag)
-			}
-
-			w.line(`if err != nil {`)
-			w.linef(`return nil, status.WrapError(err)`)
-			w.line(`}`)
-		}
-		w.line()
 	}
 
 	// Declare result
@@ -174,12 +123,6 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.write(`sub, st := `)
 	case m.Output != nil:
 		w.write(`result, st := `)
-	case m.OutputFields != nil:
-		fields := m.OutputFields.List
-		for _, f := range fields {
-			w.writef(`_%v, `, toLowerCameCase(f.Name))
-		}
-		w.write(`st := `)
 	default:
 		w.write(`st := `)
 	}
@@ -191,14 +134,6 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 
 	case m.Input != nil:
 		w.linef(`h.service.%v(ctx, in)`, toUpperCamelCase(m.Name))
-
-	case m.InputFields != nil:
-		w.writef(`h.service.%v(ctx, `, toUpperCamelCase(m.Name))
-		fields := m.InputFields.List
-		for _, f := range fields {
-			w.writef(`%v_, `, toLowerCameCase(f.Name))
-		}
-		w.line(`)`)
 
 	default:
 		w.linef(`h.service.%v(ctx)`, toUpperCamelCase(m.Name))
@@ -227,61 +162,6 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line(`// Return bytes`)
 		w.line(`bytes := result.Unwrap().Unwrap().Raw()`)
 		w.line(`return ref.NextRetain(bytes, result), status.OK`)
-
-	case m.OutputFields != nil:
-		w.line(`if !st.OK() {`)
-		w.line(`return nil, st`)
-		w.line(`}`)
-		w.line()
-
-		w.line(`// Build output`)
-		w.line(`buf := rpc.NewBuffer()`)
-		w.line(`out := spec.NewMessageWriterBuffer(buf)`)
-
-		fields := m.OutputFields.List
-		for _, f := range fields {
-			typ := f.Type
-			name := toLowerCameCase(f.Name)
-
-			switch typ.Kind {
-			case model.KindBool:
-				w.linef(`out.Field(%d).Bool(_%v)`, f.Tag, name)
-			case model.KindByte:
-				w.linef(`out.Field(%d).Byte(_%v)`, f.Tag, name)
-
-			case model.KindInt16:
-				w.linef(`out.Field(%d).Int16(_%v)`, f.Tag, name)
-			case model.KindInt32:
-				w.linef(`out.Field(%d).Int32(_%v)`, f.Tag, name)
-			case model.KindInt64:
-				w.linef(`out.Field(%d).Int64(_%v)`, f.Tag, name)
-
-			case model.KindUint16:
-				w.linef(`out.Field(%d).Uint16(_%v)`, f.Tag, name)
-			case model.KindUint32:
-				w.linef(`out.Field(%d).Uint32(_%v)`, f.Tag, name)
-			case model.KindUint64:
-				w.linef(`out.Field(%d).Uint64(_%v)`, f.Tag, name)
-
-			case model.KindBin64:
-				w.linef(`out.Field(%d).Bin64(_%v)`, f.Tag, name)
-			case model.KindBin128:
-				w.linef(`out.Field(%d).Bin128(_%v)`, f.Tag, name)
-			case model.KindBin256:
-				w.linef(`out.Field(%d).Bin256(_%v)`, f.Tag, name)
-
-			case model.KindFloat32:
-				w.linef(`out.Field(%d).Float32(_%v)`, f.Tag, name)
-			case model.KindFloat64:
-				w.linef(`out.Field(%d).Float64(_%v)`, f.Tag, name)
-			}
-		}
-		w.line(`bytes, err := out.Build()`)
-		w.line(`if err != nil {`)
-		w.line(`buf.Free()`)
-		w.line(`return nil, status.WrapError(err)`)
-		w.line(`}`)
-		w.line(`return ref.NewFreer(bytes, buf), status.OK`)
 
 	default:
 		w.line(`return nil, st`)
@@ -356,75 +236,6 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 
 		w.line(`c.req = nil`)
 		w.line(`return req, status.OK`)
-		w.line(`}`)
-		w.line()
-
-	case m.InputFields != nil:
-		w.writef(`func (c *%v) Request() (`, name)
-
-		fields := m.InputFields.List
-		for _, f := range fields {
-			name := toLowerCameCase(f.Name)
-			w.writef(`_%v %v, `, name, typeName(f.Type))
-		}
-		w.line(`_st status.Status) {`)
-
-		w.linef(`req, err := c.req.MessageErr()`)
-		w.line(`if err != nil {`)
-		w.line(`_st = status.WrapError(err)`)
-		w.line(`return`)
-		w.line(`}`)
-		w.line()
-
-		for _, f := range fields {
-			typ := f.Type
-			name := toLowerCameCase(f.Name)
-
-			switch typ.Kind {
-			case model.KindBool:
-				w.linef(`_%v, err = req.Field(%d).BoolErr()`, name, f.Tag)
-			case model.KindByte:
-				w.linef(`_%v, err = req.Field(%d).ByteErr()`, name, f.Tag)
-
-			case model.KindInt16:
-				w.linef(`_%v, err = req.Field(%d).Int16Err()`, name, f.Tag)
-			case model.KindInt32:
-				w.linef(`_%v, err = req.Field(%d).Int32Err()`, name, f.Tag)
-			case model.KindInt64:
-				w.linef(`_%v, err = req.Field(%d).Int64Err()`, name, f.Tag)
-
-			case model.KindUint16:
-				w.linef(`_%v, err = req.Field(%d).Uint16Err()`, name, f.Tag)
-			case model.KindUint32:
-				w.linef(`_%v, err = req.Field(%d).Uint32Err()`, name, f.Tag)
-			case model.KindUint64:
-				w.linef(`_%v, err = req.Field(%d).Uint64Err()`, name, f.Tag)
-
-			case model.KindBin64:
-				w.linef(`_%v, err = req.Field(%d).Bin64Err()`, name, f.Tag)
-			case model.KindBin128:
-				w.linef(`_%v, err = req.Field(%d).Bin128Err()`, name, f.Tag)
-			case model.KindBin256:
-				w.linef(`_%v, err = req.Field(%d).Bin256Err()`, name, f.Tag)
-
-			case model.KindFloat32:
-				w.linef(`_%v, err = req.Field(%d).Float32Err()`, name, f.Tag)
-			case model.KindFloat64:
-				w.linef(`_%v, err = req.Field(%d).Float64Err()`, name, f.Tag)
-			}
-
-			w.line(`if err != nil {`)
-			w.line(`_st = status.WrapError(err)`)
-			w.line(`return`)
-			w.line(`}`)
-		}
-
-		w.line(`c.req = nil`)
-		w.write(`return `)
-		for _, f := range fields {
-			w.writef(`_%v, `, toLowerCameCase(f.Name))
-		}
-		w.line(`status.OK`)
 		w.line(`}`)
 		w.line()
 	}

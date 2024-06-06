@@ -82,14 +82,24 @@ func TestService_Request(t *testing.T) {
 
 	// method2
 	{
-		a, b, c, st := client.Method2(ctx, 1, 2, true)
+		w := NewServiceMethod2RequestWriter()
+		w.A(1)
+		w.B(2)
+		w.C(true)
+		req, err := w.Build()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp_, st := client.Method2(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
+		resp := resp_.Unwrap()
 
-		assert.Equal(t, int64(1), a)
-		assert.Equal(t, float64(2), b)
-		assert.True(t, c)
+		assert.Equal(t, int64(1), resp.A())
+		assert.Equal(t, float64(2), resp.B())
+		assert.True(t, resp.C())
 	}
 
 	// method3
@@ -123,17 +133,17 @@ func TestService_Request(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ok, st := client.Method4(ctx, req)
+		resp, st := client.Method4(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 
-		assert.True(t, ok)
+		assert.True(t, resp.Unwrap().Ok())
 	}
 
 	// method10
 	{
-		_, _, _, _, _, _, _, _, _, _, _, _, _, st := client.Method10(ctx)
+		_, st := client.Method10(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
@@ -162,20 +172,31 @@ func TestService_Channel(t *testing.T) {
 
 	// method20
 	{
-		ch, st := client.Method20(ctx, 1, 2, true)
+		w := NewServiceMethod20RequestWriter()
+		w.A(1)
+		w.B(2)
+		w.C(true)
+
+		req, err := w.Build()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ch, st := client.Method20(ctx, req)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 		defer ch.Free()
 
-		a, b, c, st := ch.Response(ctx)
+		resp_, st := ch.Response(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 
-		assert.Equal(t, int64(1), a)
-		assert.Equal(t, float64(2), b)
-		assert.True(t, c)
+		resp := resp_.Unwrap()
+		assert.Equal(t, int64(1), resp.A())
+		assert.Equal(t, float64(2), resp.B())
+		assert.True(t, resp.C())
 	}
 
 	// method21
@@ -304,14 +325,21 @@ func TestService_Subservice(t *testing.T) {
 	server := testServer(t, logger, service)
 	client := testClient(t, logger, server)
 
-	w := NewSubserviceHelloRequestWriter()
-	w.Msg("hello")
-	req, err := w.Build()
+	w0 := NewServiceSubserviceRequestWriter()
+	w0.Id(bin.Int128(0, 123))
+	req0, err := w0.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	resp, st := client.Subservice(bin.Int128(0, 123)).Hello(ctx, req)
+	w1 := NewSubserviceHelloRequestWriter()
+	w1.Msg("hello")
+	req1, err := w1.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, st := client.Subservice(req0).Hello(ctx, req1)
 	if !st.OK() {
 		t.Fatal(st)
 	}

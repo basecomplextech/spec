@@ -115,28 +115,6 @@ func (w *clientWriter) method_input(def *model.Definition, m *model.Method) erro
 	case m.Input != nil:
 		typeName := typeName(m.Input)
 		w.writef(`(%v req_ %v) `, ctx, typeName)
-
-	case m.InputFields != nil:
-		w.writef(`(%v`, ctx)
-
-		fields := m.InputFields.List
-		multi := len(fields) > 3
-		if multi {
-			w.line()
-		}
-
-		for _, field := range fields {
-			argName := toLowerCameCase(field.Name)
-			typeName := typeName(field.Type)
-
-			if multi {
-				w.linef(`%v_ %v, `, argName, typeName)
-			} else {
-				w.writef(`%v_ %v, `, argName, typeName)
-			}
-		}
-
-		w.write(`)`)
 	}
 	return nil
 }
@@ -157,35 +135,6 @@ func (w *clientWriter) method_output(def *model.Definition, m *model.Method) err
 	case m.Output != nil:
 		typeName := typeName(m.Output)
 		w.linef(`(ref.R[%v], status.Status)`, typeName)
-
-	case m.OutputFields != nil:
-		fields := m.OutputFields.List
-		multi := len(fields) > 3
-
-		if multi {
-			w.line(`(`)
-		} else {
-			w.write(`(`)
-		}
-
-		for _, f := range fields {
-			name := toLowerCameCase(f.Name)
-			typeName := typeName(f.Type)
-
-			if multi {
-				w.linef(`_%v %v, `, name, typeName)
-			} else {
-				w.writef(`_%v %v, `, name, typeName)
-			}
-		}
-
-		if multi {
-			w.line(`_st status.Status,`)
-		} else {
-			w.write(`_st status.Status`)
-		}
-
-		w.line(`)`)
 	}
 	return nil
 }
@@ -244,34 +193,6 @@ func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
 		case m.Output != nil:
 			typeName := typeName(m.Output)
 			w.linef(`(ref.R[%v], status.Status)`, typeName)
-
-		case m.OutputFields != nil:
-			fields := m.OutputFields.List
-			multi := len(fields) > 3
-
-			if multi {
-				w.line(`(`)
-			} else {
-				w.write(`(`)
-			}
-
-			for _, f := range fields {
-				name := toLowerCameCase(f.Name)
-				typeName := typeName(f.Type)
-				if multi {
-					w.linef(`_%v %v, `, name, typeName)
-				} else {
-					w.writef(`_%v %v, `, name, typeName)
-				}
-			}
-
-			if multi {
-				w.line(`_st status.Status,`)
-			} else {
-				w.write(`_st status.Status`)
-			}
-
-			w.line(`)`)
 		}
 	}
 

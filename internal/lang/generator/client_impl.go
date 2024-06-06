@@ -121,28 +121,6 @@ func (w *clientImplWriter) method_input(def *model.Definition, m *model.Method) 
 	case m.Input != nil:
 		typeName := typeName(m.Input)
 		w.writef(`(%v req_ %v) `, ctx, typeName)
-
-	case m.InputFields != nil:
-		w.writef(`(%v`, ctx)
-
-		fields := m.InputFields.List
-		multi := len(fields) > 3
-		if multi {
-			w.line()
-		}
-
-		for _, field := range fields {
-			argName := toLowerCameCase(field.Name)
-			typeName := typeName(field.Type)
-
-			if multi {
-				w.linef(`%v_ %v, `, argName, typeName)
-			} else {
-				w.writef(`%v_ %v, `, argName, typeName)
-			}
-		}
-
-		w.write(`)`)
 	}
 	return nil
 }
@@ -163,35 +141,6 @@ func (w *clientImplWriter) method_output(def *model.Definition, m *model.Method)
 	case m.Output != nil:
 		typeName := typeName(m.Output)
 		w.writef(`(_ ref.R[%v], _st status.Status)`, typeName)
-
-	case m.OutputFields != nil:
-		fields := m.OutputFields.List
-		multi := len(fields) > 3
-
-		if multi {
-			w.line(`(`)
-		} else {
-			w.write(`(`)
-		}
-
-		for _, f := range fields {
-			name := toLowerCameCase(f.Name)
-			typeName := typeName(f.Type)
-
-			if multi {
-				w.linef(`_%v %v, `, name, typeName)
-			} else {
-				w.writef(`_%v %v, `, name, typeName)
-			}
-		}
-
-		if multi {
-			w.line(`_st status.Status,`)
-		} else {
-			w.write(`_st status.Status`)
-		}
-
-		w.write(`)`)
 	}
 	return nil
 }
@@ -256,65 +205,6 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 		w.line(`if !st.OK() {`)
 		w.line(`_st = st`)
 		w.method_error(def, m)
-		w.line(`}`)
-
-	case m.InputFields != nil:
-		w.line(`{`)
-		w.linef(`call := req.Add("%v")`, m.Name)
-		w.line(`in := call.Input().Message()`)
-
-		for _, f := range m.InputFields.List {
-			fname := toLowerCameCase(f.Name)
-
-			typ := f.Type
-			switch typ.Kind {
-			case model.KindBool:
-				w.linef(`in.Field(%d).Bool(%v_)`, f.Tag, fname)
-			case model.KindByte:
-				w.linef(`in.Field(%d).Byte(%v_)`, f.Tag, fname)
-
-			case model.KindInt16:
-				w.linef(`in.Field(%d).Int16(%v_)`, f.Tag, fname)
-			case model.KindInt32:
-				w.linef(`in.Field(%d).Int32(%v_)`, f.Tag, fname)
-			case model.KindInt64:
-				w.linef(`in.Field(%d).Int64(%v_)`, f.Tag, fname)
-
-			case model.KindUint16:
-				w.linef(`in.Field(%d).Uint16(%v_)`, f.Tag, fname)
-			case model.KindUint32:
-				w.linef(`in.Field(%d).Uint32(%v_)`, f.Tag, fname)
-			case model.KindUint64:
-				w.linef(`in.Field(%d).Uint64(%v_)`, f.Tag, fname)
-
-			case model.KindBin64:
-				w.linef(`in.Field(%d).Bin64(%v_)`, f.Tag, fname)
-			case model.KindBin128:
-				w.linef(`in.Field(%d).Bin128(%v_)`, f.Tag, fname)
-			case model.KindBin256:
-				w.linef(`in.Field(%d).Bin256(%v_)`, f.Tag, fname)
-
-			case model.KindFloat32:
-				w.linef(`in.Field(%d).Float32(%v_)`, f.Tag, fname)
-			case model.KindFloat64:
-				w.linef(`in.Field(%d).Float64(%v_)`, f.Tag, fname)
-
-			case model.KindString:
-				w.linef(`in.Field(%d).String(%v_)`, f.Tag, fname)
-			case model.KindBytes:
-				w.linef(`in.Field(%d).Bytes(%v_)`, f.Tag, fname)
-			}
-		}
-
-		w.line()
-		w.line(`if err := in.End(); err != nil {`)
-		w.line(`_st = status.WrapError(err)`)
-		w.method_error(def, m)
-		w.line(`}`)
-		w.line(`if err := call.End(); err != nil {`)
-		w.line(`_st = status.WrapError(err)`)
-		w.method_error(def, m)
-		w.line(`}`)
 		w.line(`}`)
 	}
 
@@ -392,65 +282,6 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 		w.line(`return`)
 		w.line(`}`)
 		w.line(`return ref.NextRetain(result, resp), status.OK`)
-
-	case m.OutputFields != nil:
-		w.line(`// Parse results`)
-		w.linef(`result, err := resp.Unwrap().MessageErr()`)
-		w.line(`if err != nil {`)
-		w.line(`_st = status.WrapError(err)`)
-		w.line(`return`)
-		w.line(`}`)
-
-		fields := m.OutputFields.List
-		for _, f := range fields {
-			typ := f.Type
-			name := toLowerCameCase(f.Name)
-
-			switch typ.Kind {
-			case model.KindBool:
-				w.linef(`_%v, err = result.Field(%d).BoolErr()`, name, f.Tag)
-			case model.KindByte:
-				w.linef(`_%v, err = result.Field(%d).ByteErr()`, name, f.Tag)
-
-			case model.KindInt16:
-				w.linef(`_%v, err = result.Field(%d).Int16Err()`, name, f.Tag)
-			case model.KindInt32:
-				w.linef(`_%v, err = result.Field(%d).Int32Err()`, name, f.Tag)
-			case model.KindInt64:
-				w.linef(`_%v, err = result.Field(%d).Int64Err()`, name, f.Tag)
-
-			case model.KindUint16:
-				w.linef(`_%v, err = result.Field(%d).Uint16Err()`, name, f.Tag)
-			case model.KindUint32:
-				w.linef(`_%v, err = result.Field(%d).Uint32Err()`, name, f.Tag)
-			case model.KindUint64:
-				w.linef(`_%v, err = result.Field(%d).Uint64Err()`, name, f.Tag)
-
-			case model.KindBin64:
-				w.linef(`_%v, err = result.Field(%d).Bin64Err()`, name, f.Tag)
-			case model.KindBin128:
-				w.linef(`_%v, err = result.Field(%d).Bin128Err()`, name, f.Tag)
-			case model.KindBin256:
-				w.linef(`_%v, err = result.Field(%d).Bin256Err()`, name, f.Tag)
-
-			case model.KindFloat32:
-				w.linef(`_%v, err = result.Field(%d).Float32Err()`, name, f.Tag)
-			case model.KindFloat64:
-				w.linef(`_%v, err = result.Field(%d).Float64Err()`, name, f.Tag)
-			}
-
-			w.line(`if err != nil {`)
-			w.line(`_st = status.WrapError(err)`)
-			w.line(`return`)
-			w.line(`}`)
-		}
-
-		w.write(`return `)
-		for _, f := range fields {
-			name := toLowerCameCase(f.Name)
-			w.writef(`_%v, `, name)
-		}
-		w.write(`status.OK`)
 	}
 
 	return nil
@@ -619,29 +450,6 @@ func (w *clientImplWriter) channel_response_def(m *model.Method) error {
 	case m.Output != nil:
 		typeName := typeName(m.Output)
 		w.writef(`(_ ref.R[%v], _st status.Status)`, typeName)
-
-	case m.OutputFields != nil:
-		fields := m.OutputFields.List
-		multi := len(fields) > 3
-		w.line(`(`)
-
-		for _, f := range fields {
-			name := toLowerCameCase(f.Name)
-			typeName := typeName(f.Type)
-			if multi {
-				w.linef(`_%v %v, `, name, typeName)
-			} else {
-				w.writef(`_%v %v, `, name, typeName)
-			}
-		}
-
-		if multi {
-			w.line(`_st status.Status,`)
-		} else {
-			w.write(`_st status.Status`)
-		}
-
-		w.write(`)`)
 	}
 
 	w.line(`{`)
@@ -676,65 +484,6 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 		w.line(`return`)
 		w.line(`}`)
 		w.line(`return ref.NextRetain(result, resp), status.OK`)
-
-	case m.OutputFields != nil:
-		w.line(`// Parse results`)
-		w.linef(`result, err := resp.Unwrap().MessageErr()`)
-		w.line(`if err != nil {`)
-		w.line(`_st = status.WrapError(err)`)
-		w.line(`return`)
-		w.line(`}`)
-
-		fields := m.OutputFields.List
-		for _, f := range fields {
-			typ := f.Type
-			name := toLowerCameCase(f.Name)
-
-			switch typ.Kind {
-			case model.KindBool:
-				w.linef(`_%v, err = result.Field(%d).BoolErr()`, name, f.Tag)
-			case model.KindByte:
-				w.linef(`_%v, err = result.Field(%d).ByteErr()`, name, f.Tag)
-
-			case model.KindInt16:
-				w.linef(`_%v, err = result.Field(%d).Int16Err()`, name, f.Tag)
-			case model.KindInt32:
-				w.linef(`_%v, err = result.Field(%d).Int32Err()`, name, f.Tag)
-			case model.KindInt64:
-				w.linef(`_%v, err = result.Field(%d).Int64Err()`, name, f.Tag)
-
-			case model.KindUint16:
-				w.linef(`_%v, err = result.Field(%d).Uint16Err()`, name, f.Tag)
-			case model.KindUint32:
-				w.linef(`_%v, err = result.Field(%d).Uint32Err()`, name, f.Tag)
-			case model.KindUint64:
-				w.linef(`_%v, err = result.Field(%d).Uint64Err()`, name, f.Tag)
-
-			case model.KindBin64:
-				w.linef(`_%v, err = result.Field(%d).Bin64Err()`, name, f.Tag)
-			case model.KindBin128:
-				w.linef(`_%v, err = result.Field(%d).Bin128Err()`, name, f.Tag)
-			case model.KindBin256:
-				w.linef(`_%v, err = result.Field(%d).Bin256Err()`, name, f.Tag)
-
-			case model.KindFloat32:
-				w.linef(`_%v, err = result.Field(%d).Float32Err()`, name, f.Tag)
-			case model.KindFloat64:
-				w.linef(`_%v, err = result.Field(%d).Float64Err()`, name, f.Tag)
-			}
-
-			w.line(`if err != nil {`)
-			w.line(`_st = status.WrapError(err)`)
-			w.line(`return`)
-			w.line(`}`)
-		}
-
-		w.write(`return `)
-		for _, f := range fields {
-			name := toLowerCameCase(f.Name)
-			w.writef(`_%v, `, name)
-		}
-		w.write(`status.OK`)
 	}
 
 	w.line(`}`)

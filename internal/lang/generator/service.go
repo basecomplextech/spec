@@ -69,28 +69,6 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 	case m.Input != nil:
 		typeName := typeName(m.Input)
 		w.writef(`(ctx async.Context, req %v) `, typeName)
-
-	case m.InputFields != nil:
-		w.writef(`(ctx async.Context, `)
-
-		fields := m.InputFields.List
-		multi := len(fields) > 3
-		if multi {
-			w.line()
-		}
-
-		for _, field := range fields {
-			argName := toLowerCameCase(field.Name)
-			typeName := typeRefName(field.Type)
-
-			if multi {
-				w.linef(`%v_ %v, `, argName, typeName)
-			} else {
-				w.writef(`%v_ %v, `, argName, typeName)
-			}
-		}
-
-		w.write(`) `)
 	}
 	return nil
 }
@@ -109,30 +87,6 @@ func (w *serviceWriter) method_output(def *model.Definition, m *model.Method) er
 	case m.Output != nil:
 		typeName := typeName(out)
 		w.writef(`(ref.R[%v], status.Status)`, typeName)
-
-	case m.OutputFields != nil:
-		fields := m.OutputFields.List
-		multi := len(fields) > 1
-		w.line(`(`)
-
-		for _, field := range fields {
-			name := toLowerCameCase(field.Name)
-			typeName := typeName(field.Type)
-
-			if multi {
-				w.linef(`_%v %v, `, name, typeName)
-			} else {
-				w.writef(`_%v %v, `, name, typeName)
-			}
-		}
-
-		if multi {
-			w.line(`_st status.Status,`)
-		} else {
-			w.write(`_st status.Status`)
-		}
-
-		w.write(`)`)
 	}
 	return nil
 }
@@ -178,16 +132,6 @@ func (w *serviceWriter) channel(def *model.Definition, m *model.Method) error {
 	case m.Input != nil:
 		typeName := typeName(m.Input)
 		w.linef(`Request() (%v, status.Status)`, typeName)
-
-	case m.InputFields != nil:
-		w.write(`Request() (`)
-
-		fields := m.InputFields.List
-		for _, f := range fields {
-			fieldName := toLowerCameCase(f.Name)
-			w.writef(`%v %v, `, fieldName, typeName(f.Type))
-		}
-		w.line(`st status.Status)`)
 	}
 
 	// Receive methods

@@ -15,13 +15,13 @@ type Method struct {
 	Sub  bool // Returns subservice
 	Chan bool // Returns channel
 
-	Input       *Type // Message
-	InputFields *Fields
-
-	Output       *Type // Message or service
-	OutputFields *Fields
+	Input  *Type // Message
+	Output *Type // Message or service
 
 	Channel *MethodChannel
+
+	_InputFields  *Fields // Temp, converted into Input
+	_OutputFields *Fields // Temp, converted into Output
 }
 
 func newMethod(pkg *Package, file *File, service *Service, pm *ast.Method) (*Method, error) {
@@ -64,7 +64,7 @@ func (m *Method) resolve(file *File) error {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
-	if in := m.InputFields; in != nil {
+	if in := m._InputFields; in != nil {
 		if err := in.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
@@ -75,7 +75,7 @@ func (m *Method) resolve(file *File) error {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
 	}
-	if out := m.OutputFields; out != nil {
+	if out := m._OutputFields; out != nil {
 		if err := out.resolve(file); err != nil {
 			return fmt.Errorf("%v: %w", m.Name, err)
 		}
@@ -96,23 +96,20 @@ func (m *Method) resolved() error {
 			return fmt.Errorf("%v: single input must be a message, got %q instead", m.Name, in.Kind)
 		}
 	}
-	if in := m.InputFields; in != nil {
+	if in := m._InputFields; in != nil {
 		if err := in.resolved(); err != nil {
 			return err
 		}
 
 		// Convert into request message
-		// Client input accepts any primitive types as arguments.
-		if !in.primitive() {
-			name := methodRequestName(m)
-			msg, err := generateMessage(m.Package, m.File, name, in)
-			if err != nil {
-				return fmt.Errorf("%v: failed to generate request message: %w", m.Name, err)
-			}
-
-			m.Input = newTypeRef(msg.Def)
-			m.InputFields = nil
+		name := methodRequestName(m)
+		msg, err := generateMessage(m.Package, m.File, name, in)
+		if err != nil {
+			return fmt.Errorf("%v: failed to generate request message: %w", m.Name, err)
 		}
+
+		m.Input = newTypeRef(msg.Def)
+		m._InputFields = nil
 	}
 
 	// Output
@@ -126,23 +123,20 @@ func (m *Method) resolved() error {
 				m.Name, out.Kind)
 		}
 	}
-	if out := m.OutputFields; out != nil {
+	if out := m._OutputFields; out != nil {
 		if err := out.resolved(); err != nil {
 			return err
 		}
 
 		// Convert into response message
-		// Client output accepts only non-allocated primitive types as return values.
-		if !out.primitive() {
-			name := methodResponseName(m)
-			msg, err := generateMessage(m.Package, m.File, name, out)
-			if err != nil {
-				return fmt.Errorf("%v: failed to generate response message: %w", m.Name, err)
-			}
-
-			m.OutputFields = nil
-			m.Output = newTypeRef(msg.Def)
+		name := methodResponseName(m)
+		msg, err := generateMessage(m.Package, m.File, name, out)
+		if err != nil {
+			return fmt.Errorf("%v: failed to generate response message: %w", m.Name, err)
 		}
+
+		m.Output = newTypeRef(msg.Def)
+		m._OutputFields = nil
 	}
 
 	// Channel
@@ -166,7 +160,7 @@ func makeMethodInput(m *Method, p ast.MethodInput) (err error) {
 
 	case ast.Fields:
 		if len(p) > 0 {
-			m.InputFields, err = newFields(p)
+			m._InputFields, err = newFields(p)
 			return err
 		}
 		return nil
@@ -186,7 +180,7 @@ func makeMethodOutput(m *Method, p ast.MethodOutput) (err error) {
 
 	case ast.Fields:
 		if len(p) > 0 {
-			m.OutputFields, err = newFields(p)
+			m._OutputFields, err = newFields(p)
 			return err
 		}
 		return nil
