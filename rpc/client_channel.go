@@ -110,7 +110,7 @@ func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	// Send request
 	s.method = requestMethod(req)
 	s.writeReq = true
-	return ch.ch.Write(ctx, msg)
+	return ch.ch.Send(ctx, msg)
 }
 
 // Read
@@ -193,14 +193,14 @@ func (ch *channel) ReadSync(ctx async.Context) ([]byte, status.Status) {
 		select {
 		case <-ctx.Wait():
 			return nil, ctx.Status()
-		case <-ch.ch.ReadWait():
+		case <-ch.ch.ReceiveWait():
 		}
 	}
 }
 
 // ReadWait returns a channel which is notified on a new message, or a channel close.
 func (ch *channel) ReadWait() <-chan struct{} {
-	return ch.ch.ReadWait()
+	return ch.ch.ReceiveWait()
 }
 
 // Write
@@ -244,7 +244,7 @@ func (ch *channel) Write(ctx async.Context, message []byte) status.Status {
 	}
 
 	// Send message
-	return ch.ch.Write(ctx, msg)
+	return ch.ch.Send(ctx, msg)
 }
 
 // WriteEnd writes an end message to the channel.
@@ -286,7 +286,7 @@ func (ch *channel) WriteEnd(ctx async.Context) status.Status {
 
 	// Send message
 	s.writeEnd = true
-	return ch.ch.Write(ctx, msg)
+	return ch.ch.Send(ctx, msg)
 }
 
 // Response
@@ -386,12 +386,9 @@ func (ch *channel) rlock() (*channelState, bool) {
 
 // read reads, parses and returns the next message, or false.
 func (ch *channel) read(ctx async.Context) (prpc.Message, bool, status.Status) {
-	b, ok, st := ch.ch.Read(ctx)
-	switch {
-	case !st.OK():
+	b, ok, st := ch.ch.ReceiveAsync(ctx)
+	if !ok || !st.OK() {
 		return prpc.Message{}, false, st
-	case !ok:
-		return prpc.Message{}, false, status.OK
 	}
 
 	msg, _, err := prpc.ParseMessage(b)
@@ -403,7 +400,7 @@ func (ch *channel) read(ctx async.Context) (prpc.Message, bool, status.Status) {
 
 // readSync reads, parses and returns the next message, or blocks.
 func (ch *channel) readSync(ctx async.Context) (prpc.Message, status.Status) {
-	b, st := ch.ch.ReadSync(ctx)
+	b, st := ch.ch.Receive(ctx)
 	if !st.OK() {
 		return prpc.Message{}, st
 	}

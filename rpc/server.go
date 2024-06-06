@@ -52,7 +52,7 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 // HandleChannel handles an incoming TCP channel.
 func (s *server) HandleChannel(ctx async.Context, tch mpx.Channel) (st status.Status) {
 	// Receive message
-	b, st := tch.ReadSync(ctx)
+	b, st := tch.Receive(ctx)
 	if !st.OK() {
 		return st
 	}
@@ -108,7 +108,7 @@ func (s *server) HandleChannel(ctx async.Context, tch mpx.Channel) (st status.St
 	}
 
 	// Write response
-	return tch.WriteAndClose(ctx, resp)
+	return tch.SendAndClose(ctx, resp)
 }
 
 // private

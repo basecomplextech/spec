@@ -18,13 +18,7 @@ type Client interface {
 	// Options returns the client options.
 	Options() Options
 
-	// IsConnected returns true if the client is connected to the server.
-	IsConnected() bool
-
-	// Async
-
-	// Changed adds a connected/disconnected listener.
-	Changed() (<-chan struct{}, func())
+	// Flags
 
 	// Connected indicates that the client is connected to the server.
 	Connected() async.Flag
@@ -83,17 +77,7 @@ func (c *client) Options() Options {
 	return c.client.Options()
 }
 
-// IsConnected returns true if the client is connected to the server.
-func (c *client) IsConnected() bool {
-	return c.client.IsConnected()
-}
-
-// Async
-
-// Changed adds a connected/disconnected listener.
-func (c *client) Changed() (<-chan struct{}, func()) {
-	return c.client.Changed()
-}
+// Flags
 
 // Connected indicates that the client is connected to the server.
 func (c *client) Connected() async.Flag {
@@ -197,7 +181,7 @@ func (c *client) Unwrap() mpx.Client {
 // private
 
 func (c *client) channel(ctx async.Context) (*channel, status.Status) {
-	tch, st := c.client.Channel(ctx)
+	ch, st := c.client.Channel(ctx)
 	if !st.OK() {
 		return nil, st
 	}
@@ -205,11 +189,11 @@ func (c *client) channel(ctx async.Context) (*channel, status.Status) {
 	ok := false
 	defer func() {
 		if !ok {
-			tch.Close()
+			ch.Free()
 		}
 	}()
 
-	ch := newChannel(tch, c.logger)
+	ch1 := newChannel(ch, c.logger)
 	ok = true
-	return ch, status.OK
+	return ch1, status.OK
 }

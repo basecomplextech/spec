@@ -122,12 +122,9 @@ func (ch *serverChannel) Read(ctx async.Context) ([]byte, bool, status.Status) {
 	// Read message
 	var msg prpc.Message
 	{
-		b, ok, st := ch.ch.Read(ctx)
-		switch {
-		case !st.OK():
+		b, ok, st := ch.ch.ReceiveAsync(ctx)
+		if !ok || !st.OK() {
 			return nil, false, st
-		case !ok:
-			return nil, false, status.OK
 		}
 
 		var err error
@@ -169,14 +166,14 @@ func (ch *serverChannel) ReadSync(ctx async.Context) ([]byte, status.Status) {
 		select {
 		case <-ctx.Wait():
 			return nil, ctx.Status()
-		case <-ch.ch.ReadWait():
+		case <-ch.ch.ReceiveWait():
 		}
 	}
 }
 
 // ReadWait returns a channel which is notified on a new message, or a channel close.
 func (ch *serverChannel) ReadWait() <-chan struct{} {
-	return ch.ch.ReadWait()
+	return ch.ch.ReceiveWait()
 }
 
 // Write
@@ -220,7 +217,7 @@ func (ch *serverChannel) Write(ctx async.Context, message []byte) status.Status 
 	}
 
 	// Send message
-	return ch.ch.Write(ctx, msg)
+	return ch.ch.Send(ctx, msg)
 }
 
 // WriteEnd writes an end message to the channel.
@@ -262,7 +259,7 @@ func (ch *serverChannel) WriteEnd(ctx async.Context) status.Status {
 
 	// Send message
 	s.writeEnd = true
-	return ch.ch.Write(ctx, msg)
+	return ch.ch.Send(ctx, msg)
 }
 
 // Internal
