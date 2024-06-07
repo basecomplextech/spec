@@ -472,6 +472,7 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 	// Parse results
 	switch {
 	default:
+		w.line(`_ = resp`)
 		w.line(`return status.OK`)
 
 	case m.Output != nil:
