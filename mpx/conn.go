@@ -36,6 +36,10 @@ func Connect(address string, logger logging.Logger, opts Options) (Conn, status.
 // internal
 
 type internalConn interface {
+	// Closed returns a flag that is set when the connection is closed.
+	Closed() async.Flag
+
+	// SendMessage write an outgoing message to the write queue.
 	SendMessage(ctx async.Context, msg pmpx.Message) status.Status
 }
 

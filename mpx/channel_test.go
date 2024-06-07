@@ -12,6 +12,8 @@ import (
 )
 
 func testChannelSend(t *testing.T, ctx async.Context, ch Channel, msg string) {
+	t.Helper()
+
 	st := ch.Send(ctx, []byte(msg))
 	if !st.OK() {
 		t.Fatal(st)

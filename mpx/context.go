@@ -9,20 +9,31 @@ type Context interface {
 	Disconnected() async.Flag
 }
 
+// ClosedContext returns a closed context.
+func ClosedContext() Context {
+	return closedContext
+}
+
 // internal
 
 var _ Context = (*context)(nil)
 
 type context struct {
 	async.Context
-
 	closed async.Flag
 }
 
-func newContext(conn *conn) *context {
+var closedContext = func() *context {
+	return &context{
+		Context: async.CancelledContext(),
+		closed:  async.SetFlag(),
+	}
+}()
+
+func newContext(conn internalConn) *context {
 	return &context{
 		Context: async.NewContext(),
-		closed:  conn.closed,
+		closed:  conn.Closed(),
 	}
 }
 

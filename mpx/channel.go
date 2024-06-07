@@ -13,7 +13,7 @@ import (
 
 type Channel interface {
 	// Context returns a channel context.
-	Context() async.Context
+	Context() Context
 
 	// Receive
 
@@ -73,7 +73,7 @@ type channel struct {
 
 type channelState struct {
 	id     bin.Bin128
-	ctx    async.Context
+	ctx    Context
 	conn   internalConn
 	client bool // client or server channel
 	window int  // initial window size
@@ -103,6 +103,7 @@ type channelState struct {
 func createChannel(c internalConn, client bool, id bin.Bin128, window int) *channel {
 	s := acquireChannelState()
 	s.id = id
+	s.ctx = newContext(c)
 	s.conn = c
 	s.client = client
 	s.window = window
@@ -122,6 +123,7 @@ func openChannel(c internalConn, client bool, msg pmpx.ChannelOpen) *channel {
 
 	s := acquireChannelState()
 	s.id = id
+	s.ctx = newContext(c)
 	s.conn = c
 	s.client = client
 	s.window = window
@@ -135,10 +137,7 @@ func openChannel(c internalConn, client bool, msg pmpx.ChannelOpen) *channel {
 }
 
 func newChannelState() *channelState {
-
 	return &channelState{
-		ctx: async.NewContext(),
-
 		sendBuilder: newBuilder(),
 		recvQueue:   alloc.NewMQueue(),
 		windowWait:  make(chan struct{}, 1),
@@ -146,10 +145,10 @@ func newChannelState() *channelState {
 }
 
 // Context returns a channel context.
-func (ch *channel) Context() async.Context {
+func (ch *channel) Context() Context {
 	s, ok := ch.rlock()
 	if !ok {
-		return async.CancelledContext()
+		return closedContext
 	}
 	defer ch.stateMu.RUnlock()
 
@@ -699,7 +698,7 @@ func (s *channelState) reset() {
 	s.window = 0
 
 	s.ctx.Free()
-	s.ctx = async.NewContext()
+	s.ctx = nil
 
 	// Reset send
 	s.sendMu.Lock()
