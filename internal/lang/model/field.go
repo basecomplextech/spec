@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Field struct {
@@ -12,7 +12,7 @@ type Field struct {
 	Type *Type
 }
 
-func newField(pfield *ast.Field) (*Field, error) {
+func newField(pfield *syntax.Field) (*Field, error) {
 	tag := pfield.Tag
 	if tag == 0 {
 		return nil, fmt.Errorf("zero tag")
@@ -57,7 +57,7 @@ type Fields struct {
 	Tags  map[int]*Field
 }
 
-func newFields(pfields []*ast.Field) (*Fields, error) {
+func newFields(pfields []*syntax.Field) (*Fields, error) {
 	fields := &Fields{
 		Names: make(map[string]*Field),
 		Tags:  make(map[int]*Field),

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type PackageState string
@@ -30,7 +30,7 @@ type Package struct {
 	DefinitionNames map[string]*Definition
 }
 
-func NewPackage(id string, path string, pfiles []*ast.File) (*Package, error) {
+func NewPackage(id string, path string, pfiles []*syntax.File) (*Package, error) {
 	name := filepath.Base(id)
 	if name == "" || name == "." {
 		return nil, fmt.Errorf("empty package name, id=%v, path=%v", id, path)

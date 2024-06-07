@@ -1,4 +1,4 @@
-package ast
+package syntax
 
 type Service struct {
 	Sub     bool // Subservice
@@ -28,7 +28,7 @@ type MethodInput interface{}
 //	| nil
 type MethodOutput interface{}
 
-// MethodChannel defines method in/out messages, at least one field must be set.
+// MethodChannel defines method in/out messages, at lesyntax one field must be set.
 type MethodChannel struct {
 	In  *Type
 	Out *Type

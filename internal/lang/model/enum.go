@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Enum struct {
@@ -16,7 +16,7 @@ type Enum struct {
 	ValueNumbers map[int]*EnumValue
 }
 
-func newEnum(pkg *Package, file *File, def *Definition, penum *ast.Enum) (*Enum, error) {
+func newEnum(pkg *Package, file *File, def *Definition, penum *syntax.Enum) (*Enum, error) {
 	e := &Enum{
 		Package: pkg,
 		File:    file,
@@ -67,7 +67,7 @@ type EnumValue struct {
 	Number int
 }
 
-func newEnumValue(enum *Enum, pval *ast.EnumValue) (*EnumValue, error) {
+func newEnumValue(enum *Enum, pval *syntax.EnumValue) (*EnumValue, error) {
 	v := &EnumValue{
 		Enum:   enum,
 		Name:   pval.Name,

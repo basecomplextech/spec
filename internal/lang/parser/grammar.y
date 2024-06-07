@@ -5,7 +5,7 @@ package parser
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 %}
 
@@ -17,41 +17,41 @@ import (
 	string  string
 
     // Type
-	type_ *ast.Type
+	type_ *syntax.Type
 
 	// Import
-	import_ *ast.Import
-	imports []*ast.Import
+	import_ *syntax.Import
+	imports []*syntax.Import
 
 	// Option
-	option  *ast.Option
-	options []*ast.Option
+	option  *syntax.Option
+	options []*syntax.Option
 
 	// Definition
-	definition  *ast.Definition
-	definitions []*ast.Definition
+	definition  *syntax.Definition
+	definitions []*syntax.Definition
 
 	// Enum
-	enum_value  *ast.EnumValue
-	enum_values []*ast.EnumValue
+	enum_value  *syntax.EnumValue
+	enum_values []*syntax.EnumValue
 
 	// Field
-	field  *ast.Field
-	fields ast.Fields
+	field  *syntax.Field
+	fields syntax.Fields
 
 	// Struct
-	struct_field  *ast.StructField
-	struct_fields []*ast.StructField
+	struct_field  *syntax.StructField
+	struct_fields []*syntax.StructField
 
     // Service
-    service         *ast.Service
-    method          *ast.Method
-    methods         []*ast.Method
-	method_input	ast.MethodInput
-	method_output	ast.MethodOutput
-	method_channel	*ast.MethodChannel
-	method_field	*ast.Field
-	method_fields	ast.Fields
+    service         *syntax.Service
+    method          *syntax.Method
+    methods         []*syntax.Method
+	method_input	syntax.MethodInput
+	method_output	syntax.MethodOutput
+	method_channel	*syntax.MethodChannel
+	method_field	*syntax.Field
+	method_fields	syntax.Fields
 }
 
 // keywords
@@ -175,7 +175,7 @@ keyword:
 
 file: imports options definitions
 	{ 
-		file := &ast.File{
+		file := &syntax.File{
 			Imports:     $1,
 			Options:     $2,
 			Definitions: $3,
@@ -191,7 +191,7 @@ import:
 		if debugParser {
 			fmt.Println("import ", $1)
 		}
-		$$ = &ast.Import{
+		$$ = &syntax.Import{
 			ID: trimString($1),
 		}
 	}
@@ -200,7 +200,7 @@ import:
 		if debugParser {
 			fmt.Println("import ", $1, $2)
 		}
-		$$ = &ast.Import{
+		$$ = &syntax.Import{
 			Alias: $1,
 			ID:    trimString($2),
 		}
@@ -266,7 +266,7 @@ option:
 		if debugParser {
 			fmt.Println("option ", $1, $3)
 		}
-		$$ = &ast.Option{
+		$$ = &syntax.Option{
 			Name:  $1,
 			Value: trimString($3),
 		}
@@ -287,8 +287,8 @@ type:
 		if debugParser {
 			fmt.Printf("type []%v\n", $3)
 		}
-		$$ = &ast.Type{
-			Kind:    ast.KindList,
+		$$ = &syntax.Type{
+			Kind:    syntax.KindList,
 			Element: $3,
 		}
 	};
@@ -299,8 +299,8 @@ base_type:
 		if debugParser {
 			fmt.Println("base type", $1)
 		}
-		$$ = &ast.Type{
-			Kind: ast.GetKind($1),
+		$$ = &syntax.Type{
+			Kind: syntax.GetKind($1),
 			Name: $1,
 		}
 	}
@@ -309,8 +309,8 @@ base_type:
 		if debugParser {
 			fmt.Printf("base type %v.%v\n", $1, $3)
 		}
-		$$ = &ast.Type{
-			Kind:   ast.KindReference,
+		$$ = &syntax.Type{
+			Kind:   syntax.KindReference,
 			Name:   $3,
 			Import: $1,
 		}
@@ -320,8 +320,8 @@ base_type:
 		if debugParser {
 			fmt.Println("base type", "any")
 		}
-		$$ = &ast.Type{
-			Kind: ast.KindAny,
+		$$ = &syntax.Type{
+			Kind: syntax.KindAny,
 			Name: "any",
 		}
 	}
@@ -330,8 +330,8 @@ base_type:
 		if debugParser {
 			fmt.Println("base type", "message")
 		}
-		$$ = &ast.Type{
-			Kind: ast.KindAnyMessage,
+		$$ = &syntax.Type{
+			Kind: syntax.KindAnyMessage,
 			Name: "message",
 		}
 	};
@@ -367,11 +367,11 @@ enum: ENUM IDENT '{' enum_values '}'
 		if debugParser {
 			fmt.Println("enum", $2, $4)
 		}
-		$$ = &ast.Definition{
-			Type: ast.DefinitionEnum,
+		$$ = &syntax.Definition{
+			Type: syntax.DefinitionEnum,
 			Name: $2,
 
-			Enum: &ast.Enum{
+			Enum: &syntax.Enum{
 				Values: $4,
 			},
 		}
@@ -382,7 +382,7 @@ enum_value: field_name '=' INTEGER ';'
 		if debugParser {
 			fmt.Println("enum value", $1, $3)
 		}
-		$$ = &ast.EnumValue{
+		$$ = &syntax.EnumValue{
 			Name: $1,
 			Value: $3,
 		}
@@ -409,11 +409,11 @@ message: MESSAGE IDENT '{' fields semi_opt '}'
 		if debugParser {
 			fmt.Println("message", $2, $4)
 		}
-		$$ = &ast.Definition{
-			Type: ast.DefinitionMessage,
+		$$ = &syntax.Definition{
+			Type: syntax.DefinitionMessage,
 			Name: $2,
 
-			Message: &ast.Message{
+			Message: &syntax.Message{
 				Fields: $4,
 			},
 		}
@@ -424,7 +424,7 @@ field: field_name type INTEGER
 		if debugParser {
 			fmt.Println("message field", $1, $2, $3)
 		}
-		$$ = &ast.Field{
+		$$ = &syntax.Field{
 			Name: $1,
 			Type: $2,
 			Tag: $3,
@@ -441,7 +441,7 @@ fields:
 		if debugParser {
 			fmt.Println("message fields", $1)
 		}
-		$$ = []*ast.Field{$1}
+		$$ = []*syntax.Field{$1}
 	}
 	| fields ';' field
 	{
@@ -459,11 +459,11 @@ struct: STRUCT IDENT '{' struct_fields '}'
 		if debugParser {
 			fmt.Println("struct", $2, $4)
 		}
-		$$ = &ast.Definition{
-			Type: ast.DefinitionStruct,
+		$$ = &syntax.Definition{
+			Type: syntax.DefinitionStruct,
 			Name: $2,
 
-			Struct: &ast.Struct{
+			Struct: &syntax.Struct{
 				Fields: $4,
 			},
 		}
@@ -474,7 +474,7 @@ struct_field: field_name type ';'
 		if debugParser {
 			fmt.Println("struct field", $1, $2)
 		}
-		$$ = &ast.StructField{
+		$$ = &syntax.StructField{
 			Name: $1,
 			Type: $2,
 		}
@@ -500,11 +500,11 @@ service: SERVICE IDENT '{' methods '}'
 		if debugParser {
 			fmt.Println("service", $2, $4)
 		}
-		$$ = &ast.Definition{
-			Type: ast.DefinitionService,
+		$$ = &syntax.Definition{
+			Type: syntax.DefinitionService,
 			Name: $2,
 
-			Service: &ast.Service{
+			Service: &syntax.Service{
 				Methods: $4,
 			},
 		}
@@ -516,11 +516,11 @@ subservice: SUBSERVICE IDENT '{' methods '}'
 		if debugParser {
 			fmt.Println("subservice", $2, $4)
 		}
-		$$ = &ast.Definition{
-			Type: ast.DefinitionService,
+		$$ = &syntax.Definition{
+			Type: syntax.DefinitionService,
 			Name: $2,
 
-			Service: &ast.Service{
+			Service: &syntax.Service{
 				Sub: true,
 				Methods: $4,
 			},
@@ -547,7 +547,7 @@ method:
 		if debugParser {
 			fmt.Println("method", $1, $2)
 		}
-		$$ = &ast.Method{
+		$$ = &syntax.Method{
 			Name: $1,
 			Input: $2,
 		}
@@ -557,7 +557,7 @@ method:
 		if debugParser {
 			fmt.Println("method", $1, $2, $3)
 		}
-		$$ = &ast.Method{
+		$$ = &syntax.Method{
 			Name: $1,
 			Input: $2,
 			Output: $3,
@@ -568,7 +568,7 @@ method:
 		if debugParser {
 			fmt.Println("method", $1, $2, $3, $4)
 		}
-		$$ = &ast.Method{
+		$$ = &syntax.Method{
 			Name: $1,
 			Input: $2,
 			Channel: $3,
@@ -615,7 +615,7 @@ method_channel:
 			fmt.Println("method channel", $2)
 		}
 
-		$$ = &ast.MethodChannel{
+		$$ = &syntax.MethodChannel{
 			In: $2,
 		}
 	}
@@ -625,7 +625,7 @@ method_channel:
 			fmt.Println("method channel", $2)
 		}
 
-		$$ = &ast.MethodChannel{
+		$$ = &syntax.MethodChannel{
 			Out: $2,
 		}
 	}
@@ -635,7 +635,7 @@ method_channel:
 			fmt.Println("method channel", $2, $3)
 		}
 
-		$$ = &ast.MethodChannel{
+		$$ = &syntax.MethodChannel{
 			In: $2,
 			Out: $3,
 		}
@@ -672,7 +672,7 @@ method_fields:
 		if debugParser {
 			fmt.Println("method fields", $1)
 		}
-		$$ = []*ast.Field{$1}
+		$$ = []*syntax.Field{$1}
 	}
 	| method_fields ',' method_field
 	{
@@ -688,7 +688,7 @@ method_field:
 		if debugParser {
 			fmt.Println("method field", $1, $2, $3)
 		}
-		$$ = &ast.Field{
+		$$ = &syntax.Field{
 			Name: $1,
 			Type: $2,
 			Tag: $3,

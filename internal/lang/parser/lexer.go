@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/scanner"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 const EOF = 0
@@ -17,8 +17,8 @@ var _ yyLexer = &lexer{}
 type lexer struct {
 	s *scanner.Scanner
 
-	file *ast.File // used by yyParser to return result
-	err  error     // parse error
+	file *syntax.File // used by yyParser to return result
+	err  error        // parse error
 }
 
 func newLexer(filename string, src io.Reader) *lexer {
@@ -28,7 +28,7 @@ func newLexer(filename string, src io.Reader) *lexer {
 	return &lexer{s: s}
 }
 
-func setLexerResult(l yyLexer, file *ast.File) {
+func setLexerResult(l yyLexer, file *syntax.File) {
 	l1 := l.(*lexer)
 	l1.file = file
 }

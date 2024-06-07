@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Method struct {
@@ -24,7 +24,7 @@ type Method struct {
 	_OutputFields *Fields // Temp, converted into Output
 }
 
-func newMethod(pkg *Package, file *File, service *Service, pm *ast.Method) (*Method, error) {
+func newMethod(pkg *Package, file *File, service *Service, pm *syntax.Method) (*Method, error) {
 	m := &Method{
 		Package: pkg,
 		File:    file,
@@ -152,13 +152,13 @@ func (m *Method) resolved() error {
 
 // Input/output
 
-func makeMethodInput(m *Method, p ast.MethodInput) (err error) {
+func makeMethodInput(m *Method, p syntax.MethodInput) (err error) {
 	switch p := p.(type) {
-	case *ast.Type:
+	case *syntax.Type:
 		m.Input, err = newType(p)
 		return err
 
-	case ast.Fields:
+	case syntax.Fields:
 		if len(p) > 0 {
 			m._InputFields, err = newFields(p)
 			return err
@@ -172,13 +172,13 @@ func makeMethodInput(m *Method, p ast.MethodInput) (err error) {
 	panic("unsupported method input")
 }
 
-func makeMethodOutput(m *Method, p ast.MethodOutput) (err error) {
+func makeMethodOutput(m *Method, p syntax.MethodOutput) (err error) {
 	switch p := p.(type) {
-	case *ast.Type:
+	case *syntax.Type:
 		m.Output, err = newType(p)
 		return err
 
-	case ast.Fields:
+	case syntax.Fields:
 		if len(p) > 0 {
 			m._OutputFields, err = newFields(p)
 			return err
@@ -200,13 +200,13 @@ type MethodChannel struct {
 	Out *Type
 }
 
-func newMethodChannel(p *ast.MethodChannel) (*MethodChannel, error) {
+func newMethodChannel(p *syntax.MethodChannel) (*MethodChannel, error) {
 	if p == nil {
 		return nil, nil
 	}
 
 	if p.In == nil && p.Out == nil {
-		return nil, fmt.Errorf("at least in or out must be specified")
+		return nil, fmt.Errorf("at lesyntax in or out must be specified")
 	}
 
 	var in *Type

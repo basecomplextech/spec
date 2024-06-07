@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Message struct {
@@ -15,7 +15,7 @@ type Message struct {
 	Generated bool // Auto-generated message, i.e. request/response
 }
 
-func newMessage(pkg *Package, file *File, def *Definition, pmsg *ast.Message) (*Message, error) {
+func newMessage(pkg *Package, file *File, def *Definition, pmsg *syntax.Message) (*Message, error) {
 	msg := &Message{
 		Package: pkg,
 		File:    file,

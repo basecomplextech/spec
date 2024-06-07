@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Kind int
@@ -54,53 +54,53 @@ const (
 	KindReference
 )
 
-func parseKind(pkind ast.Kind) (Kind, error) {
+func parseKind(pkind syntax.Kind) (Kind, error) {
 	switch pkind {
-	case ast.KindAny:
+	case syntax.KindAny:
 		return KindAny, nil
 
-	case ast.KindBool:
+	case syntax.KindBool:
 		return KindBool, nil
-	case ast.KindByte:
+	case syntax.KindByte:
 		return KindByte, nil
 
-	case ast.KindInt16:
+	case syntax.KindInt16:
 		return KindInt16, nil
-	case ast.KindInt32:
+	case syntax.KindInt32:
 		return KindInt32, nil
-	case ast.KindInt64:
+	case syntax.KindInt64:
 		return KindInt64, nil
 
-	case ast.KindUint16:
+	case syntax.KindUint16:
 		return KindUint16, nil
-	case ast.KindUint32:
+	case syntax.KindUint32:
 		return KindUint32, nil
-	case ast.KindUint64:
+	case syntax.KindUint64:
 		return KindUint64, nil
 
-	case ast.KindBin64:
+	case syntax.KindBin64:
 		return KindBin64, nil
-	case ast.KindBin128:
+	case syntax.KindBin128:
 		return KindBin128, nil
-	case ast.KindBin256:
+	case syntax.KindBin256:
 		return KindBin256, nil
 
-	case ast.KindFloat32:
+	case syntax.KindFloat32:
 		return KindFloat32, nil
-	case ast.KindFloat64:
+	case syntax.KindFloat64:
 		return KindFloat64, nil
 
-	case ast.KindBytes:
+	case syntax.KindBytes:
 		return KindBytes, nil
-	case ast.KindString:
+	case syntax.KindString:
 		return KindString, nil
-	case ast.KindAnyMessage:
+	case syntax.KindAnyMessage:
 		return KindAnyMessage, nil
 
-	case ast.KindList:
+	case syntax.KindList:
 		return KindList, nil
 
-	case ast.KindReference:
+	case syntax.KindReference:
 		return KindReference, nil
 	}
 

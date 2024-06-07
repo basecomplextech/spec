@@ -6,7 +6,7 @@ import __yyfmt__ "fmt"
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type yySymType struct {
@@ -17,41 +17,41 @@ type yySymType struct {
 	string  string
 
 	// Type
-	type_ *ast.Type
+	type_ *syntax.Type
 
 	// Import
-	import_ *ast.Import
-	imports []*ast.Import
+	import_ *syntax.Import
+	imports []*syntax.Import
 
 	// Option
-	option  *ast.Option
-	options []*ast.Option
+	option  *syntax.Option
+	options []*syntax.Option
 
 	// Definition
-	definition  *ast.Definition
-	definitions []*ast.Definition
+	definition  *syntax.Definition
+	definitions []*syntax.Definition
 
 	// Enum
-	enum_value  *ast.EnumValue
-	enum_values []*ast.EnumValue
+	enum_value  *syntax.EnumValue
+	enum_values []*syntax.EnumValue
 
 	// Field
-	field  *ast.Field
-	fields ast.Fields
+	field  *syntax.Field
+	fields syntax.Fields
 
 	// Struct
-	struct_field  *ast.StructField
-	struct_fields []*ast.StructField
+	struct_field  *syntax.StructField
+	struct_fields []*syntax.StructField
 
 	// Service
-	service        *ast.Service
-	method         *ast.Method
-	methods        []*ast.Method
-	method_input   ast.MethodInput
-	method_output  ast.MethodOutput
-	method_channel *ast.MethodChannel
-	method_field   *ast.Field
-	method_fields  ast.Fields
+	service        *syntax.Service
+	method         *syntax.Method
+	methods        []*syntax.Method
+	method_input   syntax.MethodInput
+	method_output  syntax.MethodOutput
+	method_channel *syntax.MethodChannel
+	method_field   *syntax.Field
+	method_fields  syntax.Fields
 }
 
 const ANY = 57346
@@ -629,7 +629,7 @@ yydefault:
 	case 10:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			file := &ast.File{
+			file := &syntax.File{
 				Imports:     yyDollar[1].imports,
 				Options:     yyDollar[2].options,
 				Definitions: yyDollar[3].definitions,
@@ -642,7 +642,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("import ", yyDollar[1].string)
 			}
-			yyVAL.import_ = &ast.Import{
+			yyVAL.import_ = &syntax.Import{
 				ID: trimString(yyDollar[1].string),
 			}
 		}
@@ -652,7 +652,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("import ", yyDollar[1].ident, yyDollar[2].string)
 			}
-			yyVAL.import_ = &ast.Import{
+			yyVAL.import_ = &syntax.Import{
 				Alias: yyDollar[1].ident,
 				ID:    trimString(yyDollar[2].string),
 			}
@@ -715,7 +715,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("option ", yyDollar[1].ident, yyDollar[3].string)
 			}
-			yyVAL.option = &ast.Option{
+			yyVAL.option = &syntax.Option{
 				Name:  yyDollar[1].ident,
 				Value: trimString(yyDollar[3].string),
 			}
@@ -734,8 +734,8 @@ yydefault:
 			if debugParser {
 				fmt.Printf("type []%v\n", yyDollar[3].type_)
 			}
-			yyVAL.type_ = &ast.Type{
-				Kind:    ast.KindList,
+			yyVAL.type_ = &syntax.Type{
+				Kind:    syntax.KindList,
 				Element: yyDollar[3].type_,
 			}
 		}
@@ -745,8 +745,8 @@ yydefault:
 			if debugParser {
 				fmt.Println("base type", yyDollar[1].ident)
 			}
-			yyVAL.type_ = &ast.Type{
-				Kind: ast.GetKind(yyDollar[1].ident),
+			yyVAL.type_ = &syntax.Type{
+				Kind: syntax.GetKind(yyDollar[1].ident),
 				Name: yyDollar[1].ident,
 			}
 		}
@@ -756,8 +756,8 @@ yydefault:
 			if debugParser {
 				fmt.Printf("base type %v.%v\n", yyDollar[1].ident, yyDollar[3].ident)
 			}
-			yyVAL.type_ = &ast.Type{
-				Kind:   ast.KindReference,
+			yyVAL.type_ = &syntax.Type{
+				Kind:   syntax.KindReference,
 				Name:   yyDollar[3].ident,
 				Import: yyDollar[1].ident,
 			}
@@ -768,8 +768,8 @@ yydefault:
 			if debugParser {
 				fmt.Println("base type", "any")
 			}
-			yyVAL.type_ = &ast.Type{
-				Kind: ast.KindAny,
+			yyVAL.type_ = &syntax.Type{
+				Kind: syntax.KindAny,
 				Name: "any",
 			}
 		}
@@ -779,8 +779,8 @@ yydefault:
 			if debugParser {
 				fmt.Println("base type", "message")
 			}
-			yyVAL.type_ = &ast.Type{
-				Kind: ast.KindAnyMessage,
+			yyVAL.type_ = &syntax.Type{
+				Kind: syntax.KindAnyMessage,
 				Name: "message",
 			}
 		}
@@ -803,11 +803,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("enum", yyDollar[2].ident, yyDollar[4].enum_values)
 			}
-			yyVAL.definition = &ast.Definition{
-				Type: ast.DefinitionEnum,
+			yyVAL.definition = &syntax.Definition{
+				Type: syntax.DefinitionEnum,
 				Name: yyDollar[2].ident,
 
-				Enum: &ast.Enum{
+				Enum: &syntax.Enum{
 					Values: yyDollar[4].enum_values,
 				},
 			}
@@ -818,7 +818,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("enum value", yyDollar[1].ident, yyDollar[3].integer)
 			}
-			yyVAL.enum_value = &ast.EnumValue{
+			yyVAL.enum_value = &syntax.EnumValue{
 				Name:  yyDollar[1].ident,
 				Value: yyDollar[3].integer,
 			}
@@ -842,11 +842,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("message", yyDollar[2].ident, yyDollar[4].fields)
 			}
-			yyVAL.definition = &ast.Definition{
-				Type: ast.DefinitionMessage,
+			yyVAL.definition = &syntax.Definition{
+				Type: syntax.DefinitionMessage,
 				Name: yyDollar[2].ident,
 
-				Message: &ast.Message{
+				Message: &syntax.Message{
 					Fields: yyDollar[4].fields,
 				},
 			}
@@ -857,7 +857,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("message field", yyDollar[1].ident, yyDollar[2].type_, yyDollar[3].integer)
 			}
-			yyVAL.field = &ast.Field{
+			yyVAL.field = &syntax.Field{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
 				Tag:  yyDollar[3].integer,
@@ -874,7 +874,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("message fields", yyDollar[1].field)
 			}
-			yyVAL.fields = []*ast.Field{yyDollar[1].field}
+			yyVAL.fields = []*syntax.Field{yyDollar[1].field}
 		}
 	case 43:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -890,11 +890,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("struct", yyDollar[2].ident, yyDollar[4].struct_fields)
 			}
-			yyVAL.definition = &ast.Definition{
-				Type: ast.DefinitionStruct,
+			yyVAL.definition = &syntax.Definition{
+				Type: syntax.DefinitionStruct,
 				Name: yyDollar[2].ident,
 
-				Struct: &ast.Struct{
+				Struct: &syntax.Struct{
 					Fields: yyDollar[4].struct_fields,
 				},
 			}
@@ -905,7 +905,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("struct field", yyDollar[1].ident, yyDollar[2].type_)
 			}
-			yyVAL.struct_field = &ast.StructField{
+			yyVAL.struct_field = &syntax.StructField{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
 			}
@@ -929,11 +929,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("service", yyDollar[2].ident, yyDollar[4].methods)
 			}
-			yyVAL.definition = &ast.Definition{
-				Type: ast.DefinitionService,
+			yyVAL.definition = &syntax.Definition{
+				Type: syntax.DefinitionService,
 				Name: yyDollar[2].ident,
 
-				Service: &ast.Service{
+				Service: &syntax.Service{
 					Methods: yyDollar[4].methods,
 				},
 			}
@@ -944,11 +944,11 @@ yydefault:
 			if debugParser {
 				fmt.Println("subservice", yyDollar[2].ident, yyDollar[4].methods)
 			}
-			yyVAL.definition = &ast.Definition{
-				Type: ast.DefinitionService,
+			yyVAL.definition = &syntax.Definition{
+				Type: syntax.DefinitionService,
 				Name: yyDollar[2].ident,
 
-				Service: &ast.Service{
+				Service: &syntax.Service{
 					Sub:     true,
 					Methods: yyDollar[4].methods,
 				},
@@ -970,7 +970,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_input)
 			}
-			yyVAL.method = &ast.Method{
+			yyVAL.method = &syntax.Method{
 				Name:  yyDollar[1].ident,
 				Input: yyDollar[2].method_input,
 			}
@@ -981,7 +981,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_input, yyDollar[3].method_output)
 			}
-			yyVAL.method = &ast.Method{
+			yyVAL.method = &syntax.Method{
 				Name:   yyDollar[1].ident,
 				Input:  yyDollar[2].method_input,
 				Output: yyDollar[3].method_output,
@@ -993,7 +993,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("method", yyDollar[1].ident, yyDollar[2].method_input, yyDollar[3].method_channel, yyDollar[4].method_output)
 			}
-			yyVAL.method = &ast.Method{
+			yyVAL.method = &syntax.Method{
 				Name:    yyDollar[1].ident,
 				Input:   yyDollar[2].method_input,
 				Channel: yyDollar[3].method_channel,
@@ -1039,7 +1039,7 @@ yydefault:
 				fmt.Println("method channel", yyDollar[2].type_)
 			}
 
-			yyVAL.method_channel = &ast.MethodChannel{
+			yyVAL.method_channel = &syntax.MethodChannel{
 				In: yyDollar[2].type_,
 			}
 		}
@@ -1050,7 +1050,7 @@ yydefault:
 				fmt.Println("method channel", yyDollar[2].type_)
 			}
 
-			yyVAL.method_channel = &ast.MethodChannel{
+			yyVAL.method_channel = &syntax.MethodChannel{
 				Out: yyDollar[2].type_,
 			}
 		}
@@ -1061,7 +1061,7 @@ yydefault:
 				fmt.Println("method channel", yyDollar[2].type_, yyDollar[3].type_)
 			}
 
-			yyVAL.method_channel = &ast.MethodChannel{
+			yyVAL.method_channel = &syntax.MethodChannel{
 				In:  yyDollar[2].type_,
 				Out: yyDollar[3].type_,
 			}
@@ -1095,7 +1095,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("method fields", yyDollar[1].field)
 			}
-			yyVAL.fields = []*ast.Field{yyDollar[1].field}
+			yyVAL.fields = []*syntax.Field{yyDollar[1].field}
 		}
 	case 67:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -1111,7 +1111,7 @@ yydefault:
 			if debugParser {
 				fmt.Println("method field", yyDollar[1].ident, yyDollar[2].type_, yyDollar[3].integer)
 			}
-			yyVAL.field = &ast.Field{
+			yyVAL.field = &syntax.Field{
 				Name: yyDollar[1].ident,
 				Type: yyDollar[2].type_,
 				Tag:  yyDollar[3].integer,

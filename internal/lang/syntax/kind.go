@@ -1,4 +1,4 @@
-package ast
+package syntax
 
 type Kind int
 

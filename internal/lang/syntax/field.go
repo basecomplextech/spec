@@ -1,4 +1,4 @@
-package ast
+package syntax
 
 type Field struct {
 	Name string

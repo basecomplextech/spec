@@ -1,4 +1,4 @@
-package ast
+package syntax
 
 type Struct struct {
 	Fields []*StructField

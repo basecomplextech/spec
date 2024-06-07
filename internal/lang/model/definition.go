@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type DefinitionType string
@@ -16,18 +16,18 @@ const (
 	DefinitionService   DefinitionType = "service"
 )
 
-func getDefinitionType(ptype ast.DefinitionType) (DefinitionType, error) {
+func getDefinitionType(ptype syntax.DefinitionType) (DefinitionType, error) {
 	switch ptype {
-	case ast.DefinitionEnum:
+	case syntax.DefinitionEnum:
 		return DefinitionEnum, nil
-	case ast.DefinitionMessage:
+	case syntax.DefinitionMessage:
 		return DefinitionMessage, nil
-	case ast.DefinitionStruct:
+	case syntax.DefinitionStruct:
 		return DefinitionStruct, nil
-	case ast.DefinitionService:
+	case syntax.DefinitionService:
 		return DefinitionService, nil
 	}
-	return "", fmt.Errorf("unsupported ast definition type %v", ptype)
+	return "", fmt.Errorf("unsupported syntax definition type %v", ptype)
 }
 
 // Definition
@@ -45,7 +45,7 @@ type Definition struct {
 	Service *Service
 }
 
-func newDefinition(pkg *Package, file *File, pdef *ast.Definition) (*Definition, error) {
+func newDefinition(pkg *Package, file *File, pdef *syntax.Definition) (*Definition, error) {
 	type_, err := getDefinitionType(pdef.Type)
 	if err != nil {
 		return nil, err

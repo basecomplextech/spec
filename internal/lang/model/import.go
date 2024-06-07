@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Import struct {
@@ -18,7 +18,7 @@ type Import struct {
 	Resolved bool
 }
 
-func newImport(file *File, pimp *ast.Import) (*Import, error) {
+func newImport(file *File, pimp *syntax.Import) (*Import, error) {
 	name := pimp.Alias
 	if name == "" {
 		name = filepath.Base(pimp.ID)

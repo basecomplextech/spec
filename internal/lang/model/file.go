@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type File struct {
@@ -22,7 +22,7 @@ type File struct {
 	DefinitionNames map[string]*Definition
 }
 
-func newFile(pkg *Package, pfile *ast.File) (*File, error) {
+func newFile(pkg *Package, pfile *syntax.File) (*File, error) {
 	path := pfile.Path
 	name := filepath.Base(path)
 

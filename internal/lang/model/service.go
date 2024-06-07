@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Service struct {
@@ -16,7 +16,7 @@ type Service struct {
 	MethodNames map[string]*Method
 }
 
-func newService(pkg *Package, file *File, def *Definition, psrv *ast.Service) (*Service, error) {
+func newService(pkg *Package, file *File, def *Definition, psrv *syntax.Service) (*Service, error) {
 	srv := &Service{
 		Package: pkg,
 		File:    file,

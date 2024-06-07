@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/collect/orderedmap"
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 type Struct struct {
@@ -15,7 +15,7 @@ type Struct struct {
 	Fields *orderedmap.Map[string, *StructField]
 }
 
-func newStruct(pkg *Package, file *File, def *Definition, pstr *ast.Struct) (*Struct, error) {
+func newStruct(pkg *Package, file *File, def *Definition, pstr *syntax.Struct) (*Struct, error) {
 	str := &Struct{
 		Package: pkg,
 		File:    file,
@@ -76,7 +76,7 @@ type StructField struct {
 	Type *Type
 }
 
-func newStructField(pfield *ast.StructField) (*StructField, error) {
+func newStructField(pfield *syntax.StructField) (*StructField, error) {
 	type_, err := newType(pfield.Type)
 	if err != nil {
 		return nil, err

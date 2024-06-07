@@ -1,4 +1,4 @@
-package ast
+package syntax
 
 type Type struct {
 	Kind    Kind

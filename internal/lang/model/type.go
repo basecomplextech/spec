@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/lang/ast"
+	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
 var builtin = map[Kind]*Type{
@@ -63,7 +63,7 @@ type Type struct {
 	Import *Import
 }
 
-func newType(ptype *ast.Type) (*Type, error) {
+func newType(ptype *syntax.Type) (*Type, error) {
 	kind, err := parseKind(ptype.Kind)
 	if err != nil {
 		return nil, err
