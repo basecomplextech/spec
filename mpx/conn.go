@@ -60,7 +60,7 @@ type conn struct {
 
 	reader *reader
 	writer *writer
-	writeq alloc.MQueue
+	writeq alloc.ByteQueue
 
 	channelMu     sync.Mutex
 	channels      map[bin.Bin128]internalChannel
@@ -110,7 +110,7 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, op
 
 		reader: newReader(c, client, int(opts.ReadBufferSize)),
 		writer: newWriter(c, client, int(opts.WriteBufferSize)),
-		writeq: alloc.NewMQueueCap(int(opts.WriteQueueSize)),
+		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
 		channels: make(map[bin.Bin128]internalChannel),
 	}

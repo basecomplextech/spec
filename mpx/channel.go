@@ -90,7 +90,7 @@ type channelState struct {
 	recvOpen  bool // open message received
 	recvClose bool // close message received
 	recvFree  bool // freed by connection
-	recvQueue alloc.MQueue
+	recvQueue alloc.ByteQueue
 
 	// windows
 	windowMu   sync.Mutex
@@ -139,7 +139,7 @@ func openChannel(c internalConn, client bool, msg pmpx.ChannelOpen) *channel {
 func newChannelState() *channelState {
 	return &channelState{
 		sendBuilder: newBuilder(),
-		recvQueue:   alloc.NewMQueue(),
+		recvQueue:   alloc.NewByteQueue(),
 		windowWait:  make(chan struct{}, 1),
 	}
 }
