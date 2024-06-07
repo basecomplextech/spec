@@ -110,8 +110,7 @@ func (c *client) Channel(ctx async.Context, req prpc.Request) (Channel, status.S
 	case status.CodeCancelled:
 		return nil, st
 	default:
-		method := requestMethod(req)
-		c.logger.ErrorStatus("RPC client request error", st, "method", method)
+		c.logger.ErrorStatus("RPC client request error", st)
 		return nil, st
 	}
 
@@ -130,7 +129,7 @@ func (c *client) Channel(ctx async.Context, req prpc.Request) (Channel, status.S
 	case status.CodeCancelled:
 		return nil, st
 	default:
-		method := requestMethod(req)
+		method := ch.Method()
 		c.logger.ErrorStatus("RPC client request error", st, "method", method)
 		return nil, st
 	}
@@ -149,8 +148,7 @@ func (c *client) Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value]
 	case status.CodeCancelled:
 		return nil, st
 	default:
-		method := requestMethod(req)
-		c.logger.ErrorStatus("RPC client request error", st, "method", method)
+		c.logger.ErrorStatus("RPC client request error", st)
 		return nil, st
 	}
 	defer ch.Free()
@@ -162,7 +160,7 @@ func (c *client) Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value]
 	case status.CodeCancelled:
 		return nil, st
 	default:
-		method := requestMethod(req)
+		method := ch.Method()
 		c.logger.ErrorStatus("RPC client request error", st, "method", method)
 		return nil, st
 	}

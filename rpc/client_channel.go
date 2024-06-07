@@ -62,14 +62,13 @@ type channel struct {
 type channelState struct {
 	ch     mpx.Channel
 	logger logging.Logger
-	method string
+	method []byte
 
 	// send
-	sendMu  sync.Mutex
-	sendReq bool // request sent
-	sendEnd bool // end sent
-	sendBuf *alloc.Buffer
-	sendMsg spec.Writer
+	sendMu      sync.Mutex
+	sendReq     bool // request sent
+	sendEnd     bool // end sent
+	sendBuilder builder
 
 	// rev
 	recvMu   sync.Mutex
@@ -94,15 +93,20 @@ func newChannel(ch mpx.Channel, logger logging.Logger) *channel {
 }
 
 func newChannelState() *channelState {
-	sendBuf := alloc.NewBuffer()
-
 	return &channelState{
-		// sendLock: async.NewLock(),
-		sendBuf: sendBuf,
-		sendMsg: spec.NewWriterBuffer(sendBuf),
-
-		// recvLock: async.NewLock(),
+		sendBuilder: newBuilder(),
 	}
+}
+
+// Method returns a joined method name, the string is valid until the channel is freed.
+func (ch *channel) Method() string {
+	s, ok := ch.rlock()
+	if !ok {
+		return ""
+	}
+	defer ch.stateMu.RUnlock()
+
+	return unsafeString(s.method)
 }
 
 // Request sends a request to the server.
@@ -122,27 +126,16 @@ func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	}
 
 	// Make request
-	var msg []byte
-	{
-		s.sendBuf.Reset()
-		s.sendMsg.Reset(s.sendBuf)
-
-		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
-		w.Type(prpc.MessageType_Request)
-		w.CopyReq(req)
-
-		p, err := w.Build()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		msg = p.Unwrap().Raw()
+	msg, err := s.sendBuilder.buildRequest(req)
+	if err != nil {
+		return WrapError(err)
 	}
+	bytes := msg.Unwrap().Raw()
 
 	// Send request
-	s.method = requestMethod(req)
+	s.method = requestMethod(s.method, req)
 	s.sendReq = true
-	return s.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, bytes)
 }
 
 // Receive
@@ -258,25 +251,14 @@ func (ch *channel) Send(ctx async.Context, message []byte) status.Status {
 	}
 
 	// Make message
-	var msg []byte
-	{
-		s.sendBuf.Reset()
-		s.sendMsg.Reset(s.sendBuf)
-
-		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
-		w.Type(prpc.MessageType_Message)
-		w.Msg(message)
-
-		p, err := w.Build()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		msg = p.Unwrap().Raw()
+	msg, err := s.sendBuilder.buildMessage(message)
+	if err != nil {
+		return WrapError(err)
 	}
+	bytes := msg.Unwrap().Raw()
 
 	// Send message
-	return s.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, bytes)
 }
 
 // SendEnd sends an end message to the channel.
@@ -296,25 +278,15 @@ func (ch *channel) SendEnd(ctx async.Context) status.Status {
 	}
 
 	// Make message
-	var msg []byte
-	{
-		s.sendBuf.Reset()
-		s.sendMsg.Reset(s.sendBuf)
-
-		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
-		w.Type(prpc.MessageType_End)
-
-		p, err := w.Build()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		msg = p.Unwrap().Raw()
+	msg, err := s.sendBuilder.buildEnd()
+	if err != nil {
+		return WrapError(err)
 	}
+	bytes := msg.Unwrap().Raw()
 
 	// Send message
 	s.sendEnd = true
-	return s.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, bytes)
 }
 
 // Response
@@ -452,12 +424,11 @@ func releaseState(s *channelState) {
 func (s *channelState) reset() {
 	s.ch = nil
 	s.logger = nil
-	s.method = ""
+	s.method = s.method[:0]
 
 	s.sendReq = false
 	s.sendEnd = false
-	s.sendBuf.Reset()
-	s.sendMsg.Reset(s.sendBuf)
+	s.sendBuilder.reset()
 
 	s.recvEnd = false
 	s.recvResp = false

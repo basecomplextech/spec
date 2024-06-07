@@ -21,11 +21,11 @@ type messageInput struct {
 	close bool
 }
 
-func newBuilder() *builder {
+func newBuilder() builder {
 	buffer := alloc.NewBuffer()
 	writer := spec.NewWriterBuffer(buffer)
 
-	return &builder{
+	return builder{
 		buffer: buffer,
 		writer: writer,
 	}

@@ -83,7 +83,7 @@ type channelState struct {
 	sendOpen    bool // open message sent
 	sendClose   bool // close message sent
 	sendFree    bool // freed by user
-	sendBuilder *builder
+	sendBuilder builder
 
 	// receive
 	recvMu    sync.Mutex

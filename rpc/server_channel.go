@@ -3,11 +3,9 @@ package rpc
 import (
 	"sync"
 
-	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/mpx"
 	"github.com/basecomplextech/spec/proto/prpc"
 )
@@ -45,6 +43,14 @@ type ServerChannel interface {
 
 // internal
 
+type internalServerChannel interface {
+	// Method returns a joined method name, the string is valid until the channel is freed.
+	Method() string
+
+	// ResponseAndClose sends a response and closes the channel.
+	ResponseAndClose(ctx async.Context, result []byte, st status.Status) status.Status
+}
+
 var _ ServerChannel = (*serverChannel)(nil)
 
 type serverChannel struct {
@@ -53,14 +59,14 @@ type serverChannel struct {
 }
 
 type serverChannelState struct {
-	ch mpx.Channel
+	ch     mpx.Channel
+	method []byte // call method names, separated by '/'
 
 	// send
-	sendMu  sync.Mutex
-	sendReq bool // request sent
-	sendEnd bool // end sent
-	sendBuf *alloc.Buffer
-	sendMsg spec.Writer
+	sendMu      sync.Mutex
+	sendReq     bool // request sent
+	sendEnd     bool // end sent
+	sendBuilder builder
 
 	// receive
 	recvMu     sync.Mutex
@@ -73,17 +79,26 @@ type serverChannelState struct {
 func newServerChannel(ch mpx.Channel, req prpc.Request) *serverChannel {
 	s := acquireServerState()
 	s.ch = ch
+	s.method = requestMethod(s.method, req)
 	s.recvReq = req
 	return &serverChannel{state: s}
 }
 
 func newServerChannelState() *serverChannelState {
-	sendBuf := alloc.NewBuffer()
-
 	return &serverChannelState{
-		sendBuf: sendBuf,
-		sendMsg: spec.NewWriterBuffer(sendBuf),
+		sendBuilder: newBuilder(),
 	}
+}
+
+// Method returns a joined method name, the string is valid until the channel is freed.
+func (ch *serverChannel) Method() string {
+	s, ok := ch.rlock()
+	if !ok {
+		return ""
+	}
+	defer ch.stateMu.RUnlock()
+
+	return unsafeString(s.method)
 }
 
 // Request returns the request, the message is valid until the next call to ReadSync.
@@ -219,25 +234,14 @@ func (ch *serverChannel) Send(ctx async.Context, message []byte) status.Status {
 	}
 
 	// Make message
-	var msg []byte
-	{
-		s.sendBuf.Reset()
-		s.sendMsg.Reset(s.sendBuf)
-
-		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
-		w.Type(prpc.MessageType_Message)
-		w.Msg(message)
-
-		p, err := w.Build()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		msg = p.Unwrap().Raw()
+	msg, err := s.sendBuilder.buildMessage(message)
+	if err != nil {
+		return WrapError(err)
 	}
+	bytes := msg.Unwrap().Raw()
 
 	// Send message
-	return s.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, bytes)
 }
 
 // SendEnd sends an end message to the channel.
@@ -257,30 +261,43 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 	}
 
 	// Make message
-	var msg []byte
-	{
-		s.sendBuf.Reset()
-		s.sendMsg.Reset(s.sendBuf)
-
-		w := prpc.NewMessageWriterTo(s.sendMsg.Message())
-		w.Type(prpc.MessageType_End)
-
-		p, err := w.Build()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		msg = p.Unwrap().Raw()
+	msg, err := s.sendBuilder.buildEnd()
+	if err != nil {
+		return WrapError(err)
 	}
+	bytes := msg.Unwrap().Raw()
 
 	// Send message
 	s.sendEnd = true
-	return s.ch.Send(ctx, msg)
+	return s.ch.Send(ctx, bytes)
+}
+
+// ResponseAndClose sends a response and closes the channel.
+func (ch *serverChannel) ResponseAndClose(ctx async.Context, result []byte, st status.Status) status.Status {
+	s, ok := ch.rlock()
+	if !ok {
+		return status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Lock send
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
+
+	// Make message
+	msg, err := s.sendBuilder.buildResponse(result, st)
+	if err != nil {
+		return WrapError(err)
+	}
+	bytes := msg.Unwrap().Raw()
+
+	// Send message
+	return s.ch.SendAndClose(ctx, bytes)
 }
 
 // Internal
 
-// Free
+// Free frees the channel.
 func (ch *serverChannel) Free() {
 	ch.stateMu.Lock()
 	defer ch.stateMu.Unlock()
@@ -322,11 +339,11 @@ func releaseServerState(s *serverChannelState) {
 
 func (s *serverChannelState) reset() {
 	s.ch = nil
+	s.method = s.method[:0]
 
 	s.sendReq = false
 	s.sendEnd = false
-	s.sendBuf.Reset()
-	s.sendMsg.Reset(s.sendBuf)
+	s.sendBuilder.reset()
 
 	s.recvReq = prpc.Request{}
 	s.recvEnd = false

@@ -3,7 +3,6 @@ package rpc
 import (
 	"bytes"
 	"testing"
-	"time"
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
@@ -20,7 +19,6 @@ func BenchmarkRequest(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	t0 := time.Now()
 
 	ctx := async.NoContext()
 	msg := "hello, world"
@@ -35,8 +33,7 @@ func BenchmarkRequest(b *testing.B) {
 		result.Release()
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.ReportMetric(ops, "ops")
@@ -50,7 +47,6 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.SetParallelism(10)
-	t0 := time.Now()
 
 	ctx := async.NoContext()
 	msg := "hello, world"
@@ -68,8 +64,7 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 		}
 	})
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.ReportMetric(ops, "ops")
@@ -109,7 +104,6 @@ func BenchmarkStream(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	t0 := time.Now()
 
 	{
 		req := testEchoRequest(b, "request")
@@ -140,8 +134,7 @@ func BenchmarkStream(b *testing.B) {
 		assert.Equal(b, "response", result.Unwrap().String().Unwrap())
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.ReportMetric(ops, "ops")

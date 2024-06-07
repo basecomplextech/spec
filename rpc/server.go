@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"strings"
 	"time"
 
 	"github.com/basecomplextech/baselibrary/async"
@@ -50,12 +49,13 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 }
 
 // HandleChannel handles an incoming TCP channel.
-func (s *server) HandleChannel(ctx async.Context, tch mpx.Channel) (st status.Status) {
+func (s *server) HandleChannel(ctx async.Context, ch mpx.Channel) (st status.Status) {
 	// Receive message
-	b, st := tch.Receive(ctx)
+	b, st := ch.Receive(ctx)
 	if !st.OK() {
 		return st
 	}
+	start := time.Now()
 
 	// Parse message
 	msg, _, err := prpc.ParseMessage(b)
@@ -70,75 +70,20 @@ func (s *server) HandleChannel(ctx async.Context, tch mpx.Channel) (st status.St
 			typ, prpc.MessageType_Request)
 	}
 
-	// Handle request
-	result, st := s.handleRequest(ctx, tch, msg.Req())
-	if result != nil {
-		defer result.Release()
-	}
-
-	// Make response
-	var resp []byte
-	{
-		buf := acquireBufferWriter()
-		defer buf.Free()
-
-		w := prpc.NewMessageWriterTo(buf.writer.Message())
-		w.Type(prpc.MessageType_Response)
-		{
-			w1 := w.Resp()
-			w2 := w1.Status()
-			w2.Code(string(st.Code))
-			w2.Message(st.Message)
-			if err := w2.End(); err != nil {
-				return WrapError(err)
-			}
-			if result != nil {
-				w1.Result().Any(result.Unwrap())
-			}
-			if err := w1.End(); err != nil {
-				return WrapError(err)
-			}
-		}
-
-		msg, err := w.Build()
-		if err != nil {
-			return WrapError(err)
-		}
-		resp = msg.Unwrap().Raw()
-	}
-
-	// Write response
-	return tch.SendAndClose(ctx, resp)
-}
-
-// private
-
-func (s *server) handleRequest(ctx async.Context, tch mpx.Channel, req prpc.Request) (
-	result ref.R[[]byte], st status.Status) {
-
-	start := time.Now()
-	method := requestMethod(req)
-
-	// Handle panic
-	defer func() {
-		e := recover()
-		if e == nil {
-			return
-		}
-
-		st = status.Recover(e)
-		s.logger.ErrorStatus("RPC server panic", st, "method", method)
-	}()
+	// Make channel
+	ch1 := newServerChannel(ch, msg.Req())
+	defer ch1.Free()
 
 	// Handle request
-	ch := newServerChannel(tch, req)
-	req = prpc.Request{}
-	defer ch.Free()
-
-	result, st = s.handler.Handle(ctx, ch)
+	result_, st := s.handleRequest(ctx, ch1)
+	if result_ != nil {
+		defer result_.Release()
+	}
 
 	// Log request
 	time := time.Since(start)
+	method := ch1.Method()
+
 	switch st.Code {
 	case status.CodeOK:
 		if s.logger.TraceEnabled() {
@@ -150,14 +95,31 @@ func (s *server) handleRequest(ctx async.Context, tch mpx.Channel, req prpc.Requ
 		}
 	default:
 		if s.logger.DebugEnabled() {
-			s.logger.Debug("RPC server request", "method", method, "time", time)
+			s.logger.Debug("RPC server request", "method", method, "time", time, "status", st)
 		}
 	}
-	return result, st
+
+	// Send response
+	var result []byte
+	if result_ != nil {
+		result = result_.Unwrap()
+	}
+	return ch1.ResponseAndClose(ctx, result, st)
 }
 
-func requestMethod(req prpc.Request) string {
-	var b strings.Builder
+// private
+
+func (s *server) handleRequest(ctx async.Context, ch *serverChannel) (result ref.R[[]byte], st status.Status) {
+	defer func() {
+		if e := recover(); e != nil {
+			st = status.Recover(e)
+		}
+	}()
+
+	return s.handler.Handle(ctx, ch)
+}
+
+func requestMethod(b []byte, req prpc.Request) []byte {
 	calls := req.Calls()
 
 	n := calls.Len()
@@ -165,10 +127,9 @@ func requestMethod(req prpc.Request) string {
 		call := calls.Get(i)
 
 		if i > 0 {
-			b.WriteString("/")
+			b = append(b, '/')
 		}
-		b.WriteString(call.Method().Unwrap())
+		b = append(b, call.Method().Unwrap()...)
 	}
-
-	return b.String()
+	return b
 }
