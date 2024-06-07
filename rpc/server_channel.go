@@ -12,10 +12,13 @@ import (
 
 // ServerChannel is a server RPC channel.
 type ServerChannel interface {
-	// Request returns the request, the message is valid until the next call to Receive.
-	Request(ctx async.Context) (prpc.Request, status.Status)
+	// Context returns a channel context.
+	Context() Context
 
 	// Receive
+
+	// Request returns the request, the message is valid until the next call to Receive.
+	Request(ctx async.Context) (prpc.Request, status.Status)
 
 	// Receive receives and returns a message from the channel, or an end.
 	//
@@ -47,8 +50,8 @@ type internalServerChannel interface {
 	// Method returns a joined method name, the string is valid until the channel is freed.
 	Method() string
 
-	// ResponseAndClose sends a response and closes the channel.
-	ResponseAndClose(ctx async.Context, result []byte, st status.Status) status.Status
+	// SendResponse sends a response and closes the channel.
+	SendResponse(ctx async.Context, result []byte, st status.Status) status.Status
 }
 
 var _ ServerChannel = (*serverChannel)(nil)
@@ -101,6 +104,19 @@ func (ch *serverChannel) Method() string {
 	return unsafeString(s.method)
 }
 
+// Context returns a channel context.
+func (ch *serverChannel) Context() Context {
+	s, ok := ch.rlock()
+	if !ok {
+		return mpx.ClosedContext()
+	}
+	defer ch.stateMu.RUnlock()
+
+	return s.ch.Context()
+}
+
+// Receive
+
 // Request returns the request, the message is valid until the next call to ReadSync.
 func (ch *serverChannel) Request(ctx async.Context) (prpc.Request, status.Status) {
 	s, ok := ch.rlock()
@@ -120,8 +136,6 @@ func (ch *serverChannel) Request(ctx async.Context) (prpc.Request, status.Status
 
 	return s.recvReq, status.OK
 }
-
-// Receive
 
 // Receive receives and returns a message from the channel, or an end.
 //
@@ -272,8 +286,8 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 	return s.ch.Send(ctx, bytes)
 }
 
-// ResponseAndClose sends a response and closes the channel.
-func (ch *serverChannel) ResponseAndClose(ctx async.Context, result []byte, st status.Status) status.Status {
+// SendResponse sends a response and closes the channel.
+func (ch *serverChannel) SendResponse(ctx async.Context, result []byte, st status.Status) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return status.Closed

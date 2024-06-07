@@ -104,7 +104,7 @@ func (s *server) HandleChannel(ctx async.Context, ch mpx.Channel) (st status.Sta
 	if result_ != nil {
 		result = result_.Unwrap()
 	}
-	return ch1.ResponseAndClose(ctx, result, st)
+	return ch1.SendResponse(ctx, result, st)
 }
 
 // private

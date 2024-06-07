@@ -14,6 +14,9 @@ import (
 
 // Channel is a client RPC channel.
 type Channel interface {
+	// Context returns a channel context.
+	Context() Context
+
 	// Send
 
 	// Send sends a message to the channel.
@@ -107,6 +110,17 @@ func (ch *channel) Method() string {
 	defer ch.stateMu.RUnlock()
 
 	return unsafeString(s.method)
+}
+
+// Context returns a channel context.
+func (ch *channel) Context() Context {
+	s, ok := ch.rlock()
+	if !ok {
+		return mpx.ClosedContext()
+	}
+	defer ch.stateMu.RUnlock()
+
+	return s.ch.Context()
 }
 
 // Send
