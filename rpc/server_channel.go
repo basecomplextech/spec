@@ -56,14 +56,14 @@ type serverChannelState struct {
 	ch mpx.Channel
 
 	// send
-	sendLock async.Lock
-	sendReq  bool // request sent
-	sendEnd  bool // end sent
-	sendBuf  *alloc.Buffer
-	sendMsg  spec.Writer
+	sendMu  sync.Mutex
+	sendReq bool // request sent
+	sendEnd bool // end sent
+	sendBuf *alloc.Buffer
+	sendMsg spec.Writer
 
 	// receive
-	recvLock   async.Lock
+	recvMu     sync.Mutex
 	recvReq    prpc.Request
 	recvEnd    bool // end received
 	recvFailed bool
@@ -81,11 +81,8 @@ func newServerChannelState() *serverChannelState {
 	sendBuf := alloc.NewBuffer()
 
 	return &serverChannelState{
-		sendLock: async.NewLock(),
-		sendBuf:  sendBuf,
-		sendMsg:  spec.NewWriterBuffer(sendBuf),
-
-		recvLock: async.NewLock(),
+		sendBuf: sendBuf,
+		sendMsg: spec.NewWriterBuffer(sendBuf),
 	}
 }
 
@@ -98,12 +95,8 @@ func (ch *serverChannel) Request(ctx async.Context) (prpc.Request, status.Status
 	defer ch.stateMu.RUnlock()
 
 	// Lock receive
-	select {
-	case <-s.recvLock:
-	case <-ctx.Wait():
-		return prpc.Request{}, ctx.Status()
-	}
-	defer s.recvLock.Unlock()
+	s.recvMu.Lock()
+	defer s.recvMu.Unlock()
 
 	// Check state
 	if s.recvReq.IsEmpty() {
@@ -149,12 +142,8 @@ func (ch *serverChannel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.S
 	defer ch.stateMu.RUnlock()
 
 	// Lock receive
-	select {
-	case <-s.recvLock:
-	case <-ctx.Wait():
-		return nil, false, ctx.Status()
-	}
-	defer s.recvLock.Unlock()
+	s.recvMu.Lock()
+	defer s.recvMu.Unlock()
 
 	// Check state
 	switch {
@@ -222,12 +211,8 @@ func (ch *serverChannel) Send(ctx async.Context, message []byte) status.Status {
 	defer ch.stateMu.RUnlock()
 
 	// Lock send
-	select {
-	case <-s.sendLock:
-	case <-ctx.Wait():
-		return ctx.Status()
-	}
-	defer s.sendLock.Unlock()
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
 
 	if s.sendEnd {
 		return Error("end already sent")
@@ -264,12 +249,8 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 	defer ch.stateMu.RUnlock()
 
 	// Lock send
-	select {
-	case <-s.sendLock:
-	case <-ctx.Wait():
-		return ctx.Status()
-	}
-	defer s.sendLock.Unlock()
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
 
 	if s.sendEnd {
 		return Error("end already sent")
@@ -340,15 +321,6 @@ func releaseServerState(s *serverChannelState) {
 }
 
 func (s *serverChannelState) reset() {
-	select {
-	case s.sendLock <- struct{}{}:
-	default:
-	}
-	select {
-	case s.recvLock <- struct{}{}:
-	default:
-	}
-
 	s.ch = nil
 
 	s.sendReq = false
