@@ -272,7 +272,7 @@ func (w *messageWriter) writer_new_method(def *model.Definition) error {
 }
 
 func (w *messageWriter) writer_end(def *model.Definition) error {
-	w.linef(`func (w %vWriter) MergeMessage(msg %v) error {`, def.Name, def.Name)
+	w.linef(`func (w %vWriter) Merge(msg %v) error {`, def.Name, def.Name)
 	w.linef(`return w.w.Merge(msg.Unwrap())`)
 	w.linef(`}`)
 	w.line()
