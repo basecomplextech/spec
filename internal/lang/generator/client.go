@@ -192,7 +192,7 @@ func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
 
 		case m.Output != nil:
 			typeName := typeName(m.Output)
-			w.linef(`(ref.R[%v], status.Status)`, typeName)
+			w.linef(`(%v, status.Status)`, typeName)
 		}
 	}
 

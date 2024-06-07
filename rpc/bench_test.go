@@ -129,9 +129,8 @@ func BenchmarkStream(b *testing.B) {
 		if !st.OK() {
 			b.Fatal(st)
 		}
-		defer result.Release()
 
-		assert.Equal(b, "response", result.Unwrap().String().Unwrap())
+		assert.Equal(b, "response", result.String().Unwrap())
 	}
 
 	sec := b.Elapsed().Seconds()

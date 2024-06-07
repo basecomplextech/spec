@@ -217,9 +217,8 @@ func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer result.Release()
 
-	assert.Equal(t, "response", result.Unwrap().String().Unwrap())
+	assert.Equal(t, "response", result.String().Unwrap())
 }
 
 // Response
@@ -251,9 +250,8 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer result.Release()
 
-	assert.Equal(t, "hello, world", result.Unwrap().String().Unwrap())
+	assert.Equal(t, "hello, world", result.String().Unwrap())
 }
 
 func TestClient_Response__should_skip_message(t *testing.T) {
@@ -288,9 +286,8 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer result.Release()
 
-	assert.Equal(t, "response", result.Unwrap().String().Unwrap())
+	assert.Equal(t, "response", result.String().Unwrap())
 }
 
 // Full
@@ -360,7 +357,6 @@ func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	defer result.Release()
 
-	assert.Equal(t, "response", result.Unwrap().String().Unwrap())
+	assert.Equal(t, "response", result.String().Unwrap())
 }

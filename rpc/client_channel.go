@@ -3,11 +3,9 @@ package rpc
 import (
 	"sync"
 
-	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/pools"
-	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/mpx"
@@ -16,6 +14,16 @@ import (
 
 // Channel is a client RPC channel.
 type Channel interface {
+	// Send
+
+	// Send sends a message to the channel.
+	Send(ctx async.Context, message []byte) status.Status
+
+	// SendEnd sends an end message to the channel.
+	SendEnd(ctx async.Context) status.Status
+
+	// Receive
+
 	// Receive receives and returns a message from the channel, or an end.
 	//
 	// The method blocks until a message is received, or the channel is closed.
@@ -31,18 +39,10 @@ type Channel interface {
 	// ReceiveWait returns a channel which is notified on a new message, or a channel close.
 	ReceiveWait() <-chan struct{}
 
-	// Send
-
-	// Send sends a message to the channel.
-	Send(ctx async.Context, message []byte) status.Status
-
-	// SendEnd sends an end message to the channel.
-	SendEnd(ctx async.Context) status.Status
-
-	// Response
-
 	// Response receives a response and returns its status and result if status is OK.
-	Response(ctx async.Context) (ref.R[spec.Value], status.Status)
+	//
+	// The message is valid until the channel is freed.
+	Response(ctx async.Context) (spec.Value, status.Status)
 
 	// Internal
 
@@ -79,7 +79,7 @@ type channelState struct {
 	recvError  status.Status
 
 	// temp result stores result until Response is called
-	result   ref.R[spec.Value]
+	result   spec.Value
 	resultOK bool
 	resultSt status.Status
 }
@@ -109,6 +109,8 @@ func (ch *channel) Method() string {
 	return unsafeString(s.method)
 }
 
+// Send
+
 // Request sends a request to the server.
 func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	s, ok := ch.rlock()
@@ -135,6 +137,61 @@ func (ch *channel) Request(ctx async.Context, req prpc.Request) status.Status {
 	// Send request
 	s.method = requestMethod(s.method, req)
 	s.sendReq = true
+	return s.ch.Send(ctx, bytes)
+}
+
+// Send sends a message to the channel.
+func (ch *channel) Send(ctx async.Context, message []byte) status.Status {
+	s, ok := ch.rlock()
+	if !ok {
+		return status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Lock send
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
+
+	if s.sendEnd {
+		return Error("end already sent")
+	}
+
+	// Make message
+	msg, err := s.sendBuilder.buildMessage(message)
+	if err != nil {
+		return WrapError(err)
+	}
+	bytes := msg.Unwrap().Raw()
+
+	// Send message
+	return s.ch.Send(ctx, bytes)
+}
+
+// SendEnd sends an end message to the channel.
+func (ch *channel) SendEnd(ctx async.Context) status.Status {
+	s, ok := ch.rlock()
+	if !ok {
+		return status.Closed
+	}
+	defer ch.stateMu.RUnlock()
+
+	// Lock send
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
+
+	if s.sendEnd {
+		return Error("end already sent")
+	}
+
+	// Make message
+	msg, err := s.sendBuilder.buildEnd()
+	if err != nil {
+		return WrapError(err)
+	}
+	bytes := msg.Unwrap().Raw()
+
+	// Send message
+	s.sendEnd = true
 	return s.ch.Send(ctx, bytes)
 }
 
@@ -232,67 +289,10 @@ func (ch *channel) ReceiveWait() <-chan struct{} {
 	return s.ch.ReceiveWait()
 }
 
-// Send
-
-// Send sends a message to the channel.
-func (ch *channel) Send(ctx async.Context, message []byte) status.Status {
-	s, ok := ch.rlock()
-	if !ok {
-		return status.Closed
-	}
-	defer ch.stateMu.RUnlock()
-
-	// Lock send
-	s.sendMu.Lock()
-	defer s.sendMu.Unlock()
-
-	if s.sendEnd {
-		return Error("end already sent")
-	}
-
-	// Make message
-	msg, err := s.sendBuilder.buildMessage(message)
-	if err != nil {
-		return WrapError(err)
-	}
-	bytes := msg.Unwrap().Raw()
-
-	// Send message
-	return s.ch.Send(ctx, bytes)
-}
-
-// SendEnd sends an end message to the channel.
-func (ch *channel) SendEnd(ctx async.Context) status.Status {
-	s, ok := ch.rlock()
-	if !ok {
-		return status.Closed
-	}
-	defer ch.stateMu.RUnlock()
-
-	// Lock send
-	s.sendMu.Lock()
-	defer s.sendMu.Unlock()
-
-	if s.sendEnd {
-		return Error("end already sent")
-	}
-
-	// Make message
-	msg, err := s.sendBuilder.buildEnd()
-	if err != nil {
-		return WrapError(err)
-	}
-	bytes := msg.Unwrap().Raw()
-
-	// Send message
-	s.sendEnd = true
-	return s.ch.Send(ctx, bytes)
-}
-
-// Response
-
 // Response receives a response and returns its status and result if status is OK.
-func (ch *channel) Response(ctx async.Context) (ref.R[spec.Value], status.Status) {
+//
+// The message is valid until the channel is freed.
+func (ch *channel) Response(ctx async.Context) (spec.Value, status.Status) {
 	s, ok := ch.rlock()
 	if !ok {
 		return nil, status.Closed
@@ -319,9 +319,10 @@ func (ch *channel) Response(ctx async.Context) (ref.R[spec.Value], status.Status
 		s.result = nil
 		s.resultOK = false
 		return result, st
+
 	}
 
-	// Read messages
+	// Receive messages
 	for {
 		msg, st := s.receive(ctx)
 		if !st.OK() {
@@ -435,12 +436,9 @@ func (s *channelState) reset() {
 	s.recvFailed = false
 	s.recvError = status.None
 
-	if s.result != nil {
-		s.result.Release()
-		s.result = nil
-		s.resultOK = false
-		s.resultSt = status.None
-	}
+	s.result = nil
+	s.resultOK = false
+	s.resultSt = status.None
 }
 
 func (s *channelState) receiveFail(st status.Status) {
@@ -470,37 +468,17 @@ func (s *channelState) receiveFail(st status.Status) {
 
 // util
 
-func parseResult(resp prpc.Response) (ref.R[spec.Value], status.Status) {
+func parseResult(resp prpc.Response) (spec.Value, status.Status) {
 	// Parse status
 	st := parseStatus(resp.Status())
 	if !st.OK() {
 		return nil, st
 	}
 
-	// Return nil when no result
+	// Parse result
 	result := resp.Result()
 	if len(result) == 0 {
-		return ref.NewNoop[spec.Value](nil), status.OK
+		return nil, status.OK
 	}
-
-	// Copy result to buffer
-	buf := alloc.AcquireBuffer()
-	done := false
-	defer func() {
-		if !done {
-			buf.Free()
-		}
-	}()
-	buf.Write(resp.Result())
-
-	// Parse result
-	v, err := spec.NewValueErr(buf.Bytes())
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
-	// Wrap into ref
-	ref := ref.NewFreer(v, buf)
-	done = true
-	return ref, status.OK
+	return result, status.OK
 }

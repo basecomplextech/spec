@@ -348,6 +348,34 @@ func (w *clientImplWriter) channel_def(def *model.Definition, m *model.Method) e
 	return nil
 }
 
+func (w *clientImplWriter) channel_send(def *model.Definition, m *model.Method) error {
+	out := m.Channel.Out
+	if out == nil {
+		return nil
+	}
+
+	name := clientChannelImpl_name(m)
+	typeName := typeName(out)
+
+	// Send
+	w.linef(`func (c *%v) Send(ctx async.Context, msg %v) status.Status {`, name, typeName)
+	switch out.Kind {
+	case model.KindList, model.KindMessage:
+		w.line(`return c.ch.Send(ctx, msg.Unwrap().Raw())`)
+	default:
+		w.line(`return c.ch.Send(ctx, msg)`)
+	}
+	w.line(`}`)
+	w.line()
+
+	// SendEnd
+	w.linef(`func (c *%v) SendEnd(ctx async.Context) status.Status {`, name)
+	w.line(`return c.ch.SendEnd(ctx)`)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
 func (w *clientImplWriter) channel_receive(def *model.Definition, m *model.Method) error {
 	in := m.Channel.In
 	if in == nil {
@@ -397,34 +425,6 @@ func (w *clientImplWriter) channel_receive(def *model.Definition, m *model.Metho
 	return nil
 }
 
-func (w *clientImplWriter) channel_send(def *model.Definition, m *model.Method) error {
-	out := m.Channel.Out
-	if out == nil {
-		return nil
-	}
-
-	name := clientChannelImpl_name(m)
-	typeName := typeName(out)
-
-	// Send
-	w.linef(`func (c *%v) Send(ctx async.Context, msg %v) status.Status {`, name, typeName)
-	switch out.Kind {
-	case model.KindList, model.KindMessage:
-		w.line(`return c.ch.Send(ctx, msg.Unwrap().Raw())`)
-	default:
-		w.line(`return c.ch.Send(ctx, msg)`)
-	}
-	w.line(`}`)
-	w.line()
-
-	// SendEnd
-	w.linef(`func (c *%v) SendEnd(ctx async.Context) status.Status {`, name)
-	w.line(`return c.ch.SendEnd(ctx)`)
-	w.line(`}`)
-	w.line()
-	return nil
-}
-
 func (w *clientImplWriter) channel_response(def *model.Definition, m *model.Method) error {
 	if err := w.channel_response_def(m); err != nil {
 		return err
@@ -449,7 +449,7 @@ func (w *clientImplWriter) channel_response_def(m *model.Method) error {
 
 	case m.Output != nil:
 		typeName := typeName(m.Output)
-		w.writef(`(_ ref.R[%v], _st status.Status)`, typeName)
+		w.writef(`(_ %v, _st status.Status)`, typeName)
 	}
 
 	w.line(`{`)
@@ -464,7 +464,6 @@ func (w *clientImplWriter) channel_response_receive(m *model.Method) error {
 	w.line(`_st = st`)
 	w.line(`return`)
 	w.line(`}`)
-	w.line(`defer resp.Release()`)
 	w.line(``)
 	return nil
 }
@@ -478,12 +477,12 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 	case m.Output != nil:
 		parseFunc := typeParseFunc(m.Output)
 		w.line(`// Parse result`)
-		w.linef(`result, _, err := %v(resp.Unwrap())`, parseFunc)
+		w.linef(`result, _, err := %v(resp)`, parseFunc)
 		w.line(`if err != nil {`)
 		w.line(`_st = status.WrapError(err)`)
 		w.line(`return`)
 		w.line(`}`)
-		w.line(`return ref.NextRetain(result, resp), status.OK`)
+		w.line(`return result, status.OK`)
 	}
 
 	w.line(`}`)

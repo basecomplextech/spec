@@ -188,12 +188,11 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		resp_, st := ch.Response(ctx)
+		resp, st := ch.Response(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
 
-		resp := resp_.Unwrap()
 		assert.Equal(t, int64(1), resp.A())
 		assert.Equal(t, float64(2), resp.B())
 		assert.True(t, resp.C())
@@ -226,9 +225,8 @@ func TestService_Channel(t *testing.T) {
 		if !st.OK() {
 			t.Fatal(st)
 		}
-		defer resp.Release()
 
-		assert.Equal(t, "hello", resp.Unwrap().Msg().Unwrap())
+		assert.Equal(t, "hello", resp.Msg().Unwrap())
 	}
 
 	// method22
@@ -264,9 +262,8 @@ func TestService_Channel(t *testing.T) {
 		if !st.OK() {
 			t.Fatal(st)
 		}
-		defer resp.Release()
 
-		assert.Equal(t, "hello", resp.Unwrap().Msg().Unwrap())
+		assert.Equal(t, "hello", resp.Msg().Unwrap())
 	}
 
 	// method23
@@ -310,9 +307,8 @@ func TestService_Channel(t *testing.T) {
 		if !st.OK() {
 			t.Fatal(st)
 		}
-		defer resp.Release()
 
-		assert.Equal(t, "hello", resp.Unwrap().Msg().Unwrap())
+		assert.Equal(t, "hello", resp.Msg().Unwrap())
 	}
 }
 

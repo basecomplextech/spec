@@ -151,7 +151,14 @@ func (c *client) Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value]
 		c.logger.ErrorStatus("RPC client request error", st)
 		return nil, st
 	}
-	defer ch.Free()
+
+	// Free on error
+	done := false
+	defer func() {
+		if !done {
+			ch.Free()
+		}
+	}()
 
 	// Send request
 	st = ch.Request(ctx, req)
@@ -166,7 +173,14 @@ func (c *client) Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value]
 	}
 
 	// Read response
-	return ch.Response(ctx)
+	result, st := ch.Response(ctx)
+	if !st.OK() {
+		return nil, st
+	}
+
+	result_ := ref.NewFreer(result, ch)
+	done = true
+	return result_, status.OK
 }
 
 // Internal
