@@ -8,7 +8,8 @@ import (
 
 // writerState is a big pooled struct which holds an encoding state.
 type writerState struct {
-	buf buffer.Buffer
+	buf         buffer.Buffer
+	autoRelease bool // whether to release the writer state on close
 
 	stack    stack
 	elements listStack    // buffer for list element tables

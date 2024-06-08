@@ -52,13 +52,13 @@ var errClosed = errors.New("operation on closed writer")
 type writer struct {
 	*writerState
 
-	err         error
-	autoRelease bool // whether to release the writer state on close
+	err error
 }
 
 func newWriter(buf buffer.Buffer, autoRelease bool) *writer {
-	w := &writer{autoRelease: autoRelease}
+	w := &writer{}
 	w.Reset(buf)
+	w.autoRelease = autoRelease
 	return w
 }
 

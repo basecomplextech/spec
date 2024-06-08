@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/spec/internal/tests/pkg1"
@@ -16,8 +15,6 @@ func BenchmarkWrite_Small(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-
-	t0 := time.Now()
 
 	var size int
 	for i := 0; i < b.N; i++ {
@@ -35,12 +32,11 @@ func BenchmarkWrite_Small(b *testing.B) {
 		}
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.SetBytes(int64(size))
-	b.ReportMetric(ops, "ops")
+	b.ReportMetric(ops/1000_000, "mops")
 	b.ReportMetric(float64(size), "size")
 }
 
@@ -50,8 +46,6 @@ func BenchmarkWrite_Large(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-
-	t0 := time.Now()
 
 	var size int
 	for i := 0; i < b.N; i++ {
@@ -69,8 +63,7 @@ func BenchmarkWrite_Large(b *testing.B) {
 		}
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.SetBytes(int64(size))
@@ -91,7 +84,6 @@ func BenchmarkJSON_Marshal_Small(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
 		_, err := json.Marshal(obj)
 		if err != nil {
@@ -99,12 +91,11 @@ func BenchmarkJSON_Marshal_Small(b *testing.B) {
 		}
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.SetBytes(int64(len(data)))
-	b.ReportMetric(ops, "ops")
+	b.ReportMetric(ops/1000_000, "mops")
 	b.ReportMetric(float64(len(data)), "size")
 	b.ReportMetric(float64(compressedSize(data)), "size-zlib")
 }
@@ -120,7 +111,6 @@ func BenchmarkJSON_Marshal_Large(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	t0 := time.Now()
 	for i := 0; i < b.N; i++ {
 		_, err := json.Marshal(obj)
 		if err != nil {
@@ -128,8 +118,7 @@ func BenchmarkJSON_Marshal_Large(b *testing.B) {
 		}
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.SetBytes(int64(len(data)))
@@ -152,8 +141,6 @@ func BenchmarkJSON_Encode_Large(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	t0 := time.Now()
-
 	var size int
 	for i := 0; i < b.N; i++ {
 		e := json.NewEncoder(buffer)
@@ -168,8 +155,7 @@ func BenchmarkJSON_Encode_Large(b *testing.B) {
 		buffer.Reset()
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 
 	b.SetBytes(int64(size))
