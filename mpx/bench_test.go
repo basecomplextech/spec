@@ -12,7 +12,7 @@ import (
 const benchMsgSize = 16
 
 func BenchmarkRequest(b *testing.B) {
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return st
@@ -65,7 +65,7 @@ func BenchmarkRequest(b *testing.B) {
 }
 
 func BenchmarkRequest_Parallel(b *testing.B) {
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return st
@@ -124,7 +124,7 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 
 func BenchmarkStream(b *testing.B) {
 	closeMsg := []byte("close")
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		for {
 			msg, st := ch.Receive(ctx)
 			if !st.OK() {
@@ -185,7 +185,7 @@ func BenchmarkStream_16kb(b *testing.B) {
 	close := []byte("close")
 	benchMsgSize := 16 * 1024
 
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		for {
 			msg, st := ch.Receive(ctx)
 			if !st.OK() {
@@ -249,7 +249,7 @@ func BenchmarkStream_16kb(b *testing.B) {
 
 func BenchmarkStream_Parallel(b *testing.B) {
 	closeMsg := []byte("close")
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		for {
 			msg, st := ch.Receive(ctx)
 			if !st.OK() {
@@ -317,7 +317,7 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 	close := []byte("close")
 	benchMsgSize := 16 * 1024
 
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		for {
 			msg, st := ch.Receive(ctx)
 			if !st.OK() {
@@ -384,7 +384,7 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 // AddListener
 
 func BenchmarkConn_AddListener(b *testing.B) {
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return st
@@ -412,7 +412,7 @@ func BenchmarkConn_AddListener(b *testing.B) {
 }
 
 func BenchmarkConn_AddListener_Parallel(b *testing.B) {
-	handle := func(ctx async.Context, ch Channel) status.Status {
+	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return st

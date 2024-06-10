@@ -49,7 +49,7 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 }
 
 // HandleChannel handles an incoming TCP channel.
-func (s *server) HandleChannel(ctx async.Context, ch mpx.Channel) (st status.Status) {
+func (s *server) HandleChannel(ctx Context, ch mpx.Channel) (st status.Status) {
 	// Receive message
 	b, st := ch.Receive(ctx)
 	if !st.OK() {
@@ -109,7 +109,7 @@ func (s *server) HandleChannel(ctx async.Context, ch mpx.Channel) (st status.Sta
 
 // private
 
-func (s *server) handleRequest(ctx async.Context, ch *serverChannel) (result ref.R[[]byte], st status.Status) {
+func (s *server) handleRequest(ctx Context, ch *serverChannel) (result ref.R[[]byte], st status.Status) {
 	defer func() {
 		if e := recover(); e != nil {
 			st = status.Recover(e)

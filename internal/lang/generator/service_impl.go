@@ -47,10 +47,10 @@ func (w *serviceImplWriter) handle(def *model.Definition) error {
 	name := handler_name(def)
 
 	if def.Service.Sub {
-		w.linef(`func (h *%v) Handle(ctx async.Context, ch rpc.ServerChannel, index int) (ref.R[[]byte], status.Status) {`,
+		w.linef(`func (h *%v) Handle(ctx rpc.Context, ch rpc.ServerChannel, index int) (ref.R[[]byte], status.Status) {`,
 			name)
 	} else {
-		w.linef(`func (h *%v) Handle(ctx async.Context, ch rpc.ServerChannel) (ref.R[[]byte], status.Status) {`,
+		w.linef(`func (h *%v) Handle(ctx rpc.Context, ch rpc.ServerChannel) (ref.R[[]byte], status.Status) {`,
 			name)
 		w.line(`index := 0`)
 	}
@@ -94,7 +94,7 @@ func (w *serviceImplWriter) methods(def *model.Definition) error {
 func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error {
 	// Declare method
 	name := handler_name(def)
-	w.linef(`func (h *%v) _%v(ctx async.Context, ch rpc.ServerChannel, call prpc.Call, index int) (`,
+	w.linef(`func (h *%v) _%v(ctx rpc.Context, ch rpc.ServerChannel, call prpc.Call, index int) (`,
 		name, toLowerCameCase(m.Name))
 	w.line(`ref.R[[]byte], status.Status) {`)
 

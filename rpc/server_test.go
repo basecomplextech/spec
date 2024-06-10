@@ -46,7 +46,7 @@ func testServer(t tests.T, handle HandleFunc) *server {
 }
 
 func testEchoServer(t tests.T) *server {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		req, st := ch.Request(ctx)
 		if !st.OK() {
 			return nil, st
@@ -105,7 +105,7 @@ func testEchoRequest(t tests.T, msg string) prpc.Request {
 // handleRequest
 
 func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *testing.T) {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		panic("test panic")
 	}
 
@@ -122,7 +122,7 @@ func TestServer_handleRequest__should_handle_panics_and_send_error_response(t *t
 }
 
 func TestServer_handleRequest__should_handle_errors(t *testing.T) {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		return nil, status.Unauthorized("test unauthorized")
 	}
 

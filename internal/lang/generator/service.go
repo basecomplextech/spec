@@ -60,13 +60,13 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 
 	switch {
 	default:
-		w.write(`(ctx async.Context`)
+		w.write(`(ctx rpc.Context`)
 	case m.Chan:
 		channel := serviceChannel_name(m)
-		w.writef(`(ctx async.Context, ch %v`, channel)
+		w.writef(`(ctx rpc.Context, ch %v`, channel)
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`(ctx async.Context, req %v`, typeName)
+		w.writef(`(ctx rpc.Context, req %v`, typeName)
 	}
 
 	switch {

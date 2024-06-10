@@ -58,7 +58,7 @@ func TestClient_Send__should_send_client_message_to_server(t *testing.T) {
 	done := make(chan struct{})
 	var message []byte
 
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return nil, st
@@ -99,7 +99,7 @@ func TestClient_SendEnd__should_send_end_message_to_server(t *testing.T) {
 	done := make(chan struct{})
 	ended := false
 
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			return nil, st
@@ -148,7 +148,7 @@ func TestClient_SendEnd__should_send_end_message_to_server(t *testing.T) {
 // Receive
 
 func TestClient_Receive__should_read_server_message(t *testing.T) {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		st := ch.Send(ctx, []byte("hello, world"))
 		if !st.OK() {
 			return nil, st
@@ -177,7 +177,7 @@ func TestClient_Receive__should_read_server_message(t *testing.T) {
 }
 
 func TestClient_Receive__should_return_end_on_response(t *testing.T) {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		st := ch.Send(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
@@ -224,7 +224,7 @@ func TestClient_Receive__should_return_end_on_response(t *testing.T) {
 // Response
 
 func TestClient_Response__should_receive_server_response(t *testing.T) {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		buf := alloc.NewBuffer()
 		w := spec.NewValueWriterBuffer(buf)
 		w.String("hello, world")
@@ -255,7 +255,7 @@ func TestClient_Response__should_receive_server_response(t *testing.T) {
 }
 
 func TestClient_Response__should_skip_message(t *testing.T) {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		st := ch.Send(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st
@@ -293,7 +293,7 @@ func TestClient_Response__should_skip_message(t *testing.T) {
 // Full
 
 func TestClient_Channel__should_send_receive_messages_response(t *testing.T) {
-	handle := func(ctx async.Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
+	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		st := ch.Send(ctx, []byte("server message"))
 		if !st.OK() {
 			return nil, st

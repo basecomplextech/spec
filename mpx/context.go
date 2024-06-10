@@ -12,6 +12,8 @@ type Context interface {
 	AddConnListener(ConnListener) (unsub func())
 }
 
+// TestContext returns a test context without a connection.
+
 // ClosedContext returns a closed context.
 func ClosedContext() Context {
 	return closedContext

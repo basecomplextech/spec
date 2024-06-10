@@ -23,7 +23,7 @@ func testChannelSend(t *testing.T, ctx async.Context, ch Channel, msg string) {
 // Receive
 
 func TestChannel_Receive__should_receive_message(t *testing.T) {
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		st := ch.Send(ctx, []byte("hello, channel"))
 		if !st.OK() {
 			return st
@@ -52,7 +52,7 @@ func TestChannel_Receive__should_receive_message(t *testing.T) {
 }
 
 func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		return ch.SendClose(ctx)
 	})
 
@@ -72,7 +72,7 @@ func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
 
 func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testing.T) {
 	sent := make(chan struct{})
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		defer close(sent)
 
 		st := ch.Send(ctx, []byte("hello, channel"))
@@ -121,7 +121,7 @@ func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testi
 }
 
 func TestChannel_Receive__should_decrement_recv_window(t *testing.T) {
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		st := ch.Send(ctx, []byte("hello, channel"))
 		if !st.OK() {
 			return st
@@ -158,7 +158,7 @@ func TestChannel_Send__should_send_message(t *testing.T) {
 	var msg0 []byte
 	done := make(chan struct{})
 
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		defer close(done)
 
 		msg, st := ch.Receive(ctx)
@@ -253,7 +253,7 @@ func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
 	done := make(chan struct{})
 	defer close(done)
 
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		<-done
 		return status.OK
 	})
@@ -285,7 +285,7 @@ func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
 }
 
 func TestChannel_Send__should_wait_send_window_increment(t *testing.T) {
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		if _, st := ch.Receive(ctx); !st.OK() {
 			return st
 		}
@@ -319,7 +319,7 @@ func TestChannel_Send__should_write_message_if_it_exceeds_half_window_size(t *te
 	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
 
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		<-timer.C
 
 		if _, st := ch.Receive(ctx); !st.OK() {
@@ -358,7 +358,7 @@ func TestChannel_SendAndClose__should_send_data_in_close_message(t *testing.T) {
 	var msg0 []byte
 	done := make(chan struct{})
 
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		defer close(done)
 
 		msg, st := ch.Receive(ctx)
@@ -406,7 +406,7 @@ func TestChannel_SendAndClose__should_send_data_in_close_message(t *testing.T) {
 
 func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 	closed := make(chan struct{})
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		defer close(closed)
 
 		_, st := ch.Receive(ctx)
@@ -457,7 +457,7 @@ func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 // }
 
 func TestChannel_SendClose__should_return_ignore_when_already_closed(t *testing.T) {
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		_, st := ch.Receive(ctx)
 		return st
 	})

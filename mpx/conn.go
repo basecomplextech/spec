@@ -88,7 +88,7 @@ func connect(address string, logger logging.Logger, opts Options) (*conn, status
 	}
 
 	// Noop incoming handler
-	h := HandleFunc(func(_ async.Context, ch Channel) status.Status {
+	h := HandleFunc(func(_ Context, ch Channel) status.Status {
 		ch.Free()
 		return status.OK
 	})

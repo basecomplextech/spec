@@ -92,7 +92,7 @@ func TestConn_Free__should_notify_listeners(t *testing.T) {
 // HandleChannel
 
 func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		panic("test")
 	})
 	conn := testConnect(t, server)
@@ -112,7 +112,7 @@ func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
 }
 
 func TestConn_handleChannel__should_log_channel_errors(t *testing.T) {
-	server := testServer(t, func(ctx async.Context, ch Channel) status.Status {
+	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		return status.Errorf("test ch error")
 	})
 	conn := testConnect(t, server)
