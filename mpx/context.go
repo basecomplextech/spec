@@ -7,6 +7,9 @@ type Context interface {
 
 	// Disconnected returns a connection disconnected flag.
 	Disconnected() async.Flag
+
+	// AddConnListener adds a connection listener.
+	AddConnListener(ConnListener) (unsub func())
 }
 
 // ClosedContext returns a closed context.
@@ -20,24 +23,37 @@ var _ Context = (*context)(nil)
 
 type context struct {
 	async.Context
-	closed async.Flag
+	conn internalConn
 }
 
 var closedContext = func() *context {
 	return &context{
 		Context: async.CancelledContext(),
-		closed:  async.SetFlag(),
+		conn:    nil,
 	}
 }()
 
 func newContext(conn internalConn) *context {
 	return &context{
 		Context: async.NewContext(),
-		closed:  conn.Closed(),
+		conn:    conn,
 	}
 }
 
 // Disconnected returns a connection disconnected flag.
 func (c *context) Disconnected() async.Flag {
-	return c.closed
+	if c.conn == nil {
+		return async.UnsetFlag()
+	}
+	return c.conn.Closed()
+}
+
+// AddConnListener adds a connection listener.
+func (c *context) AddConnListener(l ConnListener) (unsub func()) {
+	if c.conn == nil {
+		l.OnDisconnected(nil)
+		return func() {}
+	}
+
+	return c.conn.AddListener(l)
 }

@@ -22,6 +22,9 @@ type Conn interface {
 	// Channel opens a new channel.
 	Channel(ctx async.Context) (Channel, status.Status)
 
+	// AddListener adds a connection listener, and returns an unsubscribe function.
+	AddListener(ConnListener) (unsub func())
+
 	// Internal
 
 	// Free closes and frees the connection, allows to wrap the connection into ref.R[Conn].
@@ -38,6 +41,9 @@ func Connect(address string, logger logging.Logger, opts Options) (Conn, status.
 type internalConn interface {
 	// Closed returns a flag that is set when the connection is closed.
 	Closed() async.Flag
+
+	// AddListener adds a connection listener, and returns an unsubscribe function.
+	AddListener(ConnListener) (unsub func())
 
 	// SendMessage write an outgoing message to the write queue.
 	SendMessage(ctx async.Context, msg pmpx.Message) status.Status
@@ -65,6 +71,11 @@ type conn struct {
 	channelMu     sync.Mutex
 	channels      map[bin.Bin128]internalChannel
 	channelClosed bool
+
+	listenerMu     sync.Mutex
+	listeners      map[int64]ConnListener
+	listenerSeq    int64
+	listenerClosed bool
 }
 
 func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
@@ -112,7 +123,8 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, op
 		writer: newWriter(c, client, int(opts.WriteBufferSize)),
 		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
-		channels: make(map[bin.Bin128]internalChannel),
+		channels:  make(map[bin.Bin128]internalChannel),
+		listeners: make(map[int64]ConnListener),
 	}
 }
 
@@ -150,6 +162,20 @@ func (c *conn) Channel(ctx async.Context) (Channel, status.Status) {
 			return nil, statusConnClosed
 		case <-c.negotiated.Wait():
 		}
+	}
+}
+
+// AddListener adds a connection listener, and returns an unsubscribe function.
+func (c *conn) AddListener(l ConnListener) (unsub func()) {
+	// Add listener
+	id := c.addListener(l)
+	if id == 0 {
+		return func() {}
+	}
+
+	// Return unsubscribe
+	return func() {
+		c.removeListener(id)
 	}
 }
 
@@ -229,11 +255,12 @@ func (c *conn) run() {
 }
 
 func (c *conn) close() {
+	defer c.closeListeners()
+	defer c.closeChannels()
+
 	c.conn.Close()
 	c.closed.Set()
-
 	c.writeq.Close()
-	c.closeChannels()
 }
 
 func (c *conn) free() {
@@ -659,4 +686,60 @@ func (c *conn) handleChannel(ch Channel) {
 
 	// Log errors
 	c.logger.ErrorStatus("Channel error", st)
+}
+
+// listeners
+
+func (c *conn) addListener(l ConnListener) int64 {
+	c.listenerMu.Lock()
+	defer c.listenerMu.Unlock()
+
+	if c.listenerClosed {
+		return 0
+	}
+
+	c.listenerSeq++
+	id := c.listenerSeq
+
+	c.listeners[id] = l
+	return id
+}
+
+func (c *conn) removeListener(id int64) {
+	c.listenerMu.Lock()
+	defer c.listenerMu.Unlock()
+
+	if c.listenerClosed {
+		return
+	}
+
+	delete(c.listeners, id)
+}
+
+func (c *conn) closeListeners() {
+	c.listenerMu.Lock()
+	defer c.listenerMu.Unlock()
+
+	if c.listenerClosed {
+		return
+	}
+	c.listenerClosed = true
+
+	for _, l := range c.listeners {
+		l.OnDisconnected(c)
+	}
+	c.listeners = nil
+}
+
+func (c *conn) notifyDisconnected() {
+	c.listenerMu.Lock()
+	defer c.listenerMu.Unlock()
+
+	if c.listenerClosed {
+		return
+	}
+
+	for _, l := range c.listeners {
+		l.OnDisconnected(c)
+	}
 }

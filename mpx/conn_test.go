@@ -68,6 +68,27 @@ func TestConn_Free__should_close_channels(t *testing.T) {
 	assert.Equal(t, status.End, st)
 }
 
+func TestConn_Free__should_notify_listeners(t *testing.T) {
+	server := testRequestServer(t)
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	var notified bool
+	unsub := conn.AddListener(NewDisconnectedListener(func(Conn) {
+		notified = true
+	}))
+	defer unsub()
+
+	conn.Free()
+	select {
+	case <-conn.closed.Wait():
+	case <-time.After(time.Second):
+		t.Fatal("timeout")
+	}
+
+	assert.True(t, notified)
+}
+
 // HandleChannel
 
 func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {

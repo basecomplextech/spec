@@ -380,3 +380,64 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 
 	b.ReportMetric(ops, "ops")
 }
+
+// AddListener
+
+func BenchmarkConn_AddListener(b *testing.B) {
+	handle := func(ctx async.Context, ch Channel) status.Status {
+		msg, st := ch.Receive(ctx)
+		if !st.OK() {
+			return st
+		}
+		return ch.SendAndClose(ctx, msg)
+	}
+
+	server := testServer(b, handle)
+	conn := testConnect(b, server)
+	defer conn.Free()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	l := NewDisconnectedListener(func(Conn) {})
+	for i := 0; i < b.N; i++ {
+		unsub := conn.AddListener(l)
+		unsub()
+	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops/1000_000, "mops")
+}
+
+func BenchmarkConn_AddListener_Parallel(b *testing.B) {
+	handle := func(ctx async.Context, ch Channel) status.Status {
+		msg, st := ch.Receive(ctx)
+		if !st.OK() {
+			return st
+		}
+		return ch.SendAndClose(ctx, msg)
+	}
+
+	server := testServer(b, handle)
+	conn := testConnect(b, server)
+	defer conn.Free()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	b.RunParallel(func(p *testing.PB) {
+		l := NewDisconnectedListener(func(Conn) {})
+
+		for p.Next() {
+			unsub := conn.AddListener(l)
+			unsub()
+		}
+	})
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops/1000_000, "mops")
+}
