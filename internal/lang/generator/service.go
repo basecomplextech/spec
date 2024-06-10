@@ -60,16 +60,23 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 
 	switch {
 	default:
-		w.write(`(ctx async.Context) `)
-
+		w.write(`(ctx async.Context`)
 	case m.Chan:
 		channel := serviceChannel_name(m)
-		w.writef(`(ctx async.Context, ch %v) `, channel)
-
+		w.writef(`(ctx async.Context, ch %v`, channel)
 	case m.Input != nil:
 		typeName := typeName(m.Input)
-		w.writef(`(ctx async.Context, req %v) `, typeName)
+		w.writef(`(ctx async.Context, req %v`, typeName)
 	}
+
+	switch {
+	case m.Sub:
+		out := m.Output
+		typeName := typeName(out)
+		w.writef(`, fn func(%v) status.Status`, typeName)
+	}
+
+	w.write(`) `)
 	return nil
 }
 
@@ -78,12 +85,9 @@ func (w *serviceWriter) method_output(def *model.Definition, m *model.Method) er
 
 	switch {
 	default:
-		w.write(`(status.Status)`)
-
+		w.write(`status.Status`)
 	case m.Sub:
-		typeName := typeName(out)
-		w.writef(`(%v, status.Status)`, typeName)
-
+		w.writef(`status.Status`)
 	case m.Output != nil:
 		typeName := typeName(out)
 		w.writef(`(ref.R[%v], status.Status)`, typeName)

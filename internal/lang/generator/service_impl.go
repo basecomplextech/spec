@@ -116,11 +116,27 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line()
 	}
 
+	// Next handler
+	if m.Sub {
+		out := m.Output
+		typeName := typeName(out)
+		newFunc := handler_new(m.Output)
+
+		w.line(`// Next handler`)
+		w.line(`var result ref.R[[]byte]`)
+		w.linef(`handle := func(sub %v) (st status.Status) {`, typeName)
+		w.linef(`h1 := %v(sub)`, newFunc)
+		w.line(`result, st = h1.Handle(ctx, ch, index+1)`)
+		w.line(`return st`)
+		w.line(`}`)
+		w.line()
+	}
+
 	// Declare result
 	w.line(`// Call method`)
 	switch {
 	case m.Sub:
-		w.write(`sub, st := `)
+		w.write(`st := `)
 	case m.Output != nil:
 		w.write(`result, st := `)
 	default:
@@ -131,25 +147,24 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	switch {
 	case m.Chan:
 		w.linef(`h.service.%v(ctx, ch1)`, toUpperCamelCase(m.Name))
-
 	case m.Input != nil:
-		w.linef(`h.service.%v(ctx, in)`, toUpperCamelCase(m.Name))
-
+		w.writef(`h.service.%v(ctx, in`, toUpperCamelCase(m.Name))
+		if m.Sub {
+			w.write(`, handle`)
+		}
+		w.line(`)`)
 	default:
-		w.linef(`h.service.%v(ctx)`, toUpperCamelCase(m.Name))
+		w.writef(`h.service.%v(ctx`, toUpperCamelCase(m.Name))
+		if m.Sub {
+			w.write(`, handle`)
+		}
+		w.line(`)`)
 	}
 
 	// Handle output
 	switch {
 	case m.Sub:
-		newFunc := handler_new(m.Output)
-		w.line(`if !st.OK() {`)
-		w.line(`return nil, st`)
-		w.line(`}`)
-		w.line()
-		w.line(`// Call subservice`)
-		w.linef(`h1 := %v(sub)`, newFunc)
-		w.line(`return h1.Handle(ctx, ch, index+1)`)
+		w.line(`return result, st`)
 
 	case m.Output != nil:
 		w.line(`if result != nil { `)

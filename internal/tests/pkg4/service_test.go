@@ -17,8 +17,10 @@ func newTestService() *testService {
 	return &testService{}
 }
 
-func (s *testService) Subservice(ctx async.Context, req ServiceSubserviceRequest) (Subservice, status.Status) {
-	return &testSubservice{}, status.OK
+func (s *testService) Subservice(ctx async.Context, req ServiceSubserviceRequest,
+	fn func(Subservice) status.Status) status.Status {
+	s1 := &testSubservice{}
+	return fn(s1)
 }
 
 func (s *testService) Method(ctx async.Context) status.Status {
