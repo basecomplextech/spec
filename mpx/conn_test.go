@@ -74,9 +74,9 @@ func TestConn_Free__should_notify_listeners(t *testing.T) {
 	defer conn.Free()
 
 	var notified bool
-	unsub := conn.AddListener(NewDisconnectedListener(func(Conn) {
+	unsub := conn.OnClosed(func() {
 		notified = true
-	}))
+	})
 	defer unsub()
 
 	conn.Free()

@@ -8,8 +8,10 @@ type Context interface {
 	// Disconnected returns a connection disconnected flag.
 	Disconnected() async.Flag
 
-	// AddConnListener adds a connection listener.
-	AddConnListener(ConnListener) (unsub func())
+	// OnDisconnected adds a disconnect listener, and returns an unsubscribe function.
+	//
+	// The unsubscribe function does not deadlock, even if the listener is being called right now.
+	OnDisconnected(fn func()) (unsub func())
 }
 
 // TestContext returns a test context without a connection.
@@ -50,12 +52,12 @@ func (c *context) Disconnected() async.Flag {
 	return c.conn.Closed()
 }
 
-// AddConnListener adds a connection listener.
-func (c *context) AddConnListener(l ConnListener) (unsub func()) {
+// OnDisconnected adds a disconnect listener, and returns an unsubscribe function.
+func (c *context) OnDisconnected(fn func()) (unsub func()) {
 	if c.conn == nil {
-		l.OnDisconnected(nil)
+		fn()
 		return func() {}
 	}
 
-	return c.conn.AddListener(l)
+	return c.conn.OnClosed(fn)
 }

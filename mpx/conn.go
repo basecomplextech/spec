@@ -22,8 +22,10 @@ type Conn interface {
 	// Channel opens a new channel.
 	Channel(ctx async.Context) (Channel, status.Status)
 
-	// AddListener adds a connection listener, and returns an unsubscribe function.
-	AddListener(ConnListener) (unsub func())
+	// OnClosed adds a disconnect listener, and returns an unsubscribe function.
+	//
+	// The unsubscribe function does not deadlock, even if the listener is being called right now.
+	OnClosed(fn func()) (unsub func())
 
 	// Internal
 
@@ -42,8 +44,8 @@ type internalConn interface {
 	// Closed returns a flag that is set when the connection is closed.
 	Closed() async.Flag
 
-	// AddListener adds a connection listener, and returns an unsubscribe function.
-	AddListener(ConnListener) (unsub func())
+	// OnClosed adds a disconnection listener, and returns an unsubscribe function.
+	OnClosed(fn func()) (unsub func())
 
 	// SendMessage write an outgoing message to the write queue.
 	SendMessage(ctx async.Context, msg pmpx.Message) status.Status
@@ -68,14 +70,16 @@ type conn struct {
 	writer *writer
 	writeq alloc.ByteQueue
 
+	// channels
 	channelMu     sync.Mutex
 	channels      map[bin.Bin128]internalChannel
 	channelClosed bool
 
-	listenerMu     sync.Mutex
-	listeners      map[int64]ConnListener
-	listenerSeq    int64
-	listenerClosed bool
+	// close listeners
+	closedMu        sync.Mutex
+	closedSeq       int64
+	closedFlag      bool
+	closedListeners map[int64]func()
 }
 
 func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
@@ -123,8 +127,8 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, op
 		writer: newWriter(c, client, int(opts.WriteBufferSize)),
 		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
-		channels:  make(map[bin.Bin128]internalChannel),
-		listeners: make(map[int64]ConnListener),
+		channels:        make(map[bin.Bin128]internalChannel),
+		closedListeners: make(map[int64]func()),
 	}
 }
 
@@ -165,17 +169,17 @@ func (c *conn) Channel(ctx async.Context) (Channel, status.Status) {
 	}
 }
 
-// AddListener adds a connection listener, and returns an unsubscribe function.
-func (c *conn) AddListener(l ConnListener) (unsub func()) {
+// OnClosed adds a disconnection listener, and returns an unsubscribe function.
+func (c *conn) OnClosed(fn func()) (unsub func()) {
 	// Add listener
-	id := c.addListener(l)
+	id := c.addClosed(fn)
 	if id == 0 {
 		return func() {}
 	}
 
 	// Return unsubscribe
 	return func() {
-		c.removeListener(id)
+		c.removeClosed(id)
 	}
 }
 
@@ -255,7 +259,7 @@ func (c *conn) run() {
 }
 
 func (c *conn) close() {
-	defer c.closeListeners()
+	defer c.notifyClosed()
 	defer c.closeChannels()
 
 	c.conn.Close()
@@ -688,58 +692,46 @@ func (c *conn) handleChannel(ch Channel) {
 	c.logger.ErrorStatus("Channel error", st)
 }
 
-// listeners
+// close listeners
 
-func (c *conn) addListener(l ConnListener) int64 {
-	c.listenerMu.Lock()
-	defer c.listenerMu.Unlock()
+func (c *conn) addClosed(fn func()) int64 {
+	c.closedMu.Lock()
+	defer c.closedMu.Unlock()
 
-	if c.listenerClosed {
+	if c.closedFlag {
 		return 0
 	}
 
-	c.listenerSeq++
-	id := c.listenerSeq
+	c.closedSeq++
+	id := c.closedSeq
 
-	c.listeners[id] = l
+	c.closedListeners[id] = fn
 	return id
 }
 
-func (c *conn) removeListener(id int64) {
-	c.listenerMu.Lock()
-	defer c.listenerMu.Unlock()
+func (c *conn) removeClosed(id int64) {
+	c.closedMu.Lock()
+	defer c.closedMu.Unlock()
 
-	if c.listenerClosed {
+	if c.closedFlag {
 		return
 	}
 
-	delete(c.listeners, id)
+	delete(c.closedListeners, id)
 }
 
-func (c *conn) closeListeners() {
-	c.listenerMu.Lock()
-	defer c.listenerMu.Unlock()
-
-	if c.listenerClosed {
+func (c *conn) notifyClosed() {
+	c.closedMu.Lock()
+	if c.closedFlag {
+		c.closedMu.Unlock()
 		return
 	}
-	c.listenerClosed = true
+	c.closedFlag = true
+	c.closedMu.Unlock()
 
-	for _, l := range c.listeners {
-		l.OnDisconnected(c)
+	// Notify outside of lock to avoid deadlocks
+	for _, l := range c.closedListeners {
+		l()
 	}
-	c.listeners = nil
-}
-
-func (c *conn) notifyDisconnected() {
-	c.listenerMu.Lock()
-	defer c.listenerMu.Unlock()
-
-	if c.listenerClosed {
-		return
-	}
-
-	for _, l := range c.listeners {
-		l.OnDisconnected(c)
-	}
+	clear(c.closedListeners)
 }

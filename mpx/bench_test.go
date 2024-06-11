@@ -381,9 +381,9 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 	b.ReportMetric(ops, "ops")
 }
 
-// AddListener
+// OnClosed
 
-func BenchmarkConn_AddListener(b *testing.B) {
+func BenchmarkConn_OnClosed(b *testing.B) {
 	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
@@ -399,9 +399,9 @@ func BenchmarkConn_AddListener(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	l := NewDisconnectedListener(func(Conn) {})
+	fn := func() {}
 	for i := 0; i < b.N; i++ {
-		unsub := conn.AddListener(l)
+		unsub := conn.OnClosed(fn)
 		unsub()
 	}
 
@@ -411,7 +411,7 @@ func BenchmarkConn_AddListener(b *testing.B) {
 	b.ReportMetric(ops/1000_000, "mops")
 }
 
-func BenchmarkConn_AddListener_Parallel(b *testing.B) {
+func BenchmarkConn_OnClosed_Parallel(b *testing.B) {
 	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
@@ -428,10 +428,9 @@ func BenchmarkConn_AddListener_Parallel(b *testing.B) {
 	b.ResetTimer()
 
 	b.RunParallel(func(p *testing.PB) {
-		l := NewDisconnectedListener(func(Conn) {})
-
+		fn := func() {}
 		for p.Next() {
-			unsub := conn.AddListener(l)
+			unsub := conn.OnClosed(fn)
 			unsub()
 		}
 	})
