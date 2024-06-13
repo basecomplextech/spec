@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/buffer"
+	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/spec/encoding"
 )
 
@@ -34,15 +35,24 @@ type Writer interface {
 }
 
 // New returns a new writer with a new empty buffer.
-// The writer must be freed manually.
-func New(autoRelease bool) Writer {
-	return newWriter(nil, autoRelease)
+// The writer is freed automatically if release is true.
+func New(release bool) Writer {
+	return newWriter(nil, release)
 }
 
 // NewBuffer returns a new writer with the given buffer.
-// The writer must be freed manually.
-func NewBuffer(buf buffer.Buffer, autoRelease bool) Writer {
-	return newWriter(buf, autoRelease)
+// The writer is freed automatically if release is true.
+func NewBuffer(buf buffer.Buffer, release bool) Writer {
+	return newWriter(buf, release)
+}
+
+// Acquire acquires a writer from the pool.
+// The writer is freed automatically.
+//
+// This method must not be used directly, it is used only by the generated code.
+// Use New or NewBuffer instead.
+func Acquire(buf buffer.Buffer) Writer {
+	return acquireWriter(buf)
 }
 
 // internal
@@ -55,10 +65,17 @@ type writer struct {
 	err error
 }
 
-func newWriter(buf buffer.Buffer, autoRelease bool) *writer {
+func newWriter(buf buffer.Buffer, release bool) *writer {
 	w := &writer{}
 	w.Reset(buf)
-	w.autoRelease = autoRelease
+	w.releaseState = release
+	return w
+}
+
+func acquireWriter(buf buffer.Buffer) *writer {
+	w := writerPool.New()
+	w.Reset(buf)
+	w.releaseWriter = true
 	return w
 }
 
@@ -107,8 +124,11 @@ func (w *writer) Message() MessageWriter {
 
 // Free frees the writer and releases its internal resources.
 func (w *writer) Free() {
-	w.err = errClosed
-	w.free()
+	w.close()
+
+	if !w.releaseState && !w.releaseWriter {
+		w.free()
+	}
 }
 
 // end ends the top object and its parent field/element if present.
@@ -562,7 +582,9 @@ func (w *writer) close() error {
 	}
 
 	w.err = errClosed
-	if w.autoRelease {
+
+	// Autorelease on end
+	if w.releaseState || w.releaseWriter {
 		w.free()
 	}
 	return nil
@@ -573,13 +595,14 @@ func (w *writer) fail(err error) error {
 	if w.err != nil {
 		return w.err
 	}
-
 	if err == nil {
 		return w.close()
 	}
 
 	w.err = err
-	w.free()
+
+	// Autorelease on error
+	w.freeState()
 	return w.err
 }
 
@@ -598,8 +621,37 @@ func (w *writer) failf(format string, args ...any) error {
 // free
 
 func (w *writer) free() {
-	s := w.writerState
-	w.writerState = nil
+	if w.releaseWriter {
+		w.reset()
+		writerPool.Put(w)
+		return
+	}
 
+	w.freeState()
+}
+
+func (w *writer) freeState() {
+	s := w.writerState
+	if s == nil {
+		return
+	}
+
+	w.writerState = nil
 	releaseWriterState(s)
 }
+
+func (w *writer) reset() {
+	if w.writerState != nil {
+		w.writerState.reset()
+	}
+	w.err = nil
+}
+
+// pool
+
+var writerPool = pools.MakePool(
+	func() *writer {
+		s := acquireWriterState()
+		return &writer{writerState: s}
+	},
+)

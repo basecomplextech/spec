@@ -49,13 +49,16 @@ func (m MessageWriter) Merge(src types.Message) error {
 }
 
 // Build ends the message and returns its bytes.
-func (m MessageWriter) Build() ([]byte, error) {
-	return m.w.end()
+func (m *MessageWriter) Build() ([]byte, error) {
+	b, err := m.w.end()
+	m.w = nil
+	return b, err
 }
 
 // End ends the message.
-func (m MessageWriter) End() error {
+func (m *MessageWriter) End() error {
 	_, err := m.w.end()
+	m.w = nil
 	return err
 }
 
