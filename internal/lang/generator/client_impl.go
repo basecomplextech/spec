@@ -30,6 +30,9 @@ func (w *clientImplWriter) clientImpl(def *model.Definition) error {
 	if err := w.unwrap(def); err != nil {
 		return err
 	}
+	if err := w.free(def); err != nil {
+		return err
+	}
 	if err := w.channels(def); err != nil {
 		return err
 	}
@@ -38,9 +41,15 @@ func (w *clientImplWriter) clientImpl(def *model.Definition) error {
 
 func (w *clientImplWriter) def(def *model.Definition) error {
 	name := clientImplName(def)
+	w.linef(`// %v`, name)
+	w.line()
 
 	if def.Service.Sub {
-		w.linef(`// %v`, name)
+		w.linef(`var %vPool = pools.MakePool(`, name)
+		w.linef(`func() *%v {`, name)
+		w.linef(`return &%v{}`, name)
+		w.line(`},`)
+		w.line(`)`)
 		w.line()
 		w.linef(`type %v struct {`, name)
 		w.line(`client rpc.Client`)
@@ -48,14 +57,34 @@ func (w *clientImplWriter) def(def *model.Definition) error {
 		w.line(`st status.Status`)
 		w.line(`}`)
 		w.line()
-	} else {
-		w.linef(`// %v`, name)
+		w.linef(`func new%vCall(client rpc.Client, req *rpc.Request) %vCall {`, def.Name, def.Name)
+		w.linef(`c := %vPool.New()`, name)
+		w.line(`c.client = client`)
+		w.line(`c.req = req`)
+		w.line(`c.st = status.OK`)
+		w.line(`return c`)
+		w.line(`}`)
 		w.line()
+	} else {
 		w.linef(`type %v struct {`, name)
 		w.line(`client rpc.Client`)
 		w.line(`}`)
 		w.line()
 	}
+	return nil
+}
+
+func (w *clientImplWriter) free(def *model.Definition) error {
+	if !def.Service.Sub {
+		return nil
+	}
+
+	name := clientImplName(def)
+	w.linef(`func (c *%v) free() {`, name)
+	w.linef(`*c = %v{}`, name)
+	w.linef(`%vPool.Put(c)`, name)
+	w.line(`}`)
+	w.line()
 	return nil
 }
 
@@ -157,6 +186,11 @@ func (w *clientImplWriter) method_error(def *model.Definition, m *model.Method) 
 }
 
 func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) error {
+	if def.Service.Sub {
+		w.line(`defer c.free()`)
+		w.line()
+	}
+
 	// Subservice methods do not return status
 	if m.Sub {
 		w.line(`var _st status.Status`)

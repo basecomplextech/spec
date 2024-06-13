@@ -57,12 +57,8 @@ func (w *clientWriter) new_client(def *model.Definition) error {
 
 	if def.Service.Sub {
 		w.linef(`func New%vCall(client rpc.Client, req *rpc.Request) %vCall {`, def.Name, def.Name)
-		w.linef(`return &%v{`, name)
-		w.linef(`client: client,`)
-		w.linef(`req: req,`)
-		w.linef(`st: status.OK,`)
-		w.linef(`}`)
-		w.linef(`}`)
+		w.linef(`return new%vCall(client, req)`, def.Name)
+		w.line(`}`)
 		w.line()
 		w.linef(`func New%vCallErr(st status.Status) %vCall {`, def.Name, def.Name)
 		w.linef(`return &%v{st: st}`, name)
