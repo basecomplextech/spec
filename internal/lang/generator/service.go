@@ -73,7 +73,7 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 	case m.Sub:
 		out := m.Output
 		typeName := typeName(out)
-		w.writef(`, fn func(%v) status.Status`, typeName)
+		w.writef(`, next rpc.NextHandler[%v]`, typeName)
 	}
 
 	w.write(`) `)
@@ -101,13 +101,16 @@ func (w *serviceWriter) new_handler(def *model.Definition) error {
 	name := handler_name(def)
 
 	if def.Service.Sub {
-		w.linef(`func New%vHandler(s %v) rpc.Subhandler {`, def.Name, def.Name)
+		w.linef(`func New%vHandler(ctx rpc.Context, channel rpc.ServerChannel, index int) rpc.Subhandler1[%v] {`,
+			def.Name, def.Name)
+		w.linef(`return new%vHandler(ctx, channel, index)`, def.Name)
+		w.linef(`}`)
 	} else {
 		w.linef(`func New%vHandler(s %v) rpc.Handler {`, def.Name, def.Name)
+		w.linef(`return &%v{service: s}`, name)
+		w.linef(`}`)
 	}
 
-	w.linef(`return &%v{service: s}`, name)
-	w.linef(`}`)
 	w.line()
 	return nil
 }

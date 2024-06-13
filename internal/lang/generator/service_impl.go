@@ -19,6 +19,12 @@ func (w *serviceImplWriter) serviceImpl(def *model.Definition) error {
 	if err := w.def(def); err != nil {
 		return err
 	}
+	if err := w.free(def); err != nil {
+		return err
+	}
+	if err := w.result(def); err != nil {
+		return err
+	}
 	if err := w.handle(def); err != nil {
 		return err
 	}
@@ -33,11 +39,66 @@ func (w *serviceImplWriter) serviceImpl(def *model.Definition) error {
 
 func (w *serviceImplWriter) def(def *model.Definition) error {
 	name := handler_name(def)
-
 	w.linef(`// %v`, name)
 	w.line()
-	w.linef(`type %v struct {`, name)
-	w.linef(`service %v`, def.Name)
+
+	if def.Service.Sub {
+		w.linef(`var %vPool = pools.MakePool(`, name)
+		w.linef(`func() *%v {`, name)
+		w.linef(`return &%v{}`, name)
+		w.line(`},`)
+		w.line(`)`)
+		w.line()
+		w.linef(`type %v struct {`, name)
+		w.linef(`ctx rpc.Context`)
+		w.linef(`channel rpc.ServerChannel`)
+		w.linef(`index int`)
+		w.linef(`service %v`, def.Name)
+		w.linef(`result ref.R[[]byte]`)
+		w.line(`}`)
+		w.line()
+		w.linef(`func new%vHandler(ctx rpc.Context, channel rpc.ServerChannel, index int) rpc.Subhandler1[%v] {`,
+			def.Name, def.Name)
+		w.linef(`h := %vPool.New()`, name)
+		w.line(`h.ctx = ctx`)
+		w.line(`h.channel = channel`)
+		w.line(`h.index = index`)
+		w.line(`return h`)
+		w.line(`}`)
+		w.line()
+
+	} else {
+		w.linef(`type %v struct {`, name)
+		w.linef(`service %v`, def.Name)
+		w.line(`}`)
+		w.line()
+	}
+
+	return nil
+}
+
+func (w *serviceImplWriter) free(def *model.Definition) error {
+	if !def.Service.Sub {
+		return nil
+	}
+
+	name := handler_name(def)
+	w.linef(`func (h *%v) Free() {`, name)
+	w.linef(`*h = %v{}`, name)
+	w.linef(`%vPool.Put(h)`, name)
+	w.line(`}`)
+	w.line()
+	return nil
+}
+
+func (w *serviceImplWriter) result(def *model.Definition) error {
+	if !def.Service.Sub {
+		return nil
+	}
+
+	name := handler_name(def)
+	w.linef(`func (h *%v) Result() ref.R[[]byte] {`, name)
+	w.line(`return h.result`)
 	w.line(`}`)
 	w.line()
 	return nil
@@ -47,8 +108,12 @@ func (w *serviceImplWriter) handle(def *model.Definition) error {
 	name := handler_name(def)
 
 	if def.Service.Sub {
-		w.linef(`func (h *%v) Handle(ctx rpc.Context, ch rpc.ServerChannel, index int) (ref.R[[]byte], status.Status) {`,
-			name)
+		w.linef(`func (h *%v) Handle(service %v) status.Status {`, name, def.Name)
+		w.line(`ctx := h.ctx`)
+		w.line(`ch := h.channel`)
+		w.line(`index := h.index`)
+		w.line(`h.service = service`)
+		w.line()
 	} else {
 		w.linef(`func (h *%v) Handle(ctx rpc.Context, ch rpc.ServerChannel) (ref.R[[]byte], status.Status) {`,
 			name)
@@ -57,13 +122,21 @@ func (w *serviceImplWriter) handle(def *model.Definition) error {
 
 	w.line(`req, st := ch.Request(ctx)`)
 	w.line(`if !st.OK() {`)
-	w.line(`return nil, st`)
+	if def.Service.Sub {
+		w.line(`return st`)
+	} else {
+		w.line(`return nil, st`)
+	}
 	w.line(`}`)
 	w.line()
 
 	w.line(`call, err := req.Calls().GetErr(index)`)
 	w.line(`if err != nil {`)
-	w.line(`return nil, rpc.WrapError(err)`)
+	if def.Service.Sub {
+		w.line(`return rpc.WrapError(err)`)
+	} else {
+		w.line(`return nil, rpc.WrapError(err)`)
+	}
 	w.line(`}`)
 	w.line()
 
@@ -71,12 +144,21 @@ func (w *serviceImplWriter) handle(def *model.Definition) error {
 	w.line(`switch method {`)
 	for _, m := range def.Service.Methods {
 		w.linef(`case %q:`, m.Name)
-		w.linef(`return h._%v(ctx, ch, call, index)`, toLowerCameCase(m.Name))
+		if def.Service.Sub {
+			w.linef(`h.result, st = h._%v(ctx, ch, call, index)`, toLowerCameCase(m.Name))
+			w.line(`return st`)
+		} else {
+			w.linef(`return h._%v(ctx, ch, call, index)`, toLowerCameCase(m.Name))
+		}
 	}
 	w.line(`}`)
 	w.line()
 
-	w.linef(`return nil, rpc.Errorf("unknown %v method %%q", method)`, def.Name)
+	if def.Service.Sub {
+		w.linef(`return rpc.Errorf("unknown %v method %%q", method)`, def.Name)
+	} else {
+		w.linef(`return nil, rpc.Errorf("unknown %v method %%q", method)`, def.Name)
+	}
 	w.line(`}`)
 	w.line()
 	return nil
@@ -118,17 +200,11 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 
 	// Next handler
 	if m.Sub {
-		out := m.Output
-		typeName := typeName(out)
 		newFunc := handler_new(m.Output)
 
 		w.line(`// Next handler`)
-		w.line(`var result ref.R[[]byte]`)
-		w.linef(`handle := func(sub %v) (st status.Status) {`, typeName)
-		w.linef(`h1 := %v(sub)`, newFunc)
-		w.line(`result, st = h1.Handle(ctx, ch, index+1)`)
-		w.line(`return st`)
-		w.line(`}`)
+		w.linef(`next := %v(ctx, ch, index+1 /* next call */)`, newFunc)
+		w.line(`defer next.Free()`)
 		w.line()
 	}
 
@@ -150,13 +226,13 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	case m.Input != nil:
 		w.writef(`h.service.%v(ctx, in`, toUpperCamelCase(m.Name))
 		if m.Sub {
-			w.write(`, handle`)
+			w.write(`, next`)
 		}
 		w.line(`)`)
 	default:
 		w.writef(`h.service.%v(ctx`, toUpperCamelCase(m.Name))
 		if m.Sub {
-			w.write(`, handle`)
+			w.write(`, next`)
 		}
 		w.line(`)`)
 	}
@@ -164,7 +240,7 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	// Handle output
 	switch {
 	case m.Sub:
-		w.line(`return result, st`)
+		w.line(`return next.Result(), st`)
 
 	case m.Output != nil:
 		w.line(`if result != nil { `)

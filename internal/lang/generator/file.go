@@ -23,6 +23,7 @@ func (w *fileWriter) file(file *model.File) error {
 	w.line(`"github.com/basecomplextech/baselibrary/async"`)
 	w.line(`"github.com/basecomplextech/baselibrary/bin"`)
 	w.line(`"github.com/basecomplextech/baselibrary/buffer"`)
+	w.line(`"github.com/basecomplextech/baselibrary/pools"`)
 	w.line(`"github.com/basecomplextech/baselibrary/ref"`)
 	w.line(`"github.com/basecomplextech/baselibrary/status"`)
 	w.line(`"github.com/basecomplextech/spec"`)
@@ -47,6 +48,7 @@ func (w *fileWriter) file(file *model.File) error {
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
 	w.line(`_ encoding.MessageMeta`)
+	w.line(`_ pools.Pool[any]`)
 	w.line(`_ ref.Ref`)
 
 	if !w.skipRPC {

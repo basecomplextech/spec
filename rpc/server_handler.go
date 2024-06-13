@@ -19,6 +19,18 @@ type Subhandler interface {
 	Handle(ctx Context, ch ServerChannel, index int) (ref.R[[]byte], status.Status)
 }
 
+// NextHandler is an RPC next call handler in a call chain.
+type NextHandler[T any] interface {
+	Handle(T) status.Status
+}
+
+type Subhandler1[T any] interface {
+	NextHandler[T]
+
+	Result() ref.R[[]byte]
+	Free()
+}
+
 // HandleFunc is a type adapter to allow use of ordinary functions as RPC handlers.
 type HandleFunc func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status)
 

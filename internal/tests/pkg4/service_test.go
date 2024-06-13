@@ -18,9 +18,9 @@ func newTestService() *testService {
 }
 
 func (s *testService) Subservice(ctx rpc.Context, req ServiceSubserviceRequest,
-	fn func(Subservice) status.Status) status.Status {
+	next rpc.NextHandler[Subservice]) status.Status {
 	s1 := &testSubservice{}
-	return fn(s1)
+	return next.Handle(s1)
 }
 
 func (s *testService) Method(ctx rpc.Context) status.Status {
