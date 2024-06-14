@@ -503,8 +503,8 @@ func TestParser_Parse__should_parse_method_channel(t *testing.T) {
 	s := `service Service {
 		method0() ();
 		method1() (<-In) ();
-		method2() (->Out) ();
-		method3() (<-In ->Out) ();
+		method2() (Out->) ();
+		method3() (<-In, Out->) ();
 	}`
 
 	file, err := p.Parse(s)
@@ -535,4 +535,31 @@ func TestParser_Parse__should_parse_method_channel(t *testing.T) {
 	require.NotNil(t, method3.Channel)
 	assert.NotNil(t, method3.Channel.In)
 	assert.NotNil(t, method3.Channel.Out)
+}
+
+func TestParser_Parse__should_return_error_when_invalid_channel_syntax(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method() (Out->, <-In) ();
+	}`
+
+	_, err := p.Parse(s)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid channel syntax, expected (<-In, Out->), got (Out->, <-In)`)
+
+	s = `service Service {
+		method() (Msg<-) ();
+	}`
+
+	_, err = p.Parse(s)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid channel receive syntax, expected <-Msg, got Msg<-`)
+
+	s = `service Service {
+		method() (->Msg) ();
+	}`
+
+	_, err = p.Parse(s)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid channel send syntax, expected Msg->, got ->Msg`)
 }

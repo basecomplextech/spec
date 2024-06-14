@@ -81,3 +81,57 @@ func GetKind(type_ string) Kind {
 
 	return KindReference
 }
+
+func (k Kind) String() string {
+	switch k {
+	case KindUndefined:
+		return "undefined"
+	case KindAny:
+		return "any"
+
+	case KindBool:
+		return "bool"
+	case KindByte:
+		return "byte"
+
+	case KindInt16:
+		return "int16"
+	case KindInt32:
+		return "int32"
+	case KindInt64:
+		return "int64"
+
+	case KindUint16:
+		return "uint16"
+	case KindUint32:
+		return "uint32"
+	case KindUint64:
+		return "uint64"
+
+	case KindFloat32:
+		return "float32"
+	case KindFloat64:
+		return "float64"
+
+	case KindBin64:
+		return "bin64"
+	case KindBin128:
+		return "bin128"
+	case KindBin256:
+		return "bin256"
+
+	case KindBytes:
+		return "bytes"
+	case KindString:
+		return "string"
+	case KindAnyMessage:
+		return "message"
+
+	case KindList:
+		return "list"
+	case KindReference:
+		return "ref"
+	}
+
+	return "unknown"
+}

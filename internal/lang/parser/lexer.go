@@ -10,7 +10,10 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
-const EOF = 0
+const (
+	EOF   = 0
+	ERROR = -1
+)
 
 var _ yyLexer = &lexer{}
 
@@ -119,4 +122,15 @@ func (l *lexer) Error(s string) {
 
 func trimString(s string) string {
 	return strings.Trim(s, "\"")
+}
+
+func yyLexError(l yyLexer, err error) int {
+	ll := l.(*lexer)
+	ll.err = err
+	return ERROR
+}
+
+func yyLexErrorf(l yyLexer, format string, a ...any) int {
+	err := fmt.Errorf(format, a...)
+	return yyLexError(l, err)
 }

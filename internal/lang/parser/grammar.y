@@ -663,29 +663,50 @@ method_channel:
 			Out: $2,
 		}
 	}
-	| '(' method_channel_in method_channel_out ')'
+	| '(' method_channel_in ',' method_channel_out ')'
 	{
 		if debugParser {
-			fmt.Println("method channel", $2, $3)
+			fmt.Println("method channel", $2, $4)
 		}
 
 		$$ = &syntax.MethodChannel{
 			In: $2,
-			Out: $3,
+			Out: $4,
 		}
-	};
+	}
+	| '(' method_channel_out ',' method_channel_in ')'
+	{
+		return yyLexErrorf(yylex,
+			"invalid channel syntax, expected (<-%v, %v->), got (%v->, <-%v)",
+			$4, $2, $2, $4)
+	}
+	;
 
 method_channel_in:
 	'<' '-' type
 	{
 		$$ = $3
-	};
+	}
+	| type '<' '-'
+	{
+		return yyLexErrorf(yylex,
+			"invalid channel receive syntax, expected <-%v, got %v<-",
+			$1, $1)
+	}
+	;
 
 method_channel_out:
-	'-' '>' type
+	type '-' '>'
 	{
-		$$ = $3
-	};
+		$$ = $1
+	}
+	| '-' '>' type
+	{
+		return yyLexErrorf(yylex,
+			"invalid channel send syntax, expected %v->, got ->%v",
+			$3, $3)
+	}
+	;
 
 method_field_list:
 	method_fields comma_opt
