@@ -6,10 +6,12 @@ type Service struct {
 }
 
 type Method struct {
-	Name    string
+	Name string
+
 	Input   MethodInput
 	Output  MethodOutput
-	Channel *MethodChannel // Maybe nil
+	Channel *MethodChannel
+	Oneway  bool
 }
 
 // MethodInput is a union type for method inputs.

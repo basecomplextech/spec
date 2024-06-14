@@ -13,6 +13,7 @@ import (
 %union {
 	// Tokens
 	ident   string
+	bool	bool
 	integer int
 	string  string
 
@@ -59,6 +60,7 @@ import (
 %token ENUM
 %token IMPORT
 %token MESSAGE
+%token ONEWAY
 %token OPTIONS
 %token STRUCT
 %token SERVICE
@@ -69,6 +71,7 @@ import (
 %token <integer>    INTEGER
 %token <string>     STRING
 %token <ident>      MESSAGE
+%token <ident>      ONEWAY
 %token <ident>      SERVICE
 %type  <ident>      keyword
 %type  <ident>      field_name
@@ -114,6 +117,7 @@ import (
 %type <methods>         methods
 %type <method>          method
 %type <method_input>    method_input
+%type <bool>			method_oneway
 %type <method_output>   method_output
 %type <method_channel>  method_channel
 %type <type_>  			method_channel_in
@@ -552,6 +556,17 @@ method:
 			Input: $2,
 		}
 	}
+	| field_name method_input method_oneway ';'
+	{
+		if debugParser {
+			fmt.Println("method", $1, $2, $3)
+		}
+		$$ = &syntax.Method{
+			Name: $1,
+			Input: $2,
+			Oneway: true,
+		}
+	}
 	| field_name method_input method_output ';'
 	{
 		if debugParser {
@@ -561,6 +576,17 @@ method:
 			Name: $1,
 			Input: $2,
 			Output: $3,
+		}
+	}
+	| field_name method_input method_channel ';'
+	{
+		if debugParser {
+			fmt.Println("method", $1, $2, $3)
+		}
+		$$ = &syntax.Method{
+			Name: $1,
+			Input: $2,
+			Channel: $3,
 		}
 	}
 	| field_name method_input method_channel method_output ';'
@@ -592,13 +618,21 @@ method_input:
 		$$ = $2
 	};
 
-method_output:
-	'(' base_type ')'
+method_oneway: ONEWAY
 	{
 		if debugParser {
-			fmt.Println("method output", $2)
+			fmt.Println("method oneway", $1)
 		}
-		$$ = $2
+		$$ = true
+	};
+
+method_output:
+	base_type
+	{
+		if debugParser {
+			fmt.Println("method output", $1)
+		}
+		$$ = $1
 	}
 	| '(' method_field_list ')'
 	{

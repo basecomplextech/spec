@@ -6,22 +6,35 @@ import (
 	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
+type MethodType string
+
+const (
+	MethodType_Request    MethodType = "request"
+	MethodType_Oneway     MethodType = "oneway"
+	MethodType_Channel    MethodType = "channel"
+	MethodType_Subservice MethodType = "subservice"
+)
+
 type Method struct {
 	Package *Package
 	File    *File
 	Service *Service
 
 	Name string
-	Sub  bool // Returns subservice
-	Chan bool // Returns channel
+	Type MethodType
 
-	Input  *Type // Message
-	Output *Type // Message or service
+	Req    bool // Request/response method, response may be nil
+	Sub    bool // Subservice method
+	Chan   bool // Channel method
+	Oneway bool // Oneway method
 
-	Channel *MethodChannel
+	Request    *Message
+	Response   *Message
+	Channel    *MethodChannel
+	Subservice *Service
 
-	_InputFields  *Fields // Temp, converted into Input
-	_OutputFields *Fields // Temp, converted into Output
+	_InputFields  *Fields // Temp, converted into Request
+	_OutputFields *Fields // Temp, converted into Response
 }
 
 func newMethod(pkg *Package, file *File, service *Service, pm *syntax.Method) (*Method, error) {

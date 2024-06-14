@@ -5,6 +5,7 @@ var keywords = map[string]int{
 	"enum":       ENUM,
 	"import":     IMPORT,
 	"message":    MESSAGE,
+	"oneway":     ONEWAY,
 	"options":    OPTIONS,
 	"struct":     STRUCT,
 	"service":    SERVICE,

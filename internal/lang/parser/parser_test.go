@@ -456,6 +456,27 @@ func TestParser_Parse__should_parse_method_input_reference(t *testing.T) {
 	assert.IsType(t, &syntax.Type{}, input)
 }
 
+func TestParser_Parse__should_parse_method_oneway(t *testing.T) {
+	p := newParser()
+	s := `service Service {
+		method() oneway;
+	}`
+
+	file, err := p.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, file.Definitions, 1)
+	def := file.Definitions[0]
+
+	srv := def.Service
+	require.Len(t, srv.Methods, 1)
+
+	method := srv.Methods[0]
+	assert.True(t, method.Oneway)
+}
+
 func TestParser_Parse__should_parse_method_output_fields(t *testing.T) {
 	p := newParser()
 	s := `service Service {
@@ -475,29 +496,6 @@ func TestParser_Parse__should_parse_method_output_fields(t *testing.T) {
 
 	method := srv.Methods[0]
 	assert.Len(t, method.Output, 3)
-}
-
-func TestParser_Parse__should_parse_method_output_reference(t *testing.T) {
-	p := newParser()
-	s := `service Service {
-		method() (Response);
-	}`
-
-	file, err := p.Parse(s)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	require.Len(t, file.Definitions, 1)
-	def := file.Definitions[0]
-
-	srv := def.Service
-	require.Len(t, srv.Methods, 1)
-
-	method := srv.Methods[0]
-	output := method.Output
-	assert.NotNil(t, output)
-	assert.IsType(t, &syntax.Type{}, output)
 }
 
 func TestParser_Parse__should_parse_method_channel(t *testing.T) {
