@@ -107,7 +107,7 @@ func (f *Fields) resolve(file *File) error {
 	return nil
 }
 
-func (f *Fields) resolved() error {
+func (f *Fields) compile() error {
 	for _, field := range f.List {
 		if err := field.resolved(); err != nil {
 			return err

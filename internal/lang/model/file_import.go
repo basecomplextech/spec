@@ -37,22 +37,23 @@ func newImport(file *File, pimp *syntax.Import) (*Import, error) {
 	return imp, nil
 }
 
-func (imp *Import) LookupType(name string) (*Definition, bool) {
+func (imp *Import) lookupType(name string) (*Definition, bool) {
 	if !imp.Resolved {
 		panic("import not resolved")
 	}
 
-	return imp.Package.LookupType(name)
+	return imp.Package.lookupType(name)
 }
 
 // internal
 
-func (imp *Import) resolve(getPackage func(string) (*Package, error)) error {
+func (imp *Import) resolve() error {
 	if imp.Resolved {
 		return fmt.Errorf("import already resolved: %v", imp.ID)
 	}
 
-	pkg, err := getPackage(imp.ID)
+	ctx := imp.File.Package.Context
+	pkg, err := ctx.getPackage(imp.ID)
 	if err != nil {
 		return err
 	}

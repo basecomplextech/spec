@@ -483,7 +483,7 @@ func TestCompiler__should_generate_request_from_primitive_fields(t *testing.T) {
 	m := def.Service.MethodNames["method2"]
 	require.NotNil(t, m)
 
-	assert.NotNil(t, m.Input)
+	assert.NotNil(t, m.Request)
 }
 
 func TestCompiler__should_generate_request_from_complex_fields(t *testing.T) {
@@ -500,11 +500,11 @@ func TestCompiler__should_generate_request_from_complex_fields(t *testing.T) {
 	m := def.Service.MethodNames["method4"]
 	require.NotNil(t, m)
 
-	in := m.Input
-	require.NotNil(t, in)
+	req := m.Request
+	require.NotNil(t, req)
 
-	assert.Equal(t, "ServiceMethod4Request", in.Name)
-	assert.True(t, in.Ref.Message.Generated)
+	assert.Equal(t, "ServiceMethod4Request", req.Name)
+	assert.True(t, req.Ref.Message.Generated)
 }
 
 func TestCompiler__should_generate_response_from_primitive_fields(t *testing.T) {
@@ -521,7 +521,7 @@ func TestCompiler__should_generate_response_from_primitive_fields(t *testing.T) 
 	m := def.Service.MethodNames["method10"]
 	require.NotNil(t, m)
 
-	assert.NotNil(t, m.Output)
+	assert.NotNil(t, m.Response)
 }
 
 func TestCompiler__should_generate_response_from_fields(t *testing.T) {
@@ -538,9 +538,9 @@ func TestCompiler__should_generate_response_from_fields(t *testing.T) {
 	m := def.Service.MethodNames["method11"]
 	require.NotNil(t, m)
 
-	out := m.Output
-	require.NotNil(t, out)
+	resp := m.Response
+	require.NotNil(t, resp)
 
-	assert.Equal(t, "ServiceMethod11Response", out.Name)
-	assert.True(t, out.Ref.Message.Generated)
+	assert.Equal(t, "ServiceMethod11Response", resp.Name)
+	assert.True(t, resp.Ref.Message.Generated)
 }

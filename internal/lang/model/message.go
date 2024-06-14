@@ -1,8 +1,6 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
@@ -15,7 +13,7 @@ type Message struct {
 	Generated bool // Auto-generated message, i.e. request/response
 }
 
-func newMessage(pkg *Package, file *File, def *Definition, pmsg *syntax.Message) (*Message, error) {
+func parseMessage(pkg *Package, file *File, def *Definition, pmsg *syntax.Message) (*Message, error) {
 	msg := &Message{
 		Package: pkg,
 		File:    file,
@@ -31,44 +29,55 @@ func newMessage(pkg *Package, file *File, def *Definition, pmsg *syntax.Message)
 	return msg, nil
 }
 
-func generateMessage(pkg *Package, file *File, name string, fields *Fields) (*Message, error) {
+func generateMessageDef(pkg *Package, file *File, name string, fields *Fields) (*Definition, error) {
+	def := &Definition{
+		Package: pkg,
+		File:    file,
+
+		Name: name,
+		Type: DefinitionMessage,
+	}
+
+	// Generate message
+	msg, err := generateMessage(pkg, file, def, fields)
+	if err != nil {
+		return nil, err
+	}
+	def.Message = msg
+
+	// Add definition to file
+	if err := file.add(msg.Def); err != nil {
+		return nil, err
+	}
+	return def, nil
+}
+
+func generateMessage(pkg *Package, file *File, def *Definition, fields *Fields) (*Message, error) {
 	msg := &Message{
 		Package: pkg,
 		File:    file,
+		Def:     def,
 
 		Fields:    fields,
 		Generated: true,
 	}
-
-	// Definition
-	msg.Def = &Definition{
-		Package: pkg,
-		File:    file,
-
-		Name:    name,
-		Type:    DefinitionMessage,
-		Message: msg,
-	}
-
-	// Add to file
-	if err := file.add(msg.Def); err != nil {
-		return nil, err
-	}
 	return msg, nil
 }
 
-// internal
+// resolve
 
 func (m *Message) resolve(file *File) error {
-	if err := m.Fields.resolve(file); err != nil {
-		return fmt.Errorf("%v.%w", m.Def.Name, err)
-	}
-	return nil
+	return m.Fields.resolve(file)
 }
 
-func (m *Message) resolved() error {
-	if err := m.Fields.resolved(); err != nil {
-		return fmt.Errorf("%v.%w", m.Def.Name, err)
-	}
+// compile
+
+func (m *Message) compile() error {
+	return m.Fields.compile()
+}
+
+// validate
+
+func (m *Message) validate() error {
 	return nil
 }

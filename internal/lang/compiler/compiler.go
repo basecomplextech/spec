@@ -26,9 +26,7 @@ func New(opts Options) (Compiler, error) {
 type compiler struct {
 	opts   Options
 	parser parser.Parser
-
-	packages map[string]*model.Package // compiled packages by ids
-	paths    []string                  // import paths
+	paths  []string // import paths
 }
 
 func newCompiler(opts Options) (*compiler, error) {
@@ -47,9 +45,7 @@ func newCompiler(opts Options) (*compiler, error) {
 	c := &compiler{
 		opts:   opts,
 		parser: parser,
-
-		packages: make(map[string]*model.Package),
-		paths:    paths,
+		paths:  paths,
 	}
 	return c, nil
 }
@@ -69,76 +65,8 @@ func (c *compiler) Compile(dir string) (*model.Package, error) {
 		}
 	}
 
-	return c.compilePackage(id, dir)
-}
-
-// private
-
-func (c *compiler) getPackage(id string) (*model.Package, error) {
-	// Try to get existing package
-	pkg, ok := c.packages[id]
-	if ok {
-		if pkg.State != model.PackageCompiled {
-			return nil, fmt.Errorf("circular import: %v", id)
-		}
-		return pkg, nil
-	}
-
-	// Try to find package in import paths
-	for _, path := range c.paths {
-		p := filepath.Join(path, id)
-		_, err := os.Stat(p)
-		switch {
-		case os.IsNotExist(err):
-			continue
-		case err != nil:
-			return nil, err
-		}
-
-		// Found package
-		return c.compilePackage(id, p)
-	}
-
-	return nil, fmt.Errorf("package not found: %v", id)
-}
-
-func (c *compiler) compilePackage(id string, path string) (*model.Package, error) {
-	// Return if already exists
-	pkg, ok := c.packages[id]
-	if ok {
-		return pkg, nil
-	}
-
-	// Parse directory files
-	files, err := c.parser.ParseDirectory(path)
-	switch {
-	case err != nil:
-		return nil, err
-	case len(files) == 0:
-		return nil, fmt.Errorf("empty package %q, path=%v", id, path)
-	}
-
-	// Create package in compiling state
-	pkg, err = model.NewPackage(id, path, files)
-	if err != nil {
-		return nil, err
-	}
-	c.packages[id] = pkg
-
-	// Resolve imports and types
-	if err := pkg.ResolveImports(c.getPackage); err != nil {
-		return nil, err
-	}
-	if err := pkg.ResolveTypes(); err != nil {
-		return nil, err
-	}
-	if err := pkg.Resolved(); err != nil {
-		return nil, err
-	}
-
-	// Done
-	pkg.State = model.PackageCompiled
-	return pkg, nil
+	x := model.NewContext(c.parser, c.paths)
+	return x.Compile(id, dir)
 }
 
 // private

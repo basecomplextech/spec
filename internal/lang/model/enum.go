@@ -16,7 +16,7 @@ type Enum struct {
 	ValueNumbers map[int]*EnumValue
 }
 
-func newEnum(pkg *Package, file *File, def *Definition, penum *syntax.Enum) (*Enum, error) {
+func parseEnum(pkg *Package, file *File, def *Definition, penum *syntax.Enum) (*Enum, error) {
 	e := &Enum{
 		Package: pkg,
 		File:    file,
@@ -26,52 +26,52 @@ func newEnum(pkg *Package, file *File, def *Definition, penum *syntax.Enum) (*En
 		ValueNumbers: make(map[int]*EnumValue),
 	}
 
-	// Create values
-	for _, pval := range penum.Values {
-		val, err := newEnumValue(e, pval)
-		if err != nil {
-			return nil, fmt.Errorf("invalid enum value %q: %w", pval.Name, err)
-		}
-
-		_, ok := e.ValueNames[val.Name]
-		if ok {
-			return nil, fmt.Errorf("duplicate enum value, name=%v", val.Name)
-		}
-
-		_, ok = e.ValueNumbers[val.Number]
-		_, ok = e.ValueNumbers[val.Number]
-		if ok {
-			return nil, fmt.Errorf("duplicate enum value number, name=%v, number=%v", val.Name, val.Number)
-		}
-
-		e.Values = append(e.Values, val)
-		e.ValueNames[val.Name] = val
-		e.ValueNumbers[val.Number] = val
+	// Parse values
+	if err := e.parseValues(penum); err != nil {
+		return nil, err
 	}
 
-	// Check zero present
+	// Check zero
 	_, ok := e.ValueNumbers[0]
 	if !ok {
 		return nil, fmt.Errorf("zero enum value required")
 	}
-
 	return e, nil
 }
 
-// Value
+// parse
 
-type EnumValue struct {
-	Enum *Enum
-
-	Name   string
-	Number int
+func (e *Enum) parseValues(penum *syntax.Enum) error {
+	for _, pval := range penum.Values {
+		if err := e.parseValue(pval); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func newEnumValue(enum *Enum, pval *syntax.EnumValue) (*EnumValue, error) {
-	v := &EnumValue{
-		Enum:   enum,
-		Name:   pval.Name,
-		Number: pval.Value,
+func (e *Enum) parseValue(pval *syntax.EnumValue) error {
+	val, err := parseEnumValue(e, pval)
+	if err != nil {
+		return fmt.Errorf("%v.%v: %w", e.Def.Name, pval.Name, err)
 	}
-	return v, nil
+
+	// Check name
+	_, ok := e.ValueNames[val.Name]
+	if ok {
+		return fmt.Errorf("%v.%v: duplicate enum value", e.Def.Name, val.Name)
+	}
+
+	// Check number
+	_, ok = e.ValueNumbers[val.Number]
+	if ok {
+		return fmt.Errorf("%v.%v: duplicate enum value number, number=%v",
+			e.Def.Name, val.Name, val.Number)
+	}
+
+	// Add value
+	e.Values = append(e.Values, val)
+	e.ValueNames[val.Name] = val
+	e.ValueNumbers[val.Number] = val
+	return nil
 }

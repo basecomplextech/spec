@@ -36,46 +36,19 @@ func newFile(pkg *Package, pfile *syntax.File) (*File, error) {
 		DefinitionNames: make(map[string]*Definition),
 	}
 
-	// Create imports
-	for _, pimp := range pfile.Imports {
-		imp, err := newImport(f, pimp)
-		if err != nil {
-			return nil, fmt.Errorf("%v: %w", path, err)
-		}
-
-		if err := f.addImport(imp); err != nil {
-			return nil, fmt.Errorf("%v: %w", path, err)
-		}
+	if err := f.parseImports(pfile); err != nil {
+		return nil, err
 	}
-
-	// Create options
-	for _, popt := range pfile.Options {
-		opt, err := newOption(popt)
-		if err != nil {
-			return nil, fmt.Errorf("%v: %w", path, err)
-		}
-
-		if err := f.addOption(opt); err != nil {
-			return nil, fmt.Errorf("%v: %w", path, err)
-		}
+	if err := f.parseOptions(pfile); err != nil {
+		return nil, err
 	}
-
-	// Create definitions
-	for _, pdef := range pfile.Definitions {
-		def, err := newDefinition(pkg, f, pdef)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := f.add(def); err != nil {
-			return nil, fmt.Errorf("%v: %w", path, err)
-		}
+	if err := f.parseDefinitions(pfile); err != nil {
+		return nil, err
 	}
-
 	return f, nil
 }
 
-func (f *File) LookupImport(name string) (*Import, bool) {
+func (f *File) lookupImport(name string) (*Import, bool) {
 	imp, ok := f.ImportMap[name]
 	return imp, ok
 }
@@ -85,11 +58,85 @@ func (f *File) lookupType(name string) (*Definition, bool) {
 	return def, ok
 }
 
-// internal
+// parse imports
 
-func (f *File) resolveImports(getPackage func(string) (*Package, error)) error {
+func (f *File) parseImports(pfile *syntax.File) error {
+	for _, pimp := range pfile.Imports {
+		if err := f.parseImport(pimp); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *File) parseImport(pimp *syntax.Import) error {
+	imp, err := newImport(f, pimp)
+	if err != nil {
+		return fmt.Errorf("%v: %w", f.Path, err)
+	}
+
+	_, ok := f.ImportMap[imp.Name]
+	if ok {
+		return fmt.Errorf("%v: duplicate import %q", f.Path, imp.Name)
+	}
+
+	f.Imports = append(f.Imports, imp)
+	f.ImportMap[imp.Name] = imp
+	return nil
+}
+
+// parse options
+
+func (f *File) parseOptions(pfile *syntax.File) error {
+	for _, popt := range pfile.Options {
+		if err := f.parseOption(popt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *File) parseOption(popt *syntax.Option) error {
+	opt, err := newOption(popt)
+	if err != nil {
+		return fmt.Errorf("%v: %w", f.Path, err)
+	}
+
+	_, ok := f.OptionMap[opt.Name]
+	if ok {
+		return fmt.Errorf("%v: duplicate option %q", f.Path, opt.Name)
+	}
+
+	f.Options = append(f.Options, opt)
+	f.OptionMap[opt.Name] = opt
+	return nil
+}
+
+// parse definitions
+
+func (f *File) parseDefinitions(pfile *syntax.File) error {
+	for _, pdef := range pfile.Definitions {
+		if err := f.parseDefinition(pdef); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *File) parseDefinition(pdef *syntax.Definition) error {
+	def, err := parseDefinition(f.Package, f, pdef)
+	if err != nil {
+		return fmt.Errorf("%v: %w", f.Path, err)
+	}
+
+	return f.add(def)
+}
+
+// resolve
+
+func (f *File) resolveImports() error {
 	for _, imp := range f.Imports {
-		if err := imp.resolve(getPackage); err != nil {
+		if err := imp.resolve(); err != nil {
 			return fmt.Errorf("%v: %w", f.Name, err)
 		}
 	}
@@ -105,19 +152,23 @@ func (f *File) resolve() error {
 	return nil
 }
 
-func (f *File) resolved() error {
+// compile
+
+func (f *File) compile() error {
 	for _, def := range f.Definitions {
-		if err := def.resolved(); err != nil {
-			return fmt.Errorf("%v: %w", f.Name, err)
+		if err := def.compile(); err != nil {
+			return fmt.Errorf("%v: %w", f.Path, err)
 		}
 	}
 	return nil
 }
 
+// validate
+
 func (f *File) validate() error {
 	for _, def := range f.Definitions {
 		if err := def.validate(); err != nil {
-			return fmt.Errorf("%v: %w", f.Name, err)
+			return fmt.Errorf("%v: %w", f.Path, err)
 		}
 	}
 	return nil
@@ -128,32 +179,10 @@ func (f *File) validate() error {
 func (f *File) add(def *Definition) error {
 	_, ok := f.DefinitionNames[def.Name]
 	if ok {
-		return fmt.Errorf("duplicate definition %q", def.Name)
+		return fmt.Errorf("%v: duplicate definition %q", f.Path, def.Name)
 	}
 
 	f.Definitions = append(f.Definitions, def)
 	f.DefinitionNames[def.Name] = def
-	return nil
-}
-
-func (f *File) addImport(imp *Import) error {
-	_, ok := f.ImportMap[imp.Name]
-	if ok {
-		return fmt.Errorf("duplicate import %q", imp.Name)
-	}
-
-	f.Imports = append(f.Imports, imp)
-	f.ImportMap[imp.Name] = imp
-	return nil
-}
-
-func (f *File) addOption(opt *Option) error {
-	_, ok := f.OptionMap[opt.Name]
-	if ok {
-		return fmt.Errorf("duplicate option %q", opt.Name)
-	}
-
-	f.Options = append(f.Options, opt)
-	f.OptionMap[opt.Name] = opt
 	return nil
 }

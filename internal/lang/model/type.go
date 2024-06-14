@@ -139,7 +139,7 @@ func (t *Type) resolve(file *File) error {
 			// Local type
 
 			pkg := file.Package
-			def, ok := pkg.LookupType(t.Name)
+			def, ok := pkg.lookupType(t.Name)
 			if !ok {
 				return fmt.Errorf("type not found: %v", t.Name)
 			}
@@ -148,11 +148,11 @@ func (t *Type) resolve(file *File) error {
 		} else {
 			// Imported type
 
-			imp, ok := file.LookupImport(t.ImportName)
+			imp, ok := file.lookupImport(t.ImportName)
 			if !ok {
 				return fmt.Errorf("type not found: %v.%v", t.ImportName, t.Name)
 			}
-			def, ok := imp.LookupType(t.Name)
+			def, ok := imp.lookupType(t.Name)
 			if !ok {
 				return fmt.Errorf("type not found: %v.%v", t.ImportName, t.Name)
 			}

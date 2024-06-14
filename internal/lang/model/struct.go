@@ -15,8 +15,8 @@ type Struct struct {
 	Fields *orderedmap.Map[string, *StructField]
 }
 
-func newStruct(pkg *Package, file *File, def *Definition, pstr *syntax.Struct) (*Struct, error) {
-	str := &Struct{
+func parseStruct(pkg *Package, file *File, def *Definition, ps *syntax.Struct) (*Struct, error) {
+	s := &Struct{
 		Package: pkg,
 		File:    file,
 		Def:     def,
@@ -24,41 +24,61 @@ func newStruct(pkg *Package, file *File, def *Definition, pstr *syntax.Struct) (
 		Fields: orderedmap.New[string, *StructField](),
 	}
 
-	// Create fields
-	for _, pfield := range pstr.Fields {
-		field, err := newStructField(pfield)
-		if err != nil {
-			return nil, fmt.Errorf("invalid field %q: %w", pfield.Name, err)
-		}
+	if err := s.parseFields(ps); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
 
-		_, ok := str.Fields.Get(field.Name)
-		if ok {
-			return nil, fmt.Errorf("duplicate field, name=%v", field.Name)
-		}
+// parse
 
-		str.Fields.Put(field.Name, field)
+func (s *Struct) parseFields(ps *syntax.Struct) error {
+	for _, pfield := range ps.Fields {
+		if err := s.parseField(pfield); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Struct) parseField(pfield *syntax.StructField) error {
+	field, err := parseStructField(s, pfield)
+	if err != nil {
+		return fmt.Errorf("%v.%v: %w", s.Def.Name, pfield.Name, err)
 	}
 
-	return str, nil
+	_, ok := s.Fields.Get(field.Name)
+	if ok {
+		return fmt.Errorf("%v.%v: duplicate field", s.Def.Name, field.Name)
+	}
+
+	s.Fields.Put(field.Name, field)
+	return nil
 }
+
+// resolve
 
 func (s *Struct) resolve(file *File) error {
 	for _, field := range s.Fields.Values() {
 		if err := field.resolve(file); err != nil {
-			return fmt.Errorf("%v: %w", s.Def.Name, err)
+			return err
 		}
 	}
 	return nil
 }
 
-func (s *Struct) resolved() error {
+// compile
+
+func (s *Struct) compile() error {
 	for _, field := range s.Fields.Values() {
-		if err := field.resolved(); err != nil {
-			return fmt.Errorf("%v: %w", s.Def.Name, err)
+		if err := field.compile(); err != nil {
+			return err
 		}
 	}
 	return nil
 }
+
+// validate
 
 func (s *Struct) validate() error {
 	for _, field := range s.Fields.Values() {
@@ -67,56 +87,4 @@ func (s *Struct) validate() error {
 		}
 	}
 	return nil
-}
-
-// Field
-
-type StructField struct {
-	Name string
-	Type *Type
-}
-
-func newStructField(pfield *syntax.StructField) (*StructField, error) {
-	type_, err := newType(pfield.Type)
-	if err != nil {
-		return nil, err
-	}
-
-	f := &StructField{
-		Name: pfield.Name,
-		Type: type_,
-	}
-	return f, nil
-}
-
-func (f *StructField) resolve(file *File) error {
-	if err := f.Type.resolve(file); err != nil {
-		return fmt.Errorf("%v: %w", f.Name, err)
-	}
-	return nil
-}
-
-func (f *StructField) resolved() error {
-	ref := f.Type.Ref
-	if ref == nil {
-		return nil
-	}
-	if ref.Type == DefinitionService {
-		return fmt.Errorf("%v: service type not allowed", f.Name)
-	}
-	return nil
-}
-
-func (f *StructField) validate() error {
-	t := f.Type
-
-	switch {
-	case t.builtin():
-		return nil
-	case t.Kind == KindStruct:
-		return nil
-	}
-
-	return fmt.Errorf("%v: structs support only value types or other structs, actual=%v",
-		f.Name, t.Kind)
 }

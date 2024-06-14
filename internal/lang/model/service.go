@@ -16,48 +16,66 @@ type Service struct {
 	MethodNames map[string]*Method
 }
 
-func newService(pkg *Package, file *File, def *Definition, psrv *syntax.Service) (*Service, error) {
+func newService(pkg *Package, file *File, def *Definition, ps *syntax.Service) (*Service, error) {
 	srv := &Service{
 		Package: pkg,
 		File:    file,
 		Def:     def,
-		Sub:     psrv.Sub,
+		Sub:     ps.Sub,
 
 		MethodNames: make(map[string]*Method),
 	}
 
-	// Create methods
-	for _, pm := range psrv.Methods {
-		method, err := newMethod(pkg, file, srv, pm)
-		if err != nil {
-			return nil, fmt.Errorf("%v: %w", pm.Name, err)
-		}
-
-		_, ok := srv.MethodNames[method.Name]
-		if ok {
-			return nil, fmt.Errorf("%v: duplicate method", pm.Name)
-		}
-
-		srv.Methods = append(srv.Methods, method)
-		srv.MethodNames[method.Name] = method
+	if err := srv.parseMethods(ps); err != nil {
+		return nil, err
 	}
-
 	return srv, nil
 }
 
-func (s *Service) resolve(file *File) error {
-	for _, method := range s.Methods {
-		if err := method.resolve(file); err != nil {
-			return fmt.Errorf("%v: %w", s.Def.Name, err)
+// parse
+
+func (s *Service) parseMethods(ps *syntax.Service) error {
+	for _, pm := range ps.Methods {
+		if err := s.parseMethod(pm); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (s *Service) resolved() error {
+func (s *Service) parseMethod(pm *syntax.Method) error {
+	method, err := parseMethod(s.Package, s.File, s, pm)
+	if err != nil {
+		return fmt.Errorf("%v.%v: %w", s.Def.Name, pm.Name, err)
+	}
+
+	_, ok := s.MethodNames[method.Name]
+	if ok {
+		return fmt.Errorf("%v.%v: duplicate method", s.Def.Name, pm.Name)
+	}
+
+	s.Methods = append(s.Methods, method)
+	s.MethodNames[method.Name] = method
+	return nil
+}
+
+// resolve
+
+func (s *Service) resolve(file *File) error {
 	for _, m := range s.Methods {
-		if err := m.resolved(); err != nil {
-			return fmt.Errorf("%v: %w", s.Def.Name, err)
+		if err := m.resolve(file); err != nil {
+			return fmt.Errorf("%v.%v: %w", s.Def.Name, m.Name, err)
+		}
+	}
+	return nil
+}
+
+// compile
+
+func (s *Service) compile() error {
+	for _, m := range s.Methods {
+		if err := m.compile(); err != nil {
+			return fmt.Errorf("%v.%v: %w", s.Def.Name, m.Name, err)
 		}
 	}
 	return nil

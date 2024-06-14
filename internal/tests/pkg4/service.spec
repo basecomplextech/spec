@@ -9,7 +9,7 @@ options (
 
 service Service {
     // Subservice doc comment
-    subservice(id bin128 1) (Subservice);
+    subservice(id bin128 1) Subservice;
 
     // Method doc comment.
     method();
@@ -21,7 +21,7 @@ service Service {
     method2(a int64 1, b float64 2, c bool 3) (a int64 1, b float64 2, c bool 3);
 
     // Method3 doc comment.
-    method3(Request) (Response);
+    method3(Request) Response;
 
     // Method4 doc comment.
     method4(
@@ -106,13 +106,13 @@ service Service {
     method20(a int64 1, b float64 2, c bool 3) (<-In ->Out) (a int64 1, b float64 2, c bool 3);
 
     // Method21 doc comment.
-    method21(Request) (<-In) (Response);
+    method21(Request) (<-In) Response;
 
     // Method22 doc comment.
-    method22(Request) (->Out) (Response);
+    method22(Request) (->Out) Response;
 
     // Method23 doc comment.
-    method23(Request) (<-In ->Out) (Response);
+    method23(Request) (<-In ->Out) Response;
 }
 
 subservice Subservice {
