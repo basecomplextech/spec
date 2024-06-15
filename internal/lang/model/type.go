@@ -55,7 +55,7 @@ var primitive = map[Kind]struct{}{
 type Type struct {
 	Kind       Kind
 	Name       string
-	Element    *Type  // element type in list, reference and nullable types
+	Element    *Type  // element type in list
 	ImportName string // imported package name, "pkg" in "pkg.Type"
 
 	// Resolved
