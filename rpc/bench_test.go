@@ -138,3 +138,58 @@ func BenchmarkStream(b *testing.B) {
 
 	b.ReportMetric(ops, "ops")
 }
+
+// RequestOneway
+
+func BenchmarkRequestOneway(b *testing.B) {
+	server := testEchoServer(b)
+	client := testClient(b, server)
+	defer client.Close()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	ctx := async.NoContext()
+	msg := "hello, world"
+	req := testEchoRequest(b, msg)
+
+	for i := 0; i < b.N; i++ {
+		st := client.RequestOneway(ctx, req)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+}
+
+func BenchmarkRequestOneway_Parallel(b *testing.B) {
+	server := testEchoServer(b)
+	client := testClient(b, server)
+	defer client.Close()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	ctx := async.NoContext()
+	msg := "hello, world"
+
+	b.RunParallel(func(p *testing.PB) {
+		req := testEchoRequest(b, msg)
+
+		for p.Next() {
+			st := client.RequestOneway(ctx, req)
+			if !st.OK() {
+				b.Fatal(st)
+			}
+		}
+	})
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+}

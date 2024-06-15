@@ -115,11 +115,11 @@ func (w *clientImplWriter) method(def *model.Definition, m *model.Method) error 
 	}
 
 	switch {
-	case m.Sub:
+	case m.Subservice != nil:
 		if err := w.method_subservice(def, m); err != nil {
 			return err
 		}
-	case m.Chan:
+	case m.Channel != nil:
 		if err := w.method_channel(def, m); err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ func (w *clientImplWriter) method(def *model.Definition, m *model.Method) error 
 
 func (w *clientImplWriter) method_input(def *model.Definition, m *model.Method) error {
 	ctx := "ctx async.Context, "
-	if m.Sub {
+	if m.Subservice != nil {
 		ctx = ""
 	}
 
@@ -147,8 +147,8 @@ func (w *clientImplWriter) method_input(def *model.Definition, m *model.Method) 
 	default:
 		w.writef(`(%v) `, ctx)
 
-	case m.Input != nil:
-		typeName := typeName(m.Input)
+	case m.Request != nil:
+		typeName := typeName(m.Request)
 		w.writef(`(%v req_ %v) `, ctx, typeName)
 	}
 	return nil
@@ -159,28 +159,28 @@ func (w *clientImplWriter) method_output(def *model.Definition, m *model.Method)
 	default:
 		w.write(`(_st status.Status)`)
 
-	case m.Sub:
-		typeName := typeName(m.Output)
+	case m.Subservice != nil:
+		typeName := typeName(m.Subservice)
 		w.writef(`%vCall`, typeName)
 
-	case m.Chan:
+	case m.Channel != nil:
 		name := clientChannel_name(m)
 		w.writef(`(_ %v, _st status.Status)`, name)
 
-	case m.Output != nil:
-		typeName := typeName(m.Output)
+	case m.Response != nil:
+		typeName := typeName(m.Response)
 		w.writef(`(_ ref.R[%v], _st status.Status)`, typeName)
 	}
 	return nil
 }
 
 func (w *clientImplWriter) method_error(def *model.Definition, m *model.Method) error {
-	if !m.Sub {
+	if m.Type != model.MethodType_Subservice {
 		w.line(`return`)
 		return nil
 	}
 
-	name := clientImplNewErr(m.Output)
+	name := clientImplNewErr(m.Subservice)
 	w.linef(`return %v(_st)`, name)
 	return nil
 }
@@ -192,7 +192,7 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 	}
 
 	// Subservice methods do not return status
-	if m.Sub {
+	if m.Subservice != nil {
 		w.line(`var _st status.Status`)
 		w.line(``)
 	}
@@ -211,7 +211,7 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 	}
 
 	// Free request
-	if m.Sub {
+	if m.Subservice != nil {
 		w.line(`ok := false`)
 		w.line(`defer func() {`)
 		w.line(`if !ok {`)
@@ -234,7 +234,7 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 		w.method_error(def, m)
 		w.line(`}`)
 
-	case m.Input != nil:
+	case m.Request != nil:
 		w.linef(`st := req.AddMessage("%v", req_.Unwrap())`, m.Name)
 		w.line(`if !st.OK() {`)
 		w.line(`_st = st`)
@@ -249,7 +249,7 @@ func (w *clientImplWriter) method_call(def *model.Definition, m *model.Method) e
 
 func (w *clientImplWriter) method_subservice(def *model.Definition, m *model.Method) error {
 	// Return subservice
-	newFunc := clientImplNew(m.Output)
+	newFunc := clientImplNew(m.Subservice)
 
 	w.line(`// Return subservice`)
 	w.linef(`sub := %v(c.client, req)`, newFunc)
@@ -291,14 +291,19 @@ func (w *clientImplWriter) method_request(def *model.Definition, m *model.Method
 	w.line()
 
 	// Send request
-	w.line(`// Send request`)
-	w.line(`resp, st := c.client.Request(ctx, preq)`)
-	w.line(`if !st.OK() {`)
-	w.line(`_st = st`)
-	w.line(`return`)
-	w.line(`}`)
-	w.line(`defer resp.Release()`)
-	w.line(``)
+	if m.Oneway {
+		w.line(`// Send request`)
+		w.line(`return c.client.RequestOneway(ctx, preq)`)
+	} else {
+		w.line(`// Send request`)
+		w.line(`resp, st := c.client.Request(ctx, preq)`)
+		w.line(`if !st.OK() {`)
+		w.line(`_st = st`)
+		w.line(`return`)
+		w.line(`}`)
+		w.line(`defer resp.Release()`)
+		w.line(``)
+	}
 	return nil
 }
 
@@ -307,8 +312,11 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 	default:
 		w.line(`return status.OK`)
 
-	case m.Output != nil:
-		parseFunc := typeParseFunc(m.Output)
+	case m.Oneway:
+		// pass
+
+	case m.Response != nil:
+		parseFunc := typeParseFunc(m.Response)
 		w.line(`// Parse result`)
 		w.linef(`result, _, err := %v(resp.Unwrap())`, parseFunc)
 		w.line(`if err != nil {`)
@@ -336,7 +344,7 @@ func (w *clientImplWriter) unwrap(def *model.Definition) error {
 
 func (w *clientImplWriter) channels(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
-		if !m.Chan {
+		if m.Channel == nil {
 			continue
 		}
 
@@ -481,8 +489,8 @@ func (w *clientImplWriter) channel_response_def(m *model.Method) error {
 	default:
 		w.write(`(_st status.Status)`)
 
-	case m.Output != nil:
-		typeName := typeName(m.Output)
+	case m.Response != nil:
+		typeName := typeName(m.Response)
 		w.writef(`(_ %v, _st status.Status)`, typeName)
 	}
 
@@ -509,8 +517,8 @@ func (w *clientImplWriter) channel_response_parse(m *model.Method) error {
 		w.line(`_ = resp`)
 		w.line(`return status.OK`)
 
-	case m.Output != nil:
-		parseFunc := typeParseFunc(m.Output)
+	case m.Response != nil:
+		parseFunc := typeParseFunc(m.Response)
 		w.line(`// Parse result`)
 		w.linef(`result, _, err := %v(resp)`, parseFunc)
 		w.line(`if err != nil {`)

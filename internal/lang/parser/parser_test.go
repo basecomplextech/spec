@@ -553,7 +553,7 @@ func TestParser_Parse__should_return_error_when_invalid_channel_syntax(t *testin
 
 	_, err = p.Parse(s)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid channel receive syntax, expected <-Msg, got Msg<-`)
+	assert.Contains(t, err.Error(), `invalid channel in syntax, expected <-Msg, got Msg<-`)
 
 	s = `service Service {
 		method() (->Msg) ();
@@ -561,5 +561,5 @@ func TestParser_Parse__should_return_error_when_invalid_channel_syntax(t *testin
 
 	_, err = p.Parse(s)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid channel send syntax, expected Msg->, got ->Msg`)
+	assert.Contains(t, err.Error(), `invalid channel out syntax, expected Msg->, got ->Msg`)
 }

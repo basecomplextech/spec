@@ -690,7 +690,7 @@ method_channel_in:
 	| type '<' '-'
 	{
 		return yyLexErrorf(yylex,
-			"invalid channel receive syntax, expected <-%v, got %v<-",
+			"invalid channel in syntax, expected <-%v, got %v<-",
 			$1, $1)
 	}
 	;
@@ -703,7 +703,7 @@ method_channel_out:
 	| '-' '>' type
 	{
 		return yyLexErrorf(yylex,
-			"invalid channel send syntax, expected %v->, got ->%v",
+			"invalid channel out syntax, expected %v->, got ->%v",
 			$3, $3)
 	}
 	;

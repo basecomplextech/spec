@@ -14,6 +14,9 @@ service Service {
     // Method doc comment.
     method();
 
+    // Method0 is a one-way method.
+    method0(msg string 1) oneway;
+
     // Method1 doc comment.
     method1(msg string 1);
 
@@ -103,16 +106,16 @@ service Service {
     );
 
     // Method20 doc comment.
-    method20(a int64 1, b float64 2, c bool 3) (<-In ->Out) (a int64 1, b float64 2, c bool 3);
+    method20(a int64 1, b float64 2, c bool 3) (<-In, Out->) (a int64 1, b float64 2, c bool 3);
 
     // Method21 doc comment.
     method21(Request) (<-In) Response;
 
     // Method22 doc comment.
-    method22(Request) (->Out) Response;
+    method22(Request) (Out->) Response;
 
     // Method23 doc comment.
-    method23(Request) (<-In ->Out) Response;
+    method23(Request) (<-In, Out->) Response;
 }
 
 subservice Subservice {

@@ -100,7 +100,8 @@ func (w *clientWriter) method(def *model.Definition, m *model.Method) error {
 
 func (w *clientWriter) method_input(def *model.Definition, m *model.Method) error {
 	ctx := "ctx async.Context, "
-	if m.Sub {
+	switch {
+	case m.Subservice != nil:
 		ctx = ""
 	}
 
@@ -108,8 +109,8 @@ func (w *clientWriter) method_input(def *model.Definition, m *model.Method) erro
 	default:
 		w.writef(`(%v) `, ctx)
 
-	case m.Input != nil:
-		typeName := typeName(m.Input)
+	case m.Request != nil:
+		typeName := typeName(m.Request)
 		w.writef(`(%v req_ %v) `, ctx, typeName)
 	}
 	return nil
@@ -118,18 +119,18 @@ func (w *clientWriter) method_input(def *model.Definition, m *model.Method) erro
 func (w *clientWriter) method_output(def *model.Definition, m *model.Method) error {
 	switch {
 	default:
-		w.line(`(status.Status)`)
+		w.line(`status.Status`)
 
-	case m.Sub:
-		typeName := typeName(m.Output)
+	case m.Subservice != nil:
+		typeName := typeName(m.Subservice)
 		w.linef(`%vCall`, typeName)
 
-	case m.Chan:
+	case m.Channel != nil:
 		name := clientChannel_name(m)
 		w.linef(`(%v, status.Status)`, name)
 
-	case m.Output != nil:
-		typeName := typeName(m.Output)
+	case m.Response != nil:
+		typeName := typeName(m.Response)
 		w.linef(`(ref.R[%v], status.Status)`, typeName)
 	}
 	return nil
@@ -148,7 +149,7 @@ func (w *clientWriter) ifaceEnd(def *model.Definition) error {
 
 func (w *clientWriter) channels(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
-		if !m.Chan {
+		if m.Channel == nil {
 			continue
 		}
 
@@ -182,13 +183,11 @@ func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
 	{
 		w.write(`Response(ctx async.Context) `)
 
-		switch {
-		default:
-			w.line(`(status.Status)`)
-
-		case m.Output != nil:
-			typeName := typeName(m.Output)
+		if m.Response != nil {
+			typeName := typeName(m.Response)
 			w.linef(`(%v, status.Status)`, typeName)
+		} else {
+			w.line(`status.Status`)
 		}
 	}
 

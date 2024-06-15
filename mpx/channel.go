@@ -408,14 +408,17 @@ func (ch *channel) sendClose(ctxOrNil async.Context) status.Status {
 		return mpxError(err)
 	}
 
+	// Use channel context to send close message
+	ctx1 := s.ctx
+
 	// Decrement window
 	n := len(msg.Unwrap().Raw())
-	if st := s.decrementSendWindow(ctx, n, false /* no wait, force */); !st.OK() {
+	if st := s.decrementSendWindow(ctx1, n, false /* no wait, force */); !st.OK() {
 		return st
 	}
 
 	// Write message
-	if st := s.conn.SendMessage(ctx, msg); !st.OK() {
+	if st := s.conn.SendMessage(ctx1, msg); !st.OK() {
 		return st
 	}
 
