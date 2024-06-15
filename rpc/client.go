@@ -40,6 +40,9 @@ type Client interface {
 	// Request sends a request and returns a response.
 	Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value], status.Status)
 
+	// RequestOneway sends a request and closes the channel, without waiting for a response.
+	RequestOneway(ctx async.Context, req prpc.Request) status.Status
+
 	// Internal
 
 	// Unwrap returns the internal client.
@@ -181,6 +184,36 @@ func (c *client) Request(ctx async.Context, req prpc.Request) (ref.R[spec.Value]
 	result_ := ref.NewFreer(result, ch)
 	done = true
 	return result_, status.OK
+}
+
+// RequestOneway sends a request and closes the channel, without waiting for a response.
+func (c *client) RequestOneway(ctx async.Context, req prpc.Request) status.Status {
+	// Open channel
+	ch, st := c.channel(ctx)
+	switch st.Code {
+	case status.CodeOK:
+	case status.CodeCancelled:
+		return st
+	default:
+		c.logger.ErrorStatus("RPC client request error", st)
+		return st
+	}
+	defer ch.Free()
+
+	// Send request
+	st = ch.Request(ctx, req)
+	switch st.Code {
+	case status.CodeOK:
+	case status.CodeCancelled:
+		return st
+	default:
+		method := ch.Method()
+		c.logger.ErrorStatus("RPC client request error", st, "method", method)
+		return st
+	}
+
+	// Do not wait for response
+	return status.OK
 }
 
 // Internal
