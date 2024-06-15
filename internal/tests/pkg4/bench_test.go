@@ -223,3 +223,38 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 
 	b.ReportMetric(ops, "ops")
 }
+
+// Oneway
+
+func BenchmarkOneway(b *testing.B) {
+	ctx := async.NoContext()
+	logger := logging.TestLogger(b)
+
+	service := newTestService()
+	server := testServer(b, logger, service)
+	client := testClient(b, logger, server)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	t0 := time.Now()
+
+	w := NewServiceMethod0RequestWriter()
+	w.Msg("hello")
+	req, err := w.Build()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		st := client.Method0(ctx, req)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+	}
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
+}

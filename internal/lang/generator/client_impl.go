@@ -291,14 +291,19 @@ func (w *clientImplWriter) method_request(def *model.Definition, m *model.Method
 	w.line()
 
 	// Send request
-	w.line(`// Send request`)
-	w.line(`resp, st := c.client.Request(ctx, preq)`)
-	w.line(`if !st.OK() {`)
-	w.line(`_st = st`)
-	w.line(`return`)
-	w.line(`}`)
-	w.line(`defer resp.Release()`)
-	w.line(``)
+	if m.Oneway {
+		w.line(`// Send request`)
+		w.line(`return c.client.RequestOneway(ctx, preq)`)
+	} else {
+		w.line(`// Send request`)
+		w.line(`resp, st := c.client.Request(ctx, preq)`)
+		w.line(`if !st.OK() {`)
+		w.line(`_st = st`)
+		w.line(`return`)
+		w.line(`}`)
+		w.line(`defer resp.Release()`)
+		w.line(``)
+	}
 	return nil
 }
 
@@ -306,6 +311,9 @@ func (w *clientImplWriter) method_response(def *model.Definition, m *model.Metho
 	switch {
 	default:
 		w.line(`return status.OK`)
+
+	case m.Oneway:
+		// pass
 
 	case m.Response != nil:
 		parseFunc := typeParseFunc(m.Response)

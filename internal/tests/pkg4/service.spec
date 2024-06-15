@@ -14,6 +14,9 @@ service Service {
     // Method doc comment.
     method();
 
+    // Method0 is a one-way method.
+    method0(msg string 1) oneway;
+
     // Method1 doc comment.
     method1(msg string 1);
 

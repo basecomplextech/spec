@@ -42,7 +42,8 @@ func parseMethod(pkg *Package, file *File, service *Service, pm *syntax.Method) 
 		File:    file,
 		Service: service,
 
-		Name: pm.Name,
+		Name:   pm.Name,
+		Oneway: pm.Oneway,
 	}
 
 	if err := m.parseInput(pm); err != nil {

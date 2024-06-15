@@ -100,7 +100,8 @@ func (w *clientWriter) method(def *model.Definition, m *model.Method) error {
 
 func (w *clientWriter) method_input(def *model.Definition, m *model.Method) error {
 	ctx := "ctx async.Context, "
-	if m.Subservice != nil {
+	switch {
+	case m.Subservice != nil:
 		ctx = ""
 	}
 
