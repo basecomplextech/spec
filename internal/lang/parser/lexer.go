@@ -120,17 +120,19 @@ func (l *lexer) Error(s string) {
 	l.err = fmt.Errorf("%v %v", l.s.Position, s)
 }
 
-func trimString(s string) string {
-	return strings.Trim(s, "\"")
-}
-
 func yyLexError(l yyLexer, err error) int {
 	ll := l.(*lexer)
-	ll.err = err
+	ll.err = fmt.Errorf("%v %w", ll.s.Position, err)
 	return ERROR
 }
 
 func yyLexErrorf(l yyLexer, format string, a ...any) int {
 	err := fmt.Errorf(format, a...)
 	return yyLexError(l, err)
+}
+
+// util
+
+func trimString(s string) string {
+	return strings.Trim(s, "\"")
 }

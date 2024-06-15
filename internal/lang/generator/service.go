@@ -61,18 +61,17 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 	switch {
 	default:
 		w.write(`(ctx rpc.Context`)
-	case m.Chan:
+	case m.Type == model.MethodType_Channel:
 		channel := serviceChannel_name(m)
 		w.writef(`(ctx rpc.Context, ch %v`, channel)
-	case m.Input != nil:
-		typeName := typeName(m.Input)
+	case m.Request != nil:
+		typeName := typeName(m.Request)
 		w.writef(`(ctx rpc.Context, req %v`, typeName)
 	}
 
-	switch {
-	case m.Sub:
-		out := m.Output
-		typeName := typeName(out)
+	if m.Type == model.MethodType_Subservice {
+		sub := m.Subservice
+		typeName := typeName(sub)
 		w.writef(`, next rpc.NextHandler[%v]`, typeName)
 	}
 
@@ -81,16 +80,11 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 }
 
 func (w *serviceWriter) method_output(def *model.Definition, m *model.Method) error {
-	out := m.Output
-
-	switch {
-	default:
-		w.write(`status.Status`)
-	case m.Sub:
-		w.writef(`status.Status`)
-	case m.Output != nil:
-		typeName := typeName(out)
+	if m.Response != nil {
+		typeName := typeName(m.Response)
 		w.writef(`(ref.R[%v], status.Status)`, typeName)
+	} else {
+		w.write(`status.Status`)
 	}
 	return nil
 }
@@ -119,7 +113,7 @@ func (w *serviceWriter) new_handler(def *model.Definition) error {
 
 func (w *serviceWriter) channels(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
-		if !m.Chan {
+		if m.Type != model.MethodType_Channel {
 			continue
 		}
 
@@ -136,8 +130,8 @@ func (w *serviceWriter) channel(def *model.Definition, m *model.Method) error {
 
 	// Request method
 	switch {
-	case m.Input != nil:
-		typeName := typeName(m.Input)
+	case m.Request != nil:
+		typeName := typeName(m.Request)
 		w.linef(`Request() (%v, status.Status)`, typeName)
 	}
 

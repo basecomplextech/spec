@@ -182,14 +182,14 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 
 	// Parse input
 	switch {
-	case m.Chan:
+	case m.Channel != nil:
 		channelName := handlerChannel_name(m)
 		w.line(`// Make channel`)
 		w.linef(`ch1 := new%v(ch, call.Input())`, strings.Title(channelName))
 		w.line()
 
-	case m.Input != nil:
-		parseFunc := typeParseFunc(m.Input)
+	case m.Request != nil:
+		parseFunc := typeParseFunc(m.Request)
 		w.line(`// Parse input`)
 		w.linef(`in, _, err := %v(call.Input())`, parseFunc)
 		w.line(`if err != nil {`)
@@ -199,8 +199,8 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	}
 
 	// Next handler
-	if m.Sub {
-		newFunc := handler_new(m.Output)
+	if m.Subservice != nil {
+		newFunc := handler_new(m.Subservice)
 
 		w.line(`// Next handler`)
 		w.linef(`next := %v(ctx, ch, index+1 /* next call */)`, newFunc)
@@ -211,9 +211,9 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	// Declare result
 	w.line(`// Call method`)
 	switch {
-	case m.Sub:
+	case m.Subservice != nil:
 		w.write(`st := `)
-	case m.Output != nil:
+	case m.Response != nil:
 		w.write(`result, st := `)
 	default:
 		w.write(`st := `)
@@ -221,17 +221,17 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 
 	// Call method
 	switch {
-	case m.Chan:
+	case m.Channel != nil:
 		w.linef(`h.service.%v(ctx, ch1)`, toUpperCamelCase(m.Name))
-	case m.Input != nil:
+	case m.Request != nil:
 		w.writef(`h.service.%v(ctx, in`, toUpperCamelCase(m.Name))
-		if m.Sub {
+		if m.Subservice != nil {
 			w.write(`, next`)
 		}
 		w.line(`)`)
 	default:
 		w.writef(`h.service.%v(ctx`, toUpperCamelCase(m.Name))
-		if m.Sub {
+		if m.Subservice != nil {
 			w.write(`, next`)
 		}
 		w.line(`)`)
@@ -239,10 +239,10 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 
 	// Handle output
 	switch {
-	case m.Sub:
+	case m.Subservice != nil:
 		w.line(`return next.Result(), st`)
 
-	case m.Output != nil:
+	case m.Response != nil:
 		w.line(`if result != nil { `)
 		w.line(`defer result.Release() `)
 		w.line(`}`)
@@ -267,7 +267,7 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 
 func (w *serviceImplWriter) channels(def *model.Definition) error {
 	for _, m := range def.Service.Methods {
-		if !m.Chan {
+		if m.Channel == nil {
 			continue
 		}
 
@@ -315,9 +315,9 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 	name := handlerChannel_name(m)
 
 	switch {
-	case m.Input != nil:
-		typeName := typeName(m.Input)
-		parseFunc := typeParseFunc(m.Input)
+	case m.Request != nil:
+		typeName := typeName(m.Request)
+		parseFunc := typeParseFunc(m.Request)
 
 		w.linef(`func (c *%v) Request() (%v, status.Status) {`, name, typeName)
 		w.linef(`req, _, err := %v(c.req)`, parseFunc)

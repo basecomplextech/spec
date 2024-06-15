@@ -26,8 +26,8 @@ service TestService {
 
     // Method10, 11, 12 have channels.
     method11(Request) (<-In) Response;
-    method12(Request) (->Out) Response;
-    method13(Request) (<-In ->Out) Response;
+    method12(Request) (Out->) Response;
+    method13(Request) (<-In, Out->) Response;
 
     // Subservice doc comment.
     subservice(id bin128 1) TestSubservice;

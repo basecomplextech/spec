@@ -1133,7 +1133,7 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			return yyLexErrorf(yylex,
-				"invalid channel receive syntax, expected <-%v, got %v<-",
+				"invalid channel in syntax, expected <-%v, got %v<-",
 				yyDollar[1].type_, yyDollar[1].type_)
 		}
 	case 68:
@@ -1145,7 +1145,7 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
 			return yyLexErrorf(yylex,
-				"invalid channel send syntax, expected %v->, got ->%v",
+				"invalid channel out syntax, expected %v->, got ->%v",
 				yyDollar[3].type_, yyDollar[3].type_)
 		}
 	case 70:
