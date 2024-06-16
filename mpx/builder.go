@@ -3,14 +3,10 @@ package mpx
 import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/bin"
-	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
-type builder struct {
-	buffer *alloc.Buffer
-	writer spec.Writer
-}
+type builder struct{}
 
 type messageInput struct {
 	id     bin.Bin128
@@ -22,23 +18,11 @@ type messageInput struct {
 }
 
 func newBuilder() builder {
-	buffer := alloc.NewBuffer()
-	writer := spec.NewWriterBuffer(buffer)
-
-	return builder{
-		buffer: buffer,
-		writer: writer,
-	}
+	return builder{}
 }
 
-func (b *builder) reset() {
-	b.buffer.Reset()
-	b.writer.Reset(b.buffer)
-}
-
-func (b *builder) buildMessage(input messageInput) (pmpx.Message, error) {
-	b.reset()
-	w := pmpx.NewMessageWriterTo(b.writer.Message())
+func (b builder) buildMessage(buf *alloc.Buffer, input messageInput) (pmpx.Message, error) {
+	w := pmpx.NewMessageWriterBuffer(buf)
 
 	id := input.id
 	data := input.data
@@ -97,10 +81,8 @@ func (b *builder) buildMessage(input messageInput) (pmpx.Message, error) {
 	}
 }
 
-func (b *builder) buildWindow(id bin.Bin128, delta int32) (pmpx.Message, error) {
-	b.reset()
-
-	w := pmpx.NewMessageWriterTo(b.writer.Message())
+func (b builder) buildWindow(buf *alloc.Buffer, id bin.Bin128, delta int32) (pmpx.Message, error) {
+	w := pmpx.NewMessageWriterBuffer(buf)
 	w.Code(pmpx.Code_ChannelWindow)
 
 	w1 := w.Window()
@@ -110,5 +92,4 @@ func (b *builder) buildWindow(id bin.Bin128, delta int32) (pmpx.Message, error) 
 		return pmpx.Message{}, err
 	}
 	return w.Build()
-
 }

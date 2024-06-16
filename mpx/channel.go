@@ -357,7 +357,10 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 		input.close = false
 	}
 
-	msg, err := s.sendBuilder.buildMessage(input)
+	buf := alloc.AcquireBuffer()
+	defer buf.Free()
+
+	msg, err := s.sendBuilder.buildMessage(buf, input)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -403,7 +406,11 @@ func (ch *channel) sendClose(ctxOrNil async.Context) status.Status {
 		id:    s.id,
 		close: true,
 	}
-	msg, err := s.sendBuilder.buildMessage(input)
+
+	buf := alloc.AcquireBuffer()
+	defer buf.Free()
+
+	msg, err := s.sendBuilder.buildMessage(buf, input)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -439,7 +446,10 @@ func (ch *channel) sendWindow(delta int32) status.Status {
 	defer s.sendMu.Unlock()
 
 	// Make message
-	msg, err := s.sendBuilder.buildWindow(s.id, delta)
+	buf := alloc.AcquireBuffer()
+	defer buf.Free()
+
+	msg, err := s.sendBuilder.buildWindow(buf, s.id, delta)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -710,7 +720,6 @@ func (s *channelState) reset() {
 	s.sendOpen = false
 	s.sendClose = false
 	s.sendFree = false
-	s.sendBuilder.reset()
 
 	// Reset receive
 	s.recvMu.Lock()

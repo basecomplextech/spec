@@ -3,6 +3,7 @@ package rpc
 import (
 	"sync"
 
+	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/baselibrary/status"
@@ -248,7 +249,10 @@ func (ch *serverChannel) Send(ctx async.Context, message []byte) status.Status {
 	}
 
 	// Make message
-	msg, err := s.sendBuilder.buildMessage(message)
+	buf := alloc.AcquireBuffer()
+	defer buf.Free()
+
+	msg, err := s.sendBuilder.buildMessage(buf, message)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -275,7 +279,10 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 	}
 
 	// Make message
-	msg, err := s.sendBuilder.buildEnd()
+	buf := alloc.AcquireBuffer()
+	defer buf.Free()
+
+	msg, err := s.sendBuilder.buildEnd(buf)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -299,7 +306,10 @@ func (ch *serverChannel) SendResponse(ctx async.Context, result []byte, st statu
 	defer s.sendMu.Unlock()
 
 	// Make message
-	msg, err := s.sendBuilder.buildResponse(result, st)
+	buf := alloc.AcquireBuffer()
+	defer buf.Free()
+
+	msg, err := s.sendBuilder.buildResponse(buf, result, st)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -357,7 +367,6 @@ func (s *serverChannelState) reset() {
 
 	s.sendReq = false
 	s.sendEnd = false
-	s.sendBuilder.reset()
 
 	s.recvReq = prpc.Request{}
 	s.recvEnd = false

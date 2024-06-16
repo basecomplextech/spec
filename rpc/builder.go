@@ -3,63 +3,40 @@ package rpc
 import (
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/status"
-	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/proto/prpc"
 )
 
-type builder struct {
-	buffer *alloc.Buffer
-	writer spec.Writer
-}
+type builder struct{}
 
 func newBuilder() builder {
-	buffer := alloc.NewBuffer()
-	writer := spec.NewWriterBuffer(buffer)
-
-	return builder{
-		buffer: buffer,
-		writer: writer,
-	}
+	return builder{}
 }
 
-func (b *builder) reset() {
-	b.buffer.Reset()
-	b.writer.Reset(b.buffer)
-}
-
-func (b *builder) buildMessage(data []byte) (prpc.Message, error) {
-	b.reset()
-
-	w := prpc.NewMessageWriterTo(b.writer.Message())
+func (b builder) buildMessage(buf *alloc.Buffer, data []byte) (prpc.Message, error) {
+	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_Message)
 	w.Msg(data)
 
 	return w.Build()
 }
 
-func (b *builder) buildEnd() (prpc.Message, error) {
-	b.reset()
-
-	w := prpc.NewMessageWriterTo(b.writer.Message())
+func (b builder) buildEnd(buf *alloc.Buffer) (prpc.Message, error) {
+	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_End)
 
 	return w.Build()
 }
 
-func (b *builder) buildRequest(req prpc.Request) (prpc.Message, error) {
-	b.reset()
-
-	w := prpc.NewMessageWriterTo(b.writer.Message())
+func (b builder) buildRequest(buf *alloc.Buffer, req prpc.Request) (prpc.Message, error) {
+	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_Request)
 	w.CopyReq(req)
 
 	return w.Build()
 }
 
-func (b *builder) buildResponse(result []byte, st status.Status) (prpc.Message, error) {
-	b.reset()
-
-	w := prpc.NewMessageWriterTo(b.writer.Message())
+func (b builder) buildResponse(buf *alloc.Buffer, result []byte, st status.Status) (prpc.Message, error) {
+	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_Response)
 
 	w1 := w.Resp()
