@@ -404,6 +404,16 @@ func (w *clientImplWriter) channel_send(def *model.Definition, m *model.Method) 
 	switch in.Kind {
 	case model.KindList, model.KindMessage:
 		w.line(`return c.ch.Send(ctx, msg.Unwrap().Raw())`)
+
+	case model.KindStruct:
+		writeFunc := typeWriteFunc(in)
+		w.line(`buf := alloc.AcquireBuffer()`)
+		w.line(`defer buf.Free()`)
+		w.linef(`if _, err := %v(buf, msg); err != nil {`, writeFunc)
+		w.line(`return status.WrapError(err)`)
+		w.line(`}`)
+		w.line(`return c.ch.Send(ctx, buf.Bytes())`)
+
 	default:
 		w.line(`return c.ch.Send(ctx, msg)`)
 	}
