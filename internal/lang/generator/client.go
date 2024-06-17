@@ -164,19 +164,19 @@ func (w *clientWriter) channel(def *model.Definition, m *model.Method) error {
 	name := clientChannel_name(m)
 	w.linef(`type %v interface {`, name)
 
-	// Receive methods
+	// Send methods
 	if in := m.Channel.In; in != nil {
 		typeName := typeName(in)
+		w.linef(`Send(ctx async.Context, msg %v) status.Status `, typeName)
+		w.line(`SendEnd(ctx async.Context) status.Status `)
+	}
+
+	// Receive methods
+	if out := m.Channel.Out; out != nil {
+		typeName := typeName(out)
 		w.linef(`Receive(ctx async.Context) (%v, status.Status)`, typeName)
 		w.linef(`ReceiveAsync(ctx async.Context) (%v, bool, status.Status)`, typeName)
 		w.line(`ReceiveWait() <-chan struct{}`)
-	}
-
-	// Send methods
-	if out := m.Channel.Out; out != nil {
-		typeName := typeName(out)
-		w.linef(`Send(ctx async.Context, msg %v) status.Status `, typeName)
-		w.line(`SendEnd(ctx async.Context) status.Status `)
 	}
 
 	// Response method

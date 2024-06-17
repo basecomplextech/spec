@@ -213,13 +213,19 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		msg, st := ch.Receive(ctx)
+		w1 := NewInWriter()
+		w1.A(1)
+		w1.B(2)
+		w1.C("3")
+		msg, err := w1.Build()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		st = ch.Send(ctx, msg)
 		if !st.OK() {
 			t.Fatal(st)
 		}
-		assert.Equal(t, int64(1), msg.A())
-		assert.Equal(t, float64(2), msg.B())
-		assert.Equal(t, "3", msg.C().Unwrap())
 
 		resp, st := ch.Response(ctx)
 		if !st.OK() {
@@ -244,19 +250,13 @@ func TestService_Channel(t *testing.T) {
 		}
 		defer ch.Free()
 
-		w1 := NewOutWriter()
-		w1.A(1)
-		w1.B(2)
-		w1.C("3")
-		msg, err := w1.Build()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		st = ch.Send(ctx, msg)
+		msg, st := ch.Receive(ctx)
 		if !st.OK() {
 			t.Fatal(st)
 		}
+		assert.Equal(t, int64(1), msg.A())
+		assert.Equal(t, float64(2), msg.B())
+		assert.Equal(t, "3", msg.C().Unwrap())
 
 		resp, st := ch.Response(ctx)
 		if !st.OK() {
@@ -289,7 +289,7 @@ func TestService_Channel(t *testing.T) {
 		assert.Equal(t, float64(2), msg.B())
 		assert.Equal(t, "3", msg.C().Unwrap())
 
-		w1 := NewOutWriter()
+		w1 := NewInWriter()
 		w1.A(1)
 		w1.B(2)
 		w1.C("3")

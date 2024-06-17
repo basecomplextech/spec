@@ -136,16 +136,16 @@ func (w *serviceWriter) channel(def *model.Definition, m *model.Method) error {
 	}
 
 	// Receive methods
-	if out := m.Channel.Out; out != nil {
-		typeName := typeName(out)
+	if in := m.Channel.In; in != nil {
+		typeName := typeName(in)
 		w.linef(`Receive(ctx async.Context) (%v, status.Status)`, typeName)
 		w.linef(`ReceiveAsync(ctx async.Context) (%v, bool, status.Status)`, typeName)
 		w.line(`ReceiveWait() <-chan struct{}`)
 	}
 
 	// Send methods
-	if in := m.Channel.In; in != nil {
-		typeName := typeName(in)
+	if out := m.Channel.Out; out != nil {
+		typeName := typeName(out)
 		w.linef(`Send(ctx async.Context, msg %v) status.Status`, typeName)
 		w.line(`SendEnd(ctx async.Context) status.Status`)
 	}

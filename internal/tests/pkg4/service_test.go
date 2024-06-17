@@ -133,8 +133,29 @@ func (s *testService) Method21(ctx rpc.Context, ch ServiceMethod21Channel) (ref.
 	}
 	str := req.Msg().Unwrap()
 
+	_, st = ch.Receive(ctx)
+	if !st.OK() {
+		return nil, st
+	}
+
+	w := NewResponseWriter()
+	w.Msg(str)
+	resp, err := w.Build()
+	if err != nil {
+		return nil, status.WrapError(err)
+	}
+	return ref.NewNoop(resp), status.OK
+}
+
+func (s *testService) Method22(ctx rpc.Context, ch ServiceMethod22Channel) (ref.R[Response], status.Status) {
+	req, st := ch.Request()
+	if !st.OK() {
+		return nil, st
+	}
+	str := req.Msg().Unwrap()
+
 	{
-		w := NewInWriter()
+		w := NewOutWriter()
 		w.A(1)
 		w.B(2)
 		w.C("3")
@@ -155,27 +176,6 @@ func (s *testService) Method21(ctx rpc.Context, ch ServiceMethod21Channel) (ref.
 	return ref.NewNoop(resp), status.OK
 }
 
-func (s *testService) Method22(ctx rpc.Context, ch ServiceMethod22Channel) (ref.R[Response], status.Status) {
-	req, st := ch.Request()
-	if !st.OK() {
-		return nil, st
-	}
-	str := req.Msg().Unwrap()
-
-	_, st = ch.Receive(ctx)
-	if !st.OK() {
-		return nil, st
-	}
-
-	w := NewResponseWriter()
-	w.Msg(str)
-	resp, err := w.Build()
-	if err != nil {
-		return nil, status.WrapError(err)
-	}
-	return ref.NewNoop(resp), status.OK
-}
-
 func (s *testService) Method23(ctx rpc.Context, ch ServiceMethod23Channel) (ref.R[Response], status.Status) {
 	req, st := ch.Request()
 	if !st.OK() {
@@ -184,7 +184,7 @@ func (s *testService) Method23(ctx rpc.Context, ch ServiceMethod23Channel) (ref.
 	str := req.Msg().Clone()
 
 	{
-		w := NewInWriter()
+		w := NewOutWriter()
 		w.A(1)
 		w.B(2)
 		w.C("3")

@@ -391,17 +391,17 @@ func (w *clientImplWriter) channel_def(def *model.Definition, m *model.Method) e
 }
 
 func (w *clientImplWriter) channel_send(def *model.Definition, m *model.Method) error {
-	out := m.Channel.Out
-	if out == nil {
+	in := m.Channel.In
+	if in == nil {
 		return nil
 	}
 
 	name := clientChannelImpl_name(m)
-	typeName := typeName(out)
+	typeName := typeName(in)
 
 	// Send
 	w.linef(`func (c *%v) Send(ctx async.Context, msg %v) status.Status {`, name, typeName)
-	switch out.Kind {
+	switch in.Kind {
 	case model.KindList, model.KindMessage:
 		w.line(`return c.ch.Send(ctx, msg.Unwrap().Raw())`)
 	default:
@@ -419,14 +419,14 @@ func (w *clientImplWriter) channel_send(def *model.Definition, m *model.Method) 
 }
 
 func (w *clientImplWriter) channel_receive(def *model.Definition, m *model.Method) error {
-	in := m.Channel.In
-	if in == nil {
+	out := m.Channel.Out
+	if out == nil {
 		return nil
 	}
 
 	name := clientChannelImpl_name(m)
-	typeName := typeName(in)
-	parseFunc := typeParseFunc(in)
+	typeName := typeName(out)
+	parseFunc := typeParseFunc(out)
 
 	// Receive
 	w.linef(`func (c *%v) Receive(ctx async.Context) (%v, status.Status) {`, name, typeName)

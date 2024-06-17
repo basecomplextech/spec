@@ -339,14 +339,14 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 }
 
 func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Method) error {
-	out := m.Channel.Out
-	if out == nil {
+	in := m.Channel.In
+	if in == nil {
 		return nil
 	}
 
 	name := handlerChannel_name(m)
-	typeName := typeName(out)
-	parseFunc := typeParseFunc(out)
+	typeName := typeName(in)
+	parseFunc := typeParseFunc(in)
 
 	// Receive
 	w.linef(`func (c *%v) Receive(ctx async.Context) (%v, status.Status) {`, name, typeName)
@@ -388,22 +388,22 @@ func (w *serviceImplWriter) channel_receive(def *model.Definition, m *model.Meth
 }
 
 func (w *serviceImplWriter) channel_send(def *model.Definition, m *model.Method) error {
-	in := m.Channel.In
-	if in == nil {
+	out := m.Channel.Out
+	if out == nil {
 		return nil
 	}
 
 	name := handlerChannel_name(m)
-	typeName := typeName(in)
+	typeName := typeName(out)
 
 	// Send
 	w.linef(`func (c *%v) Send(ctx async.Context, msg %v) status.Status {`, name, typeName)
-	switch in.Kind {
+	switch out.Kind {
 	case model.KindList, model.KindMessage:
 		w.line(`return c.ch.Send(ctx, msg.Unwrap().Raw())`)
 
 	case model.KindStruct:
-		writeFunc := typeWriteFunc(in)
+		writeFunc := typeWriteFunc(out)
 		w.line(`buf := alloc.AcquireBuffer()`)
 		w.line(`defer buf.Free()`)
 		w.linef(`if _, err := %v(buf, msg); err != nil {`, writeFunc)
