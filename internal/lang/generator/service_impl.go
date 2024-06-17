@@ -211,6 +211,8 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	// Declare result
 	w.line(`// Call method`)
 	switch {
+	case m.Oneway:
+		w.write(`_ = `)
 	case m.Subservice != nil:
 		w.write(`st := `)
 	case m.Response != nil:
@@ -239,6 +241,9 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 
 	// Handle output
 	switch {
+	case m.Oneway:
+		w.line(`return nil, rpc.SkipResponse`)
+
 	case m.Subservice != nil:
 		w.line(`return next.Result(), st`)
 

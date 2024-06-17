@@ -99,6 +99,11 @@ func (s *server) HandleChannel(ctx Context, ch mpx.Channel) (st status.Status) {
 		}
 	}
 
+	// Skip response for oneway methods
+	if st.Code == CodeSkipResponse {
+		return status.OK
+	}
+
 	// Send response
 	var result []byte
 	if result_ != nil {
