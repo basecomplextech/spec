@@ -189,12 +189,9 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line()
 
 	case m.Request != nil:
-		parseFunc := typeParseFunc(m.Request)
+		makeFunc := typeMakeMessageFunc(m.Request)
 		w.line(`// Parse input`)
-		w.linef(`in, _, err := %v(call.Input())`, parseFunc)
-		w.line(`if err != nil {`)
-		w.line(`return nil, rpc.WrapError(err)`)
-		w.line(`}`)
+		w.linef(`in := %v(call.Input())`, makeFunc)
 		w.line()
 	}
 
@@ -306,10 +303,10 @@ func (w *serviceImplWriter) channel_def(def *model.Definition, m *model.Method) 
 	w.line()
 	w.linef(`type %v struct {`, name)
 	w.line(`ch rpc.ServerChannel`)
-	w.line(`req spec.Value`)
+	w.line(`req spec.Message`)
 	w.line(`}`)
 	w.line()
-	w.linef(`func new%v(ch rpc.ServerChannel, req spec.Value) *%v {`, strings.Title(name), name)
+	w.linef(`func new%v(ch rpc.ServerChannel, req spec.Message) *%v {`, strings.Title(name), name)
 	w.linef(`return &%v{ch: ch, req: req}`, name)
 	w.linef(`}`)
 	w.line()
@@ -322,15 +319,11 @@ func (w *serviceImplWriter) channel_request(def *model.Definition, m *model.Meth
 	switch {
 	case m.Request != nil:
 		typeName := typeName(m.Request)
-		parseFunc := typeParseFunc(m.Request)
+		makeFunc := typeMakeMessageFunc(m.Request)
 
 		w.linef(`func (c *%v) Request() (%v, status.Status) {`, name, typeName)
-		w.linef(`req, _, err := %v(c.req)`, parseFunc)
-		w.line(`if err != nil {`)
-		w.linef(`return %v{}, rpc.WrapError(err)`, typeName)
-		w.line(`}`)
-
-		w.line(`c.req = nil`)
+		w.linef(`req := %v(c.req)`, makeFunc)
+		w.line(`c.req = spec.Message{}`)
 		w.line(`return req, status.OK`)
 		w.line(`}`)
 		w.line()

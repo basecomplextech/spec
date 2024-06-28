@@ -61,6 +61,10 @@ func (w *messageWriter) new_methods(def *model.Definition) error {
 	w.linef(`return %v{msg}, nil`, def.Name)
 	w.linef(`}`)
 	w.line()
+	w.linef(`func Make%v(msg spec.Message) %v {`, def.Name, def.Name)
+	w.linef(`return %v{msg}`, def.Name)
+	w.linef(`}`)
+	w.line()
 	return nil
 }
 
@@ -156,8 +160,15 @@ func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 		w.writef(`}`)
 		w.line()
 
+	case model.KindMessage:
+		makeFunc := typeMakeMessageFunc(field.Type)
+
+		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
+		w.writef(`return %v(m.msg.Message(%d))`, makeFunc, tag)
+		w.writef(`}`)
+		w.line()
+
 	case model.KindEnum,
-		model.KindMessage,
 		model.KindStruct:
 		newFunc := typeNewFunc(field.Type)
 

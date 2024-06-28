@@ -303,6 +303,14 @@ func (m Message) String(tag uint16) core.String {
 	return core.String(p)
 }
 
+// Message
+
+// Message decodes and returns a message or an empty message.
+func (m Message) Message(tag uint16) Message {
+	b := m.field(tag)
+	return NewMessage(b)
+}
+
 // internal
 
 func (m Message) field(tag uint16) []byte {

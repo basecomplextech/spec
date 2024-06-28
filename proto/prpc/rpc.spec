@@ -24,7 +24,7 @@ message Request {
 
 message Call {
     method  string  1;
-    input   any     2;
+    input   message 2;
 }
 
 // Response

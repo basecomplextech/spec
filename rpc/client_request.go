@@ -67,7 +67,7 @@ func (r *Request) AddMessage(method string, input spec.Message) status.Status {
 
 	call := s.calls.Add()
 	call.Method(method)
-	call.Input().Any(input.Raw())
+	call.CopyInput(input)
 
 	if err := call.End(); err != nil {
 		return WrapError(err)

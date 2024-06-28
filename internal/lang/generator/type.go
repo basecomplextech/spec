@@ -121,6 +121,20 @@ func typeNewFunc(typ *model.Type) string {
 	return ""
 }
 
+func typeMakeMessageFunc(typ *model.Type) string {
+	kind := typ.Kind
+
+	switch kind {
+	case model.KindMessage:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Make%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Make%v", typ.Name)
+	}
+
+	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
+}
+
 func typeParseFunc(typ *model.Type) string {
 	kind := typ.Kind
 

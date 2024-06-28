@@ -53,7 +53,7 @@ func testEchoServer(t tests.T) *server {
 		}
 
 		call := req.Calls().Get(0)
-		msg := call.Input().String().Unwrap()
+		msg := call.Input().String(1).Unwrap()
 
 		buf := alloc.AcquireBuffer()
 		ok := false
@@ -84,7 +84,10 @@ func testEchoRequest(t tests.T, msg string) prpc.Request {
 	{
 		call := calls.Add()
 		call.Method("echo")
-		if err := call.Input().String(msg); err != nil {
+
+		input := call.Input()
+		input.Field(1).String(msg)
+		if err := input.End(); err != nil {
 			t.Fatal(err)
 		}
 		if err := call.End(); err != nil {
