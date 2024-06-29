@@ -10,6 +10,7 @@ import (
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/pmpx"
+	"github.com/panjf2000/ants/v2"
 )
 
 type Conn interface {
@@ -513,7 +514,9 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Start handler
-	go c.handleChannel(ch)
+	workerPool.Submit(func() {
+		c.handleChannel(ch)
+	})
 	done = true
 	return st
 }
@@ -735,3 +738,20 @@ func (c *conn) notifyClosed() {
 	}
 	clear(c.closedListeners)
 }
+
+// worker pool
+
+// workerPool allows to reuse goroutines with bigger stacks for handling channels.
+// It does not provide any performance benefits in test benchmarks, but it does provide
+// performance gains in real-world scenarios with big stacks, especially with chained RPC handlers.
+//
+//	BenchmarkTable_Get_Parallel-10:
+//	goroutines		144731 ops	568 B/op	23 allocs/op
+//	goroutine pool	178928 ops	558 B/op	23 allocs/op
+var workerPool = func() *ants.Pool {
+	pool, err := ants.NewPool(0)
+	if err != nil {
+		panic(err)
+	}
+	return pool
+}()

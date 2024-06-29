@@ -180,7 +180,8 @@ func MakeCall(msg spec.Message) Call {
 }
 
 func ParseCall(b []byte) (_ Call, size int, err error) {
-	msg, size, err := spec.ParseMessage(b)
+	msg, err := spec.NewMessageErr(b)
+	size = len(msg.Raw())
 	if err != nil || size == 0 {
 		return
 	}
