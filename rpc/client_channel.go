@@ -435,7 +435,7 @@ func (s *channelState) receiveAsync(ctx async.Context) (prpc.Message, bool, stat
 
 // state
 
-var statePool = pools.MakePool(newChannelState)
+var statePool = pools.NewPoolFunc(newChannelState)
 
 func acquireState() *channelState {
 	return statePool.New()

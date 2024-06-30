@@ -43,7 +43,7 @@ func (w *serviceImplWriter) def(def *model.Definition) error {
 	w.line()
 
 	if def.Service.Sub {
-		w.linef(`var %vPool = pools.MakePool(`, name)
+		w.linef(`var %vPool = pools.NewPoolFunc(`, name)
 		w.linef(`func() *%v {`, name)
 		w.linef(`return &%v{}`, name)
 		w.line(`},`)

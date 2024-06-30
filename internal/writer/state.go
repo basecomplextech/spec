@@ -45,7 +45,7 @@ func (s *writerState) reset() {
 
 // state pool
 
-var writerStatePool = pools.MakePool(newWriterState)
+var writerStatePool = pools.NewPoolFunc(newWriterState)
 
 func acquireWriterState() *writerState {
 	return writerStatePool.New()

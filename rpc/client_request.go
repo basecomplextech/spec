@@ -104,7 +104,7 @@ func (r *Request) state() *requestState {
 
 // state
 
-var requestStatePool = pools.MakePool(newRequestState)
+var requestStatePool = pools.NewPoolFunc(newRequestState)
 
 type requestState struct {
 	buf    *alloc.Buffer

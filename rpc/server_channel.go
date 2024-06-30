@@ -350,7 +350,7 @@ func (ch *serverChannel) rlock() (*serverChannelState, bool) {
 
 // state
 
-var serverStatePool = pools.MakePool(newServerChannelState)
+var serverStatePool = pools.NewPoolFunc(newServerChannelState)
 
 func acquireServerState() *serverChannelState {
 	return serverStatePool.New()

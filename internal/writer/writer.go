@@ -649,7 +649,7 @@ func (w *writer) reset() {
 
 // pool
 
-var writerPool = pools.MakePool(
+var writerPool = pools.NewPoolFunc(
 	func() *writer {
 		s := acquireWriterState()
 		return &writer{writerState: s}

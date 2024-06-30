@@ -693,7 +693,7 @@ func (s *channelState) decrementRecvWindow(size int) {
 
 // state pool
 
-var channelPool = pools.MakePool(newChannelState)
+var channelPool = pools.NewPoolFunc(newChannelState)
 
 func acquireChannelState() *channelState {
 	return channelPool.New()
