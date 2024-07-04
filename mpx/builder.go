@@ -21,7 +21,7 @@ func newBuilder() builder {
 	return builder{}
 }
 
-func (b builder) buildMessage(buf *alloc.Buffer, input messageInput) (pmpx.Message, error) {
+func (b builder) buildMessage(buf alloc.Buffer, input messageInput) (pmpx.Message, error) {
 	w := pmpx.NewMessageWriterBuffer(buf)
 
 	id := input.id
@@ -81,7 +81,7 @@ func (b builder) buildMessage(buf *alloc.Buffer, input messageInput) (pmpx.Messa
 	}
 }
 
-func (b builder) buildWindow(buf *alloc.Buffer, id bin.Bin128, delta int32) (pmpx.Message, error) {
+func (b builder) buildWindow(buf alloc.Buffer, id bin.Bin128, delta int32) (pmpx.Message, error) {
 	w := pmpx.NewMessageWriterBuffer(buf)
 	w.Code(pmpx.Code_ChannelWindow)
 

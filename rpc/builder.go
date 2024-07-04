@@ -12,7 +12,7 @@ func newBuilder() builder {
 	return builder{}
 }
 
-func (b builder) buildMessage(buf *alloc.Buffer, data []byte) (prpc.Message, error) {
+func (b builder) buildMessage(buf alloc.Buffer, data []byte) (prpc.Message, error) {
 	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_Message)
 	w.Msg(data)
@@ -20,14 +20,14 @@ func (b builder) buildMessage(buf *alloc.Buffer, data []byte) (prpc.Message, err
 	return w.Build()
 }
 
-func (b builder) buildEnd(buf *alloc.Buffer) (prpc.Message, error) {
+func (b builder) buildEnd(buf alloc.Buffer) (prpc.Message, error) {
 	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_End)
 
 	return w.Build()
 }
 
-func (b builder) buildRequest(buf *alloc.Buffer, req prpc.Request) (prpc.Message, error) {
+func (b builder) buildRequest(buf alloc.Buffer, req prpc.Request) (prpc.Message, error) {
 	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_Request)
 	w.CopyReq(req)
@@ -35,7 +35,7 @@ func (b builder) buildRequest(buf *alloc.Buffer, req prpc.Request) (prpc.Message
 	return w.Build()
 }
 
-func (b builder) buildResponse(buf *alloc.Buffer, result []byte, st status.Status) (prpc.Message, error) {
+func (b builder) buildResponse(buf alloc.Buffer, result []byte, st status.Status) (prpc.Message, error) {
 	w := prpc.NewMessageWriterBuffer(buf)
 	w.Type(prpc.MessageType_Response)
 

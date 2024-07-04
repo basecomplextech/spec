@@ -32,6 +32,6 @@ func Default() Options {
 
 // NewBuffer returns a new alloc.Buffer.
 // The method is used in generated code.
-func NewBuffer() *alloc.Buffer {
+func NewBuffer() alloc.Buffer {
 	return alloc.NewBuffer()
 }

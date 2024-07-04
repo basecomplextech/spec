@@ -21,7 +21,7 @@ type reader struct {
 	freed  bool
 
 	head [4]byte
-	buf  *alloc.Buffer
+	buf  alloc.Buffer
 }
 
 func newReader(r io.Reader, client bool, bufferSize int) *reader {

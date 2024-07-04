@@ -107,7 +107,7 @@ func (r *Request) state() *requestState {
 var requestStatePool = pools.NewPoolFunc(newRequestState)
 
 type requestState struct {
-	buf    *alloc.Buffer
+	buf    alloc.Buffer
 	writer spec.Writer
 
 	req   prpc.RequestWriter
