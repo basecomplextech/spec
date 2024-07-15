@@ -7,7 +7,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.18
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.8.2
-	github.com/zeebo/assert v1.3.1
 )
 
 require (

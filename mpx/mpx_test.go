@@ -8,7 +8,7 @@ import (
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
-	"github.com/zeebo/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func testServer(t tests.T, handle HandleFunc) *server {
