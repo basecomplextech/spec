@@ -62,8 +62,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-metrics v0.3.10/go.mod h1:4O98XIr/9W0sxpJ8UaYkvjk10Iff7SnFrb4QAOwNTFc=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
-github.com/basecomplextech/baselibrary v0.0.0-20240628041322-8d56a2a3c227 h1:/nS2Izx4rfw5++EC7TB5a4aKAWoaRptSzIYX6hCIcPw=
-github.com/basecomplextech/baselibrary v0.0.0-20240628041322-8d56a2a3c227/go.mod h1:lpBMGy05naCdN3KewejjqOBicp12r7N//IxDf/8sNzo=
+github.com/basecomplextech/baselibrary v0.0.0-20240715030637-28295f587f35 h1:zoDg5LcbxffdUfHaBfXMNZs+v58UW2DZL8Wm/mAICso=
+github.com/basecomplextech/baselibrary v0.0.0-20240715030637-28295f587f35/go.mod h1:Ute6b413gbUaf5myWpWNXRqwXQkXa3akZhtt7E406lE=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=

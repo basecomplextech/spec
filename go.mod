@@ -3,7 +3,7 @@ module github.com/basecomplextech/spec
 go 1.22
 
 require (
-	github.com/basecomplextech/baselibrary v0.0.0-20240628041322-8d56a2a3c227
+	github.com/basecomplextech/baselibrary v0.0.0-20240715030637-28295f587f35
 	github.com/pierrec/lz4/v4 v4.1.18
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.8.2
