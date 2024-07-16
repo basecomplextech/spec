@@ -1,50 +1,67 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/basecomplextech/spec/internal/lang"
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	var importPath []string
-	var skipRPC bool
+	app := &cli.App{
+		Name:  "spec",
+		Usage: "Spec code generator",
+		Commands: []*cli.Command{
+			{
+				Name:        "generate",
+				Description: "Generate a Go package from a Spec package",
+				UsageText:   "spec generate [-i import-paths] [--skip-rpc] [src-dir] [dst-dir]",
+				Args:        true,
+				Flags: []cli.Flag{
+					&cli.StringSliceFlag{
+						Name:    "import",
+						Aliases: []string{"i"},
+						Usage:   "import paths",
+					},
+					&cli.BoolFlag{
+						Name:  "skip-rpc",
+						Usage: "skip generating RPC code",
+					},
+				},
+				Action: func(x *cli.Context) error {
+					// Source/dest args
+					src := ""
+					dst := ""
 
-	generate := &cobra.Command{
-		Use:   "generate [-i import-dirs] [--skip-rpc] [src-dir] [dst-dir]",
-		Short: "Generates a Go package",
-		Long:  `Generates a Go package`,
-		Args:  cobra.MaximumNArgs(2),
-		Run: func(_ *cobra.Command, args []string) {
-			srcPath := ""
-			dstPath := ""
+					args := x.Args().Slice()
+					switch len(args) {
+					case 0:
+						src = "."
+					case 1:
+						src = strings.TrimSpace(x.Args().Get(0))
+					case 2:
+						src = strings.TrimSpace(x.Args().Get(0))
+						dst = strings.TrimSpace(x.Args().Get(1))
+					default:
+						return fmt.Errorf("invalid src/dst args: %v", args)
+					}
 
-			switch len(args) {
-			case 0:
-				srcPath = "."
-			case 1:
-				srcPath = strings.TrimSpace(args[0])
-			case 2:
-				srcPath = strings.TrimSpace(args[0])
-				dstPath = strings.TrimSpace(args[1])
-			default:
-				log.Fatal("Invalid src/dir paths")
-			}
+					// Flags
+					imports := x.StringSlice("import")
+					skipRPC := x.Bool("skip-rpc")
 
-			spec := lang.New(importPath, skipRPC)
-			if err := spec.Generate(srcPath, dstPath); err != nil {
-				log.Fatal(err)
-			}
+					// Generate
+					spec := lang.New(imports, skipRPC)
+					return spec.Generate(src, dst)
+				},
+			},
 		},
 	}
 
-	generate.Flags().StringArrayVarP(&importPath, "import", "i", nil, "import dirs")
-	generate.Flags().BoolVar(&skipRPC, "skip-rpc", false, "skip generating RPC code")
-	generate.MarkFlagRequired("out")
-
-	var cmd = &cobra.Command{Use: "spec"}
-	cmd.AddCommand(generate)
-	cmd.Execute()
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 }
