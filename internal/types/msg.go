@@ -61,8 +61,8 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 		bytes: bytes,
 	}
 
-	ln := m.Len()
-	for i := 0; i < ln; i++ {
+	num := m.Fields()
+	for i := 0; i < num; i++ {
 		b1 := m.fieldAt(i)
 		if len(b1) == 0 {
 			continue
@@ -73,11 +73,6 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 		}
 	}
 	return m, size, nil
-}
-
-// Len returns the number of fields in the message.
-func (m Message) Len() int {
-	return m.meta.Len()
 }
 
 // Empty returns true if bytes are empty or message has no fields.
@@ -91,6 +86,11 @@ func (m Message) Raw() []byte {
 }
 
 // Fields
+
+// Fields returns the number of fields in the message.
+func (m Message) Fields() int {
+	return m.meta.Len()
+}
 
 // HasField returns true if the message contains a field.
 func (m Message) HasField(tag uint16) bool {
