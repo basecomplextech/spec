@@ -1,3 +1,5 @@
+// Copyright 2023 Ivan Korobkov. All rights reserved.
+
 package syntax
 
 type Kind int

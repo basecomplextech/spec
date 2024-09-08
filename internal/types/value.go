@@ -1,3 +1,5 @@
+// Copyright 2021 Ivan Korobkov. All rights reserved.
+
 package types
 
 import (

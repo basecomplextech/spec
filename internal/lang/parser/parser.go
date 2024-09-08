@@ -1,3 +1,5 @@
+// Copyright 2021 Ivan Korobkov. All rights reserved.
+
 //go:generate goyacc -l -v grammar.out -o grammar.go grammar.y
 
 package parser

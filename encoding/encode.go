@@ -1,3 +1,5 @@
+// Copyright 2021 Ivan Korobkov. All rights reserved.
+
 package encoding
 
 import (
@@ -118,6 +120,13 @@ func EncodeBin128(b buffer.Buffer, v bin.Bin128) (int, error) {
 	copy(p, v[:])
 	p[16] = byte(core.TypeBin128)
 	return 17, nil
+}
+
+func EncodeBin128Bytes(b buffer.Buffer, v bin.Bin128) ([]byte, int, error) {
+	p := b.Grow(17)
+	copy(p, v[:])
+	p[16] = byte(core.TypeBin128)
+	return p, 17, nil
 }
 
 func EncodeBin256(b buffer.Buffer, v bin.Bin256) (int, error) {
@@ -316,7 +325,7 @@ func encodeMessageTable(b buffer.Buffer, table []MessageField, big bool) (int, e
 
 // private
 
-// appendSize appends size as rvarint, for tests.
+// appendSize appends size as compactint, for tests.
 func appendSize(b []byte, big bool, size uint32) []byte {
 	p := [compactint.MaxLen32]byte{}
 	n := compactint.PutReverseUint32(p[:], size)

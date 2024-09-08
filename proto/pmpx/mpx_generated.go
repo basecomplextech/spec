@@ -38,11 +38,6 @@ func NewVersion(b []byte) Version {
 	return Version(v)
 }
 
-func NewVersionErr(b []byte) (_ Version, err error) {
-	v, _, err := encoding.DecodeInt32(b)
-	return Version(v), err
-}
-
 func ParseVersion(b []byte) (result Version, size int, err error) {
 	v, size, err := encoding.DecodeInt32(b)
 	if err != nil || size == 0 {
