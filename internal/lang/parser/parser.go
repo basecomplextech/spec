@@ -1,4 +1,6 @@
 // Copyright 2021 Ivan Korobkov. All rights reserved.
+// Use of this software is governed by the MIT License
+// that can be found in the LICENSE file.
 
 //go:generate goyacc -l -v grammar.out -o grammar.go grammar.y
 
