@@ -5,7 +5,6 @@
 package mpx
 
 import (
-	"runtime"
 	"time"
 
 	"github.com/basecomplextech/baselibrary/units"
@@ -15,10 +14,10 @@ type Options struct {
 	// Client
 
 	// ClientConns is a maximum number of client connections, zero means one connection.
-	ClientConns int
+	ClientConns int `json:"client_conns"`
 
-	// ConnChannels is a target number of channels per connection, zero means no limit.
-	ConnChannels int
+	// ClientConnChannels is a target number of channels per connection, zero means no limit.
+	ClientConnChannels int `json:"client_conn_channels"`
 
 	// Connection
 
@@ -45,12 +44,9 @@ type Options struct {
 
 // Default returns default options.
 func Default() Options {
-	cpus := runtime.NumCPU()
-	maxConns := max(4, cpus/4)
-
 	return Options{
-		ClientConns:  maxConns,
-		ConnChannels: 128,
+		ClientConns:        4,
+		ClientConnChannels: 128,
 
 		Compress:    true,
 		DialTimeout: 2 * time.Second,
@@ -70,8 +66,8 @@ func (o Options) clean() Options {
 	if o.ClientConns != 0 {
 		o1.ClientConns = o.ClientConns
 	}
-	if o.ConnChannels != 0 {
-		o1.ConnChannels = o.ConnChannels
+	if o.ClientConnChannels != 0 {
+		o1.ClientConnChannels = o.ClientConnChannels
 	}
 
 	o1.Compress = o.Compress

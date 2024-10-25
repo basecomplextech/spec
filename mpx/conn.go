@@ -54,9 +54,6 @@ type conn interface {
 	// OnClosed adds a disconnection listener, and returns an unsubscribe function.
 	OnClosed(fn func()) (unsub func())
 
-	// ChannelNum returns the number of active channels.
-	ChannelNum() int
-
 	// SendMessage write an outgoing message to the write queue.
 	SendMessage(ctx async.Context, msg pmpx.Message) status.Status
 }
@@ -70,8 +67,9 @@ type connImpl struct {
 	options  Options
 
 	// flags
-	closed     async.MutFlag
-	negotiated async.MutFlag
+	closed      async.MutFlag
+	negotiated  async.MutFlag
+	negotiated_ bool
 
 	// reader/writer
 	reader *reader
@@ -205,14 +203,6 @@ func (c *connImpl) OnClosed(fn func()) (unsub func()) {
 // Free closes and frees the connection.
 func (c *connImpl) Free() {
 	c.Close()
-}
-
-// ChannelNum returns the number of active channels.
-func (c *connImpl) ChannelNum() int {
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	return len(c.channels)
 }
 
 // SendMessage write an outgoing message to the write queue.
@@ -385,6 +375,7 @@ func (c *connImpl) negotiateClient() status.Status {
 	}
 
 	c.negotiated.Set()
+	c.negotiated_ = true
 	return status.OK
 }
 
@@ -471,6 +462,7 @@ func (c *connImpl) negotiateServer() status.Status {
 	}
 
 	c.negotiated.Set()
+	c.negotiated_ = true
 	return status.OK
 }
 
@@ -663,22 +655,30 @@ func (c *connImpl) closeChannels() {
 }
 
 func (c *connImpl) createChannel() (Channel, bool, status.Status) {
+	id := bin.Random128()
+	window := int(c.options.ChannelWindowSize)
+	ch := createChannel(c, c.client, id, window)
+
+	done := false
+	defer func() {
+		if !done {
+			ch.Free()
+		}
+	}()
+
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
 
 	switch {
 	case c.channelsClosed:
 		return nil, false, statusConnClosed
-	case !c.negotiated.Get():
+	case !c.negotiated_:
 		return nil, false, status.OK
 	}
 
-	id := bin.Random128()
-	window := int(c.options.ChannelWindowSize)
-
-	ch := createChannel(c, c.client, id, window)
 	c.channels[id] = ch
 	c.maybeChannelsReached()
+	done = true
 	return ch, true, status.OK
 }
 
@@ -729,7 +729,9 @@ func (c *connImpl) maybeChannelsReached() {
 	if c.channelsReached {
 		return
 	}
-	if len(c.channels) < c.options.ConnChannels {
+
+	target := c.options.ClientConnChannels
+	if target <= 0 || len(c.channels) < target {
 		return
 	}
 

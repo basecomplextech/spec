@@ -15,16 +15,56 @@ import (
 
 func testClient(t tests.T, s *server) *client {
 	addr := s.Address()
-	return newClient(addr, s.logger, s.options)
+	c := newClient(addr, s.logger, s.options)
+
+	t.Cleanup(func() {
+		c.Close()
+	})
+	return c
 }
 
 // Flags
 
-func TestClient_Connected_Disconnected__should_signal_on_state_changes(t *testing.T) {
+func TestClient__should_set_connected_flag_on_conn_opened(t *testing.T) {
 	server := testRequestServer(t)
+	client := testClient(t, server)
 	ctx := async.NoContext()
 
+	_, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	assert.True(t, client.connected_.Get())
+	assert.False(t, client.disconnected_.Get())
+}
+
+func TestClient__should_set_disconnected_flag_when_all_conns_closed(t *testing.T) {
+	server := testRequestServer(t)
 	client := testClient(t, server)
+	ctx := async.NoContext()
+
+	conn, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	conn.Close()
+
+	select {
+	case <-client.disconnected_.Wait():
+	case <-time.After(time.Second):
+		t.Fatal("disconnect timeout")
+	}
+
+	assert.False(t, client.connected_.Get())
+	assert.True(t, client.disconnected_.Get())
+}
+
+func TestClient__should_switch_flags_on_state_changes(t *testing.T) {
+	server := testRequestServer(t)
+	client := testClient(t, server)
+	ctx := async.NoContext()
+
 	_, st := client.Conn(ctx)
 	if !st.OK() {
 		t.Fatal(st)
@@ -56,27 +96,15 @@ func TestClient_Close__should_close_client(t *testing.T) {
 	client := testClient(t, server)
 	client.Close()
 
-	closed := client.connector.closed().Get()
+	closed := client.Closed().Get()
 	assert.True(t, closed)
 }
 
 func TestClient_Close__should_close_connection(t *testing.T) {
 	server := testRequestServer(t)
-
 	client := testClient(t, server)
-	defer client.Close()
-
-	{
-		ctx := async.NoContext()
-		ch, st := client.Channel(ctx)
-		if !st.OK() {
-			t.Fatal(st)
-		}
-		testChannelSend(t, ctx, ch, "hello, world")
-		ch.Free()
-	}
-
 	ctx := async.NoContext()
+
 	conn, st := client.Conn(ctx)
 	if !st.OK() {
 		t.Fatal(st)
@@ -95,18 +123,91 @@ func TestClient_Close__should_close_connection(t *testing.T) {
 
 // Conn
 
-func TestClient_Conn__should_establish_connection(t *testing.T) {
+func TestClient_Conn__should_open_connection(t *testing.T) {
 	server := testRequestServer(t)
-
 	client := testClient(t, server)
-	defer client.Close()
-
 	ctx := async.NoContext()
+
 	conn, st := client.Conn(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 	conn.Free()
+}
+
+func TestClient_Conn__should_return_existing_connection(t *testing.T) {
+	server := testRequestServer(t)
+	client := testClient(t, server)
+	ctx := async.NoContext()
+
+	conn, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	conn1, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	assert.Same(t, conn, conn1)
+}
+
+func TestClient_Conn__should_reconnect_when_connection_closed(t *testing.T) {
+	server := testRequestServer(t)
+	client := testClient(t, server)
+	ctx := async.NoContext()
+
+	conn, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	conn.Close()
+	select {
+	case <-conn.Closed().Wait():
+	case <-time.After(time.Second):
+		t.Fatal("close timeout")
+	}
+
+	conn1, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	assert.NotSame(t, conn, conn1)
+}
+
+func TestClient_Conn__should_open_more_connections_when_channels_target_reached(t *testing.T) {
+	server := testRequestServer(t)
+	ctx := async.NoContext()
+
+	client := testClient(t, server)
+	client.options.ClientConns = 2
+	client.options.ClientConnChannels = 1
+
+	conn, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	if _, st := conn.Channel(ctx); !st.OK() {
+		t.Fatal(st)
+	}
+	if _, st := conn.Channel(ctx); !st.OK() {
+		t.Fatal(st)
+	}
+
+	conn1, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	assert.Same(t, conn, conn1)
+
+	time.Sleep(50 * time.Millisecond)
+
+	client.mu.Lock()
+	n := len(client.conns)
+	client.mu.Unlock()
+
+	assert.Equal(t, 2, n)
 }
 
 // Channel
