@@ -23,6 +23,20 @@ func testClient(t tests.T, s *server) *client {
 	return c
 }
 
+// NewClient
+
+func TestNewClient__should_open_connection_when_autoconnect(t *testing.T) {
+	server := testRequestServer(t)
+	server.options.Client.AutoConnect = true
+	client := testClient(t, server)
+
+	select {
+	case <-client.Connected().Wait():
+	case <-time.After(time.Second):
+		t.Fatal("connect timeout")
+	}
+}
+
 // Flags
 
 func TestClient__should_set_connected_flag_on_conn_opened(t *testing.T) {

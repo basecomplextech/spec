@@ -72,7 +72,7 @@ type client struct {
 }
 
 func newClient(addr string, logger logging.Logger, opts Options) *client {
-	return &client{
+	c := &client{
 		addr:    addr,
 		logger:  logger,
 		options: opts.clean(),
@@ -81,6 +81,11 @@ func newClient(addr string, logger logging.Logger, opts Options) *client {
 		connected_:    async.UnsetFlag(),
 		disconnected_: async.SetFlag(),
 	}
+
+	if opts.Client.AutoConnect {
+		c.connect()
+	}
+	return c
 }
 
 // Address returns the server address.
@@ -171,6 +176,48 @@ func (c *client) Channel(ctx async.Context) (Channel, status.Status) {
 	return conn.Channel(ctx)
 }
 
+// conn delegate
+
+// onConnClosed is called when the connection is closed.
+func (c *client) onConnClosed(conn conn) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Delete connection
+	c.conns = slices2.Remove(c.conns, conn)
+	if len(c.conns) > 0 {
+		return
+	}
+
+	// Clear connected
+	if c.connected_.Get() {
+		c.connected_.Unset()
+		c.disconnected_.Set()
+	}
+
+	// Maybe auto-connect
+	if c.options.Client.AutoConnect {
+		c.connect()
+	}
+}
+
+// onConnChannelsReached is called when the number of channels reaches the target.
+// The method is used by the auto connector to establish more connections.
+func (c *client) onConnChannelsReached(conn conn) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	max := c.options.Client.MaxConns
+	if max <= 0 {
+		return
+	}
+
+	num := len(c.conns)
+	if num < max {
+		c.connect()
+	}
+}
+
 // private
 
 func (c *client) conn() (conn, async.Future[conn], status.Status) {
@@ -207,8 +254,6 @@ func (c *client) conn() (conn, async.Future[conn], status.Status) {
 	}
 	return nil, future, status.OK
 }
-
-// connect
 
 func (c *client) connect() (async.Future[conn], status.Status) {
 	routine, ok := c.connecting.Unwrap()
@@ -251,40 +296,4 @@ func (c *client) doConnect(ctx async.Context) (conn, status.Status) {
 	c.connected_.Set()
 	c.disconnected_.Unset()
 	return conn, status.OK
-}
-
-// delegate
-
-// onConnClosed is called when the connection is closed.
-func (c *client) onConnClosed(conn conn) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Delete connection
-	c.conns = slices2.Remove(c.conns, conn)
-
-	// Maybe clear connected
-	if len(c.conns) == 0 {
-		if c.connected_.Get() {
-			c.connected_.Unset()
-			c.disconnected_.Set()
-		}
-	}
-}
-
-// onConnChannelsReached is called when the number of channels reaches the target.
-// The method is used by the auto connector to establish more connections.
-func (c *client) onConnChannelsReached(conn conn) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	max := c.options.Client.MaxConns
-	if max <= 0 {
-		return
-	}
-
-	num := len(c.conns)
-	if num < max {
-		c.connect()
-	}
 }
