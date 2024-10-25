@@ -483,7 +483,9 @@ func (s *channelState) receiveFail(st status.Status) {
 		status.CodeEnd,
 		status.CodeWait:
 
-	case status.CodeError, status.CodeCorrupted:
+	case status.CodeError,
+		status.CodeParseError,
+		status.CodeChecksumError:
 		s.logger.ErrorStatus("RPC client request error", st, "method", s.method)
 
 	default:

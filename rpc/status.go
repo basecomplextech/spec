@@ -42,6 +42,8 @@ func parseStatus(s prpc.Status) status.Status {
 	return status.New(code, msg)
 }
 
+// parseStatusCode returns a spec string into a constant status code string,
+// or a clone of the original string.
 func parseStatusCode(code spec.String) status.Code {
 	switch status.Code(code) {
 
@@ -56,8 +58,6 @@ func parseStatusCode(code spec.String) status.Code {
 	// Error class
 	case status.CodeError:
 		return status.CodeError
-	case status.CodeCorrupted:
-		return status.CodeCorrupted
 	case status.CodeExternalError:
 		return status.CodeExternalError
 
@@ -88,6 +88,12 @@ func parseStatusCode(code spec.String) status.Code {
 		return status.CodeEnd
 	case status.CodeWait:
 		return status.CodeWait
+
+	// Parsing class
+	case status.CodeParseError:
+		return status.CodeParseError
+	case status.CodeChecksumError:
+		return status.CodeChecksumError
 
 	// RPC class
 	case ErrorCode:
