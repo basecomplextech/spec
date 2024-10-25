@@ -78,7 +78,7 @@ func (c *requestConnector) conn(ctx async.Context) (conn, async.Future[conn], st
 		// Maybe connect more
 		if len(c.pool) < c.opts.MaxConns {
 			num := conn.ChannelNum()
-			if num >= c.opts.TargetConnChannels {
+			if num >= c.opts.ConnChannels {
 				c.connect()
 			}
 		}
@@ -150,7 +150,7 @@ func (c *requestConnector) doConnect(ctx async.Context) (conn, status.Status) {
 	}()
 
 	// Connect
-	conn, st := connect(c.addr, c.logger, c.opts)
+	conn, st := connect(c.addr, c /* delegate */, c.logger, c.opts)
 	if !st.OK() {
 		return nil, st
 	}
@@ -170,4 +170,29 @@ func (c *requestConnector) doConnect(ctx async.Context) (conn, status.Status) {
 	c.connected_.Set()
 	c.disconnected_.Unset()
 	return conn, status.OK
+}
+
+// delegate
+
+// onConnClosed is called when the connection is closed.
+func (c *requestConnector) onConnClosed(conn conn) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Delete connection
+	delete(c.pool, conn)
+
+	// Maybe clear connected
+	if len(c.pool) == 0 {
+		if c.connected_.Get() {
+			c.connected_.Unset()
+			c.disconnected_.Set()
+		}
+	}
+}
+
+// onConnChannelsReached is called when the number of channels reaches the target.
+// The method is used by the auto connector to establish more connections.
+func (c *requestConnector) onConnChannelsReached(conn conn) {
+	// Ignore, connections are open on requests.
 }

@@ -34,8 +34,8 @@ type Options struct {
 	// MaxConns is a max number of client connections.
 	MaxConns int
 
-	// TargetConnChannels is a target number of channels per connection.
-	TargetConnChannels int
+	// ConnChannels is a target number of channels per connection.
+	ConnChannels int
 }
 
 // Default returns default options.

@@ -193,7 +193,7 @@ func (s *server) serve(ctx async.Context) status.Status {
 }
 
 func (s *server) handle(nc net.Conn) {
-	conn := newConn(nc, false /* not client */, s.handler, s.logger, s.options)
+	conn := newConn(nc, false /* not client */, s /* delegate */, s.handler, s.logger, s.options)
 
 	go func() {
 		defer func() {
@@ -206,3 +206,12 @@ func (s *server) handle(nc net.Conn) {
 		conn.run()
 	}()
 }
+
+// delegate
+
+// onConnClosed is called when the connection is closed.
+func (s *server) onConnClosed(c conn) {}
+
+// onConnChannelsReached is called when the number of channels reaches the target.
+// The method is used by the auto connector to establish more connections.
+func (s *server) onConnChannelsReached(c conn) {}

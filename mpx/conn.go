@@ -39,7 +39,9 @@ type Conn interface {
 
 // Connect dials an address and returns a connection.
 func Connect(address string, logger logging.Logger, opts Options) (Conn, status.Status) {
-	return connect(address, logger, opts)
+	delegate := noopConnDelegate{}
+	opts = opts.clean()
+	return connect(address, delegate, logger, opts)
 }
 
 // internal
@@ -60,23 +62,27 @@ type conn interface {
 }
 
 type connImpl struct {
-	conn    net.Conn
-	handler Handler
-	logger  logging.Logger
-	options Options
+	conn     net.Conn
+	client   bool
+	delegate connDelegate
+	handler  Handler
+	logger   logging.Logger
+	options  Options
 
-	client     bool
+	// flags
 	closed     async.MutFlag
 	negotiated async.MutFlag
 
+	// reader/writer
 	reader *reader
 	writer *writer
 	writeq alloc.ByteQueue
 
 	// channels
-	channelMu     sync.Mutex
-	channels      map[bin.Bin128]internalChannel
-	channelClosed bool
+	channelMu       sync.Mutex
+	channels        map[bin.Bin128]internalChannel
+	channelsClosed  bool
+	channelsReached bool // number of channels reached the target number, notify delegate once
 
 	// close listeners
 	closedMu        sync.Mutex
@@ -86,23 +92,22 @@ type connImpl struct {
 }
 
 // connect connects to an address and returns a client connection.
-func connect(address string, logger logging.Logger, opts Options) (*connImpl, status.Status) {
-	opts = opts.clean()
+func connect(address string, delegate connDelegate, logger logging.Logger, opts Options) (
+	*connImpl, status.Status) {
 
 	// Dial address
-	nc, err := net.DialTimeout("tcp", address, opts.DialTimeout)
+	conn, err := net.DialTimeout("tcp", address, opts.DialTimeout)
 	if err != nil {
 		return nil, mpxError(err)
 	}
 
-	// Noop incoming handler
-	h := HandleFunc(func(_ Context, ch Channel) status.Status {
-		ch.Free()
-		return status.OK
+	// Incoming handler
+	handler := HandleFunc(func(_ Context, ch Channel) status.Status {
+		return status.ExternalError("client connection does not support incoming channels")
 	})
 
 	// Make connection
-	c := newConn(nc, true /* client */, h, logger, opts)
+	c := newConn(conn, true /* client */, delegate, handler, logger, opts)
 	go func() {
 		defer func() {
 			if e := recover(); e != nil {
@@ -116,19 +121,27 @@ func connect(address string, logger logging.Logger, opts Options) (*connImpl, st
 	return c, status.OK
 }
 
-func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, opts Options) *connImpl {
+func newConn(
+	conn net.Conn,
+	client bool,
+	delegate connDelegate,
+	handler Handler,
+	logger logging.Logger,
+	opts Options,
+) *connImpl {
 	return &connImpl{
-		conn:    c,
-		handler: handler,
-		logger:  logger,
-		options: opts.clean(),
+		conn:     conn,
+		client:   client,
+		delegate: delegate,
+		handler:  handler,
+		logger:   logger,
+		options:  opts.clean(),
 
-		client:     client,
 		closed:     async.UnsetFlag(),
 		negotiated: async.UnsetFlag(),
 
-		reader: newReader(c, client, int(opts.ReadBufferSize)),
-		writer: newWriter(c, client, int(opts.WriteBufferSize)),
+		reader: newReader(conn, client, int(opts.ReadBufferSize)),
+		writer: newWriter(conn, client, int(opts.WriteBufferSize)),
 		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
 		channels:        make(map[bin.Bin128]internalChannel),
@@ -271,7 +284,12 @@ func (c *connImpl) run() {
 }
 
 func (c *connImpl) close() {
+	if c.closed.Get() {
+		return
+	}
+
 	defer c.notifyClosed()
+	defer c.delegate.onConnClosed(c)
 	defer c.closeChannels()
 
 	c.conn.Close()
@@ -518,18 +536,18 @@ func (c *connImpl) receiveOpen(msg pmpx.Message) status.Status {
 	}()
 
 	// Handle message
-	st := ch.Receive1(msg)
-	if !st.OK() {
+	if st := ch.Receive1(msg); !st.OK() {
 		delete(c.channels, id)
 		return st
 	}
+	c.maybeChannelsReached()
 
 	// Start handler
 	workerPool.Go(func() {
 		c.handleChannel(ch)
 	})
 	done = true
-	return st
+	return status.OK
 }
 
 func (c *connImpl) receiveClose(msg pmpx.Message) status.Status {
@@ -633,10 +651,10 @@ func (c *connImpl) closeChannels() {
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
 
-	if c.channelClosed {
+	if c.channelsClosed {
 		return
 	}
-	c.channelClosed = true
+	c.channelsClosed = true
 
 	for _, ch := range c.channels {
 		ch.Free1()
@@ -649,7 +667,7 @@ func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 	defer c.channelMu.Unlock()
 
 	switch {
-	case c.channelClosed:
+	case c.channelsClosed:
 		return nil, false, statusConnClosed
 	case !c.negotiated.Get():
 		return nil, false, status.OK
@@ -660,6 +678,7 @@ func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 
 	ch := createChannel(c, c.client, id, window)
 	c.channels[id] = ch
+	c.maybeChannelsReached()
 	return ch, true, status.OK
 }
 
@@ -667,7 +686,7 @@ func (c *connImpl) removeChannel(id bin.Bin128) {
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
 
-	if c.channelClosed {
+	if c.channelsClosed {
 		return
 	}
 
@@ -704,6 +723,18 @@ func (c *connImpl) handleChannel(ch Channel) {
 
 	// Log errors
 	c.logger.ErrorStatus("Channel error", st)
+}
+
+func (c *connImpl) maybeChannelsReached() {
+	if c.channelsReached {
+		return
+	}
+	if len(c.channels) < c.options.ConnChannels {
+		return
+	}
+
+	c.channelsReached = true
+	c.delegate.onConnChannelsReached(c)
 }
 
 // close listeners
