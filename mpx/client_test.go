@@ -18,31 +18,17 @@ func testClient(t tests.T, s *server) *client {
 	return newClient(addr, s.logger, s.options)
 }
 
-// Connect
-
-func TestClient_Connect__should_start_connector(t *testing.T) {
-	server := testRequestServer(t)
-
-	client := testClient(t, server)
-	client.Connect()
-
-	select {
-	case <-client.Connected().Wait():
-	case <-time.After(time.Second):
-		t.Fatal("connect timeout")
-	}
-
-	assert.True(t, client.Connected().Get())
-	assert.False(t, client.Disconnected().Get())
-}
-
 // Flags
 
 func TestClient_Connected_Disconnected__should_signal_on_state_changes(t *testing.T) {
 	server := testRequestServer(t)
+	ctx := async.NoContext()
 
 	client := testClient(t, server)
-	client.Connect()
+	_, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
 
 	select {
 	case <-client.Connected().Wait():
@@ -105,6 +91,22 @@ func TestClient_Close__should_close_connection(t *testing.T) {
 	}
 
 	assert.True(t, conn.Closed().Get())
+}
+
+// Conn
+
+func TestClient_Conn__should_establish_connection(t *testing.T) {
+	server := testRequestServer(t)
+
+	client := testClient(t, server)
+	defer client.Close()
+
+	ctx := async.NoContext()
+	conn, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	conn.Free()
 }
 
 // Channel
@@ -186,42 +188,13 @@ func TestClient_Channel__should_reconnect_if_connection_closed(t *testing.T) {
 			t.Fatal(st)
 		}
 		conn.Close()
-	}
-
-	ctx := async.NoContext()
-	ch, st := client.Channel(ctx)
-	if !st.OK() {
-		t.Fatal(st)
-	}
-	defer ch.Free()
-
-	testChannelSend(t, ctx, ch, "hello, world")
-}
-
-func TestClient_Channel__should_await_connection(t *testing.T) {
-	server := testRequestServer(t)
-	select {
-	case <-server.Stop():
-	case <-time.After(time.Second):
-		t.Fatal("stop timeout")
-	}
-
-	client := testClient(t, server)
-	defer client.Close()
-
-	go func() {
-		time.Sleep(time.Millisecond * 100)
-		server.Start()
 
 		select {
-		case <-server.Listening().Wait():
+		case <-conn.Closed().Wait():
 		case <-time.After(time.Second):
-			t.Fatal("start timeout")
+			t.Fatal("close timeout")
 		}
-
-		connector := client.connector.(*requestConnector)
-		connector.addr = server.Address()
-	}()
+	}
 
 	ctx := async.NoContext()
 	ch, st := client.Channel(ctx)

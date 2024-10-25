@@ -36,7 +36,7 @@ func newManualConnector(addr string, logger logging.Logger, opts Options) *reque
 		logger: logger,
 		opts:   opts,
 
-		closed_:       async.SetFlag(),
+		closed_:       async.UnsetFlag(),
 		connected_:    async.UnsetFlag(),
 		disconnected_: async.SetFlag(),
 
@@ -76,7 +76,8 @@ func (c *requestConnector) conn(ctx async.Context) (conn, async.Future[conn], st
 	conn, ok := c.pool.conn()
 	if ok {
 		// Maybe connect more
-		if len(c.pool) < c.opts.MaxConns {
+		max := c.opts.ClientConns
+		if max != 0 && len(c.pool) < max {
 			num := conn.ChannelNum()
 			if num >= c.opts.ConnChannels {
 				c.connect()

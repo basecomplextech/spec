@@ -31,9 +31,6 @@ type Client interface {
 	// Close closes the client.
 	Close() status.Status
 
-	// Connect manually starts the internal connect loop.
-	Connect() status.Status
-
 	// Methods
 
 	// Conn returns a connection.
@@ -97,11 +94,6 @@ func (c *client) Disconnected() async.Flag {
 // Close closes the client.
 func (c *client) Close() status.Status {
 	return c.connector.close()
-}
-
-// Connect manually starts the internal connect loop.
-func (c *client) Connect() status.Status {
-	return status.OK // TODO: Ignore for now
 }
 
 // Methods
