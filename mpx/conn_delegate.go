@@ -9,7 +9,6 @@ type connDelegate interface {
 	onConnClosed(c conn)
 
 	// onConnChannelsReached is called when the number of channels reaches the target.
-	// The method is used by the auto connector to establish more connections.
 	onConnChannelsReached(c conn)
 }
 
@@ -23,5 +22,4 @@ type noopConnDelegate struct{}
 func (d noopConnDelegate) onConnClosed(c conn) {}
 
 // onConnChannelsReached is called when the number of channels reaches the target.
-// The method is used by the auto connector to establish more connections.
 func (d noopConnDelegate) onConnChannelsReached(c conn) {}

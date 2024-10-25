@@ -11,27 +11,9 @@ import (
 )
 
 type Options struct {
+	// Client specifies client options.
 	Client ClientOptions `json:"client"`
-	Server ServerOptions `json:"server"`
-	Conn   ConnOptions   `json:"conn"`
-}
 
-type ClientOptions struct {
-	AutoConnect bool `json:"auto_connect"`
-
-	// MaxConns is a maximum number of client connections, zero means one connection.
-	MaxConns int `json:"max_conns"`
-
-	// ConnChannels is a target number of channels per connection, zero means no limit.
-	ConnChannels int `json:"conn_channels"`
-
-	// DialTimeout is a client dial timeout.
-	DialTimeout time.Duration `json:"dial_timeout"`
-}
-
-type ServerOptions struct{}
-
-type ConnOptions struct {
 	// Compress enables compression.
 	Compress bool `json:"compress"`
 
@@ -48,6 +30,19 @@ type ConnOptions struct {
 	WriteQueueSize units.Bytes `json:"write_queue_size"`
 }
 
+type ClientOptions struct {
+	AutoConnect bool `json:"auto_connect"`
+
+	// MaxConns is a maximum number of client connections, zero means one connection.
+	MaxConns int `json:"max_conns"`
+
+	// ConnChannels is a target number of channels per connection, zero means no limit.
+	ConnChannels int `json:"conn_channels"`
+
+	// DialTimeout is a client dial timeout.
+	DialTimeout time.Duration `json:"dial_timeout"`
+}
+
 // Default
 
 // Default returns the default options.
@@ -59,13 +54,11 @@ func Default() Options {
 			DialTimeout:  2 * time.Second,
 		},
 
-		Conn: ConnOptions{
-			Compress:          true,
-			ChannelWindowSize: 16 * units.MiB,
-			ReadBufferSize:    32 * units.KiB,
-			WriteBufferSize:   32 * units.KiB,
-			WriteQueueSize:    16 * units.MiB,
-		},
+		Compress:          true,
+		ChannelWindowSize: 16 * units.MiB,
+		ReadBufferSize:    32 * units.KiB,
+		WriteBufferSize:   32 * units.KiB,
+		WriteQueueSize:    16 * units.MiB,
 	}
 }
 
@@ -73,13 +66,8 @@ func Default() Options {
 
 // clean cleans options, sets zero values to default values.
 func (o Options) clean() Options {
-	o.Conn = o.Conn.clean()
-	return o
-}
-
-// clean cleans options, sets zero values to default values.
-func (o ConnOptions) clean() ConnOptions {
-	o1 := Default().Conn
+	o1 := Default()
+	o1.Client = o.Client
 	o1.Compress = o.Compress
 
 	if o.ChannelWindowSize != 0 {

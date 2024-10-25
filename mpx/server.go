@@ -207,11 +207,12 @@ func (s *server) handle(nc net.Conn) {
 	}()
 }
 
-// delegate
+// connDelegate
+
+var _ connDelegate = (*server)(nil)
 
 // onConnClosed is called when the connection is closed.
 func (s *server) onConnClosed(c conn) {}
 
 // onConnChannelsReached is called when the number of channels reaches the target.
-// The method is used by the auto connector to establish more connections.
 func (s *server) onConnChannelsReached(c conn) {}

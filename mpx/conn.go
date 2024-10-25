@@ -138,9 +138,9 @@ func newConn(
 		closed:     async.UnsetFlag(),
 		negotiated: async.UnsetFlag(),
 
-		reader: newReader(conn, client, int(opts.Conn.ReadBufferSize)),
-		writer: newWriter(conn, client, int(opts.Conn.WriteBufferSize)),
-		writeq: alloc.NewByteQueueCap(int(opts.Conn.WriteQueueSize)),
+		reader: newReader(conn, client, int(opts.ReadBufferSize)),
+		writer: newWriter(conn, client, int(opts.WriteBufferSize)),
+		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
 		channels:        make(map[bin.Bin128]internalChannel),
 		closedListeners: make(map[int64]func()),
@@ -316,7 +316,7 @@ func (c *connImpl) negotiateClient() status.Status {
 		vv.Add(pmpx.Version_Version10)
 		vv.End()
 
-		if c.options.Conn.Compress {
+		if c.options.Compress {
 			cc := w.Compress()
 			cc.Add(pmpx.Compress_Lz4)
 			cc.End()
@@ -656,7 +656,7 @@ func (c *connImpl) closeChannels() {
 
 func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 	id := bin.Random128()
-	window := int(c.options.Conn.ChannelWindowSize)
+	window := int(c.options.ChannelWindowSize)
 	ch := createChannel(c, c.client, id, window)
 
 	done := false

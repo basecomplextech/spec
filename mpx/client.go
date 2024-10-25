@@ -41,7 +41,7 @@ type Client interface {
 
 	// Methods
 
-	// Conn returns a connection.
+	// Conn returns an existing connection, or opens a new one.
 	Conn(ctx async.Context) (Conn, status.Status)
 
 	// Channel returns a new channel.
@@ -147,7 +147,7 @@ func (c *client) Close() status.Status {
 
 // Methods
 
-// Conn returns a connection.
+// Conn returns an existing connection, or opens a new one.
 func (c *client) Conn(ctx async.Context) (Conn, status.Status) {
 	// Get connection
 	conn, future, st := c.conn()
@@ -176,7 +176,9 @@ func (c *client) Channel(ctx async.Context) (Channel, status.Status) {
 	return conn.Channel(ctx)
 }
 
-// conn delegate
+// connDelegate
+
+var _ connDelegate = (*client)(nil)
 
 // onConnClosed is called when the connection is closed.
 func (c *client) onConnClosed(conn conn) {
@@ -202,7 +204,6 @@ func (c *client) onConnClosed(conn conn) {
 }
 
 // onConnChannelsReached is called when the number of channels reaches the target.
-// The method is used by the auto connector to establish more connections.
 func (c *client) onConnChannelsReached(conn conn) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
