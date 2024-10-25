@@ -63,7 +63,7 @@ func newClient(addr string, logger logging.Logger, opts Options) *client {
 		logger:  logger,
 		options: opts.clean(),
 
-		connector: newManualConnector(addr, logger, opts),
+		connector: newRequestConnector(addr, logger, opts),
 	}
 }
 
@@ -100,22 +100,7 @@ func (c *client) Close() status.Status {
 
 // Conn returns a connection.
 func (c *client) Conn(ctx async.Context) (Conn, status.Status) {
-	// Get connection
-	conn, future, st := c.connector.conn(ctx)
-	if !st.OK() {
-		return nil, st
-	}
-	if conn != nil {
-		return conn, status.OK
-	}
-
-	// Await connection
-	select {
-	case <-ctx.Wait():
-		return nil, ctx.Status()
-	case <-future.Wait():
-		return future.Result()
-	}
+	return c.connector.conn(ctx)
 }
 
 // Channel returns a new channel.

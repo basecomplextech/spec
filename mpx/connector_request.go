@@ -30,7 +30,7 @@ type requestConnector struct {
 	connecting opt.Opt[async.Routine[conn]]
 }
 
-func newManualConnector(addr string, logger logging.Logger, opts Options) *requestConnector {
+func newRequestConnector(addr string, logger logging.Logger, opts Options) *requestConnector {
 	return &requestConnector{
 		addr:   addr,
 		logger: logger,
@@ -61,8 +61,57 @@ func (c *requestConnector) disconnected() async.Flag {
 
 // methods
 
-// connect returns a connection or a future.
-func (c *requestConnector) conn(ctx async.Context) (conn, async.Future[conn], status.Status) {
+// connect returns an existing connection or opens a new one.
+func (c *requestConnector) conn(ctx async.Context) (conn, status.Status) {
+	// Get connection
+	conn, future, st := c.getConn(ctx)
+	if !st.OK() {
+		return nil, st
+	}
+	if conn != nil {
+		return conn, status.OK
+	}
+
+	// Await connection
+	select {
+	case <-ctx.Wait():
+		return nil, ctx.Status()
+	case <-future.Wait():
+		return future.Result()
+	}
+}
+
+// close stops and closes the connector.
+func (c *requestConnector) close() status.Status {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.closed_.Get() {
+		return status.OK
+	}
+	c.closed_.Set()
+
+	// Stop connecting
+	if routine, ok := c.connecting.Unwrap(); ok {
+		c.connecting.Unset()
+		routine.Stop()
+	}
+
+	// Close connections
+	for conn := range c.pool {
+		conn.Close()
+	}
+	clear(c.pool)
+
+	// Update flags
+	c.connected_.Unset()
+	c.disconnected_.Set()
+	return status.OK
+}
+
+// private
+
+func (c *requestConnector) getConn(ctx async.Context) (conn, async.Future[conn], status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -100,35 +149,7 @@ func (c *requestConnector) conn(ctx async.Context) (conn, async.Future[conn], st
 	return nil, future, status.OK
 }
 
-// close stops and closes the connector.
-func (c *requestConnector) close() status.Status {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.closed_.Get() {
-		return status.OK
-	}
-	c.closed_.Set()
-
-	// Stop connecting
-	if routine, ok := c.connecting.Unwrap(); ok {
-		c.connecting.Unset()
-		routine.Stop()
-	}
-
-	// Close connections
-	for conn := range c.pool {
-		conn.Close()
-	}
-	clear(c.pool)
-
-	// Update flags
-	c.connected_.Unset()
-	c.disconnected_.Set()
-	return status.OK
-}
-
-// private
+// connect
 
 func (c *requestConnector) connect() (async.Future[conn], status.Status) {
 	routine, ok := c.connecting.Unwrap()

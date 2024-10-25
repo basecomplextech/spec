@@ -21,8 +21,8 @@ type connector interface {
 
 	// methods
 
-	// connect returns a connection or a future.
-	conn(ctx async.Context) (conn, async.Future[conn], status.Status)
+	// connect returns an existing connection or opens a new one.
+	conn(ctx async.Context) (conn, status.Status)
 
 	// close stops and closes the connector.
 	close() status.Status
