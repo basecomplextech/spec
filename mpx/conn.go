@@ -44,23 +44,22 @@ func Connect(address string, logger logging.Logger, opts Options) (Conn, status.
 
 // internal
 
-type internalConn interface {
-	// Closed returns a flag that is set when the connection is closed.
-	Closed() async.Flag
+var _ conn = (*connImpl)(nil)
+
+type conn interface {
+	Conn
 
 	// OnClosed adds a disconnection listener, and returns an unsubscribe function.
 	OnClosed(fn func()) (unsub func())
+
+	// ChannelNum returns the number of active channels.
+	ChannelNum() int
 
 	// SendMessage write an outgoing message to the write queue.
 	SendMessage(ctx async.Context, msg pmpx.Message) status.Status
 }
 
-var (
-	_ Conn         = (*conn)(nil)
-	_ internalConn = (*conn)(nil)
-)
-
-type conn struct {
+type connImpl struct {
 	conn    net.Conn
 	handler Handler
 	logger  logging.Logger
@@ -87,7 +86,7 @@ type conn struct {
 }
 
 // connect connects to an address and returns a client connection.
-func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
+func connect(address string, logger logging.Logger, opts Options) (*connImpl, status.Status) {
 	opts = opts.clean()
 
 	// Dial address
@@ -117,8 +116,8 @@ func connect(address string, logger logging.Logger, opts Options) (*conn, status
 	return c, status.OK
 }
 
-func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, opts Options) *conn {
-	return &conn{
+func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, opts Options) *connImpl {
+	return &connImpl{
 		conn:    c,
 		handler: handler,
 		logger:  logger,
@@ -138,7 +137,7 @@ func newConn(c net.Conn, client bool, handler Handler, logger logging.Logger, op
 }
 
 // Close closes the connection and frees its internal resources.
-func (c *conn) Close() status.Status {
+func (c *connImpl) Close() status.Status {
 	err := c.conn.Close()
 	if err != nil {
 		return mpxError(err)
@@ -147,12 +146,12 @@ func (c *conn) Close() status.Status {
 }
 
 // Closed returns a flag that is set when the connection is closed.
-func (c *conn) Closed() async.Flag {
+func (c *connImpl) Closed() async.Flag {
 	return c.closed
 }
 
 // Channel opens a new channel.
-func (c *conn) Channel(ctx async.Context) (Channel, status.Status) {
+func (c *connImpl) Channel(ctx async.Context) (Channel, status.Status) {
 	for {
 		// Create new channel
 		ch, ok, st := c.createChannel()
@@ -175,7 +174,7 @@ func (c *conn) Channel(ctx async.Context) (Channel, status.Status) {
 }
 
 // OnClosed adds a disconnection listener, and returns an unsubscribe function.
-func (c *conn) OnClosed(fn func()) (unsub func()) {
+func (c *connImpl) OnClosed(fn func()) (unsub func()) {
 	// Add listener
 	id := c.addClosed(fn)
 	if id == 0 {
@@ -191,12 +190,20 @@ func (c *conn) OnClosed(fn func()) (unsub func()) {
 // Internal
 
 // Free closes and frees the connection.
-func (c *conn) Free() {
+func (c *connImpl) Free() {
 	c.Close()
 }
 
+// ChannelNum returns the number of active channels.
+func (c *connImpl) ChannelNum() int {
+	c.channelMu.Lock()
+	defer c.channelMu.Unlock()
+
+	return len(c.channels)
+}
+
 // SendMessage write an outgoing message to the write queue.
-func (c *conn) SendMessage(ctx async.Context, msg pmpx.Message) status.Status {
+func (c *connImpl) SendMessage(ctx async.Context, msg pmpx.Message) status.Status {
 	b := msg.Unwrap().Raw()
 
 	for {
@@ -221,7 +228,7 @@ func (c *conn) SendMessage(ctx async.Context, msg pmpx.Message) status.Status {
 // private
 
 // run is the main run loop of the connection.
-func (c *conn) run() {
+func (c *connImpl) run() {
 	defer c.free()
 	defer c.close()
 
@@ -263,7 +270,7 @@ func (c *conn) run() {
 	}
 }
 
-func (c *conn) close() {
+func (c *connImpl) close() {
 	defer c.notifyClosed()
 	defer c.closeChannels()
 
@@ -272,14 +279,14 @@ func (c *conn) close() {
 	c.writeq.Close()
 }
 
-func (c *conn) free() {
+func (c *connImpl) free() {
 	c.reader.free()
 	c.writeq.Free()
 }
 
 // negotiate
 
-func (c *conn) negotiate() status.Status {
+func (c *connImpl) negotiate() status.Status {
 	if c.client {
 		return c.negotiateClient()
 	} else {
@@ -287,7 +294,7 @@ func (c *conn) negotiate() status.Status {
 	}
 }
 
-func (c *conn) negotiateClient() status.Status {
+func (c *connImpl) negotiateClient() status.Status {
 	// Write protocol line
 	if st := c.writer.writeString(ProtocolLine); !st.OK() {
 		return st
@@ -363,7 +370,7 @@ func (c *conn) negotiateClient() status.Status {
 	return status.OK
 }
 
-func (c *conn) negotiateServer() status.Status {
+func (c *connImpl) negotiateServer() status.Status {
 	// Write protocol line
 	if st := c.writer.writeString(ProtocolLine); !st.OK() {
 		return st
@@ -451,7 +458,7 @@ func (c *conn) negotiateServer() status.Status {
 
 // receive
 
-func (c *conn) receiveLoop(ctx async.Context) status.Status {
+func (c *connImpl) receiveLoop(ctx async.Context) status.Status {
 	for {
 		// Receive message
 		msg, st := c.reader.readMessage()
@@ -485,7 +492,7 @@ func (c *conn) receiveLoop(ctx async.Context) status.Status {
 	}
 }
 
-func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
+func (c *connImpl) receiveOpen(msg pmpx.Message) status.Status {
 	m := msg.Open()
 	id := m.Id()
 
@@ -525,7 +532,7 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	return st
 }
 
-func (c *conn) receiveClose(msg pmpx.Message) status.Status {
+func (c *connImpl) receiveClose(msg pmpx.Message) status.Status {
 	m := msg.Close()
 	id := m.Id()
 
@@ -543,7 +550,7 @@ func (c *conn) receiveClose(msg pmpx.Message) status.Status {
 	return ch.Receive1(msg)
 }
 
-func (c *conn) receiveMessage(msg pmpx.Message) status.Status {
+func (c *connImpl) receiveMessage(msg pmpx.Message) status.Status {
 	m := msg.Message()
 	id := m.Id()
 
@@ -558,7 +565,7 @@ func (c *conn) receiveMessage(msg pmpx.Message) status.Status {
 	return ch.Receive1(msg)
 }
 
-func (c *conn) receiveWindow(msg pmpx.Message) status.Status {
+func (c *connImpl) receiveWindow(msg pmpx.Message) status.Status {
 	m := msg.Window()
 	id := m.Id()
 
@@ -575,7 +582,7 @@ func (c *conn) receiveWindow(msg pmpx.Message) status.Status {
 
 // send
 
-func (c *conn) sendLoop(ctx async.Context) status.Status {
+func (c *connImpl) sendLoop(ctx async.Context) status.Status {
 	for {
 		// Write pending messages
 		b, ok, st := c.writeq.Read()
@@ -603,7 +610,7 @@ func (c *conn) sendLoop(ctx async.Context) status.Status {
 	}
 }
 
-func (c *conn) sendMessage(b []byte) status.Status {
+func (c *connImpl) sendMessage(b []byte) status.Status {
 	msg, err := pmpx.NewMessageErr(b)
 	if err != nil {
 		return mpxError(err)
@@ -622,14 +629,7 @@ func (c *conn) sendMessage(b []byte) status.Status {
 
 // channels
 
-func (c *conn) channelNum() int {
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	return len(c.channels)
-}
-
-func (c *conn) closeChannels() {
+func (c *connImpl) closeChannels() {
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
 
@@ -644,7 +644,7 @@ func (c *conn) closeChannels() {
 	c.channels = nil
 }
 
-func (c *conn) createChannel() (Channel, bool, status.Status) {
+func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
 
@@ -663,7 +663,7 @@ func (c *conn) createChannel() (Channel, bool, status.Status) {
 	return ch, true, status.OK
 }
 
-func (c *conn) removeChannel(id bin.Bin128) {
+func (c *connImpl) removeChannel(id bin.Bin128) {
 	c.channelMu.Lock()
 	defer c.channelMu.Unlock()
 
@@ -680,7 +680,7 @@ func (c *conn) removeChannel(id bin.Bin128) {
 	delete(c.channels, id)
 }
 
-func (c *conn) handleChannel(ch Channel) {
+func (c *connImpl) handleChannel(ch Channel) {
 	// No need to use async.Go here, because we don't need the result/cancellation,
 	// and recover panics manually.
 	defer func() {
@@ -708,7 +708,7 @@ func (c *conn) handleChannel(ch Channel) {
 
 // close listeners
 
-func (c *conn) addClosed(fn func()) int64 {
+func (c *connImpl) addClosed(fn func()) int64 {
 	c.closedMu.Lock()
 	defer c.closedMu.Unlock()
 
@@ -723,7 +723,7 @@ func (c *conn) addClosed(fn func()) int64 {
 	return id
 }
 
-func (c *conn) removeClosed(id int64) {
+func (c *connImpl) removeClosed(id int64) {
 	c.closedMu.Lock()
 	defer c.closedMu.Unlock()
 
@@ -734,7 +734,7 @@ func (c *conn) removeClosed(id int64) {
 	delete(c.closedListeners, id)
 }
 
-func (c *conn) notifyClosed() {
+func (c *connImpl) notifyClosed() {
 	c.closedMu.Lock()
 	if c.closedFlag {
 		c.closedMu.Unlock()

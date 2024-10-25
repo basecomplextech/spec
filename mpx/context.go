@@ -31,7 +31,7 @@ var _ Context = (*context)(nil)
 
 type context struct {
 	async.Context
-	conn internalConn
+	conn conn
 }
 
 var closedContext = func() *context {
@@ -41,7 +41,7 @@ var closedContext = func() *context {
 	}
 }()
 
-func newContext(conn internalConn) *context {
+func newContext(conn conn) *context {
 	return &context{
 		Context: async.NewContext(),
 		conn:    conn,

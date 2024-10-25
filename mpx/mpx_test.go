@@ -57,14 +57,14 @@ func testRequestServer(t tests.T) *server {
 	return testServer(t, handle)
 }
 
-func testConnect(t tests.T, s *server) *conn {
+func testConnect(t tests.T, s *server) *connImpl {
 	addr := s.Address()
 
 	c, st := Connect(addr, s.logger, s.options)
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	return c.(*conn)
+	return c.(*connImpl)
 }
 
 func testChannel(t tests.T, c Conn) *channel {

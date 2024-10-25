@@ -4,19 +4,19 @@
 
 package mpx
 
-type connPool map[*conn]struct{}
+type connPool map[conn]struct{}
 
 func newConnPool() connPool {
-	return make(map[*conn]struct{})
+	return make(map[conn]struct{})
 }
 
 // conn returns a connection with the minimum number of channels, or false.
 // the method also removes closed connections.
-func (p connPool) conn() (*conn, bool) {
-	var conn *conn
+func (p connPool) conn() (conn, bool) {
+	var conn conn
 
 	for conn1 := range p {
-		if conn1.closed.Get() {
+		if conn1.Closed().Get() {
 			delete(p, conn1)
 			continue
 		}
@@ -26,8 +26,8 @@ func (p connPool) conn() (*conn, bool) {
 			continue
 		}
 
-		n0 := conn.channelNum()
-		n1 := conn1.channelNum()
+		n0 := conn.ChannelNum()
+		n1 := conn1.ChannelNum()
 		if n1 < n0 {
 			conn = conn1
 		}

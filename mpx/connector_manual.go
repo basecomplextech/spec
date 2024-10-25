@@ -27,7 +27,7 @@ type manualConnector struct {
 
 	mu         sync.Mutex
 	pool       connPool
-	connecting opt.Opt[async.Routine[*conn]]
+	connecting opt.Opt[async.Routine[conn]]
 }
 
 func newManualConnector(addr string, logger logging.Logger, opts Options) *manualConnector {
@@ -62,7 +62,7 @@ func (c *manualConnector) disconnected() async.Flag {
 // methods
 
 // connect returns a connection or a future.
-func (c *manualConnector) conn(ctx async.Context) (*conn, async.Future[*conn], status.Status) {
+func (c *manualConnector) conn(ctx async.Context) (conn, async.Future[conn], status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -77,7 +77,7 @@ func (c *manualConnector) conn(ctx async.Context) (*conn, async.Future[*conn], s
 	if ok {
 		// Maybe connect more
 		if len(c.pool) < c.opts.MaxConns {
-			num := conn.channelNum()
+			num := conn.ChannelNum()
 			if num >= c.opts.TargetConnChannels {
 				c.connect()
 			}
@@ -129,7 +129,7 @@ func (c *manualConnector) close() status.Status {
 
 // private
 
-func (c *manualConnector) connect() (async.Future[*conn], status.Status) {
+func (c *manualConnector) connect() (async.Future[conn], status.Status) {
 	routine, ok := c.connecting.Unwrap()
 	if ok {
 		return routine, status.OK
@@ -140,7 +140,7 @@ func (c *manualConnector) connect() (async.Future[*conn], status.Status) {
 	return routine, status.OK
 }
 
-func (c *manualConnector) doConnect(ctx async.Context) (*conn, status.Status) {
+func (c *manualConnector) doConnect(ctx async.Context) (conn, status.Status) {
 	// Clear routine on exit
 	defer func() {
 		c.mu.Lock()

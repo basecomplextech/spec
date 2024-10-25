@@ -78,7 +78,7 @@ type channel struct {
 type channelState struct {
 	id     bin.Bin128
 	ctx    Context
-	conn   internalConn
+	conn   conn
 	client bool // client or server channel
 	window int  // initial window size
 
@@ -104,7 +104,7 @@ type channelState struct {
 }
 
 // createChannel creates a new outgoing channel.
-func createChannel(c internalConn, client bool, id bin.Bin128, window int) *channel {
+func createChannel(c conn, client bool, id bin.Bin128, window int) *channel {
 	s := acquireChannelState()
 	s.id = id
 	s.ctx = newContext(c)
@@ -121,7 +121,7 @@ func createChannel(c internalConn, client bool, id bin.Bin128, window int) *chan
 }
 
 // openChannel inits a new incoming channel.
-func openChannel(c internalConn, client bool, msg pmpx.ChannelOpen) *channel {
+func openChannel(c conn, client bool, msg pmpx.ChannelOpen) *channel {
 	id := msg.Id()
 	window := int(msg.Window())
 

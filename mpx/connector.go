@@ -22,7 +22,7 @@ type connector interface {
 	// methods
 
 	// connect returns a connection or a future.
-	conn(ctx async.Context) (*conn, async.Future[*conn], status.Status)
+	conn(ctx async.Context) (conn, async.Future[conn], status.Status)
 
 	// close stops and closes the connector.
 	close() status.Status

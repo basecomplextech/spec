@@ -50,12 +50,12 @@ func TestConn_Free__should_close_connection(t *testing.T) {
 	conn.Free()
 
 	select {
-	case <-conn.closed.Wait():
+	case <-conn.Closed().Wait():
 	case <-time.After(time.Second):
 		t.Fatal("timeout")
 	}
 
-	assert.True(t, conn.closed.Get())
+	assert.True(t, conn.Closed().Get())
 	assert.True(t, conn.writeq.Closed())
 }
 
