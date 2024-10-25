@@ -86,6 +86,7 @@ type conn struct {
 	closedListeners map[int64]func()
 }
 
+// connect connects to an address and returns a client connection.
 func connect(address string, logger logging.Logger, opts Options) (*conn, status.Status) {
 	opts = opts.clean()
 
@@ -620,6 +621,13 @@ func (c *conn) sendMessage(b []byte) status.Status {
 }
 
 // channels
+
+func (c *conn) channelNum() int {
+	c.channelMu.Lock()
+	defer c.channelMu.Unlock()
+
+	return len(c.channels)
+}
 
 func (c *conn) closeChannels() {
 	c.channelMu.Lock()

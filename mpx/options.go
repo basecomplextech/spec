@@ -28,6 +28,14 @@ type Options struct {
 
 	// WriteQueueSize is a max connection write queue size (soft limit).
 	WriteQueueSize units.Bytes `json:"write_queue_size"`
+
+	// Client
+
+	// MaxConns is a max number of client connections.
+	MaxConns int
+
+	// TargetConnChannels is a target number of channels per connection.
+	TargetConnChannels int
 }
 
 // Default returns default options.

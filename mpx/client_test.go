@@ -32,10 +32,8 @@ func TestClient_Connect__should_start_connector(t *testing.T) {
 		t.Fatal("connect timeout")
 	}
 
-	assert.NotNil(t, client.conn)
-	assert.NotNil(t, client.connector)
-	assert.True(t, client.connected_.Get())
-	assert.False(t, client.disconnected_.Get())
+	assert.True(t, client.Connected().Get())
+	assert.False(t, client.Disconnected().Get())
 }
 
 // Flags
@@ -72,7 +70,8 @@ func TestClient_Close__should_close_client(t *testing.T) {
 	client := testClient(t, server)
 	client.Close()
 
-	assert.True(t, client.closed)
+	closed := client.connector.closed().Get()
+	assert.True(t, closed)
 }
 
 func TestClient_Close__should_close_connection(t *testing.T) {
@@ -91,16 +90,21 @@ func TestClient_Close__should_close_connection(t *testing.T) {
 		ch.Free()
 	}
 
-	conn := client.conn
+	ctx := async.NoContext()
+	conn, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
 	client.Close()
 
 	select {
-	case <-conn.closed.Wait():
+	case <-conn.Closed().Wait():
 	case <-time.After(time.Second):
 		t.Fatal("close timeout")
 	}
 
-	assert.True(t, conn.closed.Get())
+	assert.True(t, conn.Closed().Get())
 }
 
 // Channel
@@ -176,7 +180,11 @@ func TestClient_Channel__should_reconnect_if_connection_closed(t *testing.T) {
 	}
 
 	{
-		conn := client.conn
+		ctx := async.NoContext()
+		conn, st := client.Conn(ctx)
+		if !st.OK() {
+			t.Fatal(st)
+		}
 		conn.Close()
 	}
 
@@ -211,7 +219,8 @@ func TestClient_Channel__should_await_connection(t *testing.T) {
 			t.Fatal("start timeout")
 		}
 
-		client.address = server.Address()
+		connector := client.connector.(*manualConnector)
+		connector.addr = server.Address()
 	}()
 
 	ctx := async.NoContext()
