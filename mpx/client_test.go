@@ -219,7 +219,7 @@ func TestClient_Channel__should_await_connection(t *testing.T) {
 			t.Fatal("start timeout")
 		}
 
-		connector := client.connector.(*manualConnector)
+		connector := client.connector.(*requestConnector)
 		connector.addr = server.Address()
 	}()
 

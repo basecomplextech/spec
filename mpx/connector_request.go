@@ -13,10 +13,10 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
-var _ connector = (*manualConnector)(nil)
+var _ connector = (*requestConnector)(nil)
 
-// manualConnector manually connects on request.
-type manualConnector struct {
+// requestConnector establishes connections on requests.
+type requestConnector struct {
 	addr   string
 	logger logging.Logger
 	opts   Options
@@ -30,8 +30,8 @@ type manualConnector struct {
 	connecting opt.Opt[async.Routine[conn]]
 }
 
-func newManualConnector(addr string, logger logging.Logger, opts Options) *manualConnector {
-	return &manualConnector{
+func newManualConnector(addr string, logger logging.Logger, opts Options) *requestConnector {
+	return &requestConnector{
 		addr:   addr,
 		logger: logger,
 		opts:   opts,
@@ -45,24 +45,24 @@ func newManualConnector(addr string, logger logging.Logger, opts Options) *manua
 }
 
 // closed returns a flag which indicates the connector is closed.
-func (c *manualConnector) closed() async.Flag {
+func (c *requestConnector) closed() async.Flag {
 	return c.closed_
 }
 
 // connected returns a flag when there is at least one connected connection.
-func (c *manualConnector) connected() async.Flag {
+func (c *requestConnector) connected() async.Flag {
 	return c.connected_
 }
 
 // disconnected returns a flag when there are no connected connections.
-func (c *manualConnector) disconnected() async.Flag {
+func (c *requestConnector) disconnected() async.Flag {
 	return c.disconnected_
 }
 
 // methods
 
 // connect returns a connection or a future.
-func (c *manualConnector) conn(ctx async.Context) (conn, async.Future[conn], status.Status) {
+func (c *requestConnector) conn(ctx async.Context) (conn, async.Future[conn], status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -100,7 +100,7 @@ func (c *manualConnector) conn(ctx async.Context) (conn, async.Future[conn], sta
 }
 
 // close stops and closes the connector.
-func (c *manualConnector) close() status.Status {
+func (c *requestConnector) close() status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -129,7 +129,7 @@ func (c *manualConnector) close() status.Status {
 
 // private
 
-func (c *manualConnector) connect() (async.Future[conn], status.Status) {
+func (c *requestConnector) connect() (async.Future[conn], status.Status) {
 	routine, ok := c.connecting.Unwrap()
 	if ok {
 		return routine, status.OK
@@ -140,7 +140,7 @@ func (c *manualConnector) connect() (async.Future[conn], status.Status) {
 	return routine, status.OK
 }
 
-func (c *manualConnector) doConnect(ctx async.Context) (conn, status.Status) {
+func (c *requestConnector) doConnect(ctx async.Context) (conn, status.Status) {
 	// Clear routine on exit
 	defer func() {
 		c.mu.Lock()
