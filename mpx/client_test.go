@@ -181,8 +181,8 @@ func TestClient_Conn__should_open_more_connections_when_channels_target_reached(
 	ctx := async.NoContext()
 
 	client := testClient(t, server)
-	client.options.ClientConns = 2
-	client.options.ClientConnChannels = 1
+	client.options.Client.MaxConns = 2
+	client.options.Client.ConnChannels = 1
 
 	conn, st := client.Conn(ctx)
 	if !st.OK() {

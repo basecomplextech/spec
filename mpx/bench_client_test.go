@@ -77,7 +77,7 @@ func BenchmarkClient_Request_Parallel(b *testing.B) {
 	ctx := async.NoContext()
 	server := testServer(b, handle)
 	client := testClient(b, server)
-	client.options.ClientConns = 4
+	client.options.Client.MaxConns = 4
 
 	b.ReportAllocs()
 	b.ResetTimer()

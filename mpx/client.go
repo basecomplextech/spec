@@ -278,9 +278,13 @@ func (c *client) onConnChannelsReached(conn conn) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	max := c.options.Client.MaxConns
+	if max <= 0 {
+		return
+	}
+
 	num := len(c.conns)
-	max := c.options.ClientConns
-	if max > 0 && num < max {
+	if num < max {
 		c.connect()
 	}
 }
