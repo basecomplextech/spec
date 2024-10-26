@@ -14,8 +14,12 @@ import (
 )
 
 func testClient(t tests.T, s *server) *client {
+	return testClientMode(t, s, ClientMode_OnDemand)
+}
+
+func testClientMode(t tests.T, s *server, mode ClientMode) *client {
 	addr := s.Address()
-	c := newClient(addr, s.logger, s.options)
+	c := newClient(addr, mode, s.logger, s.options)
 
 	t.Cleanup(func() {
 		c.Close()
@@ -27,8 +31,7 @@ func testClient(t tests.T, s *server) *client {
 
 func TestNewClient__should_open_connection_when_autoconnect(t *testing.T) {
 	server := testRequestServer(t)
-	server.options.Client.AutoConnect = true
-	client := testClient(t, server)
+	client := testClientMode(t, server, ClientMode_AutoConnect)
 
 	select {
 	case <-client.Connected().Wait():
@@ -195,8 +198,8 @@ func TestClient_Conn__should_open_more_connections_when_channels_target_reached(
 	ctx := async.NoContext()
 
 	client := testClient(t, server)
-	client.options.Client.MaxConns = 2
-	client.options.Client.ConnChannels = 1
+	client.options.ClientMaxConns = 2
+	client.options.ClientConnChannels = 1
 
 	conn, st := client.Conn(ctx)
 	if !st.OK() {

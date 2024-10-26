@@ -133,7 +133,7 @@ func newConn(
 		delegate: delegate,
 		handler:  handler,
 		logger:   logger,
-		options:  opts.clean(),
+		options:  opts,
 
 		closed:     async.UnsetFlag(),
 		negotiated: async.UnsetFlag(),
@@ -316,7 +316,7 @@ func (c *connImpl) negotiateClient() status.Status {
 		vv.Add(pmpx.Version_Version10)
 		vv.End()
 
-		if c.options.Compress {
+		if c.options.Compression {
 			cc := w.Compress()
 			cc.Add(pmpx.Compress_Lz4)
 			cc.End()
@@ -662,7 +662,7 @@ func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 	done := false
 	defer func() {
 		if !done {
-			ch.Free()
+			ch.free()
 		}
 	}()
 
@@ -730,7 +730,7 @@ func (c *connImpl) maybeChannelsReached() {
 		return
 	}
 
-	target := c.options.Client.ConnChannels
+	target := c.options.ClientConnChannels
 	if target <= 0 {
 		return
 	}

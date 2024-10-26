@@ -11,14 +11,24 @@ import (
 )
 
 type Options struct {
-	// Client specifies client options.
-	Client ClientOptions `json:"client"`
+	// ClientMaxConns is a maximum number of client connections, zero means one connection.
+	ClientMaxConns int `json:"client_max_conns"`
 
-	// Compress enables compression.
-	Compress bool `json:"compress"`
+	// ClientConnChannels is a target number of channels per connection, zero means no limit.
+	ClientConnChannels int `json:"client_conn_channels"`
+
+	// ClientDialTimeout is a client dial timeout.
+	ClientDialTimeout time.Duration `json:"client_dial_timeout"`
+
+	// Protocol
+
+	// Compression enables compression.
+	Compression bool `json:"compress"`
 
 	// ChannelWindowSize is an initial channel window size.
 	ChannelWindowSize units.Bytes `json:"channel_window_size"`
+
+	// Buffers
 
 	// ReadBufferSize is a connection read buffer size.
 	ReadBufferSize units.Bytes `json:"read_buffer_size"`
@@ -30,57 +40,52 @@ type Options struct {
 	WriteQueueSize units.Bytes `json:"write_queue_size"`
 }
 
-type ClientOptions struct {
-	AutoConnect bool `json:"auto_connect"`
-
-	// MaxConns is a maximum number of client connections, zero means one connection.
-	MaxConns int `json:"max_conns"`
-
-	// ConnChannels is a target number of channels per connection, zero means no limit.
-	ConnChannels int `json:"conn_channels"`
-
-	// DialTimeout is a client dial timeout.
-	DialTimeout time.Duration `json:"dial_timeout"`
-}
-
 // Default
 
 // Default returns the default options.
 func Default() Options {
 	return Options{
-		Client: ClientOptions{
-			MaxConns:     4,
-			ConnChannels: 128,
-			DialTimeout:  2 * time.Second,
-		},
+		ClientMaxConns:     4,
+		ClientConnChannels: 128,
+		ClientDialTimeout:  2 * time.Second,
 
-		Compress:          true,
+		Compression:       true,
 		ChannelWindowSize: 16 * units.MiB,
-		ReadBufferSize:    32 * units.KiB,
-		WriteBufferSize:   32 * units.KiB,
-		WriteQueueSize:    16 * units.MiB,
+
+		ReadBufferSize:  32 * units.KiB,
+		WriteBufferSize: 32 * units.KiB,
+		WriteQueueSize:  16 * units.MiB,
 	}
+}
+
+// Merge merges non-zero values from another options and returns new options.
+func (o Options) Merge(o1 Options) Options {
+	o.ClientMaxConns = nonzero(o.ClientMaxConns, o1.ClientMaxConns)
+	o.ClientConnChannels = nonzero(o.ClientConnChannels, o1.ClientConnChannels)
+	o.ClientDialTimeout = nonzero(o.ClientDialTimeout, o1.ClientDialTimeout)
+
+	o.Compression = o1.Compression
+	o.ChannelWindowSize = nonzero(o.ChannelWindowSize, o1.ChannelWindowSize)
+
+	o.ReadBufferSize = nonzero(o.ReadBufferSize, o1.ReadBufferSize)
+	o.WriteBufferSize = nonzero(o.WriteBufferSize, o1.WriteBufferSize)
+	o.WriteQueueSize = nonzero(o.WriteQueueSize, o1.WriteQueueSize)
+	return o
 }
 
 // internal
 
 // clean cleans options, sets zero values to default values.
 func (o Options) clean() Options {
-	o1 := Default()
-	o1.Client = o.Client
-	o1.Compress = o.Compress
+	return Default().Merge(o)
+}
 
-	if o.ChannelWindowSize != 0 {
-		o1.ChannelWindowSize = o.ChannelWindowSize
+// util
+
+func nonzero[T comparable](a, b T) T {
+	var zero T
+	if b != zero {
+		return b
 	}
-	if o.ReadBufferSize != 0 {
-		o1.ReadBufferSize = o.ReadBufferSize
-	}
-	if o.WriteBufferSize != 0 {
-		o1.WriteBufferSize = o.WriteBufferSize
-	}
-	if o.WriteQueueSize != 0 {
-		o1.WriteQueueSize = o.WriteQueueSize
-	}
-	return o1
+	return a
 }

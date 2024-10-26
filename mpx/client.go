@@ -7,12 +7,25 @@ package mpx
 import (
 	"math/rand/v2"
 	"sync"
+	"time"
 
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/collect/slices2"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/opt"
 	"github.com/basecomplextech/baselibrary/status"
+)
+
+// ClientMode specifies how the client connects to the server.
+type ClientMode int
+
+const (
+	// ClientMode_OnDemand connects to the server on demand, does not reconnect on errors.
+	ClientMode_OnDemand ClientMode = iota
+
+	// ClientMode_AutoConnect automatically connects and reconnects to the server.
+	// The client reconnects with exponential backoff on errors.
+	ClientMode_AutoConnect
 )
 
 // Client is a SpecMPX client which manages outgoing connections.
@@ -49,8 +62,9 @@ type Client interface {
 }
 
 // NewClient returns a new client.
-func NewClient(addr string, logger logging.Logger, opts Options) Client {
-	return newClient(addr, logger, opts)
+func NewClient(addr string, mode ClientMode, logger logging.Logger, opts Options) Client {
+	opts = opts.clean()
+	return newClient(addr, mode, logger, opts)
 }
 
 // internal
@@ -59,6 +73,7 @@ var _ Client = (*client)(nil)
 
 type client struct {
 	addr    string
+	mode    ClientMode
 	logger  logging.Logger
 	options Options
 
@@ -66,23 +81,27 @@ type client struct {
 	connected_    async.MutFlag
 	disconnected_ async.MutFlag
 
-	mu         sync.Mutex
-	conns      []conn
-	connecting opt.Opt[async.Routine[conn]]
+	mu    sync.Mutex
+	conns []conn
+
+	connecting     opt.Opt[async.Routine[conn]]
+	connectAttempt int  // current connect attempt
+	connectFailed  bool // connect failed
 }
 
-func newClient(addr string, logger logging.Logger, opts Options) *client {
+func newClient(addr string, mode ClientMode, logger logging.Logger, opts Options) *client {
 	c := &client{
 		addr:    addr,
+		mode:    mode,
 		logger:  logger,
-		options: opts.clean(),
+		options: opts,
 
 		closed_:       async.UnsetFlag(),
 		connected_:    async.UnsetFlag(),
 		disconnected_: async.SetFlag(),
 	}
 
-	if opts.Client.AutoConnect {
+	if mode == ClientMode_AutoConnect {
 		c.connect()
 	}
 	return c
@@ -158,7 +177,27 @@ func (c *client) Conn(ctx async.Context) (Conn, status.Status) {
 		return conn, status.OK
 	}
 
-	// Await connection
+	// Await connection or dial timeout in auto-connect mode
+	// In auto-connect mode, the client will reconnect on errors with exponential backoff.
+	// So we we the dial timeout here to avoid waiting too long.
+	if c.mode == ClientMode_AutoConnect {
+		timeout := c.options.ClientDialTimeout
+		if timeout > 0 {
+			timer := time.NewTimer(timeout)
+			defer timer.Stop()
+
+			select {
+			case <-ctx.Wait():
+				return nil, ctx.Status()
+			case <-future.Wait():
+				return future.Result()
+			case <-timer.C:
+				return nil, status.Timeoutf("mpx dial timeout, address=%v", c.addr)
+			}
+		}
+	}
+
+	// Otherwise, await connection or cancel
 	select {
 	case <-ctx.Wait():
 		return nil, ctx.Status()
@@ -198,7 +237,7 @@ func (c *client) onConnClosed(conn conn) {
 	}
 
 	// Maybe auto-connect
-	if c.options.Client.AutoConnect {
+	if c.mode == ClientMode_AutoConnect {
 		c.connect()
 	}
 }
@@ -208,7 +247,7 @@ func (c *client) onConnChannelsReached(conn conn) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	max := c.options.Client.MaxConns
+	max := c.options.ClientMaxConns
 	if max <= 0 {
 		return
 	}

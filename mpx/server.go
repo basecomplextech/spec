@@ -31,6 +31,7 @@ type Server interface {
 
 // NewServer creates a new server with a connection handler.
 func NewServer(address string, handler Handler, logger logging.Logger, opts Options) Server {
+	opts = opts.clean()
 	return newServer(address, handler, logger, opts)
 }
 
@@ -55,7 +56,7 @@ func newServer(address string, handler Handler, logger logging.Logger, opts Opti
 		address: address,
 		handler: handler,
 		logger:  logger,
-		options: opts.clean(),
+		options: opts,
 
 		listening: async.UnsetFlag(),
 	}
