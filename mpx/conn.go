@@ -274,7 +274,7 @@ func (c *connImpl) run() {
 }
 
 func (c *connImpl) close() {
-	if c.closed.Get() {
+	if c.closed.IsSet() {
 		return
 	}
 

@@ -49,8 +49,8 @@ func TestClient__should_set_connected_flag_on_conn_opened(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.True(t, client.connected_.Get())
-	assert.False(t, client.disconnected_.Get())
+	assert.True(t, client.connected_.IsSet())
+	assert.False(t, client.disconnected_.IsSet())
 }
 
 func TestClient__should_set_disconnected_flag_when_all_conns_closed(t *testing.T) {
@@ -70,8 +70,8 @@ func TestClient__should_set_disconnected_flag_when_all_conns_closed(t *testing.T
 		t.Fatal("disconnect timeout")
 	}
 
-	assert.False(t, client.connected_.Get())
-	assert.True(t, client.disconnected_.Get())
+	assert.False(t, client.connected_.IsSet())
+	assert.True(t, client.disconnected_.IsSet())
 }
 
 func TestClient__should_switch_flags_on_state_changes(t *testing.T) {
@@ -110,7 +110,7 @@ func TestClient_Close__should_close_client(t *testing.T) {
 	client := testClient(t, server)
 	client.Close()
 
-	closed := client.Closed().Get()
+	closed := client.Closed().IsSet()
 	assert.True(t, closed)
 }
 
@@ -132,7 +132,7 @@ func TestClient_Close__should_close_connection(t *testing.T) {
 		t.Fatal("close timeout")
 	}
 
-	assert.True(t, conn.Closed().Get())
+	assert.True(t, conn.Closed().IsSet())
 }
 
 // Conn

@@ -122,7 +122,7 @@ func (c *client) Close() status.Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.closed_.Get() {
+	if c.closed_.IsSet() {
 		return status.OK
 	}
 	c.closed_.Set()
@@ -192,7 +192,7 @@ func (c *client) onConnClosed(conn conn) {
 	}
 
 	// Clear connected
-	if c.connected_.Get() {
+	if c.connected_.IsSet() {
 		c.connected_.Unset()
 		c.disconnected_.Set()
 	}
@@ -226,7 +226,7 @@ func (c *client) conn() (conn, async.Future[conn], status.Status) {
 	defer c.mu.Unlock()
 
 	// Check closed
-	if c.closed_.Get() {
+	if c.closed_.IsSet() {
 		return nil, nil, status.Closedf("mpx client closed")
 	}
 
@@ -234,7 +234,7 @@ func (c *client) conn() (conn, async.Future[conn], status.Status) {
 	for len(c.conns) > 0 {
 		i := rand.IntN(len(c.conns))
 		conn := c.conns[i]
-		closed := conn.Closed().Get()
+		closed := conn.Closed().IsSet()
 		if closed {
 			c.conns = slices2.RemoveAt(c.conns, i, 1)
 			continue
@@ -243,7 +243,7 @@ func (c *client) conn() (conn, async.Future[conn], status.Status) {
 	}
 
 	// Maybe clear connected
-	if c.connected_.Get() {
+	if c.connected_.IsSet() {
 		c.connected_.Unset()
 		c.disconnected_.Set()
 	}
@@ -286,7 +286,7 @@ func (c *client) doConnect(ctx async.Context) (conn, status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.closed_.Get() {
+	if c.closed_.IsSet() {
 		if conn != nil {
 			conn.Close()
 		}

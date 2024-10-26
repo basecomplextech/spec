@@ -55,7 +55,7 @@ func TestConn_Free__should_close_connection(t *testing.T) {
 		t.Fatal("timeout")
 	}
 
-	assert.True(t, conn.Closed().Get())
+	assert.True(t, conn.Closed().IsSet())
 	assert.True(t, conn.writeq.Closed())
 }
 
