@@ -6,6 +6,7 @@ package mpx
 
 import (
 	"bytes"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,9 +31,10 @@ func BenchmarkClient_Request(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	t0 := time.Now()
+	duration := time.Duration(0)
 
 	for i := 0; i < b.N; i++ {
+		t0 := time.Now()
 		ch, st := client.Channel(ctx)
 		if !st.OK() {
 			b.Fatal(st)
@@ -56,13 +58,15 @@ func BenchmarkClient_Request(b *testing.B) {
 		}
 
 		ch.Free()
+		duration += time.Since(t0)
 	}
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
+	latency := time.Duration(duration) / time.Duration(b.N)
 
 	b.ReportMetric(ops, "ops")
+	b.ReportMetric(float64(latency.Microseconds())/1000, "latency,avg,ms")
 }
 
 func BenchmarkClient_Request_Parallel(b *testing.B) {
@@ -82,12 +86,14 @@ func BenchmarkClient_Request_Parallel(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.SetParallelism(100)
-	t0 := time.Now()
+	var totalDuration int64
 
 	b.RunParallel(func(p *testing.PB) {
 		msg := bytes.Repeat([]byte("a"), benchMsgSize)
+		duration := time.Duration(0)
 
 		for p.Next() {
+			t0 := time.Now()
 			ch, st := client.Channel(ctx)
 			if !st.OK() {
 				b.Fatal(st)
@@ -111,14 +117,18 @@ func BenchmarkClient_Request_Parallel(b *testing.B) {
 			}
 
 			ch.Free()
+			duration += time.Since(t0)
 		}
+
+		atomic.AddInt64(&totalDuration, int64(duration))
 	})
 
-	t1 := time.Now()
-	sec := t1.Sub(t0).Seconds()
+	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
 	conns := float64(len(client.conns))
+	latency := time.Duration(totalDuration) / time.Duration(b.N)
 
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(conns, "conns")
+	b.ReportMetric(float64(latency.Microseconds())/1000, "latency,avg,ms")
 }
