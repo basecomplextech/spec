@@ -77,9 +77,9 @@ func TestConn_Free__should_notify_listeners(t *testing.T) {
 	conn := testConnect(t, server)
 	defer conn.Free()
 
-	var notified bool
+	notified := make(chan struct{})
 	unsub := conn.OnClosed(func() {
-		notified = true
+		defer close(notified)
 	})
 	defer unsub()
 
@@ -90,7 +90,11 @@ func TestConn_Free__should_notify_listeners(t *testing.T) {
 		t.Fatal("timeout")
 	}
 
-	assert.True(t, notified)
+	select {
+	case <-notified:
+	case <-time.After(time.Second):
+		t.Fatal("close notify timeout")
+	}
 }
 
 // HandleChannel

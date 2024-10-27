@@ -395,7 +395,21 @@ func TestChannel_SendAndClose__should_send_data_in_close_message(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	require.True(t, ch.state.sendClose)
+
+	// Satify race detector
+	sendClose := func() bool {
+		s, _ := ch.rlock()
+		defer ch.stateMu.RUnlock()
+
+		s.sendMu.Lock()
+		defer s.sendMu.Unlock()
+
+		s.recvMu.Lock()
+		defer s.recvMu.Unlock()
+
+		return s.sendClose
+	}()
+	require.True(t, sendClose)
 
 	select {
 	case <-done:
