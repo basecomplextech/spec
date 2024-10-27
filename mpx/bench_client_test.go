@@ -14,6 +14,27 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 )
 
+func testClientConnect(t testing.TB, client *client) Conn {
+	future, st := client.connect()
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	select {
+	case <-future.Wait():
+	case <-time.After(time.Second):
+		t.Fatal("connect timeout")
+	}
+
+	conn, st := future.Result()
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	return conn
+}
+
+// Request
+
 func BenchmarkClient_Request(b *testing.B) {
 	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
@@ -131,4 +152,77 @@ func BenchmarkClient_Request_Parallel(b *testing.B) {
 	b.ReportMetric(ops, "ops")
 	b.ReportMetric(conns, "conns")
 	b.ReportMetric(float64(latency.Microseconds())/1000, "latency,avg,ms")
+}
+
+// Stream
+
+func BenchmarkClient_Stream_Parallel(b *testing.B) {
+	closeMsg := []byte("close")
+	handle := func(ctx Context, ch Channel) status.Status {
+		for {
+			msg, st := ch.Receive(ctx)
+			if !st.OK() {
+				return st
+			}
+			if !bytes.Equal(msg, closeMsg) {
+				continue
+			}
+
+			break
+		}
+
+		st := ch.Send(ctx, closeMsg)
+		if !st.OK() {
+			return st
+		}
+		return ch.SendClose(ctx)
+	}
+
+	server := testServer(b, handle)
+	client := testClient(b, server)
+
+	testClientConnect(b, client)
+	testClientConnect(b, client)
+	testClientConnect(b, client)
+	testClientConnect(b, client)
+
+	b.SetBytes(int64(benchMsgSize))
+	b.ReportAllocs()
+	b.ResetTimer()
+	t0 := time.Now()
+
+	b.RunParallel(func(p *testing.PB) {
+		ctx := async.NoContext()
+
+		ch, st := client.Channel(ctx)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+		defer ch.Free()
+
+		msg := bytes.Repeat([]byte("a"), benchMsgSize)
+
+		for p.Next() {
+			st = ch.Send(ctx, msg)
+			if !st.OK() {
+				b.Fatal(st)
+			}
+		}
+
+		st = ch.Send(ctx, closeMsg)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+
+		_, st = ch.Receive(ctx)
+		if !st.OK() {
+			b.Fatal(st)
+		}
+	})
+
+	t1 := time.Now()
+	sec := t1.Sub(t0).Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops, "ops")
 }

@@ -17,7 +17,7 @@ import (
 
 func testServer(t tests.T, handle HandleFunc) *server {
 	opts := Default()
-	logger := logging.TestLoggerInfo(t)
+	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", handle, logger, opts)
 
 	_, st := server.Start()
