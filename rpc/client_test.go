@@ -20,7 +20,7 @@ import (
 
 func testClient(t tests.T, s *server) *client {
 	addr := s.Address()
-	return newClient(addr, s.logger, s.Server.Options())
+	return newClient(addr, ClientMode_OnDemand, s.logger, s.Server.Options())
 }
 
 // Close

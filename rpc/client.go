@@ -14,6 +14,18 @@ import (
 	"github.com/basecomplextech/spec/proto/prpc"
 )
 
+// ClientMode specifies how the client connects to the server.
+type ClientMode = mpx.ClientMode
+
+const (
+	// ClientMode_OnDemand connects to the server on demand, does not reconnect on errors.
+	ClientMode_OnDemand = mpx.ClientMode_OnDemand
+
+	// ClientMode_AutoConnect automatically connects and reconnects to the server.
+	// The client reconnects with exponential backoff on errors.
+	ClientMode_AutoConnec = mpx.ClientMode_AutoConnect
+)
+
 // Client is a SpecRPC client.
 type Client interface {
 	// Address returns the server address.
@@ -24,19 +36,21 @@ type Client interface {
 
 	// Flags
 
+	// Closed indicates that the client is closed.
+	Closed() async.Flag
+
 	// Connected indicates that the client is connected to the server.
 	Connected() async.Flag
 
 	// Disconnected indicates that the client is disconnected from the server.
 	Disconnected() async.Flag
 
-	// Methods
-
-	// Connect manually starts the internal connect loop.
-	Connect() status.Status
+	// Lifecycle
 
 	// Close closes the client, disconnect from theh server.
 	Close() status.Status
+
+	// Methods
 
 	// Channel opens a channels and sends a request.
 	Channel(ctx async.Context, req prpc.Request) (Channel, status.Status)
@@ -54,8 +68,8 @@ type Client interface {
 }
 
 // NewClient returns a new client.
-func NewClient(address string, logger logging.Logger, opts Options) Client {
-	return newClient(address, logger, opts)
+func NewClient(address string, mode ClientMode, logger logging.Logger, opts Options) Client {
+	return newClient(address, mode, logger, opts)
 }
 
 // internal
@@ -67,9 +81,9 @@ type client struct {
 	logger logging.Logger
 }
 
-func newClient(address string, logger logging.Logger, opts Options) *client {
+func newClient(address string, mode ClientMode, logger logging.Logger, opts Options) *client {
 	return &client{
-		client: mpx.NewClient(address, logger, opts),
+		client: mpx.NewClient(address, mode, logger, opts),
 		logger: logger,
 	}
 }
@@ -86,6 +100,11 @@ func (c *client) Options() Options {
 
 // Flags
 
+// Closed indicates that the client is closed.
+func (c *client) Closed() async.Flag {
+	return c.client.Closed()
+}
+
 // Connected indicates that the client is connected to the server.
 func (c *client) Connected() async.Flag {
 	return c.client.Connected()
@@ -96,17 +115,14 @@ func (c *client) Disconnected() async.Flag {
 	return c.client.Disconnected()
 }
 
-// Methods
-
-// Connect manually starts the internal connect loop.
-func (c *client) Connect() status.Status {
-	return c.client.Connect()
-}
+// Lifecycle
 
 // Close closes the client.
 func (c *client) Close() status.Status {
 	return c.client.Close()
 }
+
+// Methods
 
 // Channel opens a channels and sends a request.
 func (c *client) Channel(ctx async.Context, req prpc.Request) (Channel, status.Status) {
