@@ -69,6 +69,11 @@ func NewClient(addr string, mode ClientMode, logger logging.Logger, opts Options
 
 // internal
 
+const (
+	minConnectRetryTimeout = time.Millisecond * 25
+	maxConnectRetryTimeout = time.Second
+)
+
 var _ Client = (*client)(nil)
 
 type client struct {
@@ -85,8 +90,7 @@ type client struct {
 	conns []conn
 
 	connecting     opt.Opt[async.Routine[conn]]
-	connectAttempt int  // current connect attempt
-	connectFailed  bool // connect failed
+	connectAttempt int // current connect attempt
 }
 
 func newClient(addr string, mode ClientMode, logger logging.Logger, opts Options) *client {
@@ -295,25 +299,79 @@ func (c *client) conn() (conn, async.Future[conn], status.Status) {
 	return nil, future, status.OK
 }
 
+// connect
+
 func (c *client) connect() (async.Future[conn], status.Status) {
 	routine, ok := c.connecting.Unwrap()
 	if ok {
 		return routine, status.OK
 	}
 
-	routine = async.Run(c.doConnect)
+	routine = async.Run(c.connect1)
 	c.connecting.Set(routine)
 	return routine, status.OK
 }
 
-func (c *client) doConnect(ctx async.Context) (conn, status.Status) {
-	// Clear routine on exit
+func (c *client) connect1(ctx async.Context) (conn, status.Status) {
+	// Try to connect
+	conn, st := c.connectRecover(ctx)
+
+	// Clear connecting
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.connecting.Unset()
+
+	// Return if connected
+	if st.OK() {
+		return conn, st
+	}
+
+	// Return if cancelled/closed
+	select {
+	case <-ctx.Wait():
+		return nil, ctx.Status()
+	case <-c.closed_.Wait():
+		return nil, status.Closedf("mpx client closed")
+	default:
+	}
+
+	// Return error in on-demand mode
+	if c.mode != ClientMode_AutoConnect {
+		return nil, st
+	}
+
+	// Reconnect in auto-connect mode
+	routine := async.Run(c.connect1)
+	c.connecting.Set(routine)
+	return nil, st
+}
+
+func (c *client) connectRecover(ctx async.Context) (_ conn, st status.Status) {
 	defer func() {
+		if e := recover(); e != nil {
+			st = status.Recover(e)
+		}
+	}()
+
+	// Increment attempt
+	attempt := func() int {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 
-		c.connecting.Unset()
+		c.connectAttempt++
+		return c.connectAttempt
 	}()
+
+	// Sleep before reconnecting
+	if attempt > 1 {
+		timeout := reconnectTimeout(attempt)
+
+		select {
+		case <-ctx.Wait():
+			return nil, ctx.Status()
+		case <-time.After(timeout):
+		}
+	}
 
 	// Connect
 	conn, st := connect(c.addr, c /* delegate */, c.logger, c.options)
@@ -326,14 +384,21 @@ func (c *client) doConnect(ctx async.Context) (conn, status.Status) {
 	defer c.mu.Unlock()
 
 	if c.closed_.IsSet() {
-		if conn != nil {
-			conn.Close()
-		}
+		conn.Close()
 		return nil, status.Closedf("mpx client closed")
 	}
 
 	c.conns = append(c.conns, conn)
+	c.connectAttempt = 0
+
 	c.connected_.Set()
 	c.disconnected_.Unset()
 	return conn, status.OK
+}
+
+// reconnectTimeout returns an exponential backoff timeout for reconnecting.
+func reconnectTimeout(attempt int) time.Duration {
+	multi := uint16(1<<attempt - 2)
+	timeout := minConnectRetryTimeout * time.Duration(multi)
+	return min(timeout, maxConnectRetryTimeout)
 }

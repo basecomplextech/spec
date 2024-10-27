@@ -17,19 +17,17 @@ import (
 
 func testServer(t tests.T, handle HandleFunc) *server {
 	opts := Default()
-	logger := logging.TestLogger(t)
+	logger := logging.TestLoggerInfo(t)
 	server := newServer("localhost:0", handle, logger, opts)
 
-	routine, st := server.Start()
+	_, st := server.Start()
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
 	cleanup := func() {
-		routine.Stop()
-
 		select {
-		case <-routine.Wait():
+		case <-server.Stop():
 		case <-time.After(time.Second):
 			t.Fatal("stop timeout")
 		}
@@ -42,6 +40,7 @@ func testServer(t tests.T, handle HandleFunc) *server {
 		t.Fatal("server not listening")
 	}
 
+	server.address = server.Address()
 	return server
 }
 

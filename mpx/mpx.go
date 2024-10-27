@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	codeError status.Code = "mpx_error"
+	codeMpxError status.Code = "mpx_error"
 )
 
 var (
@@ -38,7 +38,7 @@ func mpxError(err error) status.Status {
 	case io.EOF:
 		return status.End
 	case io.ErrUnexpectedEOF:
-		return status.WrapError(err).WithCode(codeError)
+		return status.WrapError(err).WithCode(codeMpxError)
 	}
 
 	// Closed/OS errors
@@ -53,14 +53,14 @@ func mpxError(err error) status.Status {
 	ne, ok := (err).(net.Error)
 	switch {
 	case !ok:
-		return status.WrapError(err).WithCode(codeError)
+		return status.WrapError(err).WithCode(codeMpxError)
 	case ne.Timeout():
 		return status.WrapError(err).WithCode(status.CodeTimeout)
 	}
 
-	return status.WrapError(err).WithCode(codeError)
+	return status.WrapError(err).WithCode(codeMpxError)
 }
 
 func mpxErrorf(format string, args ...any) status.Status {
-	return status.Newf(codeError, format, args...)
+	return status.Newf(codeMpxError, format, args...)
 }

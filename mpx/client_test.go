@@ -11,6 +11,7 @@ import (
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testClient(t tests.T, s *server) *client {
@@ -231,9 +232,7 @@ func TestClient_Conn__should_open_more_connections_when_channels_target_reached(
 
 func TestClient_Channel__should_connect_to_server(t *testing.T) {
 	server := testRequestServer(t)
-
 	client := testClient(t, server)
-	defer client.Close()
 
 	ctx := async.NoContext()
 	ch, st := client.Channel(ctx)
@@ -247,9 +246,7 @@ func TestClient_Channel__should_connect_to_server(t *testing.T) {
 
 func TestClient_Channel__should_reuse_open_connection(t *testing.T) {
 	server := testRequestServer(t)
-
 	client := testClient(t, server)
-	defer client.Close()
 
 	ctx := async.NoContext()
 	ch0, st := client.Channel(ctx)
@@ -284,9 +281,7 @@ func TestClient_Channel__should_return_error_if_client_is_closed(t *testing.T) {
 
 func TestClient_Channel__should_reconnect_if_connection_closed(t *testing.T) {
 	server := testRequestServer(t)
-
 	client := testClient(t, server)
-	defer client.Close()
 
 	{
 		ctx := async.NoContext()
@@ -322,4 +317,62 @@ func TestClient_Channel__should_reconnect_if_connection_closed(t *testing.T) {
 	defer ch.Free()
 
 	testChannelSend(t, ctx, ch, "hello, world")
+}
+
+// Connect
+
+func TestClient__should_retry_on_error_in_autoconnect_mode(t *testing.T) {
+	server := testRequestServer(t)
+	client := testClientMode(t, server, ClientMode_AutoConnect)
+	server.Stop()
+
+	ctx := async.NoContext()
+	_, st := client.Conn(ctx)
+	require.Equal(t, codeMpxError, st.Code)
+	require.Contains(t, st.Message, "connection refused")
+
+	time.Sleep(minConnectRetryTimeout)
+
+	attempt := func() int {
+		client.mu.Lock()
+		defer client.mu.Unlock()
+
+		return client.connectAttempt
+	}()
+	assert.True(t, attempt > 1)
+}
+
+func TestClient__should_reconnect_on_error_in_autoconnect_mode(t *testing.T) {
+	server := testRequestServer(t)
+	client := testClientMode(t, server, ClientMode_AutoConnect)
+	ctx := async.NoContext()
+
+	// Stop server
+	server.Stop()
+	select {
+	case <-server.Stopped().Wait():
+	case <-time.After(time.Second):
+		t.Fatal("stop timeout")
+	}
+
+	// Try to connect
+	_, st := client.Conn(ctx)
+	require.Equal(t, codeMpxError, st.Code)
+	require.Contains(t, st.Message, "connection refused")
+
+	// Start server after some time
+	time.Sleep(minConnectRetryTimeout)
+	server.Start()
+	select {
+	case <-server.Listening().Wait():
+	case <-time.After(100 * time.Second):
+		t.Fatal("listen timeout")
+	}
+
+	// Connect again
+	conn, st := client.Conn(ctx)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+	conn.Free()
 }

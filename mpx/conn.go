@@ -67,9 +67,8 @@ type connImpl struct {
 	options  Options
 
 	// flags
-	closed      async.MutFlag
-	negotiated  async.MutFlag
-	negotiated_ bool
+	closed     async.MutFlag
+	negotiated async.MutFlag
 
 	// reader/writer
 	reader *reader
@@ -375,7 +374,6 @@ func (c *connImpl) negotiateClient() status.Status {
 	}
 
 	c.negotiated.Set()
-	c.negotiated_ = true
 	return status.OK
 }
 
@@ -462,7 +460,6 @@ func (c *connImpl) negotiateServer() status.Status {
 	}
 
 	c.negotiated.Set()
-	c.negotiated_ = true
 	return status.OK
 }
 
@@ -672,7 +669,7 @@ func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 	switch {
 	case c.channelsClosed:
 		return nil, false, statusConnClosed
-	case !c.negotiated_:
+	case !c.negotiated.IsSet():
 		return nil, false, status.OK
 	}
 
