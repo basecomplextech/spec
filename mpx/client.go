@@ -6,6 +6,7 @@ package mpx
 
 import (
 	"math/rand/v2"
+	"net"
 	"sync"
 	"time"
 
@@ -14,18 +15,6 @@ import (
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/opt"
 	"github.com/basecomplextech/baselibrary/status"
-)
-
-// ClientMode specifies how the client connects to the server.
-type ClientMode int
-
-const (
-	// ClientMode_OnDemand connects to the server on demand, does not reconnect on errors.
-	ClientMode_OnDemand ClientMode = iota
-
-	// ClientMode_AutoConnect automatically connects and reconnects to the server.
-	// The client reconnects with exponential backoff on errors.
-	ClientMode_AutoConnect
 )
 
 // Client is a SpecMPX client which manages outgoing connections.
@@ -67,6 +56,14 @@ func NewClient(addr string, mode ClientMode, logger logging.Logger, opts Options
 	return newClient(addr, mode, logger, opts)
 }
 
+// NewClientDialer returns a new client with the given dialer.
+func NewClientDialer(addr string, mode ClientMode, dialer *net.Dialer, logger logging.Logger,
+	opts Options) Client {
+
+	opts = opts.clean()
+	return newClientDialer(addr, mode, dialer, logger, opts)
+}
+
 // internal
 
 const (
@@ -77,10 +74,11 @@ const (
 var _ Client = (*client)(nil)
 
 type client struct {
-	addr    string
-	mode    ClientMode
-	logger  logging.Logger
-	options Options
+	addr      string
+	mode      ClientMode
+	connector connector
+	logger    logging.Logger
+	options   Options
 
 	closed_       async.MutFlag
 	connected_    async.MutFlag
@@ -94,6 +92,13 @@ type client struct {
 }
 
 func newClient(addr string, mode ClientMode, logger logging.Logger, opts Options) *client {
+	dialer := newDialer(opts)
+	return newClientDialer(addr, mode, dialer, logger, opts)
+}
+
+func newClientDialer(addr string, mode ClientMode, dialer *net.Dialer, logger logging.Logger,
+	opts Options) *client {
+
 	c := &client{
 		addr:    addr,
 		mode:    mode,
@@ -104,6 +109,7 @@ func newClient(addr string, mode ClientMode, logger logging.Logger, opts Options
 		connected_:    async.UnsetFlag(),
 		disconnected_: async.SetFlag(),
 	}
+	c.connector = newConnector(dialer, c /* delegate */, logger, opts)
 
 	if mode == ClientMode_AutoConnect {
 		c.connect()
@@ -374,7 +380,7 @@ func (c *client) connectRecover(ctx async.Context) (_ conn, st status.Status) {
 	}
 
 	// Connect
-	conn, st := connect(c.addr, c /* delegate */, c.logger, c.options)
+	conn, st := c.connector.connect(ctx, c.addr)
 	if !st.OK() {
 		return nil, st
 	}

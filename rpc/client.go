@@ -5,6 +5,8 @@
 package rpc
 
 import (
+	"net"
+
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/ref"
@@ -12,18 +14,6 @@ import (
 	"github.com/basecomplextech/spec"
 	"github.com/basecomplextech/spec/mpx"
 	"github.com/basecomplextech/spec/proto/prpc"
-)
-
-// ClientMode specifies how the client connects to the server.
-type ClientMode = mpx.ClientMode
-
-const (
-	// ClientMode_OnDemand connects to the server on demand, does not reconnect on errors.
-	ClientMode_OnDemand = mpx.ClientMode_OnDemand
-
-	// ClientMode_AutoConnect automatically connects and reconnects to the server.
-	// The client reconnects with exponential backoff on errors.
-	ClientMode_AutoConnec = mpx.ClientMode_AutoConnect
 )
 
 // Client is a SpecRPC client.
@@ -68,8 +58,17 @@ type Client interface {
 }
 
 // NewClient returns a new client.
-func NewClient(address string, mode ClientMode, logger logging.Logger, opts Options) Client {
-	return newClient(address, mode, logger, opts)
+func NewClient(addr string, mode ClientMode, logger logging.Logger, opts Options) Client {
+	super := mpx.NewClient(addr, mode, logger, opts)
+	return newClient(super, logger)
+}
+
+// NewClientDialer returns a new client with the given dialer.
+func NewClientDialer(addr string, mode ClientMode, dialer *net.Dialer, logger logging.Logger,
+	opts Options) Client {
+
+	super := mpx.NewClientDialer(addr, mode, dialer, logger, opts)
+	return newClient(super, logger)
 }
 
 // internal
@@ -81,9 +80,9 @@ type client struct {
 	logger logging.Logger
 }
 
-func newClient(address string, mode ClientMode, logger logging.Logger, opts Options) *client {
+func newClient(super mpx.Client, logger logging.Logger) *client {
 	return &client{
-		client: mpx.NewClient(address, mode, logger, opts),
+		client: super,
 		logger: logger,
 	}
 }

@@ -15,12 +15,14 @@ import (
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/baselibrary/tests"
 	"github.com/basecomplextech/spec"
+	"github.com/basecomplextech/spec/mpx"
 	"github.com/stretchr/testify/assert"
 )
 
 func testClient(t tests.T, s *server) *client {
 	addr := s.Address()
-	return newClient(addr, ClientMode_OnDemand, s.logger, s.Server.Options())
+	super := mpx.NewClient(addr, ClientMode_OnDemand, s.logger, s.Server.Options())
+	return newClient(super, s.logger)
 }
 
 // Close

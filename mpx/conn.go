@@ -38,10 +38,22 @@ type Conn interface {
 }
 
 // Connect dials an address and returns a connection.
-func Connect(address string, logger logging.Logger, opts Options) (Conn, status.Status) {
-	delegate := noopConnDelegate{}
+func Connect(ctx async.Context, addr string, logger logging.Logger, opts Options) (
+	Conn, status.Status) {
+
 	opts = opts.clean()
-	return connect(address, delegate, logger, opts)
+	dialer := newDialer(opts)
+	delegate := noopConnDelegate{}
+	return newConnector(dialer, delegate, logger, opts).connect(ctx, addr)
+}
+
+// ConnectDialer dials an address and returns a connection.
+func ConnectDialer(ctx async.Context, addr string, dialer *net.Dialer, logger logging.Logger,
+	opts Options) (Conn, status.Status) {
+
+	opts = opts.clean()
+	delegate := noopConnDelegate{}
+	return newConnector(dialer, delegate, logger, opts).connect(ctx, addr)
 }
 
 // internal
@@ -86,36 +98,6 @@ type connImpl struct {
 	closedSeq       int64
 	closedFlag      bool
 	closedListeners map[int64]func()
-}
-
-// connect connects to an address and returns a client connection.
-func connect(address string, delegate connDelegate, logger logging.Logger, opts Options) (
-	*connImpl, status.Status) {
-
-	// Dial address
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		return nil, mpxError(err)
-	}
-
-	// Incoming handler
-	handler := HandleFunc(func(_ Context, ch Channel) status.Status {
-		return status.ExternalError("client connection does not support incoming channels")
-	})
-
-	// Make connection
-	c := newConn(conn, true /* client */, delegate, handler, logger, opts)
-	go func() {
-		defer func() {
-			if e := recover(); e != nil {
-				st := status.Recover(e)
-				logger.ErrorStatus("Conn panic", st)
-			}
-		}()
-
-		c.run()
-	}()
-	return c, status.OK
 }
 
 func newConn(

@@ -57,9 +57,10 @@ func testRequestServer(t tests.T) *server {
 }
 
 func testConnect(t tests.T, s *server) *connImpl {
+	ctx := async.NoContext()
 	addr := s.Address()
 
-	c, st := Connect(addr, s.logger, s.options)
+	c, st := Connect(ctx, addr, s.logger, s.options)
 	if !st.OK() {
 		t.Fatal(st)
 	}
