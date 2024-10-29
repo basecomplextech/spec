@@ -47,7 +47,7 @@ func newDialer(opts Options) *net.Dialer {
 }
 
 func (c *connectorImpl) connect(ctx async.Context, addr string) (conn, status.Status) {
-	ctx1 := async.ContextToStd(ctx)
+	ctx1 := async.StdContext(ctx)
 
 	// Dial address
 	nc, err := c.dialer.DialContext(ctx1, "tcp", addr)
