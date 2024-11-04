@@ -7,9 +7,11 @@ package mpx
 import (
 	"net"
 	"sync"
+	"sync/atomic"
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
+	"github.com/basecomplextech/baselibrary/async/asyncmap"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/status"
@@ -88,10 +90,9 @@ type connImpl struct {
 	writeq alloc.ByteQueue
 
 	// channels
-	channelMu       sync.Mutex
-	channels        map[bin.Bin128]internalChannel
-	channelsClosed  bool
-	channelsReached bool // number of channels reached the target number, notify delegate once
+	channels        asyncmap.AtomicMap[bin.Bin128, internalChannel]
+	channelsClosed  atomic.Bool
+	channelsReached atomic.Bool // number of channels reached the target number, notify delegate once
 
 	// close listeners
 	closedMu        sync.Mutex
@@ -123,7 +124,7 @@ func newConn(
 		writer: newWriter(conn, client, int(opts.WriteBufferSize)),
 		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
-		channels:        make(map[bin.Bin128]internalChannel),
+		channels:        asyncmap.NewAtomicMap[bin.Bin128, internalChannel](),
 		closedListeners: make(map[int64]func()),
 	}
 }
@@ -485,17 +486,15 @@ func (c *connImpl) receiveOpen(msg pmpx.Message) status.Status {
 	m := msg.Open()
 	id := m.Id()
 
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
 	// Check not exist, impossible
-	if _, ok := c.channels[id]; ok {
+	ok := c.channels.Contains(id)
+	if ok {
 		return mpxErrorf("received open message for existing channel, channel=%v", id)
 	}
 
 	// Make channel
 	ch := openChannel(c, c.client, m)
-	c.channels[id] = ch
+	c.channels.Set(id, ch)
 
 	// Free on error
 	done := false
@@ -508,7 +507,7 @@ func (c *connImpl) receiveOpen(msg pmpx.Message) status.Status {
 
 	// Handle message
 	if st := ch.Receive1(msg); !st.OK() {
-		delete(c.channels, id)
+		c.channels.Delete(id)
 		return st
 	}
 	c.maybeChannelsReached()
@@ -525,16 +524,13 @@ func (c *connImpl) receiveClose(msg pmpx.Message) status.Status {
 	m := msg.Close()
 	id := m.Id()
 
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	ch, ok := c.channels[id]
+	ch, ok := c.channels.Get(id)
 	if !ok {
 		return status.OK
 	}
 
 	defer ch.Free1()
-	delete(c.channels, id)
+	c.channels.Delete(id)
 
 	return ch.Receive1(msg)
 }
@@ -543,10 +539,7 @@ func (c *connImpl) receiveMessage(msg pmpx.Message) status.Status {
 	m := msg.Message()
 	id := m.Id()
 
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	ch, ok := c.channels[id]
+	ch, ok := c.channels.Get(id)
 	if !ok {
 		return status.OK
 	}
@@ -558,10 +551,7 @@ func (c *connImpl) receiveWindow(msg pmpx.Message) status.Status {
 	m := msg.Window()
 	id := m.Id()
 
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	ch, ok := c.channels[id]
+	ch, ok := c.channels.Get(id)
 	if !ok {
 		return status.OK
 	}
@@ -619,18 +609,15 @@ func (c *connImpl) sendMessage(b []byte) status.Status {
 // channels
 
 func (c *connImpl) closeChannels() {
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	if c.channelsClosed {
+	if c.channelsClosed.Load() {
 		return
 	}
-	c.channelsClosed = true
+	c.channelsClosed.Store(true)
 
-	for _, ch := range c.channels {
+	c.channels.Range(func(_ bin.Bin128, ch internalChannel) bool {
 		ch.Free1()
-	}
-	c.channels = nil
+		return true
+	})
 }
 
 func (c *connImpl) createChannel() (Channel, bool, status.Status) {
@@ -645,37 +632,37 @@ func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 		}
 	}()
 
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
 	switch {
-	case c.channelsClosed:
+	case c.channelsClosed.Load():
 		return nil, false, statusConnClosed
 	case !c.negotiated.IsSet():
 		return nil, false, status.OK
 	}
 
-	c.channels[id] = ch
+	c.channels.Set(id, ch)
 	c.maybeChannelsReached()
+
+	if c.channelsClosed.Load() {
+		c.channels.Delete(id)
+		return nil, false, statusConnClosed
+	}
+
 	done = true
 	return ch, true, status.OK
 }
 
 func (c *connImpl) removeChannel(id bin.Bin128) {
-	c.channelMu.Lock()
-	defer c.channelMu.Unlock()
-
-	if c.channelsClosed {
+	if c.channelsClosed.Load() {
 		return
 	}
 
-	ch, ok := c.channels[id]
+	ch, ok := c.channels.Get(id)
 	if !ok {
 		return
 	}
 
 	defer ch.Free1()
-	delete(c.channels, id)
+	c.channels.Delete(id)
 }
 
 func (c *connImpl) handleChannel(ch Channel) {
@@ -705,7 +692,7 @@ func (c *connImpl) handleChannel(ch Channel) {
 }
 
 func (c *connImpl) maybeChannelsReached() {
-	if !c.client || c.channelsReached {
+	if !c.client || c.channelsReached.Load() {
 		return
 	}
 
@@ -713,11 +700,16 @@ func (c *connImpl) maybeChannelsReached() {
 	if target <= 0 {
 		return
 	}
-	if len(c.channels) < target {
+
+	n := c.channels.Len()
+	if n < target {
 		return
 	}
 
-	c.channelsReached = true
+	set := c.channelsReached.CompareAndSwap(false, true)
+	if !set {
+		return
+	}
 	c.delegate.onConnChannelsReached(c)
 }
 
