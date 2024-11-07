@@ -19,6 +19,7 @@ enum Code {
     CHANNEL_CLOSE = 11;
     CHANNEL_DATA = 12;
     CHANNEL_WINDOW = 13;
+    CHANNEL_BATCH = 14;
 }
 
 message Message {
@@ -31,6 +32,7 @@ message Message {
     channel_close   ChannelClose    11;
     channel_data    ChannelData     12;
     channel_window  ChannelWindow   13;
+    channel_batch   ChannelBatch    14;
 }
 
 // Connect
@@ -74,4 +76,9 @@ message ChannelData {
 message ChannelWindow {
     id      bin128  1;
     delta   int32   2; // Increment write window by delta
+}
+
+message ChannelBatch {
+    id      bin128      1;
+    list    []Message   2;
 }

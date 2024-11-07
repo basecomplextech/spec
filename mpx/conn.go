@@ -72,6 +72,10 @@ type conn interface {
 	SendMessage(ctx async.Context, msg pmpx.Message) status.Status
 }
 
+type internalConn interface {
+	send(ctx async.Context, msg pmpx.Message) status.Status
+}
+
 type connImpl struct {
 	conn     net.Conn
 	client   bool
@@ -291,36 +295,14 @@ func (c *connImpl) negotiateClient() status.Status {
 	}
 
 	// Write connect request
-	{
-		w := pmpx.NewMessageWriter()
-		w.Code(pmpx.Code_ConnectRequest)
-		w1 := w.ConnectRequest()
-
-		vv := w1.Versions()
-		vv.Add(pmpx.Version_Version10)
-		if err := vv.End(); err != nil {
-			return mpxError(err)
-		}
-
-		if c.options.Compression {
-			cc := w1.Compression()
-			cc.Add(pmpx.ConnectCompression_Lz4)
-			if err := cc.End(); err != nil {
-				return mpxError(err)
-			}
-		}
-
-		if err := w1.End(); err != nil {
-			return mpxError(err)
-		}
-		req, err := w.Build()
-		if err != nil {
-			return mpxError(err)
-		}
-
-		if st := c.writer.writeAndFlush(req); !st.OK() {
-			return st
-		}
+	req, err := pmpx.NewConnectInput().
+		WithCompression(c.options.Compression).
+		Build()
+	if err != nil {
+		return mpxError(err)
+	}
+	if st := c.writer.writeAndFlush(req); !st.OK() {
+		return st
 	}
 
 	// Read/check protocol line
@@ -337,10 +319,7 @@ func (c *connImpl) negotiateClient() status.Status {
 	if !st.OK() {
 		return st
 	}
-
-	// Check status
-	ok := resp.Ok()
-	if !ok {
+	if ok := resp.Ok(); !ok {
 		return mpxErrorf("server refused connection: %v", resp.Error())
 	}
 
@@ -401,17 +380,7 @@ func (c *connImpl) negotiateServer() status.Status {
 		}
 	}
 	if !ok {
-		w := pmpx.NewMessageWriter()
-		w.Code(pmpx.Code_ConnectResponse)
-
-		w1 := w.ConnectResponse()
-		w1.Ok(false)
-		w1.Error("unsupported protocol versions")
-
-		if err := w1.End(); err != nil {
-			return mpxError(err)
-		}
-		resp, err := w.Build()
+		resp, err := pmpx.BuildConnectError("unsupported protocol versions")
 		if err != nil {
 			return mpxError(err)
 		}
@@ -429,26 +398,13 @@ func (c *connImpl) negotiateServer() status.Status {
 		}
 	}
 
-	// Return response
-	{
-		w := pmpx.NewMessageWriter()
-		w.Code(pmpx.Code_ConnectResponse)
-
-		w1 := w.ConnectResponse()
-		w1.Ok(true)
-		w1.Version(pmpx.Version_Version10)
-		w1.Compression(comp)
-
-		if err := w1.End(); err != nil {
-			return mpxError(err)
-		}
-		resp, err := w.Build()
-		if err != nil {
-			return mpxError(err)
-		}
-		if st := c.writer.writeAndFlush(resp); !st.OK() {
-			return st
-		}
+	// Write response
+	resp, err := pmpx.BuildConnectResponse(pmpx.Version_Version10, comp)
+	if err != nil {
+		return mpxError(err)
+	}
+	if st := c.writer.writeAndFlush(resp); !st.OK() {
+		return st
 	}
 
 	// Init compression

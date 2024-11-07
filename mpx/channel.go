@@ -83,11 +83,10 @@ type channelState struct {
 	window int  // initial window size
 
 	// send
-	sendMu      sync.Mutex
-	sendOpen    bool // open message sent
-	sendClose   bool // close message sent
-	sendFree    bool // freed by user
-	sendBuilder builder
+	sendMu    sync.Mutex
+	sendOpen  bool // open message sent
+	sendClose bool // close message sent
+	sendFree  bool // freed by user
 
 	// receive
 	recvMu    sync.Mutex
@@ -142,9 +141,8 @@ func openChannel(c conn, client bool, msg pmpx.ChannelOpen) *channel {
 
 func newChannelState() *channelState {
 	return &channelState{
-		sendBuilder: newBuilder(),
-		recvQueue:   alloc.NewByteQueue(),
-		windowWait:  make(chan struct{}, 1),
+		recvQueue:  alloc.NewByteQueue(),
+		windowWait: make(chan struct{}, 1),
 	}
 }
 
@@ -222,17 +220,15 @@ func (ch *channel) ReceiveWait() <-chan struct{} {
 
 // Send sends a message to the channel.
 func (ch *channel) Send(ctx async.Context, data []byte) status.Status {
-	input := messageInput{
-		data: data,
-	}
+	input := pmpx.MessageInput{Data: data}
 	return ch.sendMessage(ctx, input)
 }
 
 // SendAndClose sends a close message with a payload.
 func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
-	input := messageInput{
-		data:  data,
-		close: true,
+	input := pmpx.MessageInput{
+		Data:  data,
+		Close: true,
 	}
 	if st := ch.sendMessage(ctx, input); !st.OK() {
 		return st
@@ -332,7 +328,7 @@ func (ch *channel) receive() ([]byte, bool, status.Status) {
 
 // send
 
-func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Status {
+func (ch *channel) sendMessage(ctx async.Context, input pmpx.MessageInput) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -340,7 +336,7 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 	defer ch.stateMu.RUnlock()
 
 	// Decrement window
-	size := len(input.data)
+	size := len(input.Data)
 	if st := s.decrementSendWindow(ctx, size, true /* wait */); !st.OK() {
 		return st
 	}
@@ -354,17 +350,17 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 	}
 
 	// Make message
-	input.id = s.id
-	input.open = !s.sendOpen
-	input.window = int32(s.window)
-	if input.open {
-		input.close = false
+	input.Id = s.id
+	input.Open = !s.sendOpen
+	input.Window = int32(s.window)
+	if input.Open {
+		input.Close = false
 	}
 
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	msg, err := s.sendBuilder.buildMessage(buf, input)
+	msg, err := pmpx.BuildChannelMessage(buf, input)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -376,7 +372,7 @@ func (ch *channel) sendMessage(ctx async.Context, input messageInput) status.Sta
 
 	// Update state
 	s.sendOpen = true
-	s.sendClose = s.sendClose || input.close
+	s.sendClose = s.sendClose || input.Close
 	return status.OK
 }
 
@@ -406,15 +402,15 @@ func (ch *channel) sendClose(ctxOrNil async.Context) status.Status {
 	}
 
 	// Make message
-	input := messageInput{
-		id:    s.id,
-		close: true,
+	input := pmpx.MessageInput{
+		Id:    s.id,
+		Close: true,
 	}
 
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	msg, err := s.sendBuilder.buildMessage(buf, input)
+	msg, err := pmpx.BuildChannelMessage(buf, input)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -423,7 +419,7 @@ func (ch *channel) sendClose(ctxOrNil async.Context) status.Status {
 	ctx1 := s.ctx
 
 	// Decrement window
-	n := len(msg.Unwrap().Raw())
+	n := msg.Unwrap().Len()
 	if st := s.decrementSendWindow(ctx1, n, false /* no wait, force */); !st.OK() {
 		return st
 	}
@@ -453,7 +449,8 @@ func (ch *channel) sendWindow(delta int32) status.Status {
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	msg, err := s.sendBuilder.buildWindow(buf, s.id, delta)
+	w := pmpx.NewMessageWriterBuffer(buf)
+	msg, err := pmpx.BuildChannelWindow(w, s.id, delta)
 	if err != nil {
 		return mpxError(err)
 	}

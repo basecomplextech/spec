@@ -9,21 +9,22 @@ import (
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/bin"
+	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
 func BenchmarkMessageBuild(b *testing.B) {
 	buf := alloc.NewBuffer()
-	input := messageInput{
-		id:     bin.Random128(),
-		data:   make([]byte, 128),
-		window: 16 * 1024 * 1024,
-		open:   true,
+	input := pmpx.MessageInput{
+		Id:     bin.Random128(),
+		Data:   make([]byte, 128),
+		Window: 16 * 1024 * 1024,
+		Open:   true,
 	}
 
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
 
-		msg, err := newBuilder().buildMessage(buf, input)
+		msg, err := pmpx.BuildChannelMessage(buf, input)
 		if err != nil {
 			b.Fatal(err)
 		}
