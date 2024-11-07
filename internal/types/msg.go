@@ -84,6 +84,11 @@ func (m Message) Empty() bool {
 	return len(m.bytes) == 0 || m.meta.Len() == 0
 }
 
+// Len returns the length of the message bytes.
+func (m Message) Len() int {
+	return len(m.bytes)
+}
+
 // Raw returns the underlying message bytes.
 func (m Message) Raw() []byte {
 	return m.bytes

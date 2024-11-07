@@ -129,7 +129,7 @@ func BenchmarkNewMessage(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		msg := pkg1.NewMessage(bytes)
-		if len(msg.Unwrap().Raw()) == 0 {
+		if msg.Unwrap().Len() == 0 {
 			b.Fatal()
 		}
 	}
