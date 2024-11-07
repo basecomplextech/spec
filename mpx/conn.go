@@ -73,6 +73,7 @@ type conn interface {
 }
 
 type internalConn interface {
+	// send sends a message to the connection, or returns a connection closed or an end status.
 	send(ctx async.Context, msg pmpx.Message) status.Status
 }
 
