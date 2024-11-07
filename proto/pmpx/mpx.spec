@@ -1,44 +1,56 @@
-// Connect
+options (
+    go_package="github.com/basecomplextech/spec/proto/pmpx2"
+)
 
 enum Version {
     UNDEFINED = 0;
-    Version_1_0 = 10;
+    VERSION_1_0 = 10;
 }
 
-enum Compress {
-    NONE = 0;
-    LZ4 = 1;
+// Message
+
+enum Code {
+    UNDEFINED = 0;
+
+    CONNECT_REQUEST = 1;
+    CONNECT_RESPONSE = 2;
+
+    CHANNEL_OPEN = 10;
+    CHANNEL_CLOSE = 11;
+    CHANNEL_DATA = 12;
+    CHANNEL_WINDOW = 13;
 }
+
+message Message {
+    code    Code    1;
+
+    connect_request     ConnectRequest  2;
+    connect_response    ConnectResponse 3;
+
+    channel_open    ChannelOpen     10;
+    channel_close   ChannelClose    11;
+    channel_data    ChannelData     12;
+    channel_window  ChannelWindow   13;
+}
+
+// Connect
 
 message ConnectRequest {
-    versions    []Version   1; // Proposed versions
-    compress    []Compress  2; // Proposed compression algorithms
+    versions    []Version               1; // Proposed versions
+    compression []ConnectCompression    2; // Proposed compression algorithms
 }
 
 message ConnectResponse {
     ok      bool    1;
     error   string  2;
 
-    version     Version     10; // Negotiated version
-    compress    Compress    11; // Negotiated compression algorithm
+    version     Version             10; // Negotiated version
+    compression ConnectCompression  11; // Negotiated compression algorithm
 }
 
-// Messages
-
-enum Code {
-    UNDEFINED = 0;
-    CHANNEL_OPEN = 1;
-    CHANNEL_CLOSE = 2;
-    CHANNEL_MESSAGE = 3;
-    CHANNEL_WINDOW = 4;
-}
-
-message Message {
-    code        Code                1;
-    open        ChannelOpen         2;
-    close       ChannelClose        3;
-    message     ChannelMessage      4;
-    window      ChannelWindow       5;
+enum ConnectCompression {
+    NONE = 0;
+    LZ4 = 1;
 }
 
 // Channel
@@ -54,7 +66,7 @@ message ChannelClose {
     data    bytes   2;
 }
 
-message ChannelMessage {
+message ChannelData {
     id      bin128  1;
     data    bytes   2;
 }

@@ -6,7 +6,7 @@ package mpx
 
 import "fmt"
 
-const debug = false
+const debug = true
 
 func debugPrint(client bool, a ...any) {
 	if !debug {

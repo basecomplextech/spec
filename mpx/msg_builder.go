@@ -43,7 +43,7 @@ func (b builder) buildMessage(buf alloc.Buffer, input messageInput) (pmpx.Messag
 	case open:
 		w.Code(pmpx.Code_ChannelOpen)
 
-		w1 := w.Open()
+		w1 := w.ChannelOpen()
 		w1.Id(id)
 		w1.Window(window)
 
@@ -60,7 +60,7 @@ func (b builder) buildMessage(buf alloc.Buffer, input messageInput) (pmpx.Messag
 	case close:
 		w.Code(pmpx.Code_ChannelClose)
 
-		w1 := w.Close()
+		w1 := w.ChannelClose()
 		w1.Id(id)
 		if data != nil {
 			w1.Data(data)
@@ -73,9 +73,9 @@ func (b builder) buildMessage(buf alloc.Buffer, input messageInput) (pmpx.Messag
 
 	// Data message
 	default:
-		w.Code(pmpx.Code_ChannelMessage)
+		w.Code(pmpx.Code_ChannelData)
 
-		w1 := w.Message()
+		w1 := w.ChannelData()
 		w1.Id(id)
 		w1.Data(data)
 		if err := w1.End(); err != nil {
@@ -89,7 +89,7 @@ func (b builder) buildWindow(buf alloc.Buffer, id bin.Bin128, delta int32) (pmpx
 	w := pmpx.NewMessageWriterBuffer(buf)
 	w.Code(pmpx.Code_ChannelWindow)
 
-	w1 := w.Window()
+	w1 := w.ChannelWindow()
 	w1.Id(id)
 	w1.Delta(delta)
 	if err := w1.End(); err != nil {

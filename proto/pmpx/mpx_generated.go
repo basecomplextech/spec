@@ -61,42 +61,110 @@ func (e Version) String() string {
 	return ""
 }
 
-// Compress
+// Code
 
-type Compress int32
+type Code int32
 
 const (
-	Compress_None Compress = 0
-	Compress_Lz4  Compress = 1
+	Code_Undefined       Code = 0
+	Code_ConnectRequest  Code = 1
+	Code_ConnectResponse Code = 2
+	Code_ChannelOpen     Code = 10
+	Code_ChannelClose    Code = 11
+	Code_ChannelData     Code = 12
+	Code_ChannelWindow   Code = 13
 )
 
-func NewCompress(b []byte) Compress {
+func NewCode(b []byte) Code {
 	v, _, _ := encoding.DecodeInt32(b)
-	return Compress(v)
+	return Code(v)
 }
 
-func ParseCompress(b []byte) (result Compress, size int, err error) {
+func ParseCode(b []byte) (result Code, size int, err error) {
 	v, size, err := encoding.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
 	}
-	result = Compress(v)
+	result = Code(v)
 	return
 }
 
-func WriteCompress(b buffer.Buffer, v Compress) (int, error) {
+func WriteCode(b buffer.Buffer, v Code) (int, error) {
 	return encoding.EncodeInt32(b, int32(v))
 }
 
-func (e Compress) String() string {
+func (e Code) String() string {
 	switch e {
-	case Compress_None:
-		return "none"
-	case Compress_Lz4:
-		return "lz4"
+	case Code_Undefined:
+		return "undefined"
+	case Code_ConnectRequest:
+		return "connect_request"
+	case Code_ConnectResponse:
+		return "connect_response"
+	case Code_ChannelOpen:
+		return "channel_open"
+	case Code_ChannelClose:
+		return "channel_close"
+	case Code_ChannelData:
+		return "channel_data"
+	case Code_ChannelWindow:
+		return "channel_window"
 	}
 	return ""
 }
+
+// Message
+
+type Message struct {
+	msg spec.Message
+}
+
+func NewMessage(b []byte) Message {
+	msg := spec.NewMessage(b)
+	return Message{msg}
+}
+
+func NewMessageErr(b []byte) (_ Message, err error) {
+	msg, err := spec.NewMessageErr(b)
+	if err != nil {
+		return
+	}
+	return Message{msg}, nil
+}
+
+func MakeMessage(msg spec.Message) Message {
+	return Message{msg}
+}
+
+func ParseMessage(b []byte) (_ Message, size int, err error) {
+	msg, size, err := spec.ParseMessage(b)
+	if err != nil || size == 0 {
+		return
+	}
+	return Message{msg}, size, nil
+}
+
+func (m Message) Code() Code                       { return NewCode(m.msg.FieldRaw(1)) }
+func (m Message) ConnectRequest() ConnectRequest   { return MakeConnectRequest(m.msg.Message(2)) }
+func (m Message) ConnectResponse() ConnectResponse { return MakeConnectResponse(m.msg.Message(3)) }
+func (m Message) ChannelOpen() ChannelOpen         { return MakeChannelOpen(m.msg.Message(10)) }
+func (m Message) ChannelClose() ChannelClose       { return MakeChannelClose(m.msg.Message(11)) }
+func (m Message) ChannelData() ChannelData         { return MakeChannelData(m.msg.Message(12)) }
+func (m Message) ChannelWindow() ChannelWindow     { return MakeChannelWindow(m.msg.Message(13)) }
+
+func (m Message) HasCode() bool            { return m.msg.HasField(1) }
+func (m Message) HasConnectRequest() bool  { return m.msg.HasField(2) }
+func (m Message) HasConnectResponse() bool { return m.msg.HasField(3) }
+func (m Message) HasChannelOpen() bool     { return m.msg.HasField(10) }
+func (m Message) HasChannelClose() bool    { return m.msg.HasField(11) }
+func (m Message) HasChannelData() bool     { return m.msg.HasField(12) }
+func (m Message) HasChannelWindow() bool   { return m.msg.HasField(13) }
+
+func (m Message) IsEmpty() bool                         { return m.msg.Empty() }
+func (m Message) Clone() Message                        { return Message{m.msg.Clone()} }
+func (m Message) CloneToArena(a alloc.Arena) Message    { return Message{m.msg.CloneToArena(a)} }
+func (m Message) CloneToBuffer(b buffer.Buffer) Message { return Message{m.msg.CloneToBuffer(b)} }
+func (m Message) Unwrap() spec.Message                  { return m.msg }
 
 // ConnectRequest
 
@@ -132,12 +200,12 @@ func ParseConnectRequest(b []byte) (_ ConnectRequest, size int, err error) {
 func (m ConnectRequest) Versions() spec.TypedList[Version] {
 	return spec.NewTypedList(m.msg.FieldRaw(1), ParseVersion)
 }
-func (m ConnectRequest) Compress() spec.TypedList[Compress] {
-	return spec.NewTypedList(m.msg.FieldRaw(2), ParseCompress)
+func (m ConnectRequest) Compression() spec.TypedList[ConnectCompression] {
+	return spec.NewTypedList(m.msg.FieldRaw(2), ParseConnectCompression)
 }
 
-func (m ConnectRequest) HasVersions() bool { return m.msg.HasField(1) }
-func (m ConnectRequest) HasCompress() bool { return m.msg.HasField(2) }
+func (m ConnectRequest) HasVersions() bool    { return m.msg.HasField(1) }
+func (m ConnectRequest) HasCompression() bool { return m.msg.HasField(2) }
 
 func (m ConnectRequest) IsEmpty() bool         { return m.msg.Empty() }
 func (m ConnectRequest) Clone() ConnectRequest { return ConnectRequest{m.msg.Clone()} }
@@ -183,12 +251,14 @@ func ParseConnectResponse(b []byte) (_ ConnectResponse, size int, err error) {
 func (m ConnectResponse) Ok() bool           { return m.msg.Bool(1) }
 func (m ConnectResponse) Error() spec.String { return m.msg.String(2) }
 func (m ConnectResponse) Version() Version   { return NewVersion(m.msg.FieldRaw(10)) }
-func (m ConnectResponse) Compress() Compress { return NewCompress(m.msg.FieldRaw(11)) }
+func (m ConnectResponse) Compression() ConnectCompression {
+	return NewConnectCompression(m.msg.FieldRaw(11))
+}
 
-func (m ConnectResponse) HasOk() bool       { return m.msg.HasField(1) }
-func (m ConnectResponse) HasError() bool    { return m.msg.HasField(2) }
-func (m ConnectResponse) HasVersion() bool  { return m.msg.HasField(10) }
-func (m ConnectResponse) HasCompress() bool { return m.msg.HasField(11) }
+func (m ConnectResponse) HasOk() bool          { return m.msg.HasField(1) }
+func (m ConnectResponse) HasError() bool       { return m.msg.HasField(2) }
+func (m ConnectResponse) HasVersion() bool     { return m.msg.HasField(10) }
+func (m ConnectResponse) HasCompression() bool { return m.msg.HasField(11) }
 
 func (m ConnectResponse) IsEmpty() bool          { return m.msg.Empty() }
 func (m ConnectResponse) Clone() ConnectResponse { return ConnectResponse{m.msg.Clone()} }
@@ -200,100 +270,42 @@ func (m ConnectResponse) CloneToBuffer(b buffer.Buffer) ConnectResponse {
 }
 func (m ConnectResponse) Unwrap() spec.Message { return m.msg }
 
-// Code
+// ConnectCompression
 
-type Code int32
+type ConnectCompression int32
 
 const (
-	Code_Undefined      Code = 0
-	Code_ChannelOpen    Code = 1
-	Code_ChannelClose   Code = 2
-	Code_ChannelMessage Code = 3
-	Code_ChannelWindow  Code = 4
+	ConnectCompression_None ConnectCompression = 0
+	ConnectCompression_Lz4  ConnectCompression = 1
 )
 
-func NewCode(b []byte) Code {
+func NewConnectCompression(b []byte) ConnectCompression {
 	v, _, _ := encoding.DecodeInt32(b)
-	return Code(v)
+	return ConnectCompression(v)
 }
 
-func ParseCode(b []byte) (result Code, size int, err error) {
+func ParseConnectCompression(b []byte) (result ConnectCompression, size int, err error) {
 	v, size, err := encoding.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
 	}
-	result = Code(v)
+	result = ConnectCompression(v)
 	return
 }
 
-func WriteCode(b buffer.Buffer, v Code) (int, error) {
+func WriteConnectCompression(b buffer.Buffer, v ConnectCompression) (int, error) {
 	return encoding.EncodeInt32(b, int32(v))
 }
 
-func (e Code) String() string {
+func (e ConnectCompression) String() string {
 	switch e {
-	case Code_Undefined:
-		return "undefined"
-	case Code_ChannelOpen:
-		return "channel_open"
-	case Code_ChannelClose:
-		return "channel_close"
-	case Code_ChannelMessage:
-		return "channel_message"
-	case Code_ChannelWindow:
-		return "channel_window"
+	case ConnectCompression_None:
+		return "none"
+	case ConnectCompression_Lz4:
+		return "lz4"
 	}
 	return ""
 }
-
-// Message
-
-type Message struct {
-	msg spec.Message
-}
-
-func NewMessage(b []byte) Message {
-	msg := spec.NewMessage(b)
-	return Message{msg}
-}
-
-func NewMessageErr(b []byte) (_ Message, err error) {
-	msg, err := spec.NewMessageErr(b)
-	if err != nil {
-		return
-	}
-	return Message{msg}, nil
-}
-
-func MakeMessage(msg spec.Message) Message {
-	return Message{msg}
-}
-
-func ParseMessage(b []byte) (_ Message, size int, err error) {
-	msg, size, err := spec.ParseMessage(b)
-	if err != nil || size == 0 {
-		return
-	}
-	return Message{msg}, size, nil
-}
-
-func (m Message) Code() Code              { return NewCode(m.msg.FieldRaw(1)) }
-func (m Message) Open() ChannelOpen       { return MakeChannelOpen(m.msg.Message(2)) }
-func (m Message) Close() ChannelClose     { return MakeChannelClose(m.msg.Message(3)) }
-func (m Message) Message() ChannelMessage { return MakeChannelMessage(m.msg.Message(4)) }
-func (m Message) Window() ChannelWindow   { return MakeChannelWindow(m.msg.Message(5)) }
-
-func (m Message) HasCode() bool    { return m.msg.HasField(1) }
-func (m Message) HasOpen() bool    { return m.msg.HasField(2) }
-func (m Message) HasClose() bool   { return m.msg.HasField(3) }
-func (m Message) HasMessage() bool { return m.msg.HasField(4) }
-func (m Message) HasWindow() bool  { return m.msg.HasField(5) }
-
-func (m Message) IsEmpty() bool                         { return m.msg.Empty() }
-func (m Message) Clone() Message                        { return Message{m.msg.Clone()} }
-func (m Message) CloneToArena(a alloc.Arena) Message    { return Message{m.msg.CloneToArena(a)} }
-func (m Message) CloneToBuffer(b buffer.Buffer) Message { return Message{m.msg.CloneToBuffer(b)} }
-func (m Message) Unwrap() spec.Message                  { return m.msg }
 
 // ChannelOpen
 
@@ -391,52 +403,52 @@ func (m ChannelClose) CloneToBuffer(b buffer.Buffer) ChannelClose {
 }
 func (m ChannelClose) Unwrap() spec.Message { return m.msg }
 
-// ChannelMessage
+// ChannelData
 
-type ChannelMessage struct {
+type ChannelData struct {
 	msg spec.Message
 }
 
-func NewChannelMessage(b []byte) ChannelMessage {
+func NewChannelData(b []byte) ChannelData {
 	msg := spec.NewMessage(b)
-	return ChannelMessage{msg}
+	return ChannelData{msg}
 }
 
-func NewChannelMessageErr(b []byte) (_ ChannelMessage, err error) {
+func NewChannelDataErr(b []byte) (_ ChannelData, err error) {
 	msg, err := spec.NewMessageErr(b)
 	if err != nil {
 		return
 	}
-	return ChannelMessage{msg}, nil
+	return ChannelData{msg}, nil
 }
 
-func MakeChannelMessage(msg spec.Message) ChannelMessage {
-	return ChannelMessage{msg}
+func MakeChannelData(msg spec.Message) ChannelData {
+	return ChannelData{msg}
 }
 
-func ParseChannelMessage(b []byte) (_ ChannelMessage, size int, err error) {
+func ParseChannelData(b []byte) (_ ChannelData, size int, err error) {
 	msg, size, err := spec.ParseMessage(b)
 	if err != nil || size == 0 {
 		return
 	}
-	return ChannelMessage{msg}, size, nil
+	return ChannelData{msg}, size, nil
 }
 
-func (m ChannelMessage) Id() bin.Bin128   { return m.msg.Bin128(1) }
-func (m ChannelMessage) Data() spec.Bytes { return m.msg.Bytes(2) }
+func (m ChannelData) Id() bin.Bin128   { return m.msg.Bin128(1) }
+func (m ChannelData) Data() spec.Bytes { return m.msg.Bytes(2) }
 
-func (m ChannelMessage) HasId() bool   { return m.msg.HasField(1) }
-func (m ChannelMessage) HasData() bool { return m.msg.HasField(2) }
+func (m ChannelData) HasId() bool   { return m.msg.HasField(1) }
+func (m ChannelData) HasData() bool { return m.msg.HasField(2) }
 
-func (m ChannelMessage) IsEmpty() bool         { return m.msg.Empty() }
-func (m ChannelMessage) Clone() ChannelMessage { return ChannelMessage{m.msg.Clone()} }
-func (m ChannelMessage) CloneToArena(a alloc.Arena) ChannelMessage {
-	return ChannelMessage{m.msg.CloneToArena(a)}
+func (m ChannelData) IsEmpty() bool      { return m.msg.Empty() }
+func (m ChannelData) Clone() ChannelData { return ChannelData{m.msg.Clone()} }
+func (m ChannelData) CloneToArena(a alloc.Arena) ChannelData {
+	return ChannelData{m.msg.CloneToArena(a)}
 }
-func (m ChannelMessage) CloneToBuffer(b buffer.Buffer) ChannelMessage {
-	return ChannelMessage{m.msg.CloneToBuffer(b)}
+func (m ChannelData) CloneToBuffer(b buffer.Buffer) ChannelData {
+	return ChannelData{m.msg.CloneToBuffer(b)}
 }
-func (m ChannelMessage) Unwrap() spec.Message { return m.msg }
+func (m ChannelData) Unwrap() spec.Message { return m.msg }
 
 // ChannelWindow
 
@@ -485,6 +497,90 @@ func (m ChannelWindow) CloneToBuffer(b buffer.Buffer) ChannelWindow {
 }
 func (m ChannelWindow) Unwrap() spec.Message { return m.msg }
 
+// MessageWriter
+
+type MessageWriter struct {
+	w spec.MessageWriter
+}
+
+func NewMessageWriter() MessageWriter {
+	w := spec.NewMessageWriter()
+	return MessageWriter{w}
+}
+
+func NewMessageWriterBuffer(b buffer.Buffer) MessageWriter {
+	w := spec.NewMessageWriterBuffer(b)
+	return MessageWriter{w}
+}
+
+func NewMessageWriterTo(w spec.MessageWriter) MessageWriter {
+	return MessageWriter{w}
+}
+
+func (w MessageWriter) Code(v Code) { spec.WriteField(w.w.Field(1), v, WriteCode) }
+func (w MessageWriter) ConnectRequest() ConnectRequestWriter {
+	w1 := w.w.Field(2).Message()
+	return NewConnectRequestWriterTo(w1)
+}
+func (w MessageWriter) CopyConnectRequest(v ConnectRequest) error {
+	return w.w.Field(2).Any(v.Unwrap().Raw())
+}
+func (w MessageWriter) ConnectResponse() ConnectResponseWriter {
+	w1 := w.w.Field(3).Message()
+	return NewConnectResponseWriterTo(w1)
+}
+func (w MessageWriter) CopyConnectResponse(v ConnectResponse) error {
+	return w.w.Field(3).Any(v.Unwrap().Raw())
+}
+func (w MessageWriter) ChannelOpen() ChannelOpenWriter {
+	w1 := w.w.Field(10).Message()
+	return NewChannelOpenWriterTo(w1)
+}
+func (w MessageWriter) CopyChannelOpen(v ChannelOpen) error {
+	return w.w.Field(10).Any(v.Unwrap().Raw())
+}
+func (w MessageWriter) ChannelClose() ChannelCloseWriter {
+	w1 := w.w.Field(11).Message()
+	return NewChannelCloseWriterTo(w1)
+}
+func (w MessageWriter) CopyChannelClose(v ChannelClose) error {
+	return w.w.Field(11).Any(v.Unwrap().Raw())
+}
+func (w MessageWriter) ChannelData() ChannelDataWriter {
+	w1 := w.w.Field(12).Message()
+	return NewChannelDataWriterTo(w1)
+}
+func (w MessageWriter) CopyChannelData(v ChannelData) error {
+	return w.w.Field(12).Any(v.Unwrap().Raw())
+}
+func (w MessageWriter) ChannelWindow() ChannelWindowWriter {
+	w1 := w.w.Field(13).Message()
+	return NewChannelWindowWriterTo(w1)
+}
+func (w MessageWriter) CopyChannelWindow(v ChannelWindow) error {
+	return w.w.Field(13).Any(v.Unwrap().Raw())
+}
+
+func (w MessageWriter) Merge(msg Message) error {
+	return w.w.Merge(msg.Unwrap())
+}
+
+func (w MessageWriter) End() error {
+	return w.w.End()
+}
+
+func (w MessageWriter) Build() (_ Message, err error) {
+	bytes, err := w.w.Build()
+	if err != nil {
+		return
+	}
+	return NewMessage(bytes), nil
+}
+
+func (w MessageWriter) Unwrap() spec.MessageWriter {
+	return w.w
+}
+
 // ConnectRequestWriter
 
 type ConnectRequestWriter struct {
@@ -509,9 +605,9 @@ func (w ConnectRequestWriter) Versions() spec.ValueListWriter[Version] {
 	w1 := w.w.Field(1).List()
 	return spec.NewValueListWriter(w1, WriteVersion)
 }
-func (w ConnectRequestWriter) Compress() spec.ValueListWriter[Compress] {
+func (w ConnectRequestWriter) Compression() spec.ValueListWriter[ConnectCompression] {
 	w1 := w.w.Field(2).List()
-	return spec.NewValueListWriter(w1, WriteCompress)
+	return spec.NewValueListWriter(w1, WriteConnectCompression)
 }
 
 func (w ConnectRequestWriter) Merge(msg ConnectRequest) error {
@@ -554,10 +650,12 @@ func NewConnectResponseWriterTo(w spec.MessageWriter) ConnectResponseWriter {
 	return ConnectResponseWriter{w}
 }
 
-func (w ConnectResponseWriter) Ok(v bool)           { w.w.Field(1).Bool(v) }
-func (w ConnectResponseWriter) Error(v string)      { w.w.Field(2).String(v) }
-func (w ConnectResponseWriter) Version(v Version)   { spec.WriteField(w.w.Field(10), v, WriteVersion) }
-func (w ConnectResponseWriter) Compress(v Compress) { spec.WriteField(w.w.Field(11), v, WriteCompress) }
+func (w ConnectResponseWriter) Ok(v bool)         { w.w.Field(1).Bool(v) }
+func (w ConnectResponseWriter) Error(v string)    { w.w.Field(2).String(v) }
+func (w ConnectResponseWriter) Version(v Version) { spec.WriteField(w.w.Field(10), v, WriteVersion) }
+func (w ConnectResponseWriter) Compression(v ConnectCompression) {
+	spec.WriteField(w.w.Field(11), v, WriteConnectCompression)
+}
 
 func (w ConnectResponseWriter) Merge(msg ConnectResponse) error {
 	return w.w.Merge(msg.Unwrap())
@@ -576,76 +674,6 @@ func (w ConnectResponseWriter) Build() (_ ConnectResponse, err error) {
 }
 
 func (w ConnectResponseWriter) Unwrap() spec.MessageWriter {
-	return w.w
-}
-
-// MessageWriter
-
-type MessageWriter struct {
-	w spec.MessageWriter
-}
-
-func NewMessageWriter() MessageWriter {
-	w := spec.NewMessageWriter()
-	return MessageWriter{w}
-}
-
-func NewMessageWriterBuffer(b buffer.Buffer) MessageWriter {
-	w := spec.NewMessageWriterBuffer(b)
-	return MessageWriter{w}
-}
-
-func NewMessageWriterTo(w spec.MessageWriter) MessageWriter {
-	return MessageWriter{w}
-}
-
-func (w MessageWriter) Code(v Code) { spec.WriteField(w.w.Field(1), v, WriteCode) }
-func (w MessageWriter) Open() ChannelOpenWriter {
-	w1 := w.w.Field(2).Message()
-	return NewChannelOpenWriterTo(w1)
-}
-func (w MessageWriter) CopyOpen(v ChannelOpen) error {
-	return w.w.Field(2).Any(v.Unwrap().Raw())
-}
-func (w MessageWriter) Close() ChannelCloseWriter {
-	w1 := w.w.Field(3).Message()
-	return NewChannelCloseWriterTo(w1)
-}
-func (w MessageWriter) CopyClose(v ChannelClose) error {
-	return w.w.Field(3).Any(v.Unwrap().Raw())
-}
-func (w MessageWriter) Message() ChannelMessageWriter {
-	w1 := w.w.Field(4).Message()
-	return NewChannelMessageWriterTo(w1)
-}
-func (w MessageWriter) CopyMessage(v ChannelMessage) error {
-	return w.w.Field(4).Any(v.Unwrap().Raw())
-}
-func (w MessageWriter) Window() ChannelWindowWriter {
-	w1 := w.w.Field(5).Message()
-	return NewChannelWindowWriterTo(w1)
-}
-func (w MessageWriter) CopyWindow(v ChannelWindow) error {
-	return w.w.Field(5).Any(v.Unwrap().Raw())
-}
-
-func (w MessageWriter) Merge(msg Message) error {
-	return w.w.Merge(msg.Unwrap())
-}
-
-func (w MessageWriter) End() error {
-	return w.w.End()
-}
-
-func (w MessageWriter) Build() (_ Message, err error) {
-	bytes, err := w.w.Build()
-	if err != nil {
-		return
-	}
-	return NewMessage(bytes), nil
-}
-
-func (w MessageWriter) Unwrap() spec.MessageWriter {
 	return w.w
 }
 
@@ -736,46 +764,46 @@ func (w ChannelCloseWriter) Unwrap() spec.MessageWriter {
 	return w.w
 }
 
-// ChannelMessageWriter
+// ChannelDataWriter
 
-type ChannelMessageWriter struct {
+type ChannelDataWriter struct {
 	w spec.MessageWriter
 }
 
-func NewChannelMessageWriter() ChannelMessageWriter {
+func NewChannelDataWriter() ChannelDataWriter {
 	w := spec.NewMessageWriter()
-	return ChannelMessageWriter{w}
+	return ChannelDataWriter{w}
 }
 
-func NewChannelMessageWriterBuffer(b buffer.Buffer) ChannelMessageWriter {
+func NewChannelDataWriterBuffer(b buffer.Buffer) ChannelDataWriter {
 	w := spec.NewMessageWriterBuffer(b)
-	return ChannelMessageWriter{w}
+	return ChannelDataWriter{w}
 }
 
-func NewChannelMessageWriterTo(w spec.MessageWriter) ChannelMessageWriter {
-	return ChannelMessageWriter{w}
+func NewChannelDataWriterTo(w spec.MessageWriter) ChannelDataWriter {
+	return ChannelDataWriter{w}
 }
 
-func (w ChannelMessageWriter) Id(v bin.Bin128) { w.w.Field(1).Bin128(v) }
-func (w ChannelMessageWriter) Data(v []byte)   { w.w.Field(2).Bytes(v) }
+func (w ChannelDataWriter) Id(v bin.Bin128) { w.w.Field(1).Bin128(v) }
+func (w ChannelDataWriter) Data(v []byte)   { w.w.Field(2).Bytes(v) }
 
-func (w ChannelMessageWriter) Merge(msg ChannelMessage) error {
+func (w ChannelDataWriter) Merge(msg ChannelData) error {
 	return w.w.Merge(msg.Unwrap())
 }
 
-func (w ChannelMessageWriter) End() error {
+func (w ChannelDataWriter) End() error {
 	return w.w.End()
 }
 
-func (w ChannelMessageWriter) Build() (_ ChannelMessage, err error) {
+func (w ChannelDataWriter) Build() (_ ChannelData, err error) {
 	bytes, err := w.w.Build()
 	if err != nil {
 		return
 	}
-	return NewChannelMessage(bytes), nil
+	return NewChannelData(bytes), nil
 }
 
-func (w ChannelMessageWriter) Unwrap() spec.MessageWriter {
+func (w ChannelDataWriter) Unwrap() spec.MessageWriter {
 	return w.w
 }
 

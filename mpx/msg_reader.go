@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/opt"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/pmpx"
 	"github.com/pierrec/lz4/v4"
@@ -18,8 +19,8 @@ import (
 
 type reader struct {
 	src    *bufio.Reader
-	comp   *lz4.Reader // nil when no compression
-	reader io.Reader   // points to src or comp
+	comp   opt.Opt[*lz4.Reader] // empty when no compression
+	reader io.Reader            // points to src or comp
 
 	client bool
 	freed  bool
@@ -50,12 +51,13 @@ func (r *reader) free() {
 }
 
 func (r *reader) initLZ4() status.Status {
-	if r.comp != nil {
+	if r.comp.Valid {
 		return status.OK
 	}
 
-	r.comp = lz4.NewReader(r.src)
-	r.reader = r.comp
+	reader := lz4.NewReader(r.src)
+	r.comp = opt.New(reader)
+	r.reader = reader
 	return status.OK
 }
 
@@ -74,37 +76,35 @@ func (r *reader) readLine() (string, status.Status) {
 
 // readRequest reads and parses a connect request, the message is valid until the next read call.
 func (r *reader) readRequest() (pmpx.ConnectRequest, status.Status) {
-	buf, st := r.read()
+	msg, st := r.readMessage()
 	if !st.OK() {
 		return pmpx.ConnectRequest{}, st
 	}
 
-	req, _, err := pmpx.ParseConnectRequest(buf)
-	if err != nil {
-		return pmpx.ConnectRequest{}, mpxErrorf("failed to parse connect request: %v", err)
+	code := msg.Code()
+	if code != pmpx.Code_ConnectRequest {
+		return pmpx.ConnectRequest{}, mpxErrorf(
+			"unexpected message, expected connect request, got %v", code)
 	}
 
-	if debug {
-		debugPrint(r.client, "<- connect req")
-	}
+	req := msg.ConnectRequest()
 	return req, status.OK
 }
 
 // readResponse reads and parses a connect response, the message is valid until the next read call.
 func (r *reader) readResponse() (pmpx.ConnectResponse, status.Status) {
-	buf, st := r.read()
+	msg, st := r.readMessage()
 	if !st.OK() {
 		return pmpx.ConnectResponse{}, st
 	}
 
-	resp, _, err := pmpx.ParseConnectResponse(buf)
-	if err != nil {
-		return pmpx.ConnectResponse{}, mpxErrorf("failed to parse connect response: %v", err)
+	code := msg.Code()
+	if code != pmpx.Code_ConnectResponse {
+		return pmpx.ConnectResponse{}, mpxErrorf(
+			"unexpected message, expected connect response, got %v", code)
 	}
 
-	if debug {
-		debugPrint(r.client, "<- connect resp")
-	}
+	resp := msg.ConnectResponse()
 	return resp, status.OK
 }
 
@@ -124,30 +124,36 @@ func (r *reader) readMessage() (pmpx.Message, status.Status) {
 	if debug {
 		code := msg.Code()
 		switch code {
+		case pmpx.Code_ConnectRequest:
+			debugPrint(r.client, "<- connect_req")
+
+		case pmpx.Code_ConnectResponse:
+			debugPrint(r.client, "<- connect_resp")
+
 		case pmpx.Code_ChannelOpen:
-			m := msg.Open()
+			m := msg.ChannelOpen()
 			id := m.Id()
 			data := debugString(m.Data())
-			cmd := "<- open\t"
+			cmd := "<- channel_open\t"
 			debugPrint(r.client, cmd, id, data)
 
 		case pmpx.Code_ChannelClose:
-			m := msg.Close()
+			m := msg.ChannelClose()
 			id := m.Id()
 			data := debugString(m.Data())
-			debugPrint(r.client, "<- close\t", id, data)
+			debugPrint(r.client, "<- channel_close\t", id, data)
 
-		case pmpx.Code_ChannelMessage:
-			m := msg.Message()
+		case pmpx.Code_ChannelData:
+			m := msg.ChannelData()
 			id := m.Id()
 			data := debugString(m.Data())
-			debugPrint(r.client, "<- message\t", id, data)
+			debugPrint(r.client, "<- channel_data\t", id, data)
 
 		case pmpx.Code_ChannelWindow:
-			m := msg.Window()
+			m := msg.ChannelWindow()
 			id := m.Id()
 			delta := m.Delta()
-			debugPrint(r.client, "<- window\t", id, delta)
+			debugPrint(r.client, "<- channel_window\t", id, delta)
 
 		default:
 			debugPrint(r.client, "<- unknown", code)

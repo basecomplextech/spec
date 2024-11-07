@@ -268,13 +268,13 @@ func (ch *channel) Receive1(msg pmpx.Message) status.Status {
 
 	switch code {
 	case pmpx.Code_ChannelOpen:
-		return ch.receiveOpen(msg.Open())
+		return ch.receiveOpen(msg.ChannelOpen())
 	case pmpx.Code_ChannelClose:
-		return ch.receiveClose(msg.Close())
+		return ch.receiveClose(msg.ChannelClose())
 	case pmpx.Code_ChannelWindow:
-		return ch.receiveWindow(msg.Window())
-	case pmpx.Code_ChannelMessage:
-		return ch.receiveMessage(msg.Message())
+		return ch.receiveWindow(msg.ChannelWindow())
+	case pmpx.Code_ChannelData:
+		return ch.receiveData(msg.ChannelData())
 	}
 
 	return mpxErrorf("received unexpected message, code=%v", code)
@@ -548,7 +548,7 @@ func (ch *channel) receiveClose(msg pmpx.ChannelClose) status.Status {
 	return status.OK
 }
 
-func (ch *channel) receiveMessage(msg pmpx.ChannelMessage) status.Status {
+func (ch *channel) receiveData(data pmpx.ChannelData) status.Status {
 	s, ok := ch.rlock()
 	if !ok {
 		return statusChannelClosed
@@ -564,8 +564,8 @@ func (ch *channel) receiveMessage(msg pmpx.ChannelMessage) status.Status {
 	}
 
 	// Write data
-	data := msg.Data()
-	_, _ = s.recvQueue.Write(data) // ignore end and false, read queues are unbounded
+	b := data.Data()
+	_, _ = s.recvQueue.Write(b) // ignore end and false, read queues are unbounded
 	return status.OK
 }
 

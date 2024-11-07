@@ -53,6 +53,8 @@ func (w *writer) initLZ4() status.Status {
 	return status.OK
 }
 
+// flush
+
 func (w *writer) flush() status.Status {
 	if err := w.writer.Flush(); err != nil {
 		return mpxError(err)
@@ -63,8 +65,10 @@ func (w *writer) flush() status.Status {
 	return status.OK
 }
 
-// writeString writes a single string, used only to write the protocol line.
-func (w *writer) writeString(s string) status.Status {
+// write
+
+// writeLine writes a single string, used only to write the protocol line.
+func (w *writer) writeLine(s string) status.Status {
 	if _, err := w.dst.WriteString(s); err != nil {
 		return mpxError(err)
 	}
@@ -74,97 +78,67 @@ func (w *writer) writeString(s string) status.Status {
 	return status.OK
 }
 
-// writeRequest writes a connect request and flushes the writer.
-func (w *writer) writeRequest(req pmpx.ConnectRequest) status.Status {
-	msg := req.Unwrap().Raw()
+// write writes a message, prefixed with its size.
+func (w *writer) write(msg pmpx.Message) status.Status {
+	b := msg.Unwrap().Raw()
 	head := w.head[:]
 
 	// Write size
-	binary.BigEndian.PutUint32(head, uint32(len(msg)))
+	binary.BigEndian.PutUint32(head, uint32(len(b)))
 	if _, err := w.writer.Write(head); err != nil {
 		return mpxError(err)
 	}
 
 	// Write message
-	if _, err := w.writer.Write(msg); err != nil {
+	if _, err := w.writer.Write(b); err != nil {
 		return mpxError(err)
 	}
 
 	if debug {
-		debugPrint(w.client, "-> connect req")
-	}
-	return w.flush()
-}
-
-// writeRequest writes a connect response and flushes the writer.
-func (w *writer) writeResponse(resp pmpx.ConnectResponse) status.Status {
-	msg := resp.Unwrap().Raw()
-	head := w.head[:]
-
-	// Write size
-	binary.BigEndian.PutUint32(head, uint32(len(msg)))
-	if _, err := w.writer.Write(head); err != nil {
-		return mpxError(err)
-	}
-
-	// Write message
-	if _, err := w.writer.Write(msg); err != nil {
-		return mpxError(err)
-	}
-
-	if debug {
-		debugPrint(w.client, "-> connect resp")
-	}
-	return w.flush()
-}
-
-// writeMessage writes a single message.
-func (w *writer) writeMessage(msg []byte) status.Status {
-	head := w.head[:]
-
-	// Write size
-	binary.BigEndian.PutUint32(head, uint32(len(msg)))
-	if _, err := w.writer.Write(head); err != nil {
-		return mpxError(err)
-	}
-
-	// Write message
-	if _, err := w.writer.Write(msg); err != nil {
-		return mpxError(err)
-	}
-
-	if debug {
-		m := pmpx.NewMessage(msg)
-		code := m.Code()
+		code := msg.Code()
 		switch code {
+		case pmpx.Code_ConnectRequest:
+			debugPrint(w.client, "-> connect_req")
+
+		case pmpx.Code_ConnectResponse:
+			debugPrint(w.client, "-> connect_resp")
+
 		case pmpx.Code_ChannelOpen:
-			m1 := m.Open()
-			id := m1.Id()
-			data := debugString(m1.Data())
-			cmd := "-> open\t"
+			m := msg.ChannelOpen()
+			id := m.Id()
+			data := debugString(m.Data())
+			cmd := "-> channel_open\t"
 			debugPrint(w.client, cmd, id, data)
 
 		case pmpx.Code_ChannelClose:
-			m1 := m.Close()
-			id := m1.Id()
-			data := debugString(m1.Data())
-			debugPrint(w.client, "-> close\t", id, data)
+			m := msg.ChannelClose()
+			id := m.Id()
+			data := debugString(m.Data())
+			debugPrint(w.client, "-> channel_close\t", id, data)
 
-		case pmpx.Code_ChannelMessage:
-			m1 := m.Message()
-			id := m1.Id()
-			data := debugString(m1.Data())
-			debugPrint(w.client, "-> message\t", id, data)
+		case pmpx.Code_ChannelData:
+			m := msg.ChannelData()
+			id := m.Id()
+			data := debugString(m.Data())
+			debugPrint(w.client, "-> channel_data\t", id, data)
 
 		case pmpx.Code_ChannelWindow:
-			m1 := m.Window()
-			id := m1.Id()
-			delta := m1.Delta()
-			debugPrint(w.client, "-> window\t", id, delta)
+			m := msg.ChannelWindow()
+			id := m.Id()
+			delta := m.Delta()
+			debugPrint(w.client, "-> channel_window\t", id, delta)
 
 		default:
 			debugPrint(w.client, "-> unknown", code)
 		}
 	}
 	return status.OK
+}
+
+// writeAndFlush writes a message and flushes the buffer.
+func (w *writer) writeAndFlush(msg pmpx.Message) status.Status {
+	if st := w.write(msg); !st.OK() {
+		return st
+	}
+	return w.flush()
 }

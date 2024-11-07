@@ -286,30 +286,39 @@ func (c *connImpl) negotiate() status.Status {
 
 func (c *connImpl) negotiateClient() status.Status {
 	// Write protocol line
-	if st := c.writer.writeString(ProtocolLine); !st.OK() {
+	if st := c.writer.writeLine(ProtocolLine); !st.OK() {
 		return st
 	}
 
 	// Write connect request
 	{
-		w := pmpx.NewConnectRequestWriter()
+		w := pmpx.NewMessageWriter()
+		w.Code(pmpx.Code_ConnectRequest)
+		w1 := w.ConnectRequest()
 
-		vv := w.Versions()
+		vv := w1.Versions()
 		vv.Add(pmpx.Version_Version10)
-		vv.End()
-
-		if c.options.Compression {
-			cc := w.Compress()
-			cc.Add(pmpx.Compress_Lz4)
-			cc.End()
+		if err := vv.End(); err != nil {
+			return mpxError(err)
 		}
 
+		if c.options.Compression {
+			cc := w1.Compression()
+			cc.Add(pmpx.ConnectCompression_Lz4)
+			if err := cc.End(); err != nil {
+				return mpxError(err)
+			}
+		}
+
+		if err := w1.End(); err != nil {
+			return mpxError(err)
+		}
 		req, err := w.Build()
 		if err != nil {
 			return mpxError(err)
 		}
 
-		if st := c.writer.writeRequest(req); !st.OK() {
+		if st := c.writer.writeAndFlush(req); !st.OK() {
 			return st
 		}
 	}
@@ -342,10 +351,10 @@ func (c *connImpl) negotiateClient() status.Status {
 	}
 
 	// Init compression
-	comp := resp.Compress()
+	comp := resp.Compression()
 	switch comp {
-	case pmpx.Compress_None:
-	case pmpx.Compress_Lz4:
+	case pmpx.ConnectCompression_None:
+	case pmpx.ConnectCompression_Lz4:
 		if st := c.reader.initLZ4(); !st.OK() {
 			return st
 		}
@@ -362,7 +371,7 @@ func (c *connImpl) negotiateClient() status.Status {
 
 func (c *connImpl) negotiateServer() status.Status {
 	// Write protocol line
-	if st := c.writer.writeString(ProtocolLine); !st.OK() {
+	if st := c.writer.writeLine(ProtocolLine); !st.OK() {
 		return st
 	}
 
@@ -392,48 +401,60 @@ func (c *connImpl) negotiateServer() status.Status {
 		}
 	}
 	if !ok {
-		w := pmpx.NewConnectResponseWriter()
-		w.Ok(false)
-		w.Error("unsupported protocol versions")
+		w := pmpx.NewMessageWriter()
+		w.Code(pmpx.Code_ConnectResponse)
 
+		w1 := w.ConnectResponse()
+		w1.Ok(false)
+		w1.Error("unsupported protocol versions")
+
+		if err := w1.End(); err != nil {
+			return mpxError(err)
+		}
 		resp, err := w.Build()
 		if err != nil {
 			return mpxError(err)
 		}
-		return c.writer.writeResponse(resp)
+		return c.writer.writeAndFlush(resp)
 	}
 
 	// Select compression
-	comp := pmpx.Compress_None
-	comps := req.Compress()
+	comp := pmpx.ConnectCompression_None
+	comps := req.Compression()
 	for i := 0; i < comps.Len(); i++ {
 		c := comps.Get(i)
-		if c == pmpx.Compress_Lz4 {
-			comp = pmpx.Compress_Lz4
+		if c == pmpx.ConnectCompression_Lz4 {
+			comp = pmpx.ConnectCompression_Lz4
 			break
 		}
 	}
 
 	// Return response
 	{
-		w := pmpx.NewConnectResponseWriter()
-		w.Ok(true)
-		w.Version(pmpx.Version_Version10)
-		w.Compress(comp)
+		w := pmpx.NewMessageWriter()
+		w.Code(pmpx.Code_ConnectResponse)
 
+		w1 := w.ConnectResponse()
+		w1.Ok(true)
+		w1.Version(pmpx.Version_Version10)
+		w1.Compression(comp)
+
+		if err := w1.End(); err != nil {
+			return mpxError(err)
+		}
 		resp, err := w.Build()
 		if err != nil {
 			return mpxError(err)
 		}
-		if st := c.writer.writeResponse(resp); !st.OK() {
+		if st := c.writer.writeAndFlush(resp); !st.OK() {
 			return st
 		}
 	}
 
 	// Init compression
 	switch comp {
-	case pmpx.Compress_None:
-	case pmpx.Compress_Lz4:
+	case pmpx.ConnectCompression_None:
+	case pmpx.ConnectCompression_Lz4:
 		if st := c.reader.initLZ4(); !st.OK() {
 			return st
 		}
@@ -467,8 +488,8 @@ func (c *connImpl) receiveLoop(ctx async.Context) status.Status {
 			if st := c.receiveClose(msg); !st.OK() {
 				return st
 			}
-		case pmpx.Code_ChannelMessage:
-			if st := c.receiveMessage(msg); !st.OK() {
+		case pmpx.Code_ChannelData:
+			if st := c.receiveData(msg); !st.OK() {
 				return st
 			}
 		case pmpx.Code_ChannelWindow:
@@ -483,7 +504,7 @@ func (c *connImpl) receiveLoop(ctx async.Context) status.Status {
 }
 
 func (c *connImpl) receiveOpen(msg pmpx.Message) status.Status {
-	m := msg.Open()
+	m := msg.ChannelOpen()
 	id := m.Id()
 
 	// Check not exist, impossible
@@ -521,7 +542,7 @@ func (c *connImpl) receiveOpen(msg pmpx.Message) status.Status {
 }
 
 func (c *connImpl) receiveClose(msg pmpx.Message) status.Status {
-	m := msg.Close()
+	m := msg.ChannelClose()
 	id := m.Id()
 
 	ch, ok := c.channels.Get(id)
@@ -535,8 +556,8 @@ func (c *connImpl) receiveClose(msg pmpx.Message) status.Status {
 	return ch.Receive1(msg)
 }
 
-func (c *connImpl) receiveMessage(msg pmpx.Message) status.Status {
-	m := msg.Message()
+func (c *connImpl) receiveData(msg pmpx.Message) status.Status {
+	m := msg.ChannelData()
 	id := m.Id()
 
 	ch, ok := c.channels.Get(id)
@@ -548,7 +569,7 @@ func (c *connImpl) receiveMessage(msg pmpx.Message) status.Status {
 }
 
 func (c *connImpl) receiveWindow(msg pmpx.Message) status.Status {
-	m := msg.Window()
+	m := msg.ChannelWindow()
 	id := m.Id()
 
 	ch, ok := c.channels.Get(id)
@@ -598,12 +619,12 @@ func (c *connImpl) sendMessage(b []byte) status.Status {
 	// Maybe delete and free channel
 	code := msg.Code()
 	if code == pmpx.Code_ChannelClose {
-		id := msg.Close().Id()
+		id := msg.ChannelClose().Id()
 		c.removeChannel(id)
 	}
 
 	// Write message
-	return c.writer.writeMessage(b)
+	return c.writer.write(msg)
 }
 
 // channels
