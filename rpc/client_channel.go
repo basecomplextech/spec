@@ -489,7 +489,7 @@ func (s *channelState) receiveFail(st status.Status) {
 		s.logger.ErrorStatus("RPC client request error", st, "method", s.method)
 
 	default:
-		if s.logger.DebugEnabled() {
+		if s.logger.DebugOn() {
 			s.logger.Debug("RPC client request error", "status", st, "method", s.method)
 		}
 	}

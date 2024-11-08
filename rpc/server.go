@@ -90,15 +90,15 @@ func (s *server) HandleChannel(ctx Context, ch mpx.Channel) (st status.Status) {
 
 	switch st.Code {
 	case status.CodeOK:
-		if s.logger.TraceEnabled() {
+		if s.logger.TraceOn() {
 			s.logger.Trace("RPC server request", "method", method, "time", time)
 		}
 	case status.CodeError:
-		if s.logger.ErrorEnabled() {
+		if s.logger.ErrorOn() {
 			s.logger.ErrorStatus("RPC server error", st, "method", method, "time", time)
 		}
 	default:
-		if s.logger.DebugEnabled() {
+		if s.logger.DebugOn() {
 			s.logger.Debug("RPC server request", "method", method, "time", time, "status", st)
 		}
 	}
