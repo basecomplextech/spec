@@ -84,8 +84,8 @@ type conn struct {
 	handshaked async.MutFlag
 
 	// reader/writer
-	reader *reader
-	writer *writer
+	reader *connReader
+	writer *connWriter
 	writeq alloc.ByteQueue
 
 	// channels
@@ -119,8 +119,8 @@ func newConn(
 		closed:     async.UnsetFlag(),
 		handshaked: async.UnsetFlag(),
 
-		reader: newReader(nc, client, int(opts.ReadBufferSize)),
-		writer: newWriter(nc, client, int(opts.WriteBufferSize)),
+		reader: newConnReader(nc, client, int(opts.ReadBufferSize)),
+		writer: newConnWriter(nc, client, int(opts.WriteBufferSize)),
 		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
 		channels:        asyncmap.NewAtomicMap[bin.Bin128, internalChannel](),

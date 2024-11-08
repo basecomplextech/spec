@@ -15,7 +15,7 @@ import (
 	"github.com/pierrec/lz4/v4"
 )
 
-type writer struct {
+type connWriter struct {
 	dst  *bufio.Writer
 	comp *lz4.Writer // Nil when no compression
 
@@ -29,16 +29,16 @@ type writerFlusher interface {
 	Flush() error
 }
 
-func newWriter(w io.Writer, client bool, bufferSize int) *writer {
+func newConnWriter(w io.Writer, client bool, bufferSize int) *connWriter {
 	dst := bufio.NewWriterSize(w, bufferSize)
-	return &writer{
+	return &connWriter{
 		dst:    dst,
 		client: client,
 		writer: dst,
 	}
 }
 
-func (w *writer) initLZ4() status.Status {
+func (w *connWriter) initLZ4() status.Status {
 	if w.comp != nil {
 		return status.OK
 	}
@@ -55,7 +55,7 @@ func (w *writer) initLZ4() status.Status {
 
 // flush
 
-func (w *writer) flush() status.Status {
+func (w *connWriter) flush() status.Status {
 	if err := w.writer.Flush(); err != nil {
 		return mpxError(err)
 	}
@@ -68,7 +68,7 @@ func (w *writer) flush() status.Status {
 // write
 
 // writeLine writes a single string, used only to write the protocol line.
-func (w *writer) writeLine(s string) status.Status {
+func (w *connWriter) writeLine(s string) status.Status {
 	if _, err := w.dst.WriteString(s); err != nil {
 		return mpxError(err)
 	}
@@ -79,7 +79,7 @@ func (w *writer) writeLine(s string) status.Status {
 }
 
 // write writes a message, prefixed with its size.
-func (w *writer) write(msg pmpx.Message) status.Status {
+func (w *connWriter) write(msg pmpx.Message) status.Status {
 	b := msg.Unwrap().Raw()
 	head := w.head[:]
 
@@ -149,7 +149,7 @@ func (w *writer) write(msg pmpx.Message) status.Status {
 }
 
 // writeAndFlush writes a message and flushes the buffer.
-func (w *writer) writeAndFlush(msg pmpx.Message) status.Status {
+func (w *connWriter) writeAndFlush(msg pmpx.Message) status.Status {
 	if st := w.write(msg); !st.OK() {
 		return st
 	}

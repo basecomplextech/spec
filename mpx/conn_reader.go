@@ -17,7 +17,7 @@ import (
 	"github.com/pierrec/lz4/v4"
 )
 
-type reader struct {
+type connReader struct {
 	src    *bufio.Reader
 	comp   opt.Opt[*lz4.Reader] // empty when no compression
 	reader io.Reader            // points to src or comp
@@ -29,9 +29,9 @@ type reader struct {
 	buf  alloc.Buffer
 }
 
-func newReader(r io.Reader, client bool, bufferSize int) *reader {
+func newConnReader(r io.Reader, client bool, bufferSize int) *connReader {
 	src := bufio.NewReaderSize(r, bufferSize)
-	return &reader{
+	return &connReader{
 		src:    src,
 		client: client,
 		reader: src,
@@ -40,7 +40,7 @@ func newReader(r io.Reader, client bool, bufferSize int) *reader {
 	}
 }
 
-func (r *reader) free() {
+func (r *connReader) free() {
 	if r.freed {
 		return
 	}
@@ -50,7 +50,7 @@ func (r *reader) free() {
 	r.buf = nil
 }
 
-func (r *reader) initLZ4() status.Status {
+func (r *connReader) initLZ4() status.Status {
 	if r.comp.Valid {
 		return status.OK
 	}
@@ -62,7 +62,7 @@ func (r *reader) initLZ4() status.Status {
 }
 
 // readLine reads and returns a single line delimited by \n, includes the delimiter.
-func (r *reader) readLine() (string, status.Status) {
+func (r *connReader) readLine() (string, status.Status) {
 	s, err := r.src.ReadString('\n')
 	if err != nil {
 		return "", mpxError(err)
@@ -75,7 +75,7 @@ func (r *reader) readLine() (string, status.Status) {
 }
 
 // readRequest reads and parses a connect request, the message is valid until the next read call.
-func (r *reader) readRequest() (pmpx.ConnectRequest, status.Status) {
+func (r *connReader) readRequest() (pmpx.ConnectRequest, status.Status) {
 	msg, st := r.readMessage()
 	if !st.OK() {
 		return pmpx.ConnectRequest{}, st
@@ -92,7 +92,7 @@ func (r *reader) readRequest() (pmpx.ConnectRequest, status.Status) {
 }
 
 // readResponse reads and parses a connect response, the message is valid until the next read call.
-func (r *reader) readResponse() (pmpx.ConnectResponse, status.Status) {
+func (r *connReader) readResponse() (pmpx.ConnectResponse, status.Status) {
 	msg, st := r.readMessage()
 	if !st.OK() {
 		return pmpx.ConnectResponse{}, st
@@ -109,7 +109,7 @@ func (r *reader) readResponse() (pmpx.ConnectResponse, status.Status) {
 }
 
 // readMessage reads and parses the next message, the message is valid until the next read call.
-func (r *reader) readMessage() (pmpx.Message, status.Status) {
+func (r *connReader) readMessage() (pmpx.Message, status.Status) {
 	buf, st := r.read()
 	if !st.OK() {
 		return pmpx.Message{}, st
@@ -176,7 +176,7 @@ func (r *reader) readMessage() (pmpx.Message, status.Status) {
 }
 
 // read reads the next message bytes, the bytes are valid until the next read call.
-func (r *reader) read() ([]byte, status.Status) {
+func (r *connReader) read() ([]byte, status.Status) {
 	head := r.head[:]
 
 	// Read size
