@@ -319,20 +319,29 @@ func (ch *channel2) incrementRecvWindow() int32 {
 
 func (ch *channel2) decrementSendWindow(ctx async.Context, data []byte) status.Status {
 	// Check data size
-	size := len(data)
-	if size > math.MaxInt32 {
-		return mpxErrorf("message too large, size=%d", size)
+	n := len(data)
+	if n > math.MaxInt32 {
+		return mpxErrorf("message too large, size=%d", n)
 	}
+	size := int32(n)
 
 	for {
-		// Try to decrement window
+		// Decrement send window for normal small messages
 		window := ch.sendWindow.Load()
 		if window >= int32(size) {
-			ch.sendWindow.Add(-int32(size))
+			ch.sendWindow.Add(-size)
 			return status.OK
 		}
 
-		// Await window increment
+		// Decrement send window for large messages, when the remaining window
+		// is greater than the half of the initial window, but the message size
+		// still exceeds it.
+		if window >= ch.initWindow/2 {
+			ch.sendWindow.Add(-size)
+			return status.OK
+		}
+
+		// Wait for send window increment
 		select {
 		case <-ctx.Wait():
 			return ctx.Status()
