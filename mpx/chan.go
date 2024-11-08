@@ -6,11 +6,8 @@ package mpx
 
 import (
 	"fmt"
-	"math"
-	"sync"
 	"sync/atomic"
 
-	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/status"
@@ -54,145 +51,140 @@ type Chan interface {
 
 // internal
 
+type internalChan interface {
+	// id returns the channel id.
+	id() bin.Bin128
+
+	// closeConn is called by the connection to close the channel.
+	closeConn(st status.Status)
+
+	// receiveConn is called by the connection to receive a message.
+	receiveConn(msg pmpx.Message) status.Status
+
+	// freeConn is called by the connection to free the channel.
+	freeConn()
+}
+
+// internal
+
+var (
+	_ Chan         = (*channel2)(nil)
+	_ internalChan = (*channel2)(nil)
+)
+
 type channel2 struct {
-	id   bin.Bin128
-	ctx  Context
-	conn internalConn
-
-	client     bool  // client or server
-	initWindow int32 // initial window size
-
-	opened atomic.Bool
-	closed atomic.Bool
-
-	sendMu         sync.Mutex
-	sender         chanSender
-	sendWindow     atomic.Int32  // remaining send window, can become negative on sending large messages
-	sendWindowWait chan struct{} // wait for send window increment
-
-	recvMu     sync.Mutex
-	recvQueue  alloc.ByteQueue // data queue
-	recvWindow atomic.Int32    // remaining recv window, can become negative on receiving large messages
+	refs  atomic.Int32 // 2 by default (1 for user, 1 for connection)
+	state atomic.Pointer[channelState2]
 }
 
 // newChannel2 returns a new outgoing channel.
-func newChannel2(conn internalConn, client bool, window int32) *channel2 {
+func newChannel2(conn internalConn, client bool, id bin.Bin128, window int32) *channel2 {
+	s := newChannelState2(conn, client, id, window)
+
 	ch := &channel2{}
-	ch.id = bin.Random128()
-	ch.ctx = newContext(nil) // TODO: conn
-	ch.conn = conn
-
-	ch.client = client
-	ch.initWindow = window
-
-	ch.sender = newChanSender(ch, conn)
-	ch.sendWindow.Store(window)
-	ch.sendWindowWait = make(chan struct{}, 1)
-
-	ch.recvWindow.Store(window)
-	ch.recvQueue = alloc.NewByteQueue()
+	ch.refs.Store(2)
+	ch.state.Store(s)
 	return ch
 }
 
-// openChannel2 inits a new incoming channel.
+// openChannel2 opens and returns a new incoming channel.
 func openChannel2(conn internalConn, client bool, msg pmpx.ChannelOpen) *channel2 {
-	id := msg.Id()
-	window := msg.Window()
+	s := openChannelState2(conn, client, msg)
 
 	ch := &channel2{}
-	ch.id = id
-	ch.ctx = newContext(nil) // TODO: conn
-	ch.conn = conn
-
-	ch.client = client
-	ch.initWindow = window
-
-	ch.opened.Store(true)
-
-	ch.sender = newChanSender(ch, conn)
-	ch.sendWindow.Store(window)
-	ch.sendWindowWait = make(chan struct{}, 1)
-
-	ch.recvWindow.Store(window)
-	ch.recvQueue = alloc.NewByteQueue()
+	ch.refs.Store(2)
+	ch.state.Store(s)
 	return ch
 }
 
 // Context returns a channel context.
 func (ch *channel2) Context() Context {
-	return ch.ctx
+	s := ch.acquire()
+	defer ch.release()
+
+	return s.ctx
 }
 
 // Send
 
 // Send sends a message to the channel.
 func (ch *channel2) Send(ctx async.Context, data []byte) status.Status {
-	ch.sendMu.Lock()
-	defer ch.sendMu.Unlock()
+	s := ch.acquire()
+	defer ch.release()
 
-	if ch.closed.Load() {
+	// Lock send
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
+
+	if s.closed.Load() {
 		return statusChannelClosed
 	}
 
 	// If opened, send data
-	if ch.opened.Load() {
+	if s.opened.Load() {
 		// Decrement window, await
-		if st := ch.decrementSendWindow(ctx, data); !st.OK() {
+		if st := s.decrementSendWindow(ctx, data); !st.OK() {
 			return st
 		}
-
 		// Send message
-		return ch.sender.sendData(ctx, data)
+		return s.sender.sendData(ctx, data)
 	}
 
 	// Open channel
-	ch.open()
+	s.open()
 
 	// Decrement window
 	size := int32(len(data))
-	ch.sendWindow.Add(-size)
+	s.sendWindow.Add(-size)
 
-	// Send message
-	return ch.sender.sendOpenData(ctx, data)
+	// Send open/data
+	return s.sender.sendOpenData(ctx, data)
 }
 
 // SendAndClose sends a close message with a payload.
 func (ch *channel2) SendAndClose(ctx async.Context, data []byte) status.Status {
-	ch.sendMu.Lock()
-	defer ch.sendMu.Unlock()
+	s := ch.acquire()
+	defer ch.release()
 
-	if ch.closed.Load() {
+	// Lock send
+	s.sendMu.Lock()
+	defer s.sendMu.Unlock()
+
+	if s.closed.Load() {
 		return statusChannelClosed
 	}
 
-	// If opened, close, send message
-	if ch.opened.Load() {
-		ch.close()
+	// If opened, close, send data/close
+	if s.opened.Load() {
+		s.close()
 
 		// Decrement window
 		size := int32(len(data))
-		ch.sendWindow.Add(-size)
+		s.sendWindow.Add(-size)
 
 		// Send message
-		return ch.sender.sendDataClose(ctx, data)
+		return s.sender.sendDataClose(ctx, data)
 	}
 
 	// Open/close channel
-	ch.open()
-	ch.close()
+	s.open()
+	s.close()
 
 	// Decrement window
 	size := int32(len(data))
-	ch.sendWindow.Add(-size)
+	s.sendWindow.Add(-size)
 
-	// Send message
-	return ch.sender.sendOpenDataClose(ctx, data)
+	// Send open/data/close
+	return s.sender.sendOpenDataClose(ctx, data)
 }
 
 // Receive
 
 // Receive receives and returns a message, or an end status.
 func (ch *channel2) Receive(ctx async.Context) ([]byte, status.Status) {
+	s := ch.acquire()
+	defer ch.release()
+
 	for {
 		// Poll channel
 		data, ok, st := ch.ReceiveAsync(ctx)
@@ -207,7 +199,7 @@ func (ch *channel2) Receive(ctx async.Context) ([]byte, status.Status) {
 		select {
 		case <-ctx.Wait():
 			return nil, ctx.Status()
-		case <-ch.recvQueue.ReadWait():
+		case <-s.recvQueue.ReadWait():
 		}
 	}
 }
@@ -217,21 +209,31 @@ func (ch *channel2) Receive(ctx async.Context) ([]byte, status.Status) {
 // The message is valid until the next call to Receive.
 // The method does not block if no messages, and returns false instead.
 func (ch *channel2) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status) {
-	data, ok, st := ch.recvQueue.Read()
+	s := ch.acquire()
+	defer ch.release()
+
+	// Read next message
+	data, ok, st := s.recvQueue.Read()
 	if !ok || !st.OK() {
 		return nil, ok, st
 	}
 
 	// Try to increment window
-	delta := ch.incrementRecvWindow()
+	delta := s.incrementRecvWindow()
 	if delta <= 0 {
 		return data, true, status.OK
 	}
 
 	// Send window increment
-	if !ch.closed.Load() {
-		if st := ch.sender.sendWindow(ctx, delta); !st.OK() {
-			return nil, false, st
+	if !s.closed.Load() {
+		st := s.sender.sendWindow(ctx, delta)
+		switch st.Code {
+		case status.CodeOK,
+			status.CodeCancelled,
+			status.CodeClosed,
+			status.CodeEnd:
+		default:
+			return nil, false, st // unreachable
 		}
 	}
 	return data, true, status.OK
@@ -239,7 +241,10 @@ func (ch *channel2) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status
 
 // ReceiveWait returns a channel that is notified on a new message, or a channel close.
 func (ch *channel2) ReceiveWait() <-chan struct{} {
-	return ch.recvQueue.ReadWait()
+	s := ch.acquire()
+	defer ch.release()
+
+	return s.recvQueue.ReadWait()
 }
 
 // Internal
@@ -247,107 +252,104 @@ func (ch *channel2) ReceiveWait() <-chan struct{} {
 // Free closes the channel and releases its resources.
 func (ch *channel2) Free() {
 	ch.closeUser()
-	ch.releaseUser()
+	ch.release()
 }
 
 // internal
 
+// id returns the channel id.
+func (ch *channel2) id() bin.Bin128 {
+	s := ch.acquire()
+	defer ch.release()
+
+	return s.id
+}
+
+// closeConn is called by the connection to close the channel.
+func (ch *channel2) closeConn(st status.Status) {
+	s := ch.acquire()
+	defer ch.release()
+
+	s.close()
+}
+
+// receiveConn is called by the connection to receive a message.
+func (ch *channel2) receiveConn(msg pmpx.Message) status.Status {
+	s := ch.acquire()
+	defer ch.release()
+
+	s.recvMu.Lock()
+	defer s.recvMu.Unlock()
+
+	// Ignore messages if closed
+	if s.closed.Load() {
+		return status.OK
+	}
+
+	// Receive message
+	return s.receiveMessage(msg, false /* not inside batch */)
+}
+
+// freeConn is called by the connection to free the channel.
+func (ch *channel2) freeConn() {
+	ch.closeConn(statusConnClosed)
+	ch.release()
+}
+
+// acquire/release
+
+// acquire increments the refcounter and returns the channel state, panics if freed.
+func (ch *channel2) acquire() *channelState2 {
+	refs := ch.refs.Add(1)
+	if refs == 1 {
+		panic("acquire of freed channel")
+	}
+
+	s := ch.state.Load()
+	if s == nil {
+		panic("acquire of freed channel")
+	}
+	return s
+}
+
+// release decrements the internal refs counter.
+func (ch *channel2) release() {
+	refs := ch.refs.Add(-1)
+	if refs > 0 {
+		return
+	}
+
+	s := ch.state.Swap(nil)
+	if s == nil {
+		panic("release of released channel")
+	}
+	releaseChannelState2(s)
+}
+
+// close
+
 func (ch *channel2) closeUser() {
-	// Close channel
-	closed := ch.close()
+	s := ch.acquire()
+	defer ch.release()
+
+	// Close user once
+	closed := s.closedUser.CompareAndSwap(false, true)
 	if !closed {
 		return
 	}
 
+	// Close channel in defer
+	// We need context to send message.
+	defer s.close()
+
 	// Send close message
-	st := ch.sender.sendClose(ch.ctx)
+	st := s.sender.sendClose(s.ctx)
 	switch st.Code {
 	case status.CodeOK,
 		status.CodeCancelled,
 		status.CodeClosed,
 		status.CodeEnd:
-		return
-	}
-
-	// Unreachable, but still panic
-	panic(fmt.Sprintf("unexpected status: %v", st))
-}
-
-func (ch *channel2) releaseUser() {
-
-}
-
-// open/close
-
-func (ch *channel2) open() {
-	if ch.opened.Load() {
-		return
-	}
-	if !ch.client {
-		panic("cannot open server channel")
-	}
-
-	ch.opened.Store(true)
-}
-
-func (ch *channel2) close() bool {
-	// Try to close channel
-	closed := ch.closed.CompareAndSwap(false, true)
-	if !closed {
-		return false
-	}
-
-	// Cancel context, close receive queue
-	ch.ctx.Cancel()
-	ch.recvQueue.Close()
-	return true
-}
-
-// window
-
-func (ch *channel2) incrementRecvWindow() int32 {
-	window := ch.recvWindow.Load()
-	if window > ch.initWindow/2 {
-		return 0
-	}
-
-	// Increment recv window
-	delta := ch.initWindow - window
-	ch.recvWindow.Add(delta)
-	return delta
-}
-
-func (ch *channel2) decrementSendWindow(ctx async.Context, data []byte) status.Status {
-	// Check data size
-	n := len(data)
-	if n > math.MaxInt32 {
-		return mpxErrorf("message too large, size=%d", n)
-	}
-	size := int32(n)
-
-	for {
-		// Decrement send window for normal small messages
-		window := ch.sendWindow.Load()
-		if window >= int32(size) {
-			ch.sendWindow.Add(-size)
-			return status.OK
-		}
-
-		// Decrement send window for large messages, when the remaining window
-		// is greater than the half of the initial window, but the message size
-		// still exceeds it.
-		if window >= ch.initWindow/2 {
-			ch.sendWindow.Add(-size)
-			return status.OK
-		}
-
-		// Wait for send window increment
-		select {
-		case <-ctx.Wait():
-			return ctx.Status()
-		case <-ch.ctx.Wait():
-			return statusChannelClosed
-		case <-ch.sendWindowWait:
-		}
+	default:
+		panic(fmt.Sprintf("unexpected status: %v", st)) // unreachable
 	}
 }
