@@ -327,9 +327,9 @@ func (ch *channel) closeUser() {
 	s := ch.acquire()
 	defer ch.release()
 
-	// Close user once
-	closed := s.closedUser.CompareAndSwap(false, true)
-	if !closed {
+	// Check already closed
+	closed := s.closed.Load()
+	if closed {
 		return
 	}
 

@@ -85,8 +85,8 @@ func (s *channelState) open() {
 
 func (s *channelState) close() {
 	// Try to close channel
-	closed := s.closed.CompareAndSwap(false, true)
-	if !closed {
+	ok := s.closed.CompareAndSwap(false, true)
+	if !ok {
 		return
 	}
 
