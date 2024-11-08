@@ -17,6 +17,10 @@ import (
 
 func testServer(t tests.T, handle HandleFunc) *server {
 	opts := Default()
+	return testServerOpts(t, handle, opts)
+}
+
+func testServerOpts(t tests.T, handle HandleFunc, opts Options) *server {
 	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", handle, logger, opts)
 
@@ -44,7 +48,14 @@ func testServer(t tests.T, handle HandleFunc) *server {
 	return server
 }
 
+// request server
+
 func testRequestServer(t tests.T) *server {
+	opts := Default()
+	return testRequestServerOpts(t, opts)
+}
+
+func testRequestServerOpts(t tests.T, opts Options) *server {
 	handle := func(ctx Context, ch Channel) status.Status {
 		msg, st := ch.Receive(ctx)
 		if !st.OK() {
@@ -53,8 +64,10 @@ func testRequestServer(t tests.T) *server {
 		return ch.SendAndClose(ctx, msg)
 	}
 
-	return testServer(t, handle)
+	return testServerOpts(t, handle, opts)
 }
+
+// connect
 
 func testConnect(t tests.T, s *server) *conn {
 	ctx := async.NoContext()

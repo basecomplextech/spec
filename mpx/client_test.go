@@ -195,9 +195,11 @@ func TestClient_Conn__should_reconnect_when_connection_closed(t *testing.T) {
 }
 
 func TestClient_Conn__should_open_more_connections_when_channels_target_reached(t *testing.T) {
-	server := testRequestServer(t)
-	server.options.ClientMaxConns = 2
-	server.options.ClientConnChannels = 1
+	opts := Default()
+	opts.ClientMaxConns = 2
+	opts.ClientConnChannels = 1
+
+	server := testRequestServerOpts(t, opts)
 	client := testClient(t, server)
 
 	ctx := async.NoContext()

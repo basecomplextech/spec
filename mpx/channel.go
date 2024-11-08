@@ -185,9 +185,6 @@ func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
 
 // Receive receives and returns a message, or an end status.
 func (ch *channel) Receive(ctx async.Context) ([]byte, status.Status) {
-	s := ch.acquire()
-	defer ch.release()
-
 	for {
 		// Poll channel
 		data, ok, st := ch.ReceiveAsync(ctx)
@@ -202,7 +199,7 @@ func (ch *channel) Receive(ctx async.Context) ([]byte, status.Status) {
 		select {
 		case <-ctx.Wait():
 			return nil, ctx.Status()
-		case <-s.recvQueue.ReadWait():
+		case <-ch.ReceiveWait():
 		}
 	}
 }
