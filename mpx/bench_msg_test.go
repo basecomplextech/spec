@@ -36,3 +36,35 @@ func BenchmarkMessageBuild(b *testing.B) {
 
 	b.ReportMetric(ops/1000_000, "mops")
 }
+
+func BenchmarkBatchBuild(b *testing.B) {
+	buf := alloc.NewBuffer()
+	id := bin.Random128()
+	data := make([]byte, 128)
+	window := int32(16 * 1024 * 1024)
+
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+
+		x := pmpx.NewBatchBuilder(buf)
+		x, err := x.Open(id, data, window)
+		if err != nil {
+			b.Fatal(err)
+		}
+		x, err = x.Close(id, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		msg, err := x.Build()
+		if err != nil {
+			b.Fatal(err)
+		}
+		_ = msg
+	}
+
+	sec := b.Elapsed().Seconds()
+	ops := float64(b.N) / sec
+
+	b.ReportMetric(ops/1000_000, "mops")
+}

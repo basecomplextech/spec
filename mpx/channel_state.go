@@ -112,7 +112,18 @@ func (s *channelState) receiveMessage(msg pmpx.Message) status.Status {
 	return mpxErrorf("message must be handled by connection, code=%v", code)
 }
 
-func (s *channelState) receiveClose(_ pmpx.ChannelClose) status.Status {
+func (s *channelState) receiveClose(msg pmpx.ChannelClose) status.Status {
+	if s.closed.Load() {
+		return status.OK
+	}
+
+	// Maybe receive data
+	data := msg.Data()
+	if len(data) > 0 {
+		_, _ = s.recvQueue.Write(data) // ignore end and false, receive queues are unbounded
+	}
+
+	// Close channel
 	s.close()
 	return status.OK
 }

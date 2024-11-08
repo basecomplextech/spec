@@ -87,9 +87,16 @@ func newChannel(conn internalConn, client bool, id bin.Bin128, window int32) *ch
 func openChannel(conn internalConn, client bool, msg pmpx.ChannelOpen) *channel {
 	s := openChannelState(conn, client, msg)
 
+	// Make channel
 	ch := &channel{}
 	ch.refs.Store(2)
 	ch.state.Store(s)
+
+	// Maybe receive data
+	data := msg.Data()
+	if len(data) > 0 {
+		_, _ = s.recvQueue.Write(data) // receive queue is unbounded, ignore status
+	}
 	return ch
 }
 
@@ -134,7 +141,7 @@ func (ch *channel) Send(ctx async.Context, data []byte) status.Status {
 	s.sendWindow.Add(-size)
 
 	// Send open/data
-	return s.sender.sendOpenData(ctx, data)
+	return s.sender.sendOpen(ctx, data)
 }
 
 // SendAndClose sends a close message with a payload.
@@ -159,7 +166,7 @@ func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
 		s.sendWindow.Add(-size)
 
 		// Send message
-		return s.sender.sendDataClose(ctx, data)
+		return s.sender.sendClose(ctx, data)
 	}
 
 	// Open/close channel
@@ -171,7 +178,7 @@ func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
 	s.sendWindow.Add(-size)
 
 	// Send open/data/close
-	return s.sender.sendOpenDataClose(ctx, data)
+	return s.sender.sendOpenClose(ctx, data)
 }
 
 // Receive
@@ -334,7 +341,7 @@ func (ch *channel) closeUser() {
 	defer s.close()
 
 	// Send close message
-	st := s.sender.sendClose(s.ctx)
+	st := s.sender.sendClose(s.ctx, nil /* no data */)
 	switch st.Code {
 	case status.CodeOK,
 		status.CodeCancelled,

@@ -218,13 +218,13 @@ func NewBatchBuilder(buf alloc.Buffer) BatchBuilder {
 	}
 }
 
-func (b BatchBuilder) Open(id bin.Bin128, window int32) (BatchBuilder, error) {
-	_, err := BuildChannelOpen(b.w2.Add(), id, nil, window)
+func (b BatchBuilder) Open(id bin.Bin128, data []byte, window int32) (BatchBuilder, error) {
+	_, err := BuildChannelOpen(b.w2.Add(), id, data, window)
 	return b, err
 }
 
-func (b BatchBuilder) Close(id bin.Bin128) (BatchBuilder, error) {
-	_, err := BuildChannelClose(b.w2.Add(), id, nil)
+func (b BatchBuilder) Close(id bin.Bin128, data []byte) (BatchBuilder, error) {
+	_, err := BuildChannelClose(b.w2.Add(), id, data)
 	return b, err
 }
 

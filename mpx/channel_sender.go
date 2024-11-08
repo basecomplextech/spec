@@ -26,20 +26,12 @@ func newChanSender(ch *channelState, conn internalConn) channelSender {
 // open
 
 func (s channelSender) sendOpen(ctx async.Context, data []byte) status.Status {
-	// Build batch
+	// Build message
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	b := pmpx.NewBatchBuilder(buf)
-	b, err := b.Open(s.ch.id, s.ch.initWindow)
-	if err != nil {
-		return mpxError(err)
-	}
-	b, err = b.Data(s.ch.id, data)
-	if err != nil {
-		return mpxError(err)
-	}
-	msg, err := b.Build()
+	w := pmpx.NewMessageWriterBuffer(buf)
+	msg, err := pmpx.BuildChannelOpen(w, s.ch.id, data, s.ch.initWindow)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -51,44 +43,17 @@ func (s channelSender) sendOpen(ctx async.Context, data []byte) status.Status {
 	return status.OK
 }
 
-func (s channelSender) sendOpenData(ctx async.Context, data []byte) status.Status {
+func (s channelSender) sendOpenClose(ctx async.Context, data []byte) status.Status {
 	// Build batch
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
 	b := pmpx.NewBatchBuilder(buf)
-	b, err := b.Open(s.ch.id, s.ch.initWindow)
+	b, err := b.Open(s.ch.id, data, s.ch.initWindow)
 	if err != nil {
 		return mpxError(err)
 	}
-	b, err = b.Data(s.ch.id, data)
-	if err != nil {
-		return mpxError(err)
-	}
-	msg, err := b.Build()
-	if err != nil {
-		return mpxError(err)
-	}
-
-	// Send message
-	return s.conn.send(ctx, msg)
-}
-
-func (s channelSender) sendOpenDataClose(ctx async.Context, data []byte) status.Status {
-	// Build batch
-	buf := alloc.AcquireBuffer()
-	defer buf.Free()
-
-	b := pmpx.NewBatchBuilder(buf)
-	b, err := b.Open(s.ch.id, s.ch.initWindow)
-	if err != nil {
-		return mpxError(err)
-	}
-	b, err = b.Data(s.ch.id, data)
-	if err != nil {
-		return mpxError(err)
-	}
-	b, err = b.Close(s.ch.id)
+	b, err = b.Close(s.ch.id, nil)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -103,13 +68,13 @@ func (s channelSender) sendOpenDataClose(ctx async.Context, data []byte) status.
 
 // close
 
-func (s channelSender) sendClose(ctx async.Context) status.Status {
+func (s channelSender) sendClose(ctx async.Context, data []byte) status.Status {
 	// Build message
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
 	w := pmpx.NewMessageWriterBuffer(buf)
-	msg, err := pmpx.BuildChannelClose(w, s.ch.id, nil)
+	msg, err := pmpx.BuildChannelClose(w, s.ch.id, data)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -127,29 +92,6 @@ func (s channelSender) sendData(ctx async.Context, data []byte) status.Status {
 
 	w := pmpx.NewMessageWriterBuffer(buf)
 	msg, err := pmpx.BuildChannelData(w, s.ch.id, data)
-	if err != nil {
-		return mpxError(err)
-	}
-
-	// Send message
-	return s.conn.send(ctx, msg)
-}
-
-func (s channelSender) sendDataClose(ctx async.Context, data []byte) status.Status {
-	// Build batch
-	buf := alloc.AcquireBuffer()
-	defer buf.Free()
-
-	b := pmpx.NewBatchBuilder(buf)
-	b, err := b.Data(s.ch.id, data)
-	if err != nil {
-		return mpxError(err)
-	}
-	b, err = b.Close(s.ch.id)
-	if err != nil {
-		return mpxError(err)
-	}
-	msg, err := b.Build()
 	if err != nil {
 		return mpxError(err)
 	}
