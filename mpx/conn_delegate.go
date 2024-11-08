@@ -6,10 +6,10 @@ package mpx
 
 type connDelegate interface {
 	// onConnClosed is called when the connection is closed.
-	onConnClosed(c conn)
+	onConnClosed(c internalConn)
 
 	// onConnChannelsReached is called when the number of channels reaches the target.
-	onConnChannelsReached(c conn)
+	onConnChannelsReached(c internalConn)
 }
 
 // noop
@@ -19,7 +19,7 @@ var _ connDelegate = noopConnDelegate{}
 type noopConnDelegate struct{}
 
 // onConnClosed is called when the connection is closed.
-func (d noopConnDelegate) onConnClosed(c conn) {}
+func (d noopConnDelegate) onConnClosed(c internalConn) {}
 
 // onConnChannelsReached is called when the number of channels reaches the target.
-func (d noopConnDelegate) onConnChannelsReached(c conn) {}
+func (d noopConnDelegate) onConnChannelsReached(c internalConn) {}

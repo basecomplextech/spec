@@ -264,7 +264,7 @@ func TestClient_Channel__should_reuse_open_connection(t *testing.T) {
 
 	cn0 := ch0.(*channel)
 	cn1 := ch1.(*channel)
-	assert.Same(t, cn0.state.conn, cn1.state.conn)
+	assert.Same(t, cn0.unwrap().conn, cn1.unwrap().conn)
 }
 
 func TestClient_Channel__should_return_error_if_client_is_closed(t *testing.T) {

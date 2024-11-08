@@ -85,9 +85,9 @@ type client struct {
 	disconnected_ async.MutFlag
 
 	mu    sync.Mutex
-	conns []conn
+	conns []internalConn
 
-	connecting     opt.Opt[async.Routine[conn]]
+	connecting     opt.Opt[async.Routine[internalConn]]
 	connectAttempt int // current connect attempt
 }
 
@@ -230,7 +230,7 @@ func (c *client) Channel(ctx async.Context) (Channel, status.Status) {
 var _ connDelegate = (*client)(nil)
 
 // onConnClosed is called when the connection is closed.
-func (c *client) onConnClosed(conn conn) {
+func (c *client) onConnClosed(conn internalConn) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -253,7 +253,7 @@ func (c *client) onConnClosed(conn conn) {
 }
 
 // onConnChannelsReached is called when the number of channels reaches the target.
-func (c *client) onConnChannelsReached(conn conn) {
+func (c *client) onConnChannelsReached(conn internalConn) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -270,7 +270,7 @@ func (c *client) onConnChannelsReached(conn conn) {
 
 // private
 
-func (c *client) conn() (conn, async.Future[conn], status.Status) {
+func (c *client) conn() (internalConn, async.Future[internalConn], status.Status) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -307,7 +307,7 @@ func (c *client) conn() (conn, async.Future[conn], status.Status) {
 
 // connect
 
-func (c *client) connect() (async.Future[conn], status.Status) {
+func (c *client) connect() (async.Future[internalConn], status.Status) {
 	routine, ok := c.connecting.Unwrap()
 	if ok {
 		return routine, status.OK
@@ -318,7 +318,7 @@ func (c *client) connect() (async.Future[conn], status.Status) {
 	return routine, status.OK
 }
 
-func (c *client) connect1(ctx async.Context) (conn, status.Status) {
+func (c *client) connect1(ctx async.Context) (internalConn, status.Status) {
 	// Try to connect
 	conn, st := c.connectRecover(ctx)
 
@@ -352,7 +352,7 @@ func (c *client) connect1(ctx async.Context) (conn, status.Status) {
 	return nil, st
 }
 
-func (c *client) connectRecover(ctx async.Context) (_ conn, st status.Status) {
+func (c *client) connectRecover(ctx async.Context) (_ internalConn, st status.Status) {
 	defer func() {
 		if e := recover(); e != nil {
 			st = status.Recover(e)

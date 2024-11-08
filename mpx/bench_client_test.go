@@ -74,10 +74,6 @@ func BenchmarkClient_Request(b *testing.B) {
 			b.Fatalf("expected %q, got %q", msg, msg1)
 		}
 
-		if st := ch.SendClose(ctx); !st.OK() {
-			b.Fatal(st)
-		}
-
 		ch.Free()
 		duration += time.Since(t0)
 	}
@@ -133,10 +129,6 @@ func BenchmarkClient_Request_Parallel(b *testing.B) {
 				b.Fatalf("expected %q, got %q", msg, msg1)
 			}
 
-			if st := ch.SendClose(ctx); !st.OK() {
-				b.Fatal(st)
-			}
-
 			ch.Free()
 			duration += time.Since(t0)
 		}
@@ -171,11 +163,7 @@ func BenchmarkClient_Stream_Parallel(b *testing.B) {
 			break
 		}
 
-		st := ch.Send(ctx, closeMsg)
-		if !st.OK() {
-			return st
-		}
-		return ch.SendClose(ctx)
+		return ch.Send(ctx, closeMsg)
 	}
 
 	server := testServer(b, handle)

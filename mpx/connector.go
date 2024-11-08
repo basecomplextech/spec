@@ -16,7 +16,7 @@ var _ connector = (*connectorImpl)(nil)
 
 // connector connects to an address and returns a connection.
 type connector interface {
-	connect(ctx async.Context, addr string) (conn, status.Status)
+	connect(ctx async.Context, addr string) (internalConn, status.Status)
 }
 
 type connectorImpl struct {
@@ -46,7 +46,7 @@ func newDialer(opts Options) *net.Dialer {
 	}
 }
 
-func (c *connectorImpl) connect(ctx async.Context, addr string) (conn, status.Status) {
+func (c *connectorImpl) connect(ctx async.Context, addr string) (internalConn, status.Status) {
 	ctx1 := async.StdContext(ctx)
 
 	// Dial address

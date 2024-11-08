@@ -12,11 +12,11 @@ import (
 )
 
 type chanSender struct {
-	ch   *channelState2
+	ch   *channelState
 	conn internalConn
 }
 
-func newChanSender(ch *channelState2, conn internalConn) chanSender {
+func newChanSender(ch *channelState, conn internalConn) chanSender {
 	return chanSender{
 		ch:   ch,
 		conn: conn,

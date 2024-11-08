@@ -54,10 +54,6 @@ func BenchmarkRequest(b *testing.B) {
 			b.Fatalf("expected %q, got %q", msg, msg1)
 		}
 
-		if st := ch.SendClose(ctx); !st.OK() {
-			b.Fatal(st)
-		}
-
 		ch.Free()
 	}
 
@@ -107,10 +103,6 @@ func BenchmarkRequest_Parallel(b *testing.B) {
 			}
 			if !bytes.Equal(msg, msg1) {
 				b.Fatalf("expected %q, got %q", msg, msg1)
-			}
-
-			if st := ch.SendClose(ctx); !st.OK() {
-				b.Fatal(st)
 			}
 
 			ch.Free()
@@ -202,11 +194,7 @@ func BenchmarkStream_16kb(b *testing.B) {
 			break
 		}
 
-		st := ch.Send(ctx, close)
-		if !st.OK() {
-			return st
-		}
-		return ch.SendClose(ctx)
+		return ch.Send(ctx, close)
 	}
 
 	ctx := async.NoContext()
@@ -266,11 +254,7 @@ func BenchmarkStream_Parallel(b *testing.B) {
 			break
 		}
 
-		st := ch.Send(ctx, closeMsg)
-		if !st.OK() {
-			return st
-		}
-		return ch.SendClose(ctx)
+		return ch.Send(ctx, closeMsg)
 	}
 
 	ctx := async.NoContext()
@@ -334,11 +318,7 @@ func BenchmarkStream_16kb_Parallel(b *testing.B) {
 			break
 		}
 
-		st := ch.Send(ctx, close)
-		if !st.OK() {
-			return st
-		}
-		return ch.SendClose(ctx)
+		return ch.Send(ctx, close)
 	}
 
 	ctx := async.NoContext()

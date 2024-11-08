@@ -28,11 +28,7 @@ func testChannelSend(t *testing.T, ctx async.Context, ch Channel, msg string) {
 
 func TestChannel_Receive__should_receive_message(t *testing.T) {
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
-		st := ch.Send(ctx, []byte("hello, channel"))
-		if !st.OK() {
-			return st
-		}
-		return ch.SendClose(ctx)
+		return ch.Send(ctx, []byte("hello, channel"))
 	})
 
 	ctx := async.NoContext()
@@ -57,7 +53,7 @@ func TestChannel_Receive__should_receive_message(t *testing.T) {
 
 func TestChannel_Receive__should_return_end_when_channel_closed(t *testing.T) {
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
-		return ch.SendClose(ctx)
+		return status.OK
 	})
 
 	ctx := async.NoContext()
@@ -83,11 +79,7 @@ func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testi
 		if !st.OK() {
 			return st
 		}
-		st = ch.Send(ctx, []byte("how are you?"))
-		if !st.OK() {
-			return st
-		}
-		return ch.SendClose(ctx)
+		return ch.Send(ctx, []byte("how are you?"))
 	})
 
 	ctx := async.NoContext()
@@ -126,11 +118,7 @@ func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testi
 
 func TestChannel_Receive__should_decrement_recv_window(t *testing.T) {
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
-		st := ch.Send(ctx, []byte("hello, channel"))
-		if !st.OK() {
-			return st
-		}
-		return ch.SendClose(ctx)
+		return ch.Send(ctx, []byte("hello, channel"))
 	})
 
 	ctx := async.NoContext()
@@ -145,15 +133,17 @@ func TestChannel_Receive__should_decrement_recv_window(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	window := ch.state.window
-	assert.Equal(t, window, ch.state.windowRecv)
+	window := ch.unwrap().initWindow
+	recvWindow := ch.unwrap().recvWindow.Load()
+	require.Equal(t, window, recvWindow)
 
 	_, st = ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	assert.Equal(t, len("hello, channel"), window-ch.state.windowRecv)
+	recvWindow = ch.unwrap().recvWindow.Load()
+	assert.Equal(t, len("hello, channel"), window-recvWindow)
 }
 
 // Send
@@ -171,7 +161,7 @@ func TestChannel_Send__should_send_message(t *testing.T) {
 		}
 
 		msg0 = bytes.Clone(msg)
-		return ch.SendClose(ctx)
+		return status.OK
 	})
 
 	ctx := async.NoContext()
@@ -206,14 +196,16 @@ func TestChannel_Send__should_send_open_message_if_not_sent(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	assert.False(t, ch.state.sendOpen)
+	opened := ch.unwrap().opened.Load()
+	require.False(t, opened)
 
 	st := ch.Send(ctx, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	assert.True(t, ch.state.sendOpen)
+	opened = ch.unwrap().opened.Load()
+	assert.True(t, opened)
 }
 
 func TestChannel_Send__should_return_error_when_channel_closed(t *testing.T) {
@@ -225,7 +217,7 @@ func TestChannel_Send__should_return_error_when_channel_closed(t *testing.T) {
 
 	ch := testChannel(t, conn)
 	defer ch.Free()
-	ch.SendClose(ctx)
+	ch.SendAndClose(ctx, nil)
 
 	st := ch.Send(ctx, []byte("hello, world"))
 	assert.Equal(t, statusChannelClosed, st)
@@ -241,15 +233,17 @@ func TestChannel_Send__should_decrement_send_window(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	window := ch.state.window
-	assert.Equal(t, window, ch.state.windowSend)
+	window := ch.unwrap().initWindow
+	sendWindow := ch.unwrap().sendWindow.Load()
+	require.Equal(t, window, sendWindow)
 
 	st := ch.Send(ctx, []byte("hello, world"))
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	assert.Equal(t, len("hello, world"), window-ch.state.windowSend)
+	sendWindow = ch.unwrap().sendWindow.Load()
+	assert.Equal(t, len("hello, world"), window-sendWindow)
 }
 
 func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
@@ -268,10 +262,11 @@ func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	window := ch.state.window
-	assert.Equal(t, window, ch.state.windowSend)
+	window := ch.unwrap().initWindow
+	sendWindow := ch.unwrap().sendWindow.Load()
+	require.Equal(t, window, sendWindow)
 
-	size := int(float64(ch.state.window) / 2.5)
+	size := int(float64(ch.unwrap().initWindow) / 2.5)
 	msg := bytes.Repeat([]byte("a"), size)
 
 	st := ch.Send(ctx, msg)
@@ -304,10 +299,13 @@ func TestChannel_Send__should_wait_send_window_increment(t *testing.T) {
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	assert.Equal(t, ch.state.window, ch.state.windowSend)
-	msg := bytes.Repeat([]byte("a"), (ch.state.window/2)+1)
+	window := ch.unwrap().initWindow
+	sendWindow := ch.unwrap().sendWindow.Load()
+	require.Equal(t, window, sendWindow)
 
 	ctx := async.NoContext()
+	msg := bytes.Repeat([]byte("a"), int(window/2)+1)
+
 	st := ch.Send(ctx, msg)
 	if !st.OK() {
 		t.Fatal(st)
@@ -340,16 +338,19 @@ func TestChannel_Send__should_write_message_if_it_exceeds_half_window_size(t *te
 	ch := testChannel(t, conn)
 	defer ch.Free()
 
-	assert.Equal(t, ch.state.window, ch.state.windowSend)
-	msg0 := bytes.Repeat([]byte("a"), (ch.state.window/2)-100)
+	window := ch.unwrap().initWindow
+	sendWindow := ch.unwrap().sendWindow.Load()
+	require.Equal(t, window, sendWindow)
 
 	ctx := async.NoContext()
+	msg0 := bytes.Repeat([]byte("a"), int(window/2)-100)
+
 	st := ch.Send(ctx, msg0)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	msg1 := bytes.Repeat([]byte("a"), (ch.state.window/2)+100)
+	msg1 := bytes.Repeat([]byte("a"), int(window/2)+100)
 	st = ch.Send(ctx, msg1)
 	if !st.OK() {
 		t.Fatal(st)
@@ -376,7 +377,7 @@ func TestChannel_SendAndClose__should_send_data_in_close_message(t *testing.T) {
 			t.Fatal(st)
 		}
 		msg0 = append(msg0, msg...)
-		return ch.SendClose(ctx)
+		return status.OK
 	})
 
 	conn := testConnect(t, server)
@@ -396,20 +397,8 @@ func TestChannel_SendAndClose__should_send_data_in_close_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	// Satify race detector
-	sendClose := func() bool {
-		s, _ := ch.rlock()
-		defer ch.stateMu.RUnlock()
-
-		s.sendMu.Lock()
-		defer s.sendMu.Unlock()
-
-		s.recvMu.Lock()
-		defer s.recvMu.Unlock()
-
-		return s.sendClose
-	}()
-	require.True(t, sendClose)
+	closed := ch.unwrap().closed.Load()
+	require.True(t, closed)
 
 	select {
 	case <-done:
@@ -420,9 +409,7 @@ func TestChannel_SendAndClose__should_send_data_in_close_message(t *testing.T) {
 	assert.Equal(t, []byte("hello, world"), msg0)
 }
 
-// SendClose
-
-func TestChannel_SendClose__should_send_close_message(t *testing.T) {
+func TestChannel_SendAndClose__should_send_close_message(t *testing.T) {
 	closed := make(chan struct{})
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		defer close(closed)
@@ -443,7 +430,7 @@ func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	st = ch.SendClose(ctx)
+	st = ch.SendAndClose(ctx, nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
@@ -455,26 +442,25 @@ func TestChannel_SendClose__should_send_close_message(t *testing.T) {
 	}
 }
 
-// TODO: Uncomment test
-// func TestChannel_SendClose__should_close_recv_queue(t *testing.T) {
-// 	ctx := async.NoContext()
-// 	server := testRequestServer(t)
-//
-// 	conn := testConnect(t, server)
-// 	defer conn.Free()
-//
-// 	ch := testChannel(t, conn)
-// 	defer ch.Free()
-//
-// 	st := ch.SendClose(ctx)
-// 	if !st.OK() {
-// 		t.Fatal(st)
-// 	}
-//
-// 	assert.True(t, ch.state.recvQueue.Closed())
-// }
+func TestChannel_SendAndClose__should_close_recv_queue(t *testing.T) {
+	ctx := async.NoContext()
+	server := testRequestServer(t)
 
-func TestChannel_SendClose__should_return_ignore_when_already_closed(t *testing.T) {
+	conn := testConnect(t, server)
+	defer conn.Free()
+
+	ch := testChannel(t, conn)
+	defer ch.Free()
+
+	st := ch.SendAndClose(ctx, nil)
+	if !st.OK() {
+		t.Fatal(st)
+	}
+
+	assert.True(t, ch.unwrap().recvQueue.Closed())
+}
+
+func TestChannel_SendAndClose__should_return_error_when_already_closed(t *testing.T) {
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		_, st := ch.Receive(ctx)
 		return st
@@ -492,11 +478,11 @@ func TestChannel_SendClose__should_return_ignore_when_already_closed(t *testing.
 		t.Fatal(st)
 	}
 
-	st = ch.SendClose(ctx)
+	st = ch.SendAndClose(ctx, nil)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	st = ch.SendClose(ctx)
-	assert.Equal(t, status.OK, st)
+	st = ch.SendAndClose(ctx, nil)
+	assert.Equal(t, statusChannelClosed, st)
 }

@@ -113,7 +113,7 @@ func TestOpenClose(t *testing.T) {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	if st := ch.SendClose(ctx); !st.OK() {
+	if st := ch.SendAndClose(ctx, nil); !st.OK() {
 		t.Fatal(st)
 	}
 

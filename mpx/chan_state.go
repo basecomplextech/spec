@@ -17,7 +17,7 @@ import (
 	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
-type channelState2 struct {
+type channelState struct {
 	id   bin.Bin128
 	ctx  Context
 	conn internalConn
@@ -29,20 +29,19 @@ type channelState2 struct {
 	closed     atomic.Bool
 	closedUser atomic.Bool // close user once
 
-	sendMu         sync.Mutex
-	sender         chanSender
+	sendMu         sync.Mutex    // enforce single sender
 	sendWindow     atomic.Int32  // remaining send window, can become negative on sending large messages
 	sendWindowWait chan struct{} // wait for send window increment
+	sender         chanSender
 
-	recvMu     sync.Mutex
 	recvQueue  alloc.ByteQueue // data queue
 	recvWindow atomic.Int32    // remaining recv window, can become negative on receiving large messages
 }
 
-func newChannelState2(conn internalConn, client bool, id bin.Bin128, window int32) *channelState2 {
+func newChannelState(conn internalConn, client bool, id bin.Bin128, window int32) *channelState {
 	s := channelStatePool.New()
 	s.id = id
-	s.ctx = newContext(nil) // TODO: conn
+	s.ctx = newContext(conn) // TODO: conn
 	s.conn = conn
 
 	s.client = client
@@ -54,7 +53,7 @@ func newChannelState2(conn internalConn, client bool, id bin.Bin128, window int3
 	return s
 }
 
-func openChannelState2(conn internalConn, client bool, msg pmpx.ChannelOpen) *channelState2 {
+func openChannelState(conn internalConn, client bool, msg pmpx.ChannelOpen) *channelState {
 	id := msg.Id()
 	window := msg.Window()
 
@@ -75,7 +74,7 @@ func openChannelState2(conn internalConn, client bool, msg pmpx.ChannelOpen) *ch
 
 // open/close
 
-func (s *channelState2) open() {
+func (s *channelState) open() {
 	if s.opened.Load() {
 		return
 	}
@@ -86,7 +85,7 @@ func (s *channelState2) open() {
 	s.opened.Store(true)
 }
 
-func (s *channelState2) close() {
+func (s *channelState) close() {
 	// Try to close channel
 	closed := s.closed.CompareAndSwap(false, true)
 	if !closed {
@@ -100,15 +99,12 @@ func (s *channelState2) close() {
 
 // receive
 
-func (s *channelState2) receiveMessage(msg pmpx.Message, insideBatch bool) status.Status {
+func (s *channelState) receiveMessage(msg pmpx.Message) status.Status {
 	code := msg.Code()
 
 	switch code {
 	case pmpx.Code_ChannelOpen:
-		if !insideBatch {
-			panic("open channel message must be handled by connection")
-		}
-		return status.OK
+		panic("open channel message must be handled by connection")
 	case pmpx.Code_ChannelClose:
 		return s.receiveClose(msg.ChannelClose())
 	case pmpx.Code_ChannelData:
@@ -116,27 +112,24 @@ func (s *channelState2) receiveMessage(msg pmpx.Message, insideBatch bool) statu
 	case pmpx.Code_ChannelWindow:
 		return s.receiveWindow(msg.ChannelWindow())
 	case pmpx.Code_ChannelBatch:
-		if insideBatch {
-			return mpxErrorf("nested channel batch messages are not allowed")
-		}
-		return s.receiveBatch(msg.ChannelBatch())
+		panic("batch channel message must be handled by connection")
 	}
 
 	return mpxErrorf("unsupported channel message, code=%v", code)
 }
 
-func (s *channelState2) receiveClose(_ pmpx.ChannelClose) status.Status {
+func (s *channelState) receiveClose(_ pmpx.ChannelClose) status.Status {
 	s.close()
 	return status.OK
 }
 
-func (s *channelState2) receiveData(msg pmpx.ChannelData) status.Status {
+func (s *channelState) receiveData(msg pmpx.ChannelData) status.Status {
 	data := msg.Data()
 	_, _ = s.recvQueue.Write(data) // ignore end and false, receive queues are unbounded
 	return status.OK
 }
 
-func (s *channelState2) receiveWindow(msg pmpx.ChannelWindow) status.Status {
+func (s *channelState) receiveWindow(msg pmpx.ChannelWindow) status.Status {
 	// Increment send window
 	delta := msg.Delta()
 	s.sendWindow.Add(delta)
@@ -149,25 +142,9 @@ func (s *channelState2) receiveWindow(msg pmpx.ChannelWindow) status.Status {
 	return status.OK
 }
 
-func (s *channelState2) receiveBatch(msg pmpx.ChannelBatch) status.Status {
-	list := msg.List()
-	num := list.Len()
-
-	for i := 0; i < num; i++ {
-		m1, err := list.GetErr(i)
-		if err != nil {
-			return status.WrapError(err)
-		}
-		if st := s.receiveMessage(m1, true /* inside batch */); !st.OK() {
-			return st
-		}
-	}
-	return status.OK
-}
-
 // window
 
-func (s *channelState2) incrementRecvWindow() int32 {
+func (s *channelState) incrementRecvWindow() int32 {
 	window := s.recvWindow.Load()
 	if window > s.initWindow/2 {
 		return 0
@@ -179,7 +156,7 @@ func (s *channelState2) incrementRecvWindow() int32 {
 	return delta
 }
 
-func (s *channelState2) decrementSendWindow(ctx async.Context, data []byte) status.Status {
+func (s *channelState) decrementSendWindow(ctx async.Context, data []byte) status.Status {
 	// Check data size
 	n := len(data)
 	if n > math.MaxInt32 {
@@ -216,7 +193,7 @@ func (s *channelState2) decrementSendWindow(ctx async.Context, data []byte) stat
 
 // reset
 
-func (s *channelState2) reset() {
+func (s *channelState) reset() {
 	// Free context
 	if s.ctx != nil {
 		s.ctx.Free()
@@ -235,7 +212,7 @@ func (s *channelState2) reset() {
 	recvQueue.Reset()
 
 	// Reset state
-	*s = channelState2{}
+	*s = channelState{}
 	s.sendWindowWait = sendWindowWait
 	s.recvQueue = recvQueue
 }
@@ -243,15 +220,15 @@ func (s *channelState2) reset() {
 // pool
 
 var channelStatePool = pools.NewPoolFunc(
-	func() *channelState2 {
-		return &channelState2{
+	func() *channelState {
+		return &channelState{
 			sendWindowWait: make(chan struct{}, 1),
 			recvQueue:      alloc.NewByteQueue(),
 		}
 	},
 )
 
-func releaseChannelState2(s *channelState2) {
+func releaseChannelState2(s *channelState) {
 	s.reset()
 	channelStatePool.Put(s)
 }

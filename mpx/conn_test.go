@@ -27,9 +27,13 @@ func TestConn_Open__should_open_new_channel(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	assert.True(t, ch.state.client)
-	assert.True(t, ch.state.sendOpen)
-	assert.False(t, ch.state.sendClose)
+	state := ch.unwrap()
+	opened := state.opened.Load()
+	closed := state.closed.Load()
+
+	assert.True(t, state.client)
+	assert.True(t, opened)
+	assert.False(t, closed)
 }
 
 func TestConn_Open__should_return_error_if_connection_is_closed(t *testing.T) {
@@ -99,7 +103,7 @@ func TestConn_Free__should_notify_listeners(t *testing.T) {
 
 // HandleChannel
 
-func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
+func TestConn_channelHandler__should_log_channel_panics(t *testing.T) {
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		panic("test")
 	})
@@ -119,7 +123,7 @@ func TestConn_handleChannel__should_log_channel_panics(t *testing.T) {
 	assert.Equal(t, status.End, st)
 }
 
-func TestConn_handleChannel__should_log_channel_errors(t *testing.T) {
+func TestConn_channelHandler__should_log_channel_errors(t *testing.T) {
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		return status.Errorf("test ch error")
 	})

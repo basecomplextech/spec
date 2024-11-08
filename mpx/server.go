@@ -213,7 +213,7 @@ func (s *server) handle(nc net.Conn) {
 var _ connDelegate = (*server)(nil)
 
 // onConnClosed is called when the connection is closed.
-func (s *server) onConnClosed(c conn) {}
+func (s *server) onConnClosed(c internalConn) {}
 
 // onConnChannelsReached is called when the number of channels reaches the target.
-func (s *server) onConnChannelsReached(c conn) {}
+func (s *server) onConnChannelsReached(c internalConn) {}

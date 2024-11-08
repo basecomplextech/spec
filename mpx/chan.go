@@ -14,7 +14,7 @@ import (
 	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
-type Chan interface {
+type Channel interface {
 	// Context returns a channel context.
 	Context() Context
 
@@ -51,54 +51,51 @@ type Chan interface {
 
 // internal
 
-type internalChan interface {
+type internalChannel interface {
 	// id returns the channel id.
 	id() bin.Bin128
 
-	// closeConn is called by the connection to close the channel.
-	closeConn(st status.Status)
+	// receive is called by the connection to receive a message.
+	receive(msg pmpx.Message) status.Status
 
-	// receiveConn is called by the connection to receive a message.
-	receiveConn(msg pmpx.Message) status.Status
-
-	// freeConn is called by the connection to free the channel.
-	freeConn()
+	// free is called by the connection to free the channel.
+	free()
 }
 
 // internal
 
 var (
-	_ Chan         = (*channel2)(nil)
-	_ internalChan = (*channel2)(nil)
+	_ Channel         = (*channel)(nil)
+	_ internalChannel = (*channel)(nil)
 )
 
-type channel2 struct {
+type channel struct {
 	refs  atomic.Int32 // 2 by default (1 for user, 1 for connection)
-	state atomic.Pointer[channelState2]
+	state atomic.Pointer[channelState]
 }
 
-// newChannel2 returns a new outgoing channel.
-func newChannel2(conn internalConn, client bool, id bin.Bin128, window int32) *channel2 {
-	s := newChannelState2(conn, client, id, window)
+// newChannel returns a new outgoing channel.
+func newChannel(conn internalConn, client bool, id bin.Bin128, window int32) *channel {
+	s := newChannelState(conn, client, id, window)
 
-	ch := &channel2{}
+	ch := &channel{}
 	ch.refs.Store(2)
 	ch.state.Store(s)
 	return ch
 }
 
-// openChannel2 opens and returns a new incoming channel.
-func openChannel2(conn internalConn, client bool, msg pmpx.ChannelOpen) *channel2 {
-	s := openChannelState2(conn, client, msg)
+// openChannel opens and returns a new incoming channel.
+func openChannel(conn internalConn, client bool, msg pmpx.ChannelOpen) *channel {
+	s := openChannelState(conn, client, msg)
 
-	ch := &channel2{}
+	ch := &channel{}
 	ch.refs.Store(2)
 	ch.state.Store(s)
 	return ch
 }
 
 // Context returns a channel context.
-func (ch *channel2) Context() Context {
+func (ch *channel) Context() Context {
 	s := ch.acquire()
 	defer ch.release()
 
@@ -108,7 +105,7 @@ func (ch *channel2) Context() Context {
 // Send
 
 // Send sends a message to the channel.
-func (ch *channel2) Send(ctx async.Context, data []byte) status.Status {
+func (ch *channel) Send(ctx async.Context, data []byte) status.Status {
 	s := ch.acquire()
 	defer ch.release()
 
@@ -142,7 +139,7 @@ func (ch *channel2) Send(ctx async.Context, data []byte) status.Status {
 }
 
 // SendAndClose sends a close message with a payload.
-func (ch *channel2) SendAndClose(ctx async.Context, data []byte) status.Status {
+func (ch *channel) SendAndClose(ctx async.Context, data []byte) status.Status {
 	s := ch.acquire()
 	defer ch.release()
 
@@ -181,7 +178,7 @@ func (ch *channel2) SendAndClose(ctx async.Context, data []byte) status.Status {
 // Receive
 
 // Receive receives and returns a message, or an end status.
-func (ch *channel2) Receive(ctx async.Context) ([]byte, status.Status) {
+func (ch *channel) Receive(ctx async.Context) ([]byte, status.Status) {
 	s := ch.acquire()
 	defer ch.release()
 
@@ -208,7 +205,7 @@ func (ch *channel2) Receive(ctx async.Context) ([]byte, status.Status) {
 //
 // The message is valid until the next call to Receive.
 // The method does not block if no messages, and returns false instead.
-func (ch *channel2) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status) {
+func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status) {
 	s := ch.acquire()
 	defer ch.release()
 
@@ -240,7 +237,7 @@ func (ch *channel2) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status
 }
 
 // ReceiveWait returns a channel that is notified on a new message, or a channel close.
-func (ch *channel2) ReceiveWait() <-chan struct{} {
+func (ch *channel) ReceiveWait() <-chan struct{} {
 	s := ch.acquire()
 	defer ch.release()
 
@@ -250,7 +247,7 @@ func (ch *channel2) ReceiveWait() <-chan struct{} {
 // Internal
 
 // Free closes the channel and releases its resources.
-func (ch *channel2) Free() {
+func (ch *channel) Free() {
 	ch.closeUser()
 	ch.release()
 }
@@ -258,28 +255,17 @@ func (ch *channel2) Free() {
 // internal
 
 // id returns the channel id.
-func (ch *channel2) id() bin.Bin128 {
+func (ch *channel) id() bin.Bin128 {
 	s := ch.acquire()
 	defer ch.release()
 
 	return s.id
 }
 
-// closeConn is called by the connection to close the channel.
-func (ch *channel2) closeConn(st status.Status) {
+// receive is called by the connection to receive a message.
+func (ch *channel) receive(msg pmpx.Message) status.Status {
 	s := ch.acquire()
 	defer ch.release()
-
-	s.close()
-}
-
-// receiveConn is called by the connection to receive a message.
-func (ch *channel2) receiveConn(msg pmpx.Message) status.Status {
-	s := ch.acquire()
-	defer ch.release()
-
-	s.recvMu.Lock()
-	defer s.recvMu.Unlock()
 
 	// Ignore messages if closed
 	if s.closed.Load() {
@@ -287,19 +273,24 @@ func (ch *channel2) receiveConn(msg pmpx.Message) status.Status {
 	}
 
 	// Receive message
-	return s.receiveMessage(msg, false /* not inside batch */)
+	return s.receiveMessage(msg)
 }
 
-// freeConn is called by the connection to free the channel.
-func (ch *channel2) freeConn() {
-	ch.closeConn(statusConnClosed)
-	ch.release()
+// free is called by the connection to free the channel.
+func (ch *channel) free() {
+	s := ch.state.Load()
+	if s == nil {
+		panic("free of freed channel")
+	}
+
+	defer ch.release()
+	s.close()
 }
 
 // acquire/release
 
 // acquire increments the refcounter and returns the channel state, panics if freed.
-func (ch *channel2) acquire() *channelState2 {
+func (ch *channel) acquire() *channelState {
 	refs := ch.refs.Add(1)
 	if refs == 1 {
 		panic("acquire of freed channel")
@@ -313,7 +304,7 @@ func (ch *channel2) acquire() *channelState2 {
 }
 
 // release decrements the internal refs counter.
-func (ch *channel2) release() {
+func (ch *channel) release() {
 	refs := ch.refs.Add(-1)
 	if refs > 0 {
 		return
@@ -328,7 +319,7 @@ func (ch *channel2) release() {
 
 // close
 
-func (ch *channel2) closeUser() {
+func (ch *channel) closeUser() {
 	s := ch.acquire()
 	defer ch.release()
 
@@ -352,4 +343,11 @@ func (ch *channel2) closeUser() {
 	default:
 		panic(fmt.Sprintf("unexpected status: %v", st)) // unreachable
 	}
+}
+
+// unwrap
+
+// unwrap returns the channel state, used in tests.
+func (ch *channel) unwrap() *channelState {
+	return ch.state.Load()
 }

@@ -60,22 +60,16 @@ func ConnectDialer(ctx async.Context, addr string, dialer *net.Dialer, logger lo
 
 // internal
 
-var _ conn = (*connImpl)(nil)
-
-type conn interface {
-	Conn
-
-	// OnClosed adds a disconnection listener, and returns an unsubscribe function.
-	OnClosed(fn func()) (unsub func())
-
-	// SendMessage write an outgoing message to the write queue.
-	SendMessage(ctx async.Context, msg pmpx.Message) status.Status
-}
+var _ internalConn = (*connImpl)(nil)
 
 type internalConn interface {
+	Conn
+
 	// send sends a message to the connection, or returns a connection closed or an end status.
 	send(ctx async.Context, msg pmpx.Message) status.Status
 }
+
+// internal
 
 type connImpl struct {
 	conn     net.Conn
@@ -192,8 +186,10 @@ func (c *connImpl) Free() {
 	c.Close()
 }
 
-// SendMessage write an outgoing message to the write queue.
-func (c *connImpl) SendMessage(ctx async.Context, msg pmpx.Message) status.Status {
+// internal
+
+// send write an outgoing message to the write queue.
+func (c *connImpl) send(ctx async.Context, msg pmpx.Message) status.Status {
 	b := msg.Unwrap().Raw()
 
 	for {
@@ -435,66 +431,54 @@ func (c *connImpl) receiveLoop(ctx async.Context) status.Status {
 		}
 
 		// Handle message
-		code := msg.Code()
-		switch code {
-		case pmpx.Code_ChannelOpen:
-			if st := c.receiveOpen(msg); !st.OK() {
-				return st
-			}
-		case pmpx.Code_ChannelClose:
-			if st := c.receiveClose(msg); !st.OK() {
-				return st
-			}
-		case pmpx.Code_ChannelData:
-			if st := c.receiveData(msg); !st.OK() {
-				return st
-			}
-		case pmpx.Code_ChannelWindow:
-			if st := c.receiveWindow(msg); !st.OK() {
-				return st
-			}
-
-		default:
-			return mpxErrorf("unexpected mpx message, code=%d", code)
+		if st := c.receiveMessage(msg, false /* not inside batch */); !st.OK() {
+			return st
 		}
 	}
+}
+
+func (c *connImpl) receiveMessage(msg pmpx.Message, insideBatch bool) status.Status {
+	code := msg.Code()
+
+	switch code {
+	case pmpx.Code_ChannelOpen:
+		return c.receiveOpen(msg)
+	case pmpx.Code_ChannelClose:
+		return c.receiveClose(msg)
+	case pmpx.Code_ChannelData:
+		return c.receiveData(msg)
+	case pmpx.Code_ChannelWindow:
+		return c.receiveWindow(msg)
+	case pmpx.Code_ChannelBatch:
+		if insideBatch {
+			panic("nested batch messages")
+		}
+		return c.receiveBatch(msg)
+	}
+
+	return mpxErrorf("unexpected message, code=%v", code)
 }
 
 func (c *connImpl) receiveOpen(msg pmpx.Message) status.Status {
 	m := msg.ChannelOpen()
 	id := m.Id()
 
-	// Check not exist, impossible
-	ok := c.channels.Contains(id)
-	if ok {
+	// Add channel
+	// Duplicates are impossible, but still check for them.
+	ch := openChannel(c, c.client, m)
+	_, exists := c.channels.GetOrSet(id, ch)
+	if exists {
+		ch.Free()
+		ch.free()
 		return mpxErrorf("received open message for existing channel, channel=%v", id)
 	}
 
-	// Make channel
-	ch := openChannel(c, c.client, m)
-	c.channels.Set(id, ch)
-
-	// Free on error
-	done := false
-	defer func() {
-		if !done {
-			ch.Free1()
-			ch.Free()
-		}
-	}()
-
-	// Handle message
-	if st := ch.Receive1(msg); !st.OK() {
-		c.channels.Delete(id)
-		return st
-	}
-	c.maybeChannelsReached()
-
 	// Start handler
 	workerPool.Go(func() {
-		c.handleChannel(ch)
+		c.channelHandler(ch)
 	})
-	done = true
+
+	c.maybeChannelsReached()
 	return status.OK
 }
 
@@ -502,15 +486,13 @@ func (c *connImpl) receiveClose(msg pmpx.Message) status.Status {
 	m := msg.ChannelClose()
 	id := m.Id()
 
-	ch, ok := c.channels.Get(id)
+	ch, ok := c.channels.Pop(id)
 	if !ok {
 		return status.OK
 	}
+	defer ch.free()
 
-	defer ch.Free1()
-	c.channels.Delete(id)
-
-	return ch.Receive1(msg)
+	return ch.receive(msg)
 }
 
 func (c *connImpl) receiveData(msg pmpx.Message) status.Status {
@@ -521,8 +503,7 @@ func (c *connImpl) receiveData(msg pmpx.Message) status.Status {
 	if !ok {
 		return status.OK
 	}
-
-	return ch.Receive1(msg)
+	return ch.receive(msg)
 }
 
 func (c *connImpl) receiveWindow(msg pmpx.Message) status.Status {
@@ -533,8 +514,25 @@ func (c *connImpl) receiveWindow(msg pmpx.Message) status.Status {
 	if !ok {
 		return status.OK
 	}
+	return ch.receive(msg)
+}
 
-	return ch.Receive1(msg)
+func (c *connImpl) receiveBatch(msg pmpx.Message) status.Status {
+	batch := msg.ChannelBatch()
+	list := batch.List()
+	num := list.Len()
+
+	for i := 0; i < num; i++ {
+		m1, err := list.GetErr(i)
+		if err != nil {
+			return status.WrapError(err)
+		}
+
+		if st := c.receiveMessage(m1, true /* inside batch */); !st.OK() {
+			return st
+		}
+	}
+	return status.OK
 }
 
 // send
@@ -573,15 +571,46 @@ func (c *connImpl) sendMessage(b []byte) status.Status {
 		return mpxError(err)
 	}
 
-	// Maybe delete and free channel
-	code := msg.Code()
-	if code == pmpx.Code_ChannelClose {
-		id := msg.ChannelClose().Id()
-		c.removeChannel(id)
+	// Handle message
+	if st := c.sendHandle(msg); !st.OK() {
+		return st
 	}
 
 	// Write message
 	return c.writer.write(msg)
+}
+
+func (c *connImpl) sendHandle(msg pmpx.Message) status.Status {
+	code := msg.Code()
+
+	switch code {
+	case pmpx.Code_ChannelClose:
+		// Remove and free channel
+		id := msg.ChannelClose().Id()
+
+		ch, ok := c.channels.Pop(id)
+		if ok {
+			ch.free()
+		}
+
+	case pmpx.Code_ChannelBatch:
+		// Handle batch messages
+		batch := msg.ChannelBatch()
+		list := batch.List()
+		num := list.Len()
+
+		for i := 0; i < num; i++ {
+			m1, err := list.GetErr(i)
+			if err != nil {
+				return status.WrapError(err)
+			}
+			if st := c.sendHandle(m1); !st.OK() {
+				return st
+			}
+		}
+	}
+
+	return status.OK
 }
 
 // channels
@@ -593,23 +622,13 @@ func (c *connImpl) closeChannels() {
 	c.channelsClosed.Store(true)
 
 	c.channels.Range(func(_ bin.Bin128, ch internalChannel) bool {
-		ch.Free1()
+		ch.free()
 		return true
 	})
 }
 
 func (c *connImpl) createChannel() (Channel, bool, status.Status) {
-	id := bin.Random128()
-	window := int(c.options.ChannelWindowSize)
-	ch := createChannel(c, c.client, id, window)
-
-	done := false
-	defer func() {
-		if !done {
-			ch.free()
-		}
-	}()
-
+	// Check flags
 	switch {
 	case c.channelsClosed.Load():
 		return nil, false, statusConnClosed
@@ -617,9 +636,25 @@ func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 		return nil, false, status.OK
 	}
 
+	// Create channel
+	id := bin.Random128()
+	window := int32(c.options.ChannelWindowSize)
+	ch := newChannel(c, c.client, id, window)
+
+	// Free on error
+	done := false
+	defer func() {
+		if !done {
+			ch.Free()
+			ch.free()
+		}
+	}()
+
+	// Add channel
 	c.channels.Set(id, ch)
 	c.maybeChannelsReached()
 
+	// Check again
 	if c.channelsClosed.Load() {
 		c.channels.Delete(id)
 		return nil, false, statusConnClosed
@@ -629,21 +664,7 @@ func (c *connImpl) createChannel() (Channel, bool, status.Status) {
 	return ch, true, status.OK
 }
 
-func (c *connImpl) removeChannel(id bin.Bin128) {
-	if c.channelsClosed.Load() {
-		return
-	}
-
-	ch, ok := c.channels.Get(id)
-	if !ok {
-		return
-	}
-
-	defer ch.Free1()
-	c.channels.Delete(id)
-}
-
-func (c *connImpl) handleChannel(ch Channel) {
+func (c *connImpl) channelHandler(ch Channel) {
 	// No need to use async.Go here, because we don't need the result/cancellation,
 	// and recover panics manually.
 	defer func() {
