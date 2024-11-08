@@ -116,7 +116,7 @@ func TestChannel_Receive__should_read_pending_messages_even_when_closed(t *testi
 	assert.Equal(t, status.End, st)
 }
 
-func TestChannel_Receive__should_decrement_recv_window(t *testing.T) {
+func TestChannel_Receive__should_increment_recv_bytes(t *testing.T) {
 	server := testServer(t, func(ctx Context, ch Channel) status.Status {
 		return ch.Send(ctx, []byte("hello, channel"))
 	})
@@ -133,17 +133,16 @@ func TestChannel_Receive__should_decrement_recv_window(t *testing.T) {
 		t.Fatal(st)
 	}
 
-	window := ch.unwrap().initWindow
-	recvWindow := ch.unwrap().recvWindow.Load()
-	require.Equal(t, window, recvWindow)
+	recvBytes := ch.unwrap().recvBytes.Load()
+	require.Equal(t, int32(0), recvBytes)
 
 	_, st = ch.Receive(ctx)
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
-	recvWindow = ch.unwrap().recvWindow.Load()
-	assert.Equal(t, len("hello, channel"), window-recvWindow)
+	recvBytes = ch.unwrap().recvBytes.Load()
+	assert.Equal(t, len("hello, channel"), int(recvBytes))
 }
 
 // Send
@@ -243,7 +242,7 @@ func TestChannel_Send__should_decrement_send_window(t *testing.T) {
 	}
 
 	sendWindow = ch.unwrap().sendWindow.Load()
-	assert.Equal(t, len("hello, world"), window-sendWindow)
+	assert.Equal(t, len("hello, world"), int(window-sendWindow))
 }
 
 func TestChannel_Send__should_block_when_send_window_not_enough(t *testing.T) {

@@ -34,8 +34,8 @@ type channelState struct {
 	sendWindowWait chan struct{} // wait for send window increment
 	sender         channelSender
 
-	recvQueue  alloc.ByteQueue // data queue
-	recvWindow atomic.Int32    // remaining recv window, can become negative on receiving large messages
+	recvQueue alloc.ByteQueue // data queue
+	recvBytes atomic.Int32    // number of received byte, sent as window delta when >= initWindow/2
 }
 
 func newChannelState(conn internalConn, client bool, id bin.Bin128, window int32) *channelState {
@@ -49,7 +49,6 @@ func newChannelState(conn internalConn, client bool, id bin.Bin128, window int32
 
 	s.sender = newChanSender(s, conn)
 	s.sendWindow.Store(window)
-	s.recvWindow.Store(window)
 	return s
 }
 
@@ -68,7 +67,6 @@ func openChannelState(conn internalConn, client bool, msg pmpx.ChannelOpen) *cha
 
 	s.sender = newChanSender(s, conn)
 	s.sendWindow.Store(window)
-	s.recvWindow.Store(window)
 	return s
 }
 
@@ -143,18 +141,6 @@ func (s *channelState) receiveWindow(msg pmpx.ChannelWindow) status.Status {
 }
 
 // window
-
-func (s *channelState) incrementRecvWindow() int32 {
-	window := s.recvWindow.Load()
-	if window > s.initWindow/2 {
-		return 0
-	}
-
-	// Increment recv window
-	delta := s.initWindow - window
-	s.recvWindow.Add(delta)
-	return delta
-}
 
 func (s *channelState) decrementSendWindow(ctx async.Context, data []byte) status.Status {
 	// Check data size

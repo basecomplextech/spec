@@ -68,6 +68,8 @@ var (
 
 type channel struct {
 	refs  atomic.Int32 // 2 by default (1 for user, 1 for connection)
+	freed atomic.Bool  // ensures public free is called once
+
 	state atomic.Pointer[channelState]
 }
 
@@ -212,15 +214,19 @@ func (ch *channel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status)
 		return nil, ok, st
 	}
 
-	// Try to increment window
-	delta := s.incrementRecvWindow()
-	if delta <= 0 {
+	// Increment received
+	size := int32(len(data))
+	recv := s.recvBytes.Add(size)
+
+	// Check window/2 reached
+	if recv < s.initWindow/2 {
 		return data, true, status.OK
 	}
 
-	// Send window increment
+	// Decrement bytes, send window delta
+	s.recvBytes.Add(-recv)
 	if !s.closed.Load() {
-		st := s.sender.sendWindow(ctx, delta)
+		st := s.sender.sendWindow(ctx, recv)
 		switch st.Code {
 		case status.CodeOK,
 			status.CodeCancelled,
@@ -245,6 +251,11 @@ func (ch *channel) ReceiveWait() <-chan struct{} {
 
 // Free closes the channel and releases its resources.
 func (ch *channel) Free() {
+	ok := ch.freed.CompareAndSwap(false, true)
+	if !ok {
+		panic("free called multiple times")
+	}
+
 	ch.closeUser()
 	ch.release()
 }
