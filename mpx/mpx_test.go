@@ -56,7 +56,7 @@ func testRequestServer(t tests.T) *server {
 	return testServer(t, handle)
 }
 
-func testConnect(t tests.T, s *server) *connImpl {
+func testConnect(t tests.T, s *server) *conn {
 	ctx := async.NoContext()
 	addr := s.Address()
 
@@ -64,7 +64,7 @@ func testConnect(t tests.T, s *server) *connImpl {
 	if !st.OK() {
 		t.Fatal(st)
 	}
-	return c.(*connImpl)
+	return c.(*conn)
 }
 
 func testChannel(t tests.T, c Conn) *channel {

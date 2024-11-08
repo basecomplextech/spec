@@ -52,9 +52,6 @@ type Channel interface {
 // internal
 
 type internalChannel interface {
-	// id returns the channel id.
-	id() bin.Bin128
-
 	// receive is called by the connection to receive a message.
 	receive(msg pmpx.Message) status.Status
 
@@ -62,7 +59,7 @@ type internalChannel interface {
 	free()
 }
 
-// internal
+// implementation
 
 var (
 	_ Channel         = (*channel)(nil)
@@ -253,14 +250,6 @@ func (ch *channel) Free() {
 }
 
 // internal
-
-// id returns the channel id.
-func (ch *channel) id() bin.Bin128 {
-	s := ch.acquire()
-	defer ch.release()
-
-	return s.id
-}
 
 // receive is called by the connection to receive a message.
 func (ch *channel) receive(msg pmpx.Message) status.Status {
