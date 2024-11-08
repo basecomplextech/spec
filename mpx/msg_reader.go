@@ -130,6 +130,19 @@ func (r *reader) readMessage() (pmpx.Message, status.Status) {
 		case pmpx.Code_ConnectResponse:
 			debugPrint(r.client, "<- connect_resp")
 
+		case pmpx.Code_Batch:
+			m := msg.Batch()
+			list := m.List()
+			num := list.Len()
+			codes := make([]string, 0, num)
+
+			for i := 0; i < num; i++ {
+				m1 := list.Get(i)
+				c1 := m1.Code().String()
+				codes = append(codes, c1)
+			}
+			debugPrint(r.client, "<- batch\t", num, codes)
+
 		case pmpx.Code_ChannelOpen:
 			m := msg.ChannelOpen()
 			id := m.Id()

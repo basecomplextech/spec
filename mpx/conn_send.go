@@ -57,18 +57,9 @@ func (c *conn) sendHandle(msg pmpx.Message) status.Status {
 	code := msg.Code()
 
 	switch code {
-	case pmpx.Code_ChannelClose:
-		// Remove and free channel
-		id := msg.ChannelClose().Id()
-
-		ch, ok := c.channels.Pop(id)
-		if ok {
-			ch.free()
-		}
-
-	case pmpx.Code_ChannelBatch:
+	case pmpx.Code_Batch:
 		// Handle batch messages
-		batch := msg.ChannelBatch()
+		batch := msg.Batch()
 		list := batch.List()
 		num := list.Len()
 
@@ -80,6 +71,15 @@ func (c *conn) sendHandle(msg pmpx.Message) status.Status {
 			if st := c.sendHandle(m1); !st.OK() {
 				return st
 			}
+		}
+
+	case pmpx.Code_ChannelClose:
+		// Remove and free channel
+		id := msg.ChannelClose().Id()
+
+		ch, ok := c.channels.Pop(id)
+		if ok {
+			ch.free()
 		}
 	}
 

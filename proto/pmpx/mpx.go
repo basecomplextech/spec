@@ -196,48 +196,44 @@ func BuildChannelWindow(w MessageWriter, id bin.Bin128, delta int32) (Message, e
 	return w.Build()
 }
 
-// ChannelBatch
+// Batch
 
-type ChannelBatchBuilder struct {
-	id bin.Bin128
-
+type BatchBuilder struct {
 	w  MessageWriter
-	w1 ChannelBatchWriter
+	w1 BatchWriter
 	w2 spec.MessageListWriter[MessageWriter]
 }
 
-func NewChannelBatchBuilder(buf alloc.Buffer, id bin.Bin128) ChannelBatchBuilder {
+func NewBatchBuilder(buf alloc.Buffer) BatchBuilder {
 	w := NewMessageWriterBuffer(buf)
-	w.Code(Code_ChannelBatch)
+	w.Code(Code_Batch)
 
-	w1 := w.ChannelBatch()
-	w1.Id(id)
+	w1 := w.Batch()
 	w2 := w1.List()
 
-	return ChannelBatchBuilder{
-		id: id,
+	return BatchBuilder{
 		w:  w,
 		w1: w1,
 		w2: w2,
 	}
 }
 
-func (b ChannelBatchBuilder) Open(window int32) (ChannelBatchBuilder, error) {
-	_, err := BuildChannelOpen(b.w2.Add(), b.id, nil, window)
+func (b BatchBuilder) Open(id bin.Bin128, window int32) (BatchBuilder, error) {
+	_, err := BuildChannelOpen(b.w2.Add(), id, nil, window)
 	return b, err
 }
 
-func (b ChannelBatchBuilder) Close() (ChannelBatchBuilder, error) {
-	_, err := BuildChannelClose(b.w2.Add(), b.id, nil)
+func (b BatchBuilder) Close(id bin.Bin128) (BatchBuilder, error) {
+	_, err := BuildChannelClose(b.w2.Add(), id, nil)
 	return b, err
 }
 
-func (b ChannelBatchBuilder) Data(data []byte) (ChannelBatchBuilder, error) {
-	_, err := BuildChannelData(b.w2.Add(), b.id, data)
+func (b BatchBuilder) Data(id bin.Bin128, data []byte) (BatchBuilder, error) {
+	_, err := BuildChannelData(b.w2.Add(), id, data)
 	return b, err
 }
 
-func (b ChannelBatchBuilder) Build() (Message, error) {
+func (b BatchBuilder) Build() (Message, error) {
 	if err := b.w2.End(); err != nil {
 		return Message{}, err
 	}

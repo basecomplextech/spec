@@ -69,11 +69,11 @@ const (
 	Code_Undefined       Code = 0
 	Code_ConnectRequest  Code = 1
 	Code_ConnectResponse Code = 2
+	Code_Batch           Code = 3
 	Code_ChannelOpen     Code = 10
 	Code_ChannelClose    Code = 11
 	Code_ChannelData     Code = 12
 	Code_ChannelWindow   Code = 13
-	Code_ChannelBatch    Code = 14
 )
 
 func NewCode(b []byte) Code {
@@ -102,6 +102,8 @@ func (e Code) String() string {
 		return "connect_request"
 	case Code_ConnectResponse:
 		return "connect_response"
+	case Code_Batch:
+		return "batch"
 	case Code_ChannelOpen:
 		return "channel_open"
 	case Code_ChannelClose:
@@ -110,8 +112,6 @@ func (e Code) String() string {
 		return "channel_data"
 	case Code_ChannelWindow:
 		return "channel_window"
-	case Code_ChannelBatch:
-		return "channel_batch"
 	}
 	return ""
 }
@@ -150,20 +150,20 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 func (m Message) Code() Code                       { return NewCode(m.msg.FieldRaw(1)) }
 func (m Message) ConnectRequest() ConnectRequest   { return MakeConnectRequest(m.msg.Message(2)) }
 func (m Message) ConnectResponse() ConnectResponse { return MakeConnectResponse(m.msg.Message(3)) }
+func (m Message) Batch() Batch                     { return MakeBatch(m.msg.Message(4)) }
 func (m Message) ChannelOpen() ChannelOpen         { return MakeChannelOpen(m.msg.Message(10)) }
 func (m Message) ChannelClose() ChannelClose       { return MakeChannelClose(m.msg.Message(11)) }
 func (m Message) ChannelData() ChannelData         { return MakeChannelData(m.msg.Message(12)) }
 func (m Message) ChannelWindow() ChannelWindow     { return MakeChannelWindow(m.msg.Message(13)) }
-func (m Message) ChannelBatch() ChannelBatch       { return MakeChannelBatch(m.msg.Message(14)) }
 
 func (m Message) HasCode() bool            { return m.msg.HasField(1) }
 func (m Message) HasConnectRequest() bool  { return m.msg.HasField(2) }
 func (m Message) HasConnectResponse() bool { return m.msg.HasField(3) }
+func (m Message) HasBatch() bool           { return m.msg.HasField(4) }
 func (m Message) HasChannelOpen() bool     { return m.msg.HasField(10) }
 func (m Message) HasChannelClose() bool    { return m.msg.HasField(11) }
 func (m Message) HasChannelData() bool     { return m.msg.HasField(12) }
 func (m Message) HasChannelWindow() bool   { return m.msg.HasField(13) }
-func (m Message) HasChannelBatch() bool    { return m.msg.HasField(14) }
 
 func (m Message) IsEmpty() bool                         { return m.msg.Empty() }
 func (m Message) Clone() Message                        { return Message{m.msg.Clone()} }
@@ -311,6 +311,47 @@ func (e ConnectCompression) String() string {
 	}
 	return ""
 }
+
+// Batch
+
+type Batch struct {
+	msg spec.Message
+}
+
+func NewBatch(b []byte) Batch {
+	msg := spec.NewMessage(b)
+	return Batch{msg}
+}
+
+func NewBatchErr(b []byte) (_ Batch, err error) {
+	msg, err := spec.NewMessageErr(b)
+	if err != nil {
+		return
+	}
+	return Batch{msg}, nil
+}
+
+func MakeBatch(msg spec.Message) Batch {
+	return Batch{msg}
+}
+
+func ParseBatch(b []byte) (_ Batch, size int, err error) {
+	msg, size, err := spec.ParseMessage(b)
+	if err != nil || size == 0 {
+		return
+	}
+	return Batch{msg}, size, nil
+}
+
+func (m Batch) List() spec.TypedList[Message] {
+	return spec.NewTypedList(m.msg.FieldRaw(1), ParseMessage)
+}
+func (m Batch) HasList() bool                       { return m.msg.HasField(1) }
+func (m Batch) IsEmpty() bool                       { return m.msg.Empty() }
+func (m Batch) Clone() Batch                        { return Batch{m.msg.Clone()} }
+func (m Batch) CloneToArena(a alloc.Arena) Batch    { return Batch{m.msg.CloneToArena(a)} }
+func (m Batch) CloneToBuffer(b buffer.Buffer) Batch { return Batch{m.msg.CloneToBuffer(b)} }
+func (m Batch) Unwrap() spec.Message                { return m.msg }
 
 // ChannelOpen
 
@@ -502,55 +543,6 @@ func (m ChannelWindow) CloneToBuffer(b buffer.Buffer) ChannelWindow {
 }
 func (m ChannelWindow) Unwrap() spec.Message { return m.msg }
 
-// ChannelBatch
-
-type ChannelBatch struct {
-	msg spec.Message
-}
-
-func NewChannelBatch(b []byte) ChannelBatch {
-	msg := spec.NewMessage(b)
-	return ChannelBatch{msg}
-}
-
-func NewChannelBatchErr(b []byte) (_ ChannelBatch, err error) {
-	msg, err := spec.NewMessageErr(b)
-	if err != nil {
-		return
-	}
-	return ChannelBatch{msg}, nil
-}
-
-func MakeChannelBatch(msg spec.Message) ChannelBatch {
-	return ChannelBatch{msg}
-}
-
-func ParseChannelBatch(b []byte) (_ ChannelBatch, size int, err error) {
-	msg, size, err := spec.ParseMessage(b)
-	if err != nil || size == 0 {
-		return
-	}
-	return ChannelBatch{msg}, size, nil
-}
-
-func (m ChannelBatch) Id() bin.Bin128 { return m.msg.Bin128(1) }
-func (m ChannelBatch) List() spec.TypedList[Message] {
-	return spec.NewTypedList(m.msg.FieldRaw(2), ParseMessage)
-}
-
-func (m ChannelBatch) HasId() bool   { return m.msg.HasField(1) }
-func (m ChannelBatch) HasList() bool { return m.msg.HasField(2) }
-
-func (m ChannelBatch) IsEmpty() bool       { return m.msg.Empty() }
-func (m ChannelBatch) Clone() ChannelBatch { return ChannelBatch{m.msg.Clone()} }
-func (m ChannelBatch) CloneToArena(a alloc.Arena) ChannelBatch {
-	return ChannelBatch{m.msg.CloneToArena(a)}
-}
-func (m ChannelBatch) CloneToBuffer(b buffer.Buffer) ChannelBatch {
-	return ChannelBatch{m.msg.CloneToBuffer(b)}
-}
-func (m ChannelBatch) Unwrap() spec.Message { return m.msg }
-
 // MessageWriter
 
 type MessageWriter struct {
@@ -586,6 +578,13 @@ func (w MessageWriter) ConnectResponse() ConnectResponseWriter {
 func (w MessageWriter) CopyConnectResponse(v ConnectResponse) error {
 	return w.w.Field(3).Any(v.Unwrap().Raw())
 }
+func (w MessageWriter) Batch() BatchWriter {
+	w1 := w.w.Field(4).Message()
+	return NewBatchWriterTo(w1)
+}
+func (w MessageWriter) CopyBatch(v Batch) error {
+	return w.w.Field(4).Any(v.Unwrap().Raw())
+}
 func (w MessageWriter) ChannelOpen() ChannelOpenWriter {
 	w1 := w.w.Field(10).Message()
 	return NewChannelOpenWriterTo(w1)
@@ -613,13 +612,6 @@ func (w MessageWriter) ChannelWindow() ChannelWindowWriter {
 }
 func (w MessageWriter) CopyChannelWindow(v ChannelWindow) error {
 	return w.w.Field(13).Any(v.Unwrap().Raw())
-}
-func (w MessageWriter) ChannelBatch() ChannelBatchWriter {
-	w1 := w.w.Field(14).Message()
-	return NewChannelBatchWriterTo(w1)
-}
-func (w MessageWriter) CopyChannelBatch(v ChannelBatch) error {
-	return w.w.Field(14).Any(v.Unwrap().Raw())
 }
 
 func (w MessageWriter) Merge(msg Message) error {
@@ -735,6 +727,51 @@ func (w ConnectResponseWriter) Build() (_ ConnectResponse, err error) {
 }
 
 func (w ConnectResponseWriter) Unwrap() spec.MessageWriter {
+	return w.w
+}
+
+// BatchWriter
+
+type BatchWriter struct {
+	w spec.MessageWriter
+}
+
+func NewBatchWriter() BatchWriter {
+	w := spec.NewMessageWriter()
+	return BatchWriter{w}
+}
+
+func NewBatchWriterBuffer(b buffer.Buffer) BatchWriter {
+	w := spec.NewMessageWriterBuffer(b)
+	return BatchWriter{w}
+}
+
+func NewBatchWriterTo(w spec.MessageWriter) BatchWriter {
+	return BatchWriter{w}
+}
+
+func (w BatchWriter) List() spec.MessageListWriter[MessageWriter] {
+	w1 := w.w.Field(1).List()
+	return spec.NewMessageListWriter(w1, NewMessageWriterTo)
+}
+
+func (w BatchWriter) Merge(msg Batch) error {
+	return w.w.Merge(msg.Unwrap())
+}
+
+func (w BatchWriter) End() error {
+	return w.w.End()
+}
+
+func (w BatchWriter) Build() (_ Batch, err error) {
+	bytes, err := w.w.Build()
+	if err != nil {
+		return
+	}
+	return NewBatch(bytes), nil
+}
+
+func (w BatchWriter) Unwrap() spec.MessageWriter {
 	return w.w
 }
 
@@ -908,51 +945,5 @@ func (w ChannelWindowWriter) Build() (_ ChannelWindow, err error) {
 }
 
 func (w ChannelWindowWriter) Unwrap() spec.MessageWriter {
-	return w.w
-}
-
-// ChannelBatchWriter
-
-type ChannelBatchWriter struct {
-	w spec.MessageWriter
-}
-
-func NewChannelBatchWriter() ChannelBatchWriter {
-	w := spec.NewMessageWriter()
-	return ChannelBatchWriter{w}
-}
-
-func NewChannelBatchWriterBuffer(b buffer.Buffer) ChannelBatchWriter {
-	w := spec.NewMessageWriterBuffer(b)
-	return ChannelBatchWriter{w}
-}
-
-func NewChannelBatchWriterTo(w spec.MessageWriter) ChannelBatchWriter {
-	return ChannelBatchWriter{w}
-}
-
-func (w ChannelBatchWriter) Id(v bin.Bin128) { w.w.Field(1).Bin128(v) }
-func (w ChannelBatchWriter) List() spec.MessageListWriter[MessageWriter] {
-	w1 := w.w.Field(2).List()
-	return spec.NewMessageListWriter(w1, NewMessageWriterTo)
-}
-
-func (w ChannelBatchWriter) Merge(msg ChannelBatch) error {
-	return w.w.Merge(msg.Unwrap())
-}
-
-func (w ChannelBatchWriter) End() error {
-	return w.w.End()
-}
-
-func (w ChannelBatchWriter) Build() (_ ChannelBatch, err error) {
-	bytes, err := w.w.Build()
-	if err != nil {
-		return
-	}
-	return NewChannelBatch(bytes), nil
-}
-
-func (w ChannelBatchWriter) Unwrap() spec.MessageWriter {
 	return w.w
 }

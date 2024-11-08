@@ -101,19 +101,15 @@ func (s *channelState) receiveMessage(msg pmpx.Message) status.Status {
 	code := msg.Code()
 
 	switch code {
-	case pmpx.Code_ChannelOpen:
-		panic("open channel message must be handled by connection")
 	case pmpx.Code_ChannelClose:
 		return s.receiveClose(msg.ChannelClose())
 	case pmpx.Code_ChannelData:
 		return s.receiveData(msg.ChannelData())
 	case pmpx.Code_ChannelWindow:
 		return s.receiveWindow(msg.ChannelWindow())
-	case pmpx.Code_ChannelBatch:
-		panic("batch channel message must be handled by connection")
 	}
 
-	return mpxErrorf("unsupported channel message, code=%v", code)
+	return mpxErrorf("message must be handled by connection, code=%v", code)
 }
 
 func (s *channelState) receiveClose(_ pmpx.ChannelClose) status.Status {

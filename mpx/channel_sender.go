@@ -30,12 +30,12 @@ func (s channelSender) sendOpen(ctx async.Context, data []byte) status.Status {
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	b := pmpx.NewChannelBatchBuilder(buf, s.ch.id)
-	b, err := b.Open(s.ch.initWindow)
+	b := pmpx.NewBatchBuilder(buf)
+	b, err := b.Open(s.ch.id, s.ch.initWindow)
 	if err != nil {
 		return mpxError(err)
 	}
-	b, err = b.Data(data)
+	b, err = b.Data(s.ch.id, data)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -56,12 +56,12 @@ func (s channelSender) sendOpenData(ctx async.Context, data []byte) status.Statu
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	b := pmpx.NewChannelBatchBuilder(buf, s.ch.id)
-	b, err := b.Open(s.ch.initWindow)
+	b := pmpx.NewBatchBuilder(buf)
+	b, err := b.Open(s.ch.id, s.ch.initWindow)
 	if err != nil {
 		return mpxError(err)
 	}
-	b, err = b.Data(data)
+	b, err = b.Data(s.ch.id, data)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -79,16 +79,16 @@ func (s channelSender) sendOpenDataClose(ctx async.Context, data []byte) status.
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	b := pmpx.NewChannelBatchBuilder(buf, s.ch.id)
-	b, err := b.Open(s.ch.initWindow)
+	b := pmpx.NewBatchBuilder(buf)
+	b, err := b.Open(s.ch.id, s.ch.initWindow)
 	if err != nil {
 		return mpxError(err)
 	}
-	b, err = b.Data(data)
+	b, err = b.Data(s.ch.id, data)
 	if err != nil {
 		return mpxError(err)
 	}
-	b, err = b.Close()
+	b, err = b.Close(s.ch.id)
 	if err != nil {
 		return mpxError(err)
 	}
@@ -140,12 +140,12 @@ func (s channelSender) sendDataClose(ctx async.Context, data []byte) status.Stat
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
 
-	b := pmpx.NewChannelBatchBuilder(buf, s.ch.id)
-	b, err := b.Data(data)
+	b := pmpx.NewBatchBuilder(buf)
+	b, err := b.Data(s.ch.id, data)
 	if err != nil {
 		return mpxError(err)
 	}
-	b, err = b.Close()
+	b, err = b.Close(s.ch.id)
 	if err != nil {
 		return mpxError(err)
 	}

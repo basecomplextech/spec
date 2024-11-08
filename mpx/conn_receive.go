@@ -27,6 +27,11 @@ func (c *conn) receiveMessage(msg pmpx.Message, insideBatch bool) status.Status 
 	code := msg.Code()
 
 	switch code {
+	case pmpx.Code_Batch:
+		if insideBatch {
+			return mpxErrorf("received nested batch messages")
+		}
+		return c.receiveBatch(msg)
 	case pmpx.Code_ChannelOpen:
 		return c.receiveOpen(msg)
 	case pmpx.Code_ChannelClose:
@@ -35,11 +40,6 @@ func (c *conn) receiveMessage(msg pmpx.Message, insideBatch bool) status.Status 
 		return c.receiveData(msg)
 	case pmpx.Code_ChannelWindow:
 		return c.receiveWindow(msg)
-	case pmpx.Code_ChannelBatch:
-		if insideBatch {
-			return mpxErrorf("received nested batch messages")
-		}
-		return c.receiveBatch(msg)
 	}
 
 	return mpxErrorf("unexpected message, code=%v", code)
@@ -104,7 +104,7 @@ func (c *conn) receiveWindow(msg pmpx.Message) status.Status {
 }
 
 func (c *conn) receiveBatch(msg pmpx.Message) status.Status {
-	batch := msg.ChannelBatch()
+	batch := msg.Batch()
 	list := batch.List()
 	num := list.Len()
 
