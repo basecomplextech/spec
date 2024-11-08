@@ -41,7 +41,7 @@ type channelState struct {
 func newChannelState(conn internalConn, client bool, id bin.Bin128, window int32) *channelState {
 	s := channelStatePool.New()
 	s.id = id
-	s.ctx = newContext(conn) // TODO: conn
+	s.ctx = newContext(conn)
 	s.conn = conn
 
 	s.client = client
@@ -58,7 +58,7 @@ func openChannelState(conn internalConn, client bool, msg pmpx.ChannelOpen) *cha
 
 	s := channelStatePool.New()
 	s.id = id
-	s.ctx = newContext(nil) // TODO: conn
+	s.ctx = newContext(conn)
 	s.conn = conn
 
 	s.client = client
