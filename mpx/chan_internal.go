@@ -9,27 +9,28 @@ import (
 	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
-var _ internalChan = (*channel2)(nil)
-
 type internalChan interface {
-	// close is called by the connection to close the channel.
-	close(st status.Status)
+	// closeConn is called by the connection to close the channel.
+	closeConn(st status.Status)
 
-	// receive is called by the connection to receive a message.
-	receive(msg pmpx.Message) status.Status
+	// receiveConn is called by the connection to receive a message.
+	receiveConn(msg pmpx.Message) status.Status
 
-	// release is called by the connection to release removed channel.
-	release()
+	// releaseConn is called by the connection to release removed channel.
+	releaseConn()
 }
 
 // internal
 
-// close is called by the connection to close the channel.
-func (ch *channel2) close(st status.Status) {
-	return
+var _ internalChan = (*channel2)(nil)
+
+// closeConn is called by the connection to close the channel.
+func (ch *channel2) closeConn(st status.Status) {
+	ch.close()
 }
 
-func (ch *channel2) receive(msg pmpx.Message) status.Status {
+// receiveConn is called by the connection to receive a message.
+func (ch *channel2) receiveConn(msg pmpx.Message) status.Status {
 	ch.recvMu.Lock()
 	defer ch.recvMu.Unlock()
 
@@ -42,8 +43,8 @@ func (ch *channel2) receive(msg pmpx.Message) status.Status {
 	return ch.receiveMessage(msg, false /* not inside batch */)
 }
 
-// release is called by the connection to release removed channel.
-func (ch *channel2) release() {
+// releaseConn is called by the connection to release removed channel.
+func (ch *channel2) releaseConn() {
 
 }
 
@@ -54,12 +55,21 @@ func (ch *channel2) receiveMessage(msg pmpx.Message, insideBatch bool) status.St
 	code := msg.Code()
 
 	switch code {
+	case pmpx.Code_ChannelOpen:
+		if !insideBatch {
+			panic("open channel message must be handled by connection")
+		}
+		return status.OK
+
 	case pmpx.Code_ChannelClose:
 		return ch.receiveClose(msg.ChannelClose())
+
 	case pmpx.Code_ChannelData:
 		return ch.receiveData(msg.ChannelData())
+
 	case pmpx.Code_ChannelWindow:
 		return ch.receiveWindow(msg.ChannelWindow())
+
 	case pmpx.Code_ChannelBatch:
 		if insideBatch {
 			return mpxErrorf("nested channel batch messages are not allowed")
@@ -71,14 +81,7 @@ func (ch *channel2) receiveMessage(msg pmpx.Message, insideBatch bool) status.St
 }
 
 func (ch *channel2) receiveClose(_ pmpx.ChannelClose) status.Status {
-	closed := ch.closed.CompareAndSwap(false, true)
-	if !closed {
-		return status.OK
-	}
-
-	// Cancel context, close receive queue
-	ch.ctx.Cancel()
-	ch.recvQueue.Close()
+	ch.close()
 	return status.OK
 }
 
@@ -115,18 +118,4 @@ func (ch *channel2) receiveBatch(msg pmpx.ChannelBatch) status.Status {
 		}
 	}
 	return status.OK
-}
-
-// window
-
-func (ch *channel2) incrementRecvWindow() int32 {
-	window := ch.recvWindow.Load()
-	if window > ch.initWindow/2 {
-		return 0
-	}
-
-	// Increment recv window
-	delta := ch.initWindow - window
-	ch.recvWindow.Add(delta)
-	return delta
 }
