@@ -32,7 +32,7 @@ type channelState struct {
 	sendMu         sync.Mutex    // enforce single sender
 	sendWindow     atomic.Int32  // remaining send window, can become negative on sending large messages
 	sendWindowWait chan struct{} // wait for send window increment
-	sender         chanSender
+	sender         channelSender
 
 	recvQueue  alloc.ByteQueue // data queue
 	recvWindow atomic.Int32    // remaining recv window, can become negative on receiving large messages

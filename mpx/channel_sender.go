@@ -11,13 +11,13 @@ import (
 	"github.com/basecomplextech/spec/proto/pmpx"
 )
 
-type chanSender struct {
+type channelSender struct {
 	ch   *channelState
 	conn internalConn
 }
 
-func newChanSender(ch *channelState, conn internalConn) chanSender {
-	return chanSender{
+func newChanSender(ch *channelState, conn internalConn) channelSender {
+	return channelSender{
 		ch:   ch,
 		conn: conn,
 	}
@@ -25,7 +25,7 @@ func newChanSender(ch *channelState, conn internalConn) chanSender {
 
 // open
 
-func (s chanSender) sendOpen(ctx async.Context, data []byte) status.Status {
+func (s channelSender) sendOpen(ctx async.Context, data []byte) status.Status {
 	// Build batch
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
@@ -51,7 +51,7 @@ func (s chanSender) sendOpen(ctx async.Context, data []byte) status.Status {
 	return status.OK
 }
 
-func (s chanSender) sendOpenData(ctx async.Context, data []byte) status.Status {
+func (s channelSender) sendOpenData(ctx async.Context, data []byte) status.Status {
 	// Build batch
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
@@ -74,7 +74,7 @@ func (s chanSender) sendOpenData(ctx async.Context, data []byte) status.Status {
 	return s.conn.send(ctx, msg)
 }
 
-func (s chanSender) sendOpenDataClose(ctx async.Context, data []byte) status.Status {
+func (s channelSender) sendOpenDataClose(ctx async.Context, data []byte) status.Status {
 	// Build batch
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
@@ -103,7 +103,7 @@ func (s chanSender) sendOpenDataClose(ctx async.Context, data []byte) status.Sta
 
 // close
 
-func (s chanSender) sendClose(ctx async.Context) status.Status {
+func (s channelSender) sendClose(ctx async.Context) status.Status {
 	// Build message
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
@@ -120,7 +120,7 @@ func (s chanSender) sendClose(ctx async.Context) status.Status {
 
 // data
 
-func (s chanSender) sendData(ctx async.Context, data []byte) status.Status {
+func (s channelSender) sendData(ctx async.Context, data []byte) status.Status {
 	// Build message
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
@@ -135,7 +135,7 @@ func (s chanSender) sendData(ctx async.Context, data []byte) status.Status {
 	return s.conn.send(ctx, msg)
 }
 
-func (s chanSender) sendDataClose(ctx async.Context, data []byte) status.Status {
+func (s channelSender) sendDataClose(ctx async.Context, data []byte) status.Status {
 	// Build batch
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
@@ -160,7 +160,7 @@ func (s chanSender) sendDataClose(ctx async.Context, data []byte) status.Status 
 
 // window
 
-func (s chanSender) sendWindow(ctx async.Context, delta int32) status.Status {
+func (s channelSender) sendWindow(ctx async.Context, delta int32) status.Status {
 	// Build message
 	buf := alloc.AcquireBuffer()
 	defer buf.Free()
