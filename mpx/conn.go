@@ -19,19 +19,26 @@ import (
 )
 
 type Conn interface {
+	// Context returns a connection context.
+	Context() ConnContext
+
+	// Close
+
 	// Close closes the connection and frees its internal resources.
 	Close() status.Status
 
 	// Closed returns a flag that is set when the connection is closed.
 	Closed() async.Flag
 
-	// Channel opens a new channel.
-	Channel(ctx async.Context) (Channel, status.Status)
-
 	// OnClosed adds a disconnect listener, and returns an unsubscribe function.
 	//
 	// The unsubscribe function does not deadlock, even if the listener is being called right now.
 	OnClosed(fn func()) (unsub func())
+
+	// Channel
+
+	// Channel opens a new channel.
+	Channel(ctx async.Context) (Channel, status.Status)
 
 	// Internal
 
@@ -72,6 +79,7 @@ type internalConn interface {
 var _ internalConn = (*conn)(nil)
 
 type conn struct {
+	ctx      *connContext
 	conn     net.Conn
 	client   bool
 	delegate connDelegate
@@ -108,7 +116,7 @@ func newConn(
 	logger logging.Logger,
 	opts Options,
 ) *conn {
-	return &conn{
+	c := &conn{
 		conn:     nc,
 		client:   client,
 		delegate: delegate,
@@ -126,7 +134,16 @@ func newConn(
 		channels:        asyncmap.NewAtomicMap[bin.Bin128, internalChannel](),
 		closedListeners: make(map[int64]func()),
 	}
+	c.ctx = newConnContext(c)
+	return c
 }
+
+// Context returns a connection context.
+func (c *conn) Context() ConnContext {
+	return c.ctx
+}
+
+// Close
 
 // Close closes the connection and frees its internal resources.
 func (c *conn) Close() status.Status {
@@ -141,6 +158,22 @@ func (c *conn) Close() status.Status {
 func (c *conn) Closed() async.Flag {
 	return c.closed
 }
+
+// OnClosed adds a disconnection listener, and returns an unsubscribe function.
+func (c *conn) OnClosed(fn func()) (unsub func()) {
+	// Add listener
+	id := c.addClosed(fn)
+	if id == 0 {
+		return func() {}
+	}
+
+	// Return unsubscribe
+	return func() {
+		c.removeClosed(id)
+	}
+}
+
+// Channel
 
 // Channel opens a new channel.
 func (c *conn) Channel(ctx async.Context) (Channel, status.Status) {
@@ -162,20 +195,6 @@ func (c *conn) Channel(ctx async.Context) (Channel, status.Status) {
 			return nil, statusConnClosed
 		case <-c.handshaked.Wait():
 		}
-	}
-}
-
-// OnClosed adds a disconnection listener, and returns an unsubscribe function.
-func (c *conn) OnClosed(fn func()) (unsub func()) {
-	// Add listener
-	id := c.addClosed(fn)
-	if id == 0 {
-		return func() {}
-	}
-
-	// Return unsubscribe
-	return func() {
-		c.removeClosed(id)
 	}
 }
 
@@ -265,6 +284,7 @@ func (c *conn) close() {
 	defer c.delegate.onConnClosed(c)
 	defer c.closeChannels()
 
+	c.ctx.Cancel()
 	c.conn.Close()
 	c.closed.Set()
 	c.writeq.Close()

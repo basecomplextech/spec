@@ -15,6 +15,9 @@ import (
 )
 
 type Channel interface {
+	// Conn returns a channel connection.
+	Conn() Conn
+
 	// Context returns a channel context.
 	Context() Context
 
@@ -98,6 +101,14 @@ func openChannel(conn internalConn, client bool, msg pmpx.ChannelOpen) *channel 
 		_, _ = s.recvQueue.Write(data) // receive queue is unbounded, ignore status
 	}
 	return ch
+}
+
+// Conn returns a channel connection.
+func (ch *channel) Conn() Conn {
+	s := ch.acquire()
+	defer ch.release()
+
+	return s.conn
 }
 
 // Context returns a channel context.

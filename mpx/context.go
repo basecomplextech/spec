@@ -6,16 +6,12 @@ package mpx
 
 import "github.com/basecomplextech/baselibrary/async"
 
+// Context is a channel context.
 type Context interface {
 	async.Context
 
-	// Disconnected returns a connection disconnected flag.
-	Disconnected() async.Flag
-
-	// OnDisconnected adds a disconnect listener, and returns an unsubscribe function.
-	//
-	// The unsubscribe function does not deadlock, even if the listener is being called right now.
-	OnDisconnected(fn func()) (unsub func())
+	// Conn returns a connection context.
+	Conn() ConnContext
 }
 
 // TestContext returns a test context without a connection.
@@ -48,20 +44,7 @@ func newContext(conn internalConn) *context {
 	}
 }
 
-// Disconnected returns a connection disconnected flag.
-func (c *context) Disconnected() async.Flag {
-	if c.conn == nil {
-		return async.UnsetFlag()
-	}
-	return c.conn.Closed()
-}
-
-// OnDisconnected adds a disconnect listener, and returns an unsubscribe function.
-func (c *context) OnDisconnected(fn func()) (unsub func()) {
-	if c.conn == nil {
-		fn()
-		return func() {}
-	}
-
-	return c.conn.OnClosed(fn)
+// Conn returns a connection context.
+func (c *context) Conn() ConnContext {
+	return c.conn.Context()
 }
