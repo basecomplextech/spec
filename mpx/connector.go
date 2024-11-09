@@ -62,15 +62,5 @@ func (c *connectorImpl) connect(ctx async.Context, addr string) (internalConn, s
 
 	// Make connection
 	conn := newConn(nc, true /* client */, c.delegate, handler, c.logger, c.opts)
-	go func() {
-		defer func() {
-			if e := recover(); e != nil {
-				st := status.Recover(e)
-				c.logger.ErrorStatus("Conn panic", st)
-			}
-		}()
-
-		conn.run()
-	}()
 	return conn, status.OK
 }

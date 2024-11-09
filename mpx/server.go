@@ -204,7 +204,15 @@ func (s *server) handle(nc net.Conn) {
 			}
 		}()
 
-		conn.run()
+		st := conn.run()
+		switch st.Code {
+		case status.CodeOK,
+			status.CodeCancelled,
+			status.CodeClosed,
+			status.CodeEnd:
+		default:
+			s.logger.ErrorStatus("Connection error", st)
+		}
 	}()
 }
 

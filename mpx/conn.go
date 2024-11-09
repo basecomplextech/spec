@@ -50,10 +50,8 @@ type Conn interface {
 func Connect(ctx async.Context, addr string, logger logging.Logger, opts Options) (
 	Conn, status.Status) {
 
-	opts = opts.clean()
 	dialer := newDialer(opts)
-	delegate := noopConnDelegate{}
-	return newConnector(dialer, delegate, logger, opts).connect(ctx, addr)
+	return ConnectDialer(ctx, addr, dialer, logger, opts)
 }
 
 // ConnectDialer dials an address and returns a connection.
@@ -62,13 +60,39 @@ func ConnectDialer(ctx async.Context, addr string, dialer *net.Dialer, logger lo
 
 	opts = opts.clean()
 	delegate := noopConnDelegate{}
-	return newConnector(dialer, delegate, logger, opts).connect(ctx, addr)
+
+	conn, st := newConnector(dialer, delegate, logger, opts).connect(ctx, addr)
+	if !st.OK() {
+		return nil, st
+	}
+
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				st := status.Recover(e)
+				logger.ErrorStatus("Connection panic", st)
+			}
+		}()
+
+		st := conn.run()
+		switch st.Code {
+		case status.CodeOK,
+			status.CodeCancelled,
+			status.CodeClosed:
+		default:
+			logger.ErrorStatus("Connection error", st)
+		}
+	}()
+	return conn, status.OK
 }
 
 // internal
 
 type internalConn interface {
 	Conn
+
+	// run runs the main connection loop.
+	run() status.Status
 
 	// send sends a message to the connection, or returns a connection closed or an end status.
 	send(ctx async.Context, msg pmpx.Message) status.Status
@@ -207,6 +231,32 @@ func (c *conn) Free() {
 
 // internal
 
+// run runs the main connection loop.
+func (c *conn) run() status.Status {
+	defer c.free()
+	defer c.close()
+
+	// Handshake, negotiate
+	st := c.handshake()
+	if !st.OK() {
+		return st
+	}
+
+	// Run loops
+	recv := async.Go(c.receiveLoop)
+	send := async.Go(c.sendLoop)
+	defer async.StopWaitAll(recv, send)
+	defer c.close()
+
+	// Await exit
+	select {
+	case <-recv.Wait():
+		return recv.Status()
+	case <-send.Wait():
+		return send.Status()
+	}
+}
+
 // send write an outgoing message to the write queue.
 func (c *conn) send(ctx async.Context, msg pmpx.Message) status.Status {
 	b := msg.Unwrap().Raw()
@@ -231,49 +281,6 @@ func (c *conn) send(ctx async.Context, msg pmpx.Message) status.Status {
 }
 
 // private
-
-// run is the main run loop of the connection.
-func (c *conn) run() {
-	defer c.free()
-	defer c.close()
-
-	// Negotiate protocol
-	st := c.handshake()
-	switch st.Code {
-	case status.CodeOK:
-	case status.CodeCancelled,
-		status.CodeEnd,
-		status.CodeClosed:
-		return
-	default:
-		c.logger.ErrorStatus("Conn error", st)
-		return
-	}
-
-	// Run loops
-	recv := async.Go(c.receiveLoop)
-	send := async.Go(c.sendLoop)
-	defer async.StopWaitAll(recv, send)
-	defer c.close()
-
-	// Await exit
-	select {
-	case <-recv.Wait():
-		st = recv.Status()
-	case <-send.Wait():
-		st = send.Status()
-	}
-
-	// Maybe log error
-	switch st.Code {
-	case status.CodeOK,
-		status.CodeCancelled,
-		status.CodeEnd,
-		status.CodeClosed:
-	default:
-		c.logger.ErrorStatus("Conn error", st)
-	}
-}
 
 func (c *conn) close() {
 	if c.closed.IsSet() {

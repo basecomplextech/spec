@@ -384,6 +384,7 @@ func (c *client) connectRecover(ctx async.Context) (_ internalConn, st status.St
 	if !st.OK() {
 		return nil, st
 	}
+	go c.handle(conn)
 
 	// Add connection
 	c.mu.Lock()
@@ -401,6 +402,27 @@ func (c *client) connectRecover(ctx async.Context) (_ internalConn, st status.St
 	c.disconnected_.Unset()
 	return conn, status.OK
 }
+
+func (c *client) handle(conn internalConn) {
+	defer func() {
+		if e := recover(); e != nil {
+			st := status.Recover(e)
+			c.logger.ErrorStatus("Connection panic", st)
+		}
+	}()
+
+	st := conn.run()
+	switch st.Code {
+	case status.CodeOK,
+		status.CodeCancelled,
+		status.CodeClosed,
+		status.CodeEnd:
+	default:
+		c.logger.ErrorStatus("Connection error", st)
+	}
+}
+
+// util
 
 // reconnectTimeout returns an exponential backoff timeout for reconnecting.
 func reconnectTimeout(attempt int) time.Duration {
