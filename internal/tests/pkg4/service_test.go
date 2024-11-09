@@ -31,7 +31,7 @@ func (s *testService) Method(ctx rpc.Context) status.Status {
 	return status.OK
 }
 
-func (s *testService) Method0(ctx rpc.Context, req ServiceMethod0Request) status.Status {
+func (s *testService) Method0(ctx rpc.ConnContext, req ServiceMethod0Request) status.Status {
 	return status.OK
 }
 

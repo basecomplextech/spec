@@ -8,6 +8,9 @@ import "github.com/basecomplextech/baselibrary/async"
 
 type TestContext interface {
 	Context
+
+	// TestConn returns the underlying test connection context.
+	TestConn() TestConnContext
 }
 
 // TestNewContext returns a test context with a test connection.
@@ -38,5 +41,10 @@ func newTestContext(super async.Context) *testContext {
 
 // Conn returns a connection context.
 func (x *testContext) Conn() ConnContext {
+	return x.conn
+}
+
+// TestConn returns the underlying test connection context.
+func (x *testContext) TestConn() TestConnContext {
 	return x.conn
 }

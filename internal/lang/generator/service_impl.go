@@ -209,8 +209,15 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 		w.line()
 	}
 
-	// Declare result
+	// Call context
 	w.line(`// Call method`)
+	ctx := "ctx"
+	if m.Oneway {
+		ctx = "ctx1"
+		w.line("ctx1 := ctx.Conn()")
+	}
+
+	// Declare result
 	switch {
 	case m.Oneway:
 		w.write(`_ = `)
@@ -225,15 +232,15 @@ func (w *serviceImplWriter) method(def *model.Definition, m *model.Method) error
 	// Call method
 	switch {
 	case m.Channel != nil:
-		w.linef(`h.service.%v(ctx, ch1)`, toUpperCamelCase(m.Name))
+		w.linef(`h.service.%v(%v, ch1)`, toUpperCamelCase(m.Name), ctx)
 	case m.Request != nil:
-		w.writef(`h.service.%v(ctx, in`, toUpperCamelCase(m.Name))
+		w.writef(`h.service.%v(%v, in`, toUpperCamelCase(m.Name), ctx)
 		if m.Subservice != nil {
 			w.write(`, next`)
 		}
 		w.line(`)`)
 	default:
-		w.writef(`h.service.%v(ctx`, toUpperCamelCase(m.Name))
+		w.writef(`h.service.%v(%v`, toUpperCamelCase(m.Name), ctx)
 		if m.Subservice != nil {
 			w.write(`, next`)
 		}

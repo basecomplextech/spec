@@ -62,15 +62,19 @@ func (w *serviceWriter) method_input(def *model.Definition, m *model.Method) err
 	name := toUpperCamelCase(m.Name)
 	w.writef(`%v`, name)
 
-	switch {
-	default:
+	if m.Oneway {
+		w.write(`(ctx rpc.ConnContext`)
+	} else {
 		w.write(`(ctx rpc.Context`)
+	}
+
+	switch {
 	case m.Type == model.MethodType_Channel:
 		channel := serviceChannel_name(m)
-		w.writef(`(ctx rpc.Context, ch %v`, channel)
+		w.writef(`, ch %v`, channel)
 	case m.Request != nil:
 		typeName := typeName(m.Request)
-		w.writef(`(ctx rpc.Context, req %v`, typeName)
+		w.writef(`, req %v`, typeName)
 	}
 
 	if m.Type == model.MethodType_Subservice {

@@ -19,6 +19,9 @@ type (
 	// Context is an RPC context, which is an alias for mpx.Context.
 	Context = mpx.Context
 
+	// ConnContext is an RPC connection context, which is an alias for mpx.ConnContext.
+	ConnContext = mpx.ConnContext
+
 	// Options is RPC options, which are a type alias for mpx.Options.
 	Options = mpx.Options
 )
