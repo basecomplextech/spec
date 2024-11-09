@@ -26,21 +26,21 @@ func ClosedContext() Context {
 var _ Context = (*context)(nil)
 
 type context struct {
-	async.Context
+	async.CancelContext
 	conn internalConn
 }
 
 var closedContext = func() *context {
 	return &context{
-		Context: async.CancelledContext(),
-		conn:    nil,
+		CancelContext: async.CancelledContext(),
+		conn:          nil,
 	}
 }()
 
 func newContext(conn internalConn) *context {
 	return &context{
-		Context: async.NewContext(),
-		conn:    conn,
+		CancelContext: async.NewContext(),
+		conn:          conn,
 	}
 }
 

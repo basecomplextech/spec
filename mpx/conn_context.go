@@ -24,14 +24,14 @@ type ConnContext interface {
 var _ ConnContext = (*connContext)(nil)
 
 type connContext struct {
-	async.Context
+	async.CancelContext
 	conn internalConn
 }
 
 func newConnContext(conn internalConn) *connContext {
 	return &connContext{
-		Context: async.NewContext(),
-		conn:    conn,
+		CancelContext: async.NewContext(),
+		conn:          conn,
 	}
 }
 

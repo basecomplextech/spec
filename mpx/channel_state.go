@@ -19,7 +19,7 @@ import (
 
 type channelState struct {
 	id   bin.Bin128
-	ctx  Context
+	ctx  *context
 	conn internalConn
 
 	client     bool  // client or server
