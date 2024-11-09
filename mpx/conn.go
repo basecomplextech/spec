@@ -6,7 +6,6 @@ package mpx
 
 import (
 	"net"
-	"sync"
 	"sync/atomic"
 
 	"github.com/basecomplextech/baselibrary/alloc"
@@ -31,8 +30,8 @@ type Conn interface {
 	Closed() async.Flag
 
 	// OnClosed adds a disconnect listener, and returns an unsubscribe function.
-	//
-	// The unsubscribe function does not deadlock, even if the listener is being called right now.
+	// The listener is called immediately if the connection is already closed.
+	// The unsubscribe does not deadlock, even if the listener is being called right now.
 	OnClosed(fn func()) (unsub func())
 
 	// Channel
@@ -78,7 +77,8 @@ func ConnectDialer(ctx async.Context, addr string, dialer *net.Dialer, logger lo
 		switch st.Code {
 		case status.CodeOK,
 			status.CodeCancelled,
-			status.CodeClosed:
+			status.CodeClosed,
+			status.CodeEnd:
 		default:
 			logger.ErrorStatus("Connection error", st)
 		}
@@ -125,11 +125,9 @@ type conn struct {
 	channelsClosed  atomic.Bool
 	channelsReached atomic.Bool // number of channels reached the target number, notify delegate once
 
-	// close listeners
-	closedMu        sync.Mutex
-	closedSeq       int64
-	closedFlag      bool
-	closedListeners map[int64]func()
+	// closed listeners
+	closedListeners   asyncmap.AtomicMap[int64, func()]
+	closedListenerSeq atomic.Int64
 }
 
 func newConn(
@@ -156,7 +154,7 @@ func newConn(
 		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
 
 		channels:        asyncmap.NewAtomicMap[bin.Bin128, internalChannel](),
-		closedListeners: make(map[int64]func()),
+		closedListeners: asyncmap.NewAtomicMap[int64, func()](),
 	}
 	c.ctx = newConnContext(c)
 	return c
@@ -183,11 +181,23 @@ func (c *conn) Closed() async.Flag {
 	return c.closed
 }
 
-// OnClosed adds a disconnection listener, and returns an unsubscribe function.
+// OnClosed adds a disconnect listener, and returns an unsubscribe function.
+// The listener is called immediately if the connection is already closed.
+// The unsubscribe does not deadlock, even if the listener is being called right now.
 func (c *conn) OnClosed(fn func()) (unsub func()) {
+	// Ensure fn is called only once
+	called := &atomic.Bool{}
+	fn1 := func() {
+		ok := called.CompareAndSwap(false, true)
+		if ok {
+			fn()
+		}
+	}
+
 	// Add listener
-	id := c.addClosed(fn)
+	id := c.addClosed(fn1)
 	if id == 0 {
+		fn1()
 		return func() {}
 	}
 
@@ -404,43 +414,31 @@ func (c *conn) maybeChannelsReached() {
 // close listeners
 
 func (c *conn) addClosed(fn func()) int64 {
-	c.closedMu.Lock()
-	defer c.closedMu.Unlock()
-
-	if c.closedFlag {
+	// Check if closed
+	if c.closed.IsSet() {
 		return 0
 	}
 
-	c.closedSeq++
-	id := c.closedSeq
+	// Add listener
+	id := c.closedListenerSeq.Add(1)
+	c.closedListeners.Set(id, fn)
 
-	c.closedListeners[id] = fn
+	// Check again if closed
+	if c.closed.IsSet() {
+		c.closedListeners.Delete(id)
+		return 0
+	}
 	return id
 }
 
 func (c *conn) removeClosed(id int64) {
-	c.closedMu.Lock()
-	defer c.closedMu.Unlock()
-
-	if c.closedFlag {
-		return
-	}
-
-	delete(c.closedListeners, id)
+	c.closedListeners.Delete(id)
 }
 
 func (c *conn) notifyClosed() {
-	c.closedMu.Lock()
-	if c.closedFlag {
-		c.closedMu.Unlock()
-		return
-	}
-	c.closedFlag = true
-	c.closedMu.Unlock()
-
-	// Notify outside of lock to avoid deadlocks
-	for _, l := range c.closedListeners {
-		l()
-	}
-	clear(c.closedListeners)
+	c.closedListeners.Range(func(_ int64, fn func()) bool {
+		fn()
+		return true
+	})
+	c.closedListeners.Clear()
 }
