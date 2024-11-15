@@ -77,7 +77,7 @@ func (c *conn) sendHandle(msg pmpx.Message) status.Status {
 		// Remove and free channel
 		id := msg.ChannelClose().Id()
 
-		ch, ok := c.channels.Pop(id)
+		ch, ok := c.channels.Delete(id)
 		if ok {
 			ch.free()
 		}

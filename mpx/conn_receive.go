@@ -72,7 +72,7 @@ func (c *conn) receiveClose(msg pmpx.Message) status.Status {
 	m := msg.ChannelClose()
 	id := m.Id()
 
-	ch, ok := c.channels.Pop(id)
+	ch, ok := c.channels.Delete(id)
 	if !ok {
 		return status.OK
 	}
