@@ -13,10 +13,9 @@ type ConnContext interface {
 	// Disconnected returns a connection disconnected flag.
 	Disconnected() async.Flag
 
-	// OnDisconnected adds a disconnect listener, and returns an unsubscribe function.
-	//
-	// The unsubscribe function does not deadlock, even if the listener is being called right now.
-	OnDisconnected(fn func()) (unsub func())
+	// OnDisconnected adds a disconnect listener, and returns an unsubscribe function,
+	// or false if the connection is already closed.
+	OnDisconnected(fn func()) (unsub func(), _ bool)
 }
 
 // internal
@@ -43,11 +42,11 @@ func (c *connContext) Disconnected() async.Flag {
 	return c.conn.Closed()
 }
 
-// OnDisconnected adds a disconnect listener, and returns an unsubscribe function.
-func (c *connContext) OnDisconnected(fn func()) (unsub func()) {
+// OnDisconnected adds a disconnect listener, and returns an unsubscribe function,
+// or false if the connection is already closed.
+func (c *connContext) OnDisconnected(fn func()) (unsub func(), _ bool) {
 	if c.conn == nil {
-		fn()
-		return func() {}
+		return nil, false
 	}
 
 	return c.conn.OnClosed(fn)

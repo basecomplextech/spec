@@ -385,7 +385,7 @@ func BenchmarkConn_OnClosed(b *testing.B) {
 
 	fn := func() {}
 	for i := 0; i < b.N; i++ {
-		unsub := conn.OnClosed(fn)
+		unsub, _ := conn.OnClosed(fn)
 		unsub()
 	}
 
@@ -414,7 +414,7 @@ func BenchmarkConn_OnClosed_Parallel(b *testing.B) {
 	b.RunParallel(func(p *testing.PB) {
 		fn := func() {}
 		for p.Next() {
-			unsub := conn.OnClosed(fn)
+			unsub, _ := conn.OnClosed(fn)
 			unsub()
 		}
 	})

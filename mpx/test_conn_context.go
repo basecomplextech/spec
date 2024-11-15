@@ -52,14 +52,19 @@ func (x *testConnContext) Disconnected() async.Flag {
 }
 
 // OnDisconnected adds a disconnect listener, and returns an unsubscribe function.
-func (x *testConnContext) OnDisconnected(fn func()) (unsub func()) {
+func (x *testConnContext) OnDisconnected(fn func()) (unsub func(), _ bool) {
+	if x.disconnected.IsSet() {
+		return nil, false
+	}
+
 	id := x.disconnectSeq
 	x.disconnectSeq++
 	x.disconnectListeners[id] = fn
 
-	return func() {
+	unsub = func() {
 		delete(x.disconnectListeners, id)
 	}
+	return unsub, true
 }
 
 // OnDisconnectedNum returns the number of disconnect listeners.

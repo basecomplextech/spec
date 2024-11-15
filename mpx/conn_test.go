@@ -82,7 +82,7 @@ func TestConn_Free__should_notify_listeners(t *testing.T) {
 	defer conn.Free()
 
 	notified := make(chan struct{})
-	unsub := conn.OnClosed(func() {
+	unsub, _ := conn.OnClosed(func() {
 		defer close(notified)
 	})
 	defer unsub()

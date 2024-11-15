@@ -29,10 +29,9 @@ type Conn interface {
 	// Closed returns a flag that is set when the connection is closed.
 	Closed() async.Flag
 
-	// OnClosed adds a disconnect listener, and returns an unsubscribe function.
-	// The listener is called immediately if the connection is already closed.
-	// The unsubscribe does not deadlock, even if the listener is being called right now.
-	OnClosed(fn func()) (unsub func())
+	// OnClosed adds a disconnect listener, and returns an unsubscribe function,
+	// or false if the connection is already closed.
+	OnClosed(fn func()) (unsub func(), _ bool)
 
 	// Channel
 
@@ -181,10 +180,9 @@ func (c *conn) Closed() async.Flag {
 	return c.closed
 }
 
-// OnClosed adds a disconnect listener, and returns an unsubscribe function.
-// The listener is called immediately if the connection is already closed.
-// The unsubscribe does not deadlock, even if the listener is being called right now.
-func (c *conn) OnClosed(fn func()) (unsub func()) {
+// OnClosed adds a disconnect listener, and returns an unsubscribe function,
+// or false if the connection is already closed.
+func (c *conn) OnClosed(fn func()) (unsub func(), _ bool) {
 	// Ensure fn is called only once
 	called := &atomic.Bool{}
 	fn1 := func() {
@@ -197,14 +195,14 @@ func (c *conn) OnClosed(fn func()) (unsub func()) {
 	// Add listener
 	id := c.addClosed(fn1)
 	if id == 0 {
-		fn1()
-		return func() {}
+		return nil, false
 	}
 
 	// Return unsubscribe
-	return func() {
+	unsub = func() {
 		c.removeClosed(id)
 	}
+	return unsub, true
 }
 
 // Channel
