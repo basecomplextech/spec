@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	messageFieldSmallSize = 1 + 2 // tag(1) + offset(2)
-	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
+	messageFieldSize_small = 1 + 2 // tag(1) + offset(2)
+	messageFieldSize_big   = 2 + 4 // tag(2) + offset(4)
 )
 
 type MessageTable struct {
@@ -105,9 +105,9 @@ func isBigMessage(table []MessageField) bool {
 func (t messageTable) count(big bool) int {
 	var size int
 	if big {
-		size = messageFieldBigSize
+		size = messageFieldSize_big
 	} else {
-		size = messageFieldSmallSize
+		size = messageFieldSize_small
 	}
 	return len(t) / size
 }
@@ -120,11 +120,11 @@ func (t messageTable) count(big bool) int {
 // reduces the function call from 13.5 ns/op to 7.5 ns/op for a 100-field table.
 // See benchmarks.
 func (t messageTable) offset_big(tag uint16) int {
-	if len(t) < messageFieldBigSize {
+	if len(t) < messageFieldSize_big {
 		return -1
 	}
 
-	n := len(t) / messageFieldBigSize
+	n := len(t) / messageFieldSize_big
 	ptr := unsafe.Pointer(&t[0])
 
 	// Binary search table
@@ -134,7 +134,7 @@ func (t messageTable) offset_big(tag uint16) int {
 		middle := int(uint(left+right) >> 1) // avoid overflow
 
 		// Offset
-		off := middle * messageFieldBigSize
+		off := middle * messageFieldSize_big
 		ptr1 := unsafe.Add(ptr, off)
 
 		// Current tag (uint16)
@@ -170,7 +170,7 @@ func (t messageTable) offset_big(tag uint16) int {
 }
 
 func (t messageTable) offset_big_safe(tag uint16) int {
-	size := messageFieldBigSize
+	size := messageFieldSize_big
 	n := len(t) / size
 
 	// Binary search table
@@ -209,11 +209,11 @@ func (t messageTable) offset_big_safe(tag uint16) int {
 // reduces the function call from 10 ns/op to 6.5 ns/op for a 100-field table.
 // See benchmarks.
 func (t messageTable) offset_small(tag uint16) int {
-	if len(t) < messageFieldSmallSize {
+	if len(t) < messageFieldSize_small {
 		return -1
 	}
 
-	n := len(t) / messageFieldSmallSize
+	n := len(t) / messageFieldSize_small
 	ptr := unsafe.Pointer(&t[0])
 
 	// Binary search table
@@ -223,7 +223,7 @@ func (t messageTable) offset_small(tag uint16) int {
 		middle := int(uint(left+right) >> 1) // avoid overflow
 
 		// Offset
-		off := middle * messageFieldSmallSize
+		off := middle * messageFieldSize_small
 		ptr1 := unsafe.Add(ptr, off)
 
 		// Current tag (uint8)
@@ -249,7 +249,7 @@ func (t messageTable) offset_small(tag uint16) int {
 }
 
 func (t messageTable) offset_small_safe(tag uint16) int {
-	size := messageFieldSmallSize
+	size := messageFieldSize_small
 	n := len(t) / size
 
 	// Binary search table
@@ -285,7 +285,7 @@ func (t messageTable) offset_small_safe(tag uint16) int {
 // offsetByIndex
 
 func (t messageTable) offsetByIndex_big(i int) int {
-	size := messageFieldBigSize
+	size := messageFieldSize_big
 	n := len(t) / size
 
 	// Check count
@@ -304,7 +304,7 @@ func (t messageTable) offsetByIndex_big(i int) int {
 }
 
 func (t messageTable) offsetByIndex_small(i int) int {
-	size := messageFieldSmallSize
+	size := messageFieldSize_small
 	n := len(t) / size
 
 	// Check count
@@ -325,7 +325,7 @@ func (t messageTable) offsetByIndex_small(i int) int {
 // field
 
 func (t messageTable) field_big(i int) (f MessageField, ok bool) {
-	size := messageFieldBigSize
+	size := messageFieldSize_big
 	n := len(t) / size
 
 	// Check count
@@ -349,7 +349,7 @@ func (t messageTable) field_big(i int) (f MessageField, ok bool) {
 }
 
 func (t messageTable) field_small(i int) (f MessageField, ok bool) {
-	size := messageFieldSmallSize
+	size := messageFieldSize_small
 	n := len(t) / size
 
 	// Check count
