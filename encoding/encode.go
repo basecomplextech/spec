@@ -197,9 +197,9 @@ func EncodeStruct(b buffer.Buffer, dataSize int) (int, error) {
 	return n, nil
 }
 
-// ListMeta
+// ListTable
 
-func EncodeListMeta(b buffer.Buffer, dataSize int, table []ListElement) (int, error) {
+func EncodeListTable(b buffer.Buffer, dataSize int, table []ListElement) (int, error) {
 	if dataSize > core.MaxSize {
 		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", core.MaxSize, dataSize)
 	}

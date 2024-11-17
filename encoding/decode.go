@@ -796,9 +796,9 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 	return int(dataSize_), size, nil
 }
 
-// ListMeta
+// ListTable
 
-func DecodeListMeta(b []byte) (_ ListMeta, size int, err error) {
+func DecodeListTable(b []byte) (_ ListTable, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -854,12 +854,12 @@ func DecodeListMeta(b []byte) (_ ListMeta, size int, err error) {
 	size += int(dataSize)
 
 	// Done
-	meta := ListMeta{
+	t := ListTable{
 		table: table,
 		data:  dataSize,
 		big:   big,
 	}
-	return meta, size, nil
+	return t, size, nil
 }
 
 func decodeListTable(b []byte, size uint32, big bool) (_ listTable, err error) {

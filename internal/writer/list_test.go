@@ -53,7 +53,7 @@ func TestListWriter__should_write_list(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, n, err := encoding.DecodeListMeta(b)
+	_, n, err := encoding.DecodeListTable(b)
 	if err != nil {
 		t.Fatal(err)
 	}

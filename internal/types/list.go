@@ -12,7 +12,7 @@ import (
 
 // List is a raw list of elements.
 type List struct {
-	meta  encoding.ListMeta
+	table encoding.ListTable
 	bytes []byte
 }
 
@@ -50,14 +50,14 @@ func ParseList(b []byte) (l List, size int, err error) {
 }
 
 func decodeList(b []byte) (l List, size int, err error) {
-	meta, size, err := encoding.DecodeListMeta(b)
+	table, size, err := encoding.DecodeListTable(b)
 	if err != nil {
 		return List{}, 0, err
 	}
 	bytes := b[len(b)-size:]
 
 	l = List{
-		meta:  meta,
+		table: table,
 		bytes: bytes,
 	}
 	return l, size, nil
@@ -65,12 +65,12 @@ func decodeList(b []byte) (l List, size int, err error) {
 
 // Len returns the number of elements in the list.
 func (l List) Len() int {
-	return l.meta.Len()
+	return l.table.Len()
 }
 
 // Empty returns true if bytes are empty or list has no elements.
 func (l List) Empty() bool {
-	return len(l.bytes) == 0 || l.meta.Len() == 0
+	return len(l.bytes) == 0 || l.table.Len() == 0
 }
 
 // Raw returns the underlying list bytes.
@@ -82,12 +82,12 @@ func (l List) Raw() []byte {
 
 // Get returns an element at index i, panics on out of range.
 func (l List) Get(i int) Value {
-	start, end := l.meta.Offset(i)
+	start, end := l.table.Offset(i)
 	if start < 0 {
 		panic(fmt.Sprintf("index out of range: %d", i))
 	}
 
-	size := l.meta.DataSize()
+	size := l.table.DataSize()
 	if end > int(size) {
 		return Value{}
 	}
@@ -96,12 +96,12 @@ func (l List) Get(i int) Value {
 
 // GetBytes returns element bytes at index i, panics on out of range.
 func (l List) GetBytes(i int) []byte {
-	start, end := l.meta.Offset(i)
+	start, end := l.table.Offset(i)
 	if start < 0 {
 		panic(fmt.Sprintf("index out of range: %d", i))
 	}
 
-	size := l.meta.DataSize()
+	size := l.table.DataSize()
 	if end > int(size) {
 		return nil
 	}

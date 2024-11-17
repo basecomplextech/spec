@@ -14,7 +14,7 @@ const (
 	listElementBigSize   = 4
 )
 
-type ListMeta struct {
+type ListTable struct {
 	table listTable
 
 	data uint32 // data size
@@ -22,21 +22,21 @@ type ListMeta struct {
 }
 
 // Len returns the number of elements in the table.
-func (m ListMeta) Len() int {
-	return m.table.len(m.big)
+func (t ListTable) Len() int {
+	return t.table.len(t.big)
 }
 
 // DataSize returns the size of the list data.
-func (m ListMeta) DataSize() uint32 {
-	return m.data
+func (t ListTable) DataSize() uint32 {
+	return t.data
 }
 
 // Offset returns an element start/end by an index or -1/-1.
-func (m ListMeta) Offset(i int) (int, int) {
-	if m.big {
-		return m.table.offset_big(i)
+func (t ListTable) Offset(i int) (int, int) {
+	if t.big {
+		return t.table.offset_big(i)
 	} else {
-		return m.table.offset_small(i)
+		return t.table.offset_small(i)
 	}
 }
 

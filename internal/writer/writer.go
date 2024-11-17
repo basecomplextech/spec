@@ -352,7 +352,7 @@ func (w *writer) endList() ([]byte, error) {
 	table := w.elements.pop(list.tableStart)
 
 	// Encode list
-	if _, err := encoding.EncodeListMeta(w.buf, bodySize, table); err != nil {
+	if _, err := encoding.EncodeListTable(w.buf, bodySize, table); err != nil {
 		return nil, w.fail(err)
 	}
 

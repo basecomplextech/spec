@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testEncodeListMeta(t tests.T, dataSize int, elements []ListElement) []byte {
+func testEncodeListTable(t tests.T, dataSize int, elements []ListElement) []byte {
 	buf := buffer.New()
 	buf.Grow(dataSize)
 
-	_, err := EncodeListMeta(buf, dataSize, elements)
+	_, err := EncodeListTable(buf, dataSize, elements)
 	if err != nil {
 		t.Fatal(err)
 	}
