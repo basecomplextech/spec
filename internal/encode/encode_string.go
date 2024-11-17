@@ -2,7 +2,7 @@
 // Use of this software is governed by the MIT License
 // that can be found in the LICENSE file.
 
-package encoding
+package encode
 
 import (
 	"fmt"
@@ -11,16 +11,16 @@ import (
 	"github.com/basecomplextech/spec/internal/format"
 )
 
-func EncodeBytes(b buffer.Buffer, v []byte) (int, error) {
-	size := len(v)
+func EncodeString(b buffer.Buffer, s string) (int, error) {
+	size := len(s)
 	if size > format.MaxSize {
-		return 0, fmt.Errorf("encode: bytes too large, max size=%d, actual size=%d", format.MaxSize, size)
+		return 0, fmt.Errorf("encode: string too large, max size=%d, actual size=%d", format.MaxSize, size)
 	}
 
-	p := b.Grow(size)
-	copy(p, v)
-	n := size
+	n := size + 1 // plus zero byte
+	p := b.Grow(n)
+	copy(p, s)
 
-	n += encodeSizeType(b, uint32(size), format.TypeBytes)
+	n += encodeSizeType(b, uint32(size), format.TypeString)
 	return n, nil
 }

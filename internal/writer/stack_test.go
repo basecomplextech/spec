@@ -9,7 +9,6 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/basecomplextech/spec/encoding"
 	"github.com/basecomplextech/spec/internal/format"
 	"github.com/stretchr/testify/require"
 )
@@ -25,13 +24,13 @@ func TestWriterState_Size__should_be_lte_1kb(t *testing.T) {
 
 func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 	matrix := [][]format.ListElement{
-		encoding.TestElementsN(1),
-		encoding.TestElementsN(10),
-		encoding.TestElementsN(100),
-		encoding.TestElementsN(10),
-		encoding.TestElementsN(1),
-		encoding.TestElementsN(0),
-		encoding.TestElementsN(3),
+		format.TestElementsN(1),
+		format.TestElementsN(10),
+		format.TestElementsN(100),
+		format.TestElementsN(10),
+		format.TestElementsN(1),
+		format.TestElementsN(0),
+		format.TestElementsN(3),
 	}
 
 	buffer := listStack{}
@@ -65,13 +64,13 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 
 func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t *testing.T) {
 	matrix := [][]format.MessageField{
-		encoding.TestFieldsN(1),
-		encoding.TestFieldsN(10),
-		encoding.TestFieldsN(100),
-		encoding.TestFieldsN(10),
-		encoding.TestFieldsN(1),
-		encoding.TestFieldsN(0),
-		encoding.TestFieldsN(3),
+		format.TestFieldsN(1),
+		format.TestFieldsN(10),
+		format.TestFieldsN(100),
+		format.TestFieldsN(10),
+		format.TestFieldsN(1),
+		format.TestFieldsN(0),
+		format.TestFieldsN(3),
 	}
 
 	buffer := messageStack{}

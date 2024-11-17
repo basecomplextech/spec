@@ -2,35 +2,33 @@
 // Use of this software is governed by the MIT License
 // that can be found in the LICENSE file.
 
-package encoding
+package format
 
 import (
 	"math"
-
-	"github.com/basecomplextech/spec/internal/format"
 )
 
-func TestElements() []format.ListElement {
+func TestElements() []ListElement {
 	return TestElementsN(10)
 }
 
-func TestElementsN(n int) []format.ListElement {
+func TestElementsN(n int) []ListElement {
 	return TestElementsSizeN(false, n)
 }
 
-func TestElementsSize(big bool) []format.ListElement {
+func TestElementsSize(big bool) []ListElement {
 	return TestElementsSizeN(big, 10)
 }
 
-func TestElementsSizeN(big bool, n int) []format.ListElement {
+func TestElementsSizeN(big bool, n int) []ListElement {
 	start := uint32(0)
 	if big {
 		start = math.MaxUint16 + 1
 	}
 
-	result := make([]format.ListElement, 0, n)
+	result := make([]ListElement, 0, n)
 	for i := 0; i < n; i++ {
-		elem := format.ListElement{
+		elem := ListElement{
 			Offset: start + uint32(i*10),
 		}
 		result = append(result, elem)

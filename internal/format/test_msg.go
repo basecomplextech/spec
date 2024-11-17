@@ -2,27 +2,25 @@
 // Use of this software is governed by the MIT License
 // that can be found in the LICENSE file.
 
-package encoding
+package format
 
 import (
 	"math"
-
-	"github.com/basecomplextech/spec/internal/format"
 )
 
-func TestFields() []format.MessageField {
+func TestFields() []MessageField {
 	return TestFieldsSizeN(false, 10)
 }
 
-func TestFieldsN(n int) []format.MessageField {
+func TestFieldsN(n int) []MessageField {
 	return TestFieldsSizeN(false, n)
 }
 
-func TestFieldsSize(big bool) []format.MessageField {
+func TestFieldsSize(big bool) []MessageField {
 	return TestFieldsSizeN(big, 10)
 }
 
-func TestFieldsSizeN(big bool, n int) []format.MessageField {
+func TestFieldsSizeN(big bool, n int) []MessageField {
 	tagStart := uint16(0)
 	offStart := uint32(0)
 	if big {
@@ -30,9 +28,9 @@ func TestFieldsSizeN(big bool, n int) []format.MessageField {
 		offStart = math.MaxUint16 + 1
 	}
 
-	result := make([]format.MessageField, 0, n)
+	result := make([]MessageField, 0, n)
 	for i := 0; i < n; i++ {
-		field := format.MessageField{
+		field := MessageField{
 			Tag:    tagStart + uint16(i+1),
 			Offset: offStart + uint32(i*10),
 		}

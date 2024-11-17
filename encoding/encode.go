@@ -1,12 +1,11 @@
-// Copyright 2021 Ivan Korobkov. All rights reserved.
+// Copyright 2024 Ivan Korobkov. All rights reserved.
 // Use of this software is governed by the MIT License
 // that can be found in the LICENSE file.
 
 package encoding
 
 import (
-	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/baselibrary/encoding/compactint"
+	"github.com/basecomplextech/spec/internal/encode"
 	"github.com/basecomplextech/spec/internal/format"
 )
 
@@ -15,53 +14,31 @@ type (
 	MessageTable = format.MessageTable
 )
 
-func EncodeBool(b buffer.Buffer, v bool) (int, error) {
-	p := b.Grow(1)
-	if v {
-		p[0] = byte(format.TypeTrue)
-	} else {
-		p[0] = byte(format.TypeFalse)
-	}
-	return 1, nil
-}
+var (
+	EncodeBool = encode.EncodeBool
+	EncodeByte = encode.EncodeByte
 
-func EncodeByte(b buffer.Buffer, v byte) (int, error) {
-	p := b.Grow(2)
-	p[0] = v
-	p[1] = byte(format.TypeByte)
-	return 2, nil
-}
+	EncodeBin64       = encode.EncodeBin64
+	EncodeBin128      = encode.EncodeBin128
+	EncodeBin128Bytes = encode.EncodeBin128Bytes
+	EncodeBin256      = encode.EncodeBin256
 
-// private
+	EncodeBytes = encode.EncodeBytes
 
-// appendSize appends size as compactint, for tests.
-func appendSize(b []byte, big bool, size uint32) []byte {
-	p := [compactint.MaxLen32]byte{}
-	n := compactint.PutReverseUint32(p[:], size)
-	off := compactint.MaxLen32 - n
+	EncodeFloat32 = encode.EncodeFloat32
+	EncodeFloat64 = encode.EncodeFloat64
 
-	return append(b, p[off:]...)
-}
+	EncodeInt16 = encode.EncodeInt16
+	EncodeInt32 = encode.EncodeInt32
+	EncodeInt64 = encode.EncodeInt64
 
-func encodeSize(b buffer.Buffer, size uint32) int {
-	p := [compactint.MaxLen32]byte{}
-	n := compactint.PutReverseUint32(p[:], size)
-	off := compactint.MaxLen32 - n
+	EncodeListTable    = encode.EncodeListTable
+	EncodeMessageTable = encode.EncodeMessageTable
 
-	buf := b.Grow(n)
-	copy(buf, p[off:])
+	EncodeString = encode.EncodeString
+	EncodeStruct = encode.EncodeStruct
 
-	return n
-}
-
-func encodeSizeType(b buffer.Buffer, size uint32, type_ format.Type) int {
-	p := [compactint.MaxLen32]byte{}
-	n := compactint.PutReverseUint32(p[:], size)
-	off := compactint.MaxLen32 - n
-
-	buf := b.Grow(n + 1)
-	copy(buf[:n], p[off:])
-	buf[n] = byte(type_)
-
-	return n + 1
-}
+	EncodeUint16 = encode.EncodeUint16
+	EncodeUint32 = encode.EncodeUint32
+	EncodeUint64 = encode.EncodeUint64
+)
