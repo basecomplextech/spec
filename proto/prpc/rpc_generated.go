@@ -9,7 +9,6 @@ import (
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
-	"github.com/basecomplextech/spec/encoding"
 )
 
 var (
@@ -17,7 +16,7 @@ var (
 	_ async.Context
 	_ bin.Bin128
 	_ buffer.Buffer
-	_ encoding.MessageTable
+	_ spec.MessageTable
 	_ pools.Pool[any]
 	_ ref.Ref
 	_ spec.Type
@@ -37,12 +36,12 @@ const (
 )
 
 func NewMessageType(b []byte) MessageType {
-	v, _, _ := encoding.DecodeInt32(b)
+	v, _, _ := spec.DecodeInt32(b)
 	return MessageType(v)
 }
 
 func ParseMessageType(b []byte) (result MessageType, size int, err error) {
-	v, size, err := encoding.DecodeInt32(b)
+	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
 	}
@@ -51,7 +50,7 @@ func ParseMessageType(b []byte) (result MessageType, size int, err error) {
 }
 
 func WriteMessageType(b buffer.Buffer, v MessageType) (int, error) {
-	return encoding.EncodeInt32(b, int32(v))
+	return spec.EncodeInt32(b, int32(v))
 }
 
 func (e MessageType) String() string {

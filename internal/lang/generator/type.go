@@ -169,40 +169,40 @@ func typeDecodeFunc(typ *model.Type) string {
 		return "spec.ParseValue"
 
 	case model.KindBool:
-		return "encoding.DecodeBool"
+		return "spec.DecodeBool"
 	case model.KindByte:
-		return "encoding.DecodeByte"
+		return "spec.DecodeByte"
 
 	case model.KindInt16:
-		return "encoding.DecodeInt16"
+		return "spec.DecodeInt16"
 	case model.KindInt32:
-		return "encoding.DecodeInt32"
+		return "spec.DecodeInt32"
 	case model.KindInt64:
-		return "encoding.DecodeInt64"
+		return "spec.DecodeInt64"
 
 	case model.KindUint16:
-		return "encoding.DecodeUint16"
+		return "spec.DecodeUint16"
 	case model.KindUint32:
-		return "encoding.DecodeUint32"
+		return "spec.DecodeUint32"
 	case model.KindUint64:
-		return "encoding.DecodeUint64"
+		return "spec.DecodeUint64"
 
 	case model.KindBin64:
-		return "encoding.DecodeBin64"
+		return "spec.DecodeBin64"
 	case model.KindBin128:
-		return "encoding.DecodeBin128"
+		return "spec.DecodeBin128"
 	case model.KindBin256:
-		return "encoding.DecodeBin256"
+		return "spec.DecodeBin256"
 
 	case model.KindFloat32:
-		return "encoding.DecodeFloat32"
+		return "spec.DecodeFloat32"
 	case model.KindFloat64:
-		return "encoding.DecodeFloat64"
+		return "spec.DecodeFloat64"
 
 	case model.KindBytes:
-		return "encoding.DecodeBytes"
+		return "spec.DecodeBytes"
 	case model.KindString:
-		return "encoding.DecodeString"
+		return "spec.DecodeString"
 	case model.KindAnyMessage:
 		return "spec.ParseMessage"
 
@@ -227,9 +227,9 @@ func typeDecodeRefFunc(typ *model.Type) string {
 
 	switch kind {
 	case model.KindBytes:
-		return "encoding.DecodeBytes"
+		return "spec.DecodeBytes"
 	case model.KindString:
-		return "encoding.DecodeString"
+		return "spec.DecodeString"
 
 	case model.KindList:
 		elem := typeRefName(typ.Element)
@@ -247,40 +247,40 @@ func typeWriteFunc(typ *model.Type) string {
 		return "spec.WriteValue"
 
 	case model.KindBool:
-		return "encoding.EncodeBool"
+		return "spec.EncodeBool"
 	case model.KindByte:
-		return "encoding.EncodeByte"
+		return "spec.EncodeByte"
 
 	case model.KindInt16:
-		return "encoding.EncodeInt16"
+		return "spec.EncodeInt16"
 	case model.KindInt32:
-		return "encoding.EncodeInt32"
+		return "spec.EncodeInt32"
 	case model.KindInt64:
-		return "encoding.EncodeInt64"
+		return "spec.EncodeInt64"
 
 	case model.KindUint16:
-		return "encoding.EncodeUint16"
+		return "spec.EncodeUint16"
 	case model.KindUint32:
-		return "encoding.EncodeUint32"
+		return "spec.EncodeUint32"
 	case model.KindUint64:
-		return "encoding.EncodeUint64"
+		return "spec.EncodeUint64"
 
 	case model.KindBin64:
-		return "encoding.EncodeBin64"
+		return "spec.EncodeBin64"
 	case model.KindBin128:
-		return "encoding.EncodeBin128"
+		return "spec.EncodeBin128"
 	case model.KindBin256:
-		return "encoding.EncodeBin256"
+		return "spec.EncodeBin256"
 
 	case model.KindFloat32:
-		return "encoding.EncodeFloat32"
+		return "spec.EncodeFloat32"
 	case model.KindFloat64:
-		return "encoding.EncodeFloat64"
+		return "spec.EncodeFloat64"
 
 	case model.KindBytes:
-		return "encoding.EncodeBytes"
+		return "spec.EncodeBytes"
 	case model.KindString:
-		return "encoding.EncodeString"
+		return "spec.EncodeString"
 	case model.KindAnyMessage:
 		return "spec.WriteMessage"
 

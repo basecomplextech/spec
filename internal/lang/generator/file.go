@@ -31,7 +31,6 @@ func (w *fileWriter) file(file *model.File) error {
 	w.line(`"github.com/basecomplextech/baselibrary/ref"`)
 	w.line(`"github.com/basecomplextech/baselibrary/status"`)
 	w.line(`"github.com/basecomplextech/spec"`)
-	w.line(`"github.com/basecomplextech/spec/encoding"`)
 
 	if !w.skipRPC {
 		w.line(`"github.com/basecomplextech/spec/rpc"`)
@@ -51,7 +50,7 @@ func (w *fileWriter) file(file *model.File) error {
 	w.line(`_ async.Context`)
 	w.line(`_ bin.Bin128`)
 	w.line(`_ buffer.Buffer`)
-	w.line(`_ encoding.MessageTable`)
+	w.line(`_ spec.MessageTable`)
 	w.line(`_ pools.Pool[any]`)
 	w.line(`_ ref.Ref`)
 

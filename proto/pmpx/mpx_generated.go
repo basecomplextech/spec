@@ -9,7 +9,6 @@ import (
 	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec"
-	"github.com/basecomplextech/spec/encoding"
 )
 
 var (
@@ -17,7 +16,7 @@ var (
 	_ async.Context
 	_ bin.Bin128
 	_ buffer.Buffer
-	_ encoding.MessageTable
+	_ spec.MessageTable
 	_ pools.Pool[any]
 	_ ref.Ref
 	_ spec.Type
@@ -34,12 +33,12 @@ const (
 )
 
 func NewVersion(b []byte) Version {
-	v, _, _ := encoding.DecodeInt32(b)
+	v, _, _ := spec.DecodeInt32(b)
 	return Version(v)
 }
 
 func ParseVersion(b []byte) (result Version, size int, err error) {
-	v, size, err := encoding.DecodeInt32(b)
+	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
 	}
@@ -48,7 +47,7 @@ func ParseVersion(b []byte) (result Version, size int, err error) {
 }
 
 func WriteVersion(b buffer.Buffer, v Version) (int, error) {
-	return encoding.EncodeInt32(b, int32(v))
+	return spec.EncodeInt32(b, int32(v))
 }
 
 func (e Version) String() string {
@@ -77,12 +76,12 @@ const (
 )
 
 func NewCode(b []byte) Code {
-	v, _, _ := encoding.DecodeInt32(b)
+	v, _, _ := spec.DecodeInt32(b)
 	return Code(v)
 }
 
 func ParseCode(b []byte) (result Code, size int, err error) {
-	v, size, err := encoding.DecodeInt32(b)
+	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
 	}
@@ -91,7 +90,7 @@ func ParseCode(b []byte) (result Code, size int, err error) {
 }
 
 func WriteCode(b buffer.Buffer, v Code) (int, error) {
-	return encoding.EncodeInt32(b, int32(v))
+	return spec.EncodeInt32(b, int32(v))
 }
 
 func (e Code) String() string {
@@ -285,12 +284,12 @@ const (
 )
 
 func NewConnectCompression(b []byte) ConnectCompression {
-	v, _, _ := encoding.DecodeInt32(b)
+	v, _, _ := spec.DecodeInt32(b)
 	return ConnectCompression(v)
 }
 
 func ParseConnectCompression(b []byte) (result ConnectCompression, size int, err error) {
-	v, size, err := encoding.DecodeInt32(b)
+	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
 	}
@@ -299,7 +298,7 @@ func ParseConnectCompression(b []byte) (result ConnectCompression, size int, err
 }
 
 func WriteConnectCompression(b buffer.Buffer, v ConnectCompression) (int, error) {
-	return encoding.EncodeInt32(b, int32(v))
+	return spec.EncodeInt32(b, int32(v))
 }
 
 func (e ConnectCompression) String() string {

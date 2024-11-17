@@ -10,7 +10,8 @@ import (
 
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/baselibrary/pools"
-	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/decode"
+	"github.com/basecomplextech/spec/internal/encode"
 	"github.com/basecomplextech/spec/internal/format"
 )
 
@@ -353,7 +354,7 @@ func (w *writer) endList() ([]byte, error) {
 	table := w.elements.pop(list.tableStart)
 
 	// Encode list
-	if _, err := encoding.EncodeListTable(w.buf, bodySize, table); err != nil {
+	if _, err := encode.EncodeListTable(w.buf, bodySize, table); err != nil {
 		return nil, w.fail(err)
 	}
 
@@ -439,7 +440,7 @@ func (w *writer) fieldAny(tag uint16, data []byte) error {
 		return w.err
 	}
 
-	_, _, err := encoding.DecodeType(data)
+	_, _, err := decode.DecodeType(data)
 	if err != nil {
 		return w.fail(err)
 	}
@@ -534,7 +535,7 @@ func (w *writer) endMessage() ([]byte, error) {
 	table := w.fields.pop(message.tableStart)
 
 	// Encode message
-	if _, err := encoding.EncodeMessageTable(w.buf, dataSize, table); err != nil {
+	if _, err := encode.EncodeMessageTable(w.buf, dataSize, table); err != nil {
 		return nil, w.fail(err)
 	}
 

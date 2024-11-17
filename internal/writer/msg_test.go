@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/basecomplextech/baselibrary/bin"
-	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/decode"
 	"github.com/basecomplextech/spec/internal/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,7 +57,7 @@ func TestMessageWriter__should_write_message(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, n, err := encoding.DecodeMessageTable(b)
+	_, n, err := decode.DecodeMessageTable(b)
 	if err != nil {
 		t.Fatal(err)
 	}

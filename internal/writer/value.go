@@ -6,7 +6,8 @@ package writer
 
 import (
 	"github.com/basecomplextech/baselibrary/bin"
-	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/decode"
+	"github.com/basecomplextech/spec/internal/encode"
 )
 
 // ValueWriter writes spec values.
@@ -27,7 +28,7 @@ func (w ValueWriter) Any(b []byte) error {
 		return w.w.err
 	}
 
-	_, _, err := encoding.DecodeType(b)
+	_, _, err := decode.DecodeType(b)
 	if err != nil {
 		return w.w.fail(err)
 	}
@@ -45,7 +46,7 @@ func (w ValueWriter) Bool(v bool) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeBool(w.w.buf, v)
+	encode.EncodeBool(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -57,7 +58,7 @@ func (w ValueWriter) Byte(v byte) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeByte(w.w.buf, v)
+	encode.EncodeByte(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -71,7 +72,7 @@ func (w ValueWriter) Int16(v int16) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeInt16(w.w.buf, v)
+	encode.EncodeInt16(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -83,7 +84,7 @@ func (w ValueWriter) Int32(v int32) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeInt32(w.w.buf, v)
+	encode.EncodeInt32(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -95,7 +96,7 @@ func (w ValueWriter) Int64(v int64) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeInt64(w.w.buf, v)
+	encode.EncodeInt64(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -109,7 +110,7 @@ func (w ValueWriter) Uint16(v uint16) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeUint16(w.w.buf, v)
+	encode.EncodeUint16(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -121,7 +122,7 @@ func (w ValueWriter) Uint32(v uint32) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeUint32(w.w.buf, v)
+	encode.EncodeUint32(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -133,7 +134,7 @@ func (w ValueWriter) Uint64(v uint64) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeUint64(w.w.buf, v)
+	encode.EncodeUint64(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -147,7 +148,7 @@ func (w ValueWriter) Bin64(v bin.Bin64) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeBin64(w.w.buf, v)
+	encode.EncodeBin64(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -159,7 +160,7 @@ func (w ValueWriter) Bin128(v bin.Bin128) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeBin128(w.w.buf, v)
+	encode.EncodeBin128(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -171,7 +172,7 @@ func (w ValueWriter) Bin256(v bin.Bin256) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeBin256(w.w.buf, v)
+	encode.EncodeBin256(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -185,7 +186,7 @@ func (w ValueWriter) Float32(v float32) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeFloat32(w.w.buf, v)
+	encode.EncodeFloat32(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -197,7 +198,7 @@ func (w ValueWriter) Float64(v float64) error {
 	}
 
 	start := w.w.buf.Len()
-	encoding.EncodeFloat64(w.w.buf, v)
+	encode.EncodeFloat64(w.w.buf, v)
 	end := w.w.buf.Len()
 
 	return w.w.pushData(start, end)
@@ -211,7 +212,7 @@ func (w ValueWriter) Bytes(v []byte) error {
 	}
 
 	start := w.w.buf.Len()
-	if _, err := encoding.EncodeBytes(w.w.buf, v); err != nil {
+	if _, err := encode.EncodeBytes(w.w.buf, v); err != nil {
 		return w.w.fail(err)
 	}
 	end := w.w.buf.Len()
@@ -225,7 +226,7 @@ func (w ValueWriter) String(v string) error {
 	}
 
 	start := w.w.buf.Len()
-	if _, err := encoding.EncodeString(w.w.buf, v); err != nil {
+	if _, err := encode.EncodeString(w.w.buf, v); err != nil {
 		return w.w.fail(err)
 	}
 	end := w.w.buf.Len()

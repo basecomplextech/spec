@@ -63,7 +63,7 @@ func (w *structWriter) new_method(def *model.Definition) error {
 
 func (w *structWriter) parse_method(def *model.Definition) error {
 	w.linef(`func Parse%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
-	w.line(`dataSize, size, err := encoding.DecodeStruct(b)`)
+	w.line(`dataSize, size, err := spec.DecodeStruct(b)`)
 	w.line(`if err != nil || size == 0 {
 		return
 	}`)
@@ -84,7 +84,7 @@ func (w *structWriter) parse_method(def *model.Definition) error {
 		fieldName := structFieldName(field)
 		decodeName := typeDecodeFunc(field.Type)
 		if field.Type.Kind == model.KindString {
-			decodeName = "encoding.DecodeStringClone"
+			decodeName = "spec.DecodeStringClone"
 		}
 
 		w.line(`off -= n`)
@@ -120,7 +120,7 @@ func (w *structWriter) write_method(def *model.Definition) error {
 		w.line()
 	}
 
-	w.line(`n, err = encoding.EncodeStruct(b, dataSize)`)
+	w.line(`n, err = spec.EncodeStruct(b, dataSize)`)
 	w.line(`if err != nil {
 			return 0, err
 		}`)
