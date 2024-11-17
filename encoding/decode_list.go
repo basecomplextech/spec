@@ -11,7 +11,7 @@ import (
 	"github.com/basecomplextech/spec/internal/core"
 )
 
-func DecodeListTable(b []byte) (_ ListTable, size int, err error) {
+func DecodeListTable(b []byte) (_ core.ListTable, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -67,19 +67,17 @@ func DecodeListTable(b []byte) (_ ListTable, size int, err error) {
 	size += int(dataSize)
 
 	// Done
-	t := ListTable{
-		table: table,
-		data:  dataSize,
-		big:   big,
-	}
+	t := core.NewListTable(table, dataSize, big)
 	return t, size, nil
 }
 
-func decodeListTable(b []byte, size uint32, big bool) (_ listTable, err error) {
+// private
+
+func decodeListTable(b []byte, size uint32, big bool) (_ []byte, err error) {
 	// Element size
-	elemSize := listElementSmallSize
+	elemSize := core.ListElementSize_Small
 	if big {
-		elemSize = listElementBigSize
+		elemSize = core.ListElementSize_Big
 	}
 
 	// Check offset
@@ -95,7 +93,6 @@ func decodeListTable(b []byte, size uint32, big bool) (_ listTable, err error) {
 		return
 	}
 
-	p := b[start:]
-	v := listTable(p)
-	return v, nil
+	table := b[start:]
+	return table, nil
 }

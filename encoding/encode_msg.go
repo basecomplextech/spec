@@ -12,13 +12,13 @@ import (
 	"github.com/basecomplextech/spec/internal/core"
 )
 
-func EncodeMessageTable(b buffer.Buffer, dataSize int, table []MessageField) (int, error) {
+func EncodeMessageTable(b buffer.Buffer, dataSize int, table []core.MessageField) (int, error) {
 	if dataSize > core.MaxSize {
 		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", core.MaxSize, dataSize)
 	}
 
 	// core.Type
-	big := isBigMessage(table)
+	big := core.IsBigMessage(table)
 	type_ := core.TypeMessage
 	if big {
 		type_ = core.TypeBigMessage
@@ -39,13 +39,13 @@ func EncodeMessageTable(b buffer.Buffer, dataSize int, table []MessageField) (in
 	return n, nil
 }
 
-func encodeMessageTable(b buffer.Buffer, table []MessageField, big bool) (int, error) {
+func encodeMessageTable(b buffer.Buffer, table []core.MessageField, big bool) (int, error) {
 	// Field size
 	var fieldSize int
 	if big {
-		fieldSize = messageFieldSize_big
+		fieldSize = core.MessageFieldSize_Big
 	} else {
-		fieldSize = messageFieldSize_small
+		fieldSize = core.MessageFieldSize_Small
 	}
 
 	// Check table size

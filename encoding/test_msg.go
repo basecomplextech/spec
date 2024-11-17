@@ -4,21 +4,25 @@
 
 package encoding
 
-import "math"
+import (
+	"math"
 
-func TestFields() []MessageField {
+	"github.com/basecomplextech/spec/internal/core"
+)
+
+func TestFields() []core.MessageField {
 	return TestFieldsSizeN(false, 10)
 }
 
-func TestFieldsN(n int) []MessageField {
+func TestFieldsN(n int) []core.MessageField {
 	return TestFieldsSizeN(false, n)
 }
 
-func TestFieldsSize(big bool) []MessageField {
+func TestFieldsSize(big bool) []core.MessageField {
 	return TestFieldsSizeN(big, 10)
 }
 
-func TestFieldsSizeN(big bool, n int) []MessageField {
+func TestFieldsSizeN(big bool, n int) []core.MessageField {
 	tagStart := uint16(0)
 	offStart := uint32(0)
 	if big {
@@ -26,9 +30,9 @@ func TestFieldsSizeN(big bool, n int) []MessageField {
 		offStart = math.MaxUint16 + 1
 	}
 
-	result := make([]MessageField, 0, n)
+	result := make([]core.MessageField, 0, n)
 	for i := 0; i < n; i++ {
-		field := MessageField{
+		field := core.MessageField{
 			Tag:    tagStart + uint16(i+1),
 			Offset: offStart + uint32(i*10),
 		}

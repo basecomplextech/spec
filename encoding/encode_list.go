@@ -12,13 +12,13 @@ import (
 	"github.com/basecomplextech/spec/internal/core"
 )
 
-func EncodeListTable(b buffer.Buffer, dataSize int, table []ListElement) (int, error) {
+func EncodeListTable(b buffer.Buffer, dataSize int, table []core.ListElement) (int, error) {
 	if dataSize > core.MaxSize {
 		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", core.MaxSize, dataSize)
 	}
 
 	// core.Type
-	big := isBigList(table)
+	big := core.IsBigList(table)
 	type_ := core.TypeList
 	if big {
 		type_ = core.TypeBigList
@@ -39,11 +39,13 @@ func EncodeListTable(b buffer.Buffer, dataSize int, table []ListElement) (int, e
 	return n, nil
 }
 
-func encodeListTable(b buffer.Buffer, table []ListElement, big bool) (int, error) {
+// private
+
+func encodeListTable(b buffer.Buffer, table []core.ListElement, big bool) (int, error) {
 	// Element size
-	elemSize := listElementSmallSize
+	elemSize := core.ListElementSize_Small
 	if big {
-		elemSize = listElementBigSize
+		elemSize = core.ListElementSize_Big
 	}
 
 	// Check table size

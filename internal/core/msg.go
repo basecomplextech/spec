@@ -1,8 +1,8 @@
-// Copyright 2021 Ivan Korobkov. All rights reserved.
+// Copyright 2024 Ivan Korobkov. All rights reserved.
 // Use of this software is governed by the MIT License
 // that can be found in the LICENSE file.
 
-package encoding
+package core
 
 import (
 	"encoding/binary"
@@ -11,15 +11,63 @@ import (
 )
 
 const (
-	messageFieldSize_small = 1 + 2 // tag(1) + offset(2)
-	messageFieldSize_big   = 2 + 4 // tag(2) + offset(4)
+	MessageFieldSize_Small = 1 + 2 // tag(1) + offset(2)
+	MessageFieldSize_Big   = 2 + 4 // tag(2) + offset(4)
 )
 
+// MessageTable is a table of message fields ordered by tags.
+// The serialization format depends on whether the message is big or small, see isBigMessage().
+//
+//	         field0                field1                field2
+//	+---------------------+---------------------+---------------------+
+//	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
+//	+---------------------+---------------------+---------------------+
 type MessageTable struct {
 	table messageTable
 
 	data uint32 // message data size
 	big  bool   // big/small table format
+}
+
+// MessageField specifies a tag and a value offset in a message byte array.
+//
+//	+----------+-------------------+
+//	| tag(1/2) |    offset(2/4)    |
+//	+----------+-------------------+
+type MessageField struct {
+	Tag    uint16
+	Offset uint32
+}
+
+// IsBigList returns true if any field tag > uint8 or offset > uint16.
+func IsBigMessage(fields []MessageField) bool {
+	ln := len(fields)
+	if ln == 0 {
+		return false
+	}
+
+	for i := ln - 1; i >= 0; i-- {
+		field := fields[i]
+
+		switch {
+		case field.Tag > math.MaxUint8:
+			return true
+		case field.Offset > math.MaxUint16:
+			return true
+		}
+	}
+
+	return false
+}
+
+// MessageTable
+
+func NewMessageTable(table messageTable, data uint32, big bool) MessageTable {
+	return MessageTable{
+		table: table,
+		data:  data,
+		big:   big,
+	}
 }
 
 // Len returns the number of fields in the message.
@@ -30,6 +78,11 @@ func (t MessageTable) Len() int {
 // DataSize returns the message data size.
 func (t MessageTable) DataSize() uint32 {
 	return t.data
+}
+
+// Fields parses the table and returns a slice of fields.
+func (t MessageTable) Fields() []MessageField {
+	return t.table.fields(t.big)
 }
 
 // Offset returns field end offset by a tag or -1.
@@ -59,55 +112,18 @@ func (t MessageTable) Field(i int) (MessageField, bool) {
 	}
 }
 
-// MessageField specifies a tag and a value offset in a message byte array.
-//
-//	+----------+-------------------+
-//	| tag(1/2) |    offset(2/4)    |
-//	+----------+-------------------+
-type MessageField struct {
-	Tag    uint16
-	Offset uint32
-}
-
 // internal
 
 // messageTable is a serialized array of message fields ordered by tags.
-// the serialization format depends on whether the message is big or small, see isBigMessage().
-//
-//	         field0                field1                field2
-//	+---------------------+---------------------+---------------------+
-//	|  tag0 |   offset0   |  tag1 |   offset1   |  tag2 |   offset3   |
-//	+---------------------+---------------------+---------------------+
 type messageTable []byte
-
-// isBigList returns true if any field tag > uint8 or offset > uint16.
-func isBigMessage(table []MessageField) bool {
-	ln := len(table)
-	if ln == 0 {
-		return false
-	}
-
-	for i := ln - 1; i >= 0; i-- {
-		field := table[i]
-
-		switch {
-		case field.Tag > math.MaxUint8:
-			return true
-		case field.Offset > math.MaxUint16:
-			return true
-		}
-	}
-
-	return false
-}
 
 // count returns the number of fields in the table.
 func (t messageTable) count(big bool) int {
 	var size int
 	if big {
-		size = messageFieldSize_big
+		size = MessageFieldSize_Big
 	} else {
-		size = messageFieldSize_small
+		size = MessageFieldSize_Small
 	}
 	return len(t) / size
 }
@@ -120,11 +136,11 @@ func (t messageTable) count(big bool) int {
 // reduces the function call from 13.5 ns/op to 7.5 ns/op for a 100-field table.
 // See benchmarks.
 func (t messageTable) offset_big(tag uint16) int {
-	if len(t) < messageFieldSize_big {
+	if len(t) < MessageFieldSize_Big {
 		return -1
 	}
 
-	n := len(t) / messageFieldSize_big
+	n := len(t) / MessageFieldSize_Big
 	ptr := unsafe.Pointer(&t[0])
 
 	// Binary search table
@@ -134,7 +150,7 @@ func (t messageTable) offset_big(tag uint16) int {
 		middle := int(uint(left+right) >> 1) // avoid overflow
 
 		// Offset
-		off := middle * messageFieldSize_big
+		off := middle * MessageFieldSize_Big
 		ptr1 := unsafe.Add(ptr, off)
 
 		// Current tag (uint16)
@@ -170,7 +186,7 @@ func (t messageTable) offset_big(tag uint16) int {
 }
 
 func (t messageTable) offset_big_safe(tag uint16) int {
-	size := messageFieldSize_big
+	size := MessageFieldSize_Big
 	n := len(t) / size
 
 	// Binary search table
@@ -209,11 +225,11 @@ func (t messageTable) offset_big_safe(tag uint16) int {
 // reduces the function call from 10 ns/op to 6.5 ns/op for a 100-field table.
 // See benchmarks.
 func (t messageTable) offset_small(tag uint16) int {
-	if len(t) < messageFieldSize_small {
+	if len(t) < MessageFieldSize_Small {
 		return -1
 	}
 
-	n := len(t) / messageFieldSize_small
+	n := len(t) / MessageFieldSize_Small
 	ptr := unsafe.Pointer(&t[0])
 
 	// Binary search table
@@ -223,7 +239,7 @@ func (t messageTable) offset_small(tag uint16) int {
 		middle := int(uint(left+right) >> 1) // avoid overflow
 
 		// Offset
-		off := middle * messageFieldSize_small
+		off := middle * MessageFieldSize_Small
 		ptr1 := unsafe.Add(ptr, off)
 
 		// Current tag (uint8)
@@ -249,7 +265,7 @@ func (t messageTable) offset_small(tag uint16) int {
 }
 
 func (t messageTable) offset_small_safe(tag uint16) int {
-	size := messageFieldSize_small
+	size := MessageFieldSize_Small
 	n := len(t) / size
 
 	// Binary search table
@@ -285,7 +301,7 @@ func (t messageTable) offset_small_safe(tag uint16) int {
 // offsetByIndex
 
 func (t messageTable) offsetByIndex_big(i int) int {
-	size := messageFieldSize_big
+	size := MessageFieldSize_Big
 	n := len(t) / size
 
 	// Check count
@@ -304,7 +320,7 @@ func (t messageTable) offsetByIndex_big(i int) int {
 }
 
 func (t messageTable) offsetByIndex_small(i int) int {
-	size := messageFieldSize_small
+	size := MessageFieldSize_Small
 	n := len(t) / size
 
 	// Check count
@@ -325,7 +341,7 @@ func (t messageTable) offsetByIndex_small(i int) int {
 // field
 
 func (t messageTable) field_big(i int) (f MessageField, ok bool) {
-	size := messageFieldSize_big
+	size := MessageFieldSize_Big
 	n := len(t) / size
 
 	// Check count
@@ -349,7 +365,7 @@ func (t messageTable) field_big(i int) (f MessageField, ok bool) {
 }
 
 func (t messageTable) field_small(i int) (f MessageField, ok bool) {
-	size := messageFieldSize_small
+	size := MessageFieldSize_Small
 	n := len(t) / size
 
 	// Check count

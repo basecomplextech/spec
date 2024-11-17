@@ -14,7 +14,7 @@ import (
 
 // Message is a raw message.
 type Message struct {
-	table encoding.MessageTable
+	table core.MessageTable
 	bytes []byte
 }
 

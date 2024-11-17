@@ -1,8 +1,8 @@
-// Copyright 2021 Ivan Korobkov. All rights reserved.
+// Copyright 2024 Ivan Korobkov. All rights reserved.
 // Use of this software is governed by the MIT License
 // that can be found in the LICENSE file.
 
-package encoding
+package core
 
 import (
 	"encoding/binary"
@@ -10,15 +10,57 @@ import (
 )
 
 const (
-	listElementSmallSize = 2
-	listElementBigSize   = 4
+	ListElementSize_Small = 2
+	ListElementSize_Big   = 4
 )
 
+// ListTable is a serialized array of list element offsets ordered by index.
+// The serialization format depends on whether the list is big or small, see IsBigList().
+//
+//	+----------------+----------------+----------------+
+//	|    off0(2/4)   |    off1(2/4)   |    off2(2/4)   |
+//	+----------------+----------------+----------------+
 type ListTable struct {
 	table listTable
 
 	data uint32 // data size
 	big  bool   // small/big table format
+}
+
+// ListElement specifies a value offset in a list byte array.
+//
+//	+-------------------+
+//	|    offset(2/4)    |
+//	+-------------------+
+type ListElement struct {
+	Offset uint32
+}
+
+// IsBigList returns true if table count > uint8 or element offset > uint16.
+func IsBigList(elements []ListElement) bool {
+	ln := len(elements)
+	if ln == 0 {
+		return false
+	}
+
+	// Len > uint8
+	if ln > math.MaxUint8 {
+		return true
+	}
+
+	// Or offset > uint16
+	last := elements[ln-1]
+	return last.Offset > math.MaxUint16
+}
+
+// ListTable
+
+func NewListTable(table listTable, data uint32, big bool) ListTable {
+	return ListTable{
+		table: table,
+		data:  data,
+		big:   big,
+	}
 }
 
 // Len returns the number of elements in the table.
@@ -31,6 +73,11 @@ func (t ListTable) DataSize() uint32 {
 	return t.data
 }
 
+// Elements parses the table and returns a slice of elements.
+func (t ListTable) Elements() []ListElement {
+	return t.table.elements(t.big)
+}
+
 // Offset returns an element start/end by an index or -1/-1.
 func (t ListTable) Offset(i int) (int, int) {
 	if t.big {
@@ -40,47 +87,17 @@ func (t ListTable) Offset(i int) (int, int) {
 	}
 }
 
-// ListElement specifies a value offset in a list byte array.
-//
-//	+-------------------+
-//	|    offset(2/4)    |
-//	+-------------------+
-type ListElement struct {
-	Offset uint32
-}
+// internal
 
-// listTable is a serialized array of list element offsets ordered by index.
-// the serialization format depends on whether the list is big or small, see isBigList().
-//
-//	+----------------+----------------+----------------+
-//	|    off0(2/4)   |    off1(2/4)   |    off2(2/4)   |
-//	+----------------+----------------+----------------+
 type listTable []byte
-
-// isBigList returns true if table count > uint8 or element offset > uint16.
-func isBigList(table []ListElement) bool {
-	ln := len(table)
-	if ln == 0 {
-		return false
-	}
-
-	// Len > uint8
-	if ln > math.MaxUint8 {
-		return true
-	}
-
-	// Or offset > uint16
-	last := table[ln-1]
-	return last.Offset > math.MaxUint16
-}
 
 // len returns the number of elements in the table.
 func (t listTable) len(big bool) int {
 	var size int
 	if big {
-		size = listElementBigSize
+		size = ListElementSize_Big
 	} else {
-		size = listElementSmallSize
+		size = ListElementSize_Small
 	}
 	return len(t) / size
 }
@@ -107,7 +124,7 @@ func (t listTable) elements(big bool) []ListElement {
 }
 
 func (t listTable) offset_big(i int) (int, int) {
-	size := listElementBigSize
+	size := ListElementSize_Big
 	n := len(t) / size
 
 	// Check count
@@ -133,7 +150,7 @@ func (t listTable) offset_big(i int) (int, int) {
 }
 
 func (t listTable) offset_small(i int) (int, int) {
-	size := listElementSmallSize
+	size := ListElementSize_Small
 	n := len(t) / size
 
 	// Check count

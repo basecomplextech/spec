@@ -445,9 +445,9 @@ func TestDecodeString__should_decode_string(t *testing.T) {
 // List
 
 func TestDecodeListTable__should_decode_list(t *testing.T) {
-	elements := TestElements()
+	elems := TestElements()
 	dataSize := 100
-	b := testEncodeListTable(t, dataSize, elements)
+	b := testEncodeListTable(t, dataSize, elems)
 
 	table, n, err := DecodeListTable(b)
 	if err != nil {
@@ -455,7 +455,7 @@ func TestDecodeListTable__should_decode_list(t *testing.T) {
 	}
 	assert.Equal(t, len(b), n)
 	assert.Equal(t, uint32(dataSize), table.DataSize())
-	assert.Equal(t, len(elements), table.Len())
+	assert.Equal(t, len(elems), table.Len())
 
 	typ, size, err := DecodeTypeSize(b)
 	if err != nil {
@@ -466,33 +466,33 @@ func TestDecodeListTable__should_decode_list(t *testing.T) {
 }
 
 func TestDecodeListTable__should_decode_list_table(t *testing.T) {
-	elements := TestElements()
+	elems := TestElements()
 
-	for i := 0; i <= len(elements); i++ {
+	for i := 0; i <= len(elems); i++ {
 		b := buffer.New()
-		ee0 := elements[i:]
+		elems1 := elems[i:]
 
-		size, err := encodeListTable(b, ee0, false)
+		_, err := EncodeListTable(b, 0, elems1)
 		if err != nil {
 			t.Fatal(err)
 		}
 		p := b.Bytes()
 
-		table1, err := decodeListTable(p, uint32(size), false)
+		table1, _, err := DecodeListTable(p)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		ee1 := table1.elements(false)
-		require.Equal(t, ee0, ee1)
+		elems2 := table1.Elements()
+		require.Equal(t, elems1, elems2)
 	}
 }
 
 func TestDecodeListTable__should_return_error_when_invalid_type(t *testing.T) {
-	elements := TestElements()
+	elems := TestElements()
 	dataSize := 100
 
-	b := testEncodeListTable(t, dataSize, elements)
+	b := testEncodeListTable(t, dataSize, elems)
 	b[len(b)-1] = byte(core.TypeMessage)
 
 	_, _, err := DecodeListTable(b)
@@ -588,17 +588,17 @@ func TestDecodeMessageTable__should_decode_message_table(t *testing.T) {
 		buf := buffer.New()
 		fields0 := fields[i:]
 
-		size, err := encodeMessageTable(buf, fields0, false)
+		_, err := EncodeMessageTable(buf, 0, fields0)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		table1, err := decodeMessageTable(buf.Bytes(), uint32(size), false)
+		table1, _, err := DecodeMessageTable(buf.Bytes())
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		fields1 := table1.fields(false)
+		fields1 := table1.Fields()
 		require.Equal(t, fields0, fields1)
 	}
 }

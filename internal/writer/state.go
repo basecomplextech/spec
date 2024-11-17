@@ -7,7 +7,7 @@ package writer
 import (
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/baselibrary/pools"
-	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/core"
 )
 
 // writerState is a big pooled struct which holds an encoding state.
@@ -22,8 +22,8 @@ type writerState struct {
 
 	// Preallocated
 	_stack    [14]stackEntry
-	_elements [48]encoding.ListElement
-	_fields   [48]encoding.MessageField
+	_elements [48]core.ListElement
+	_fields   [48]core.MessageField
 }
 
 func newWriterState() *writerState {

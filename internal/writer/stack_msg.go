@@ -7,7 +7,7 @@ package writer
 import (
 	"sort"
 
-	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/core"
 )
 
 // messageStack is a stack for encoding nested message tables.
@@ -21,7 +21,7 @@ import (
 //	| f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 | f0 | f1 | f2 | f3 |
 //	+-------------------+-------------------+-------------------+
 type messageStack struct {
-	stack []encoding.MessageField
+	stack []core.MessageField
 }
 
 func (s *messageStack) reset() {
@@ -34,7 +34,7 @@ func (s *messageStack) offset() int {
 }
 
 // insert inserts a new field into the last table starting at offset, keeps the table sorted.
-func (s *messageStack) insert(tableOffset int, f encoding.MessageField) {
+func (s *messageStack) insert(tableOffset int, f core.MessageField) {
 	// Append new field
 	s.stack = append(s.stack, f)
 
@@ -61,7 +61,7 @@ func (s *messageStack) insert(tableOffset int, f encoding.MessageField) {
 }
 
 // pop pops a message table starting at offset.
-func (s *messageStack) pop(tableOffset int) []encoding.MessageField {
+func (s *messageStack) pop(tableOffset int) []core.MessageField {
 	table := s.stack[tableOffset:]
 	s.stack = s.stack[:tableOffset]
 	return table

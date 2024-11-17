@@ -11,7 +11,7 @@ import (
 	"github.com/basecomplextech/spec/internal/core"
 )
 
-func DecodeMessageTable(b []byte) (_ MessageTable, size int, err error) {
+func DecodeMessageTable(b []byte) (_ core.MessageTable, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -68,19 +68,17 @@ func DecodeMessageTable(b []byte) (_ MessageTable, size int, err error) {
 	size += int(dataSize)
 
 	// Done
-	t := MessageTable{
-		table: table,
-		data:  dataSize,
-		big:   big,
-	}
+	t := core.NewMessageTable(table, dataSize, big)
 	return t, size, nil
 }
 
-func decodeMessageTable(b []byte, size uint32, big bool) (_ messageTable, err error) {
+// private
+
+func decodeMessageTable(b []byte, size uint32, big bool) (_ []byte, err error) {
 	// Field size
-	fieldSize := messageFieldSize_small
+	fieldSize := core.MessageFieldSize_Small
 	if big {
-		fieldSize = messageFieldSize_big
+		fieldSize = core.MessageFieldSize_Big
 	}
 
 	// Check offset
@@ -96,7 +94,6 @@ func decodeMessageTable(b []byte, size uint32, big bool) (_ messageTable, err er
 		return
 	}
 
-	p := b[start:]
-	v := messageTable(p)
-	return v, nil
+	table := b[start:]
+	return table, nil
 }

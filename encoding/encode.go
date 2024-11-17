@@ -10,6 +10,11 @@ import (
 	"github.com/basecomplextech/spec/internal/core"
 )
 
+type (
+	ListTable    = core.ListTable
+	MessageTable = core.MessageTable
+)
+
 func EncodeBool(b buffer.Buffer, v bool) (int, error) {
 	p := b.Grow(1)
 	if v {
