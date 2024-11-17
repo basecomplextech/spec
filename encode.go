@@ -6,12 +6,6 @@ package spec
 
 import (
 	"github.com/basecomplextech/spec/internal/encode"
-	"github.com/basecomplextech/spec/internal/format"
-)
-
-type (
-	ListTable    = format.ListTable
-	MessageTable = format.MessageTable
 )
 
 var (

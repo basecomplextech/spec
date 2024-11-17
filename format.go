@@ -53,4 +53,10 @@ type (
 	// String is a spec string backed by a buffer.
 	// Clone it if you need to keep it around.
 	String = format.String
+
+	// ListTable is a serialized array of list element offsets ordered by index.
+	ListTable = format.ListTable
+
+	// MessageTable is a table of message fields ordered by tags.
+	MessageTable = format.MessageTable
 )
