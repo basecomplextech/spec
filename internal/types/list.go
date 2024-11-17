@@ -17,14 +17,16 @@ type List struct {
 	bytes []byte
 }
 
-// NewList returns a new list from bytes or an empty list when not a list.
-func NewList(b []byte) List {
+// OpenList opens and returns a list from bytes, or an empty list on error.
+// The method decodes the list table, but not the elements.
+func OpenList(b []byte) List {
 	l, _, _ := decodeList(b)
 	return l
 }
 
-// NewListErr returns a new list from bytes or an error when not a list.
-func NewListErr(b []byte) (List, error) {
+// OpenListErr opens and returns a list from bytes, or an error.
+// The method decodes the list table, but not the elements.
+func OpenListErr(b []byte) (List, error) {
 	l, _, err := decodeList(b)
 	return l, err
 }
@@ -116,7 +118,7 @@ func (l List) GetBytes(i int) []byte {
 func (l List) Clone() List {
 	b := make([]byte, len(l.bytes))
 	copy(b, l.bytes)
-	return NewList(b)
+	return OpenList(b)
 }
 
 // CloneTo clones a list into a slice.
@@ -128,5 +130,5 @@ func (l List) CloneTo(b []byte) List {
 	b = b[:ln]
 
 	copy(b, l.bytes)
-	return NewList(b)
+	return OpenList(b)
 }

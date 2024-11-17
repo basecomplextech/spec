@@ -307,20 +307,20 @@ func (v Value) StringErr() (format.String, error) {
 
 // List decodes and returns a list or an empty list.
 func (v Value) List() List {
-	return NewList(v)
+	return OpenList(v)
 }
 
 // ListErr decodes and returns a list or an error.
 func (v Value) ListErr() (List, error) {
-	return NewListErr(v)
+	return OpenListErr(v)
 }
 
 // Message decodes and returns a message or an empty message.
 func (v Value) Message() Message {
-	return NewMessage(v)
+	return OpenMessage(v)
 }
 
 // MessageErr decodes and returns a message or an error.
 func (v Value) MessageErr() (Message, error) {
-	return NewMessageErr(v)
+	return OpenMessageErr(v)
 }

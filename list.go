@@ -11,14 +11,16 @@ import (
 // List is a raw list of elements.
 type List = types.List
 
-// NewList returns a new list from bytes or an empty list when not a list.
-func NewList(b []byte) List {
-	return types.NewList(b)
+// OpenList opens and returns a list from bytes, or an empty list on error.
+// The method decodes the list table, but not the elements, see [ParseList].
+func OpenList(b []byte) List {
+	return types.OpenList(b)
 }
 
-// NewListErr returns a new list from bytes or an error when not a list.
-func NewListErr(b []byte) (List, error) {
-	return types.NewListErr(b)
+// OpenListErr opens and returns a list from bytes, or an error.
+// The method decodes the list table, but not the elements, see [ParseList].
+func OpenListErr(b []byte) (List, error) {
+	return types.OpenListErr(b)
 }
 
 // ParseList recursively parses and returns a list.

@@ -75,21 +75,21 @@ type Message struct {
 	msg spec.Message
 }
 
-func NewMessage(b []byte) Message {
-	msg := spec.NewMessage(b)
+func NewMessage(msg spec.Message) Message {
 	return Message{msg}
 }
 
-func NewMessageErr(b []byte) (_ Message, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenMessage(b []byte) Message {
+	msg := spec.OpenMessage(b)
+	return Message{msg}
+}
+
+func OpenMessageErr(b []byte) (_ Message, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return Message{msg}, nil
-}
-
-func MakeMessage(msg spec.Message) Message {
-	return Message{msg}
 }
 
 func ParseMessage(b []byte) (_ Message, size int, err error) {
@@ -101,8 +101,8 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 }
 
 func (m Message) Type() MessageType { return NewMessageType(m.msg.FieldRaw(1)) }
-func (m Message) Req() Request      { return MakeRequest(m.msg.Message(2)) }
-func (m Message) Resp() Response    { return MakeResponse(m.msg.Message(3)) }
+func (m Message) Req() Request      { return NewRequest(m.msg.Message(2)) }
+func (m Message) Resp() Response    { return NewResponse(m.msg.Message(3)) }
 func (m Message) Msg() spec.Bytes   { return m.msg.Bytes(4) }
 
 func (m Message) HasType() bool { return m.msg.HasField(1) }
@@ -122,21 +122,21 @@ type Request struct {
 	msg spec.Message
 }
 
-func NewRequest(b []byte) Request {
-	msg := spec.NewMessage(b)
+func NewRequest(msg spec.Message) Request {
 	return Request{msg}
 }
 
-func NewRequestErr(b []byte) (_ Request, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenRequest(b []byte) Request {
+	msg := spec.OpenMessage(b)
+	return Request{msg}
+}
+
+func OpenRequestErr(b []byte) (_ Request, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return Request{msg}, nil
-}
-
-func MakeRequest(msg spec.Message) Request {
-	return Request{msg}
 }
 
 func ParseRequest(b []byte) (_ Request, size int, err error) {
@@ -147,7 +147,9 @@ func ParseRequest(b []byte) (_ Request, size int, err error) {
 	return Request{msg}, size, nil
 }
 
-func (m Request) Calls() spec.TypedList[Call]           { return spec.NewTypedList(m.msg.FieldRaw(1), ParseCall) }
+func (m Request) Calls() spec.TypedList[Call] {
+	return spec.OpenTypedList(m.msg.FieldRaw(1), ParseCall)
+}
 func (m Request) HasCalls() bool                        { return m.msg.HasField(1) }
 func (m Request) IsEmpty() bool                         { return m.msg.Empty() }
 func (m Request) Clone() Request                        { return Request{m.msg.Clone()} }
@@ -161,21 +163,21 @@ type Call struct {
 	msg spec.Message
 }
 
-func NewCall(b []byte) Call {
-	msg := spec.NewMessage(b)
+func NewCall(msg spec.Message) Call {
 	return Call{msg}
 }
 
-func NewCallErr(b []byte) (_ Call, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenCall(b []byte) Call {
+	msg := spec.OpenMessage(b)
+	return Call{msg}
+}
+
+func OpenCallErr(b []byte) (_ Call, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return Call{msg}, nil
-}
-
-func MakeCall(msg spec.Message) Call {
-	return Call{msg}
 }
 
 func ParseCall(b []byte) (_ Call, size int, err error) {
@@ -204,21 +206,21 @@ type Response struct {
 	msg spec.Message
 }
 
-func NewResponse(b []byte) Response {
-	msg := spec.NewMessage(b)
+func NewResponse(msg spec.Message) Response {
 	return Response{msg}
 }
 
-func NewResponseErr(b []byte) (_ Response, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenResponse(b []byte) Response {
+	msg := spec.OpenMessage(b)
+	return Response{msg}
+}
+
+func OpenResponseErr(b []byte) (_ Response, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return Response{msg}, nil
-}
-
-func MakeResponse(msg spec.Message) Response {
-	return Response{msg}
 }
 
 func ParseResponse(b []byte) (_ Response, size int, err error) {
@@ -229,7 +231,7 @@ func ParseResponse(b []byte) (_ Response, size int, err error) {
 	return Response{msg}, size, nil
 }
 
-func (m Response) Status() Status     { return MakeStatus(m.msg.Message(1)) }
+func (m Response) Status() Status     { return NewStatus(m.msg.Message(1)) }
 func (m Response) Result() spec.Value { return m.msg.Field(2) }
 
 func (m Response) HasStatus() bool { return m.msg.HasField(1) }
@@ -247,21 +249,21 @@ type Status struct {
 	msg spec.Message
 }
 
-func NewStatus(b []byte) Status {
-	msg := spec.NewMessage(b)
+func NewStatus(msg spec.Message) Status {
 	return Status{msg}
 }
 
-func NewStatusErr(b []byte) (_ Status, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenStatus(b []byte) Status {
+	msg := spec.OpenMessage(b)
+	return Status{msg}
+}
+
+func OpenStatusErr(b []byte) (_ Status, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return Status{msg}, nil
-}
-
-func MakeStatus(msg spec.Message) Status {
-	return Status{msg}
 }
 
 func ParseStatus(b []byte) (_ Status, size int, err error) {
@@ -334,7 +336,7 @@ func (w MessageWriter) Build() (_ Message, err error) {
 	if err != nil {
 		return
 	}
-	return NewMessage(bytes), nil
+	return OpenMessageErr(bytes)
 }
 
 func (w MessageWriter) Unwrap() spec.MessageWriter {
@@ -379,7 +381,7 @@ func (w RequestWriter) Build() (_ Request, err error) {
 	if err != nil {
 		return
 	}
-	return NewRequest(bytes), nil
+	return OpenRequestErr(bytes)
 }
 
 func (w RequestWriter) Unwrap() spec.MessageWriter {
@@ -423,7 +425,7 @@ func (w CallWriter) Build() (_ Call, err error) {
 	if err != nil {
 		return
 	}
-	return NewCall(bytes), nil
+	return OpenCallErr(bytes)
 }
 
 func (w CallWriter) Unwrap() spec.MessageWriter {
@@ -473,7 +475,7 @@ func (w ResponseWriter) Build() (_ Response, err error) {
 	if err != nil {
 		return
 	}
-	return NewResponse(bytes), nil
+	return OpenResponseErr(bytes)
 }
 
 func (w ResponseWriter) Unwrap() spec.MessageWriter {
@@ -516,7 +518,7 @@ func (w StatusWriter) Build() (_ Status, err error) {
 	if err != nil {
 		return
 	}
-	return NewStatus(bytes), nil
+	return OpenStatusErr(bytes)
 }
 
 func (w StatusWriter) Unwrap() spec.MessageWriter {

@@ -114,8 +114,13 @@ func typeNewFunc(typ *model.Type) string {
 		elem := typeName(typ.Element)
 		return "spec.List[]" + elem
 
+	case model.KindMessage:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Open%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Open%v", typ.Name)
+
 	case model.KindEnum,
-		model.KindMessage,
 		model.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.New%v", typ.ImportName, typ.Name)
@@ -131,9 +136,9 @@ func typeMakeMessageFunc(typ *model.Type) string {
 	switch kind {
 	case model.KindMessage:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Make%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.New%v", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Make%v", typ.Name)
+		return fmt.Sprintf("New%v", typ.Name)
 	}
 
 	panic(fmt.Sprintf("unsupported type kind %v", typ.Kind))
@@ -158,7 +163,6 @@ func typeParseFunc(typ *model.Type) string {
 	default:
 		return typeDecodeFunc(typ)
 	}
-	return ""
 }
 
 func typeDecodeFunc(typ *model.Type) string {

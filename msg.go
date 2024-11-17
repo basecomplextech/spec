@@ -14,14 +14,16 @@ type (
 	MessageType = types.MessageType
 )
 
-// NewMessage returns a new message from bytes or an empty message when not a message.
-func NewMessage(b []byte) Message {
-	return types.NewMessage(b)
+// OpenMessage opens and returns a message from bytes, or an empty message on error.
+// The method decodes the message table, but not the fields, see [ParseMessage].
+func OpenMessage(b []byte) Message {
+	return types.OpenMessage(b)
 }
 
-// NewMessageErr returns a new message from bytes or an error when not a message.
-func NewMessageErr(b []byte) (Message, error) {
-	return types.NewMessageErr(b)
+// OpenMessageErr opens and returns a message from bytes, or an error.
+// The method decodes the message table, but not the fields, see [ParseMessage].
+func OpenMessageErr(b []byte) (Message, error) {
+	return types.OpenMessageErr(b)
 }
 
 // ParseMessage recursively parses and returns a message.

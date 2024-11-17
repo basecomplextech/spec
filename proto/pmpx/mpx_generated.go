@@ -121,21 +121,21 @@ type Message struct {
 	msg spec.Message
 }
 
-func NewMessage(b []byte) Message {
-	msg := spec.NewMessage(b)
+func NewMessage(msg spec.Message) Message {
 	return Message{msg}
 }
 
-func NewMessageErr(b []byte) (_ Message, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenMessage(b []byte) Message {
+	msg := spec.OpenMessage(b)
+	return Message{msg}
+}
+
+func OpenMessageErr(b []byte) (_ Message, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return Message{msg}, nil
-}
-
-func MakeMessage(msg spec.Message) Message {
-	return Message{msg}
 }
 
 func ParseMessage(b []byte) (_ Message, size int, err error) {
@@ -147,13 +147,13 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 }
 
 func (m Message) Code() Code                       { return NewCode(m.msg.FieldRaw(1)) }
-func (m Message) ConnectRequest() ConnectRequest   { return MakeConnectRequest(m.msg.Message(2)) }
-func (m Message) ConnectResponse() ConnectResponse { return MakeConnectResponse(m.msg.Message(3)) }
-func (m Message) Batch() Batch                     { return MakeBatch(m.msg.Message(4)) }
-func (m Message) ChannelOpen() ChannelOpen         { return MakeChannelOpen(m.msg.Message(10)) }
-func (m Message) ChannelClose() ChannelClose       { return MakeChannelClose(m.msg.Message(11)) }
-func (m Message) ChannelData() ChannelData         { return MakeChannelData(m.msg.Message(12)) }
-func (m Message) ChannelWindow() ChannelWindow     { return MakeChannelWindow(m.msg.Message(13)) }
+func (m Message) ConnectRequest() ConnectRequest   { return NewConnectRequest(m.msg.Message(2)) }
+func (m Message) ConnectResponse() ConnectResponse { return NewConnectResponse(m.msg.Message(3)) }
+func (m Message) Batch() Batch                     { return NewBatch(m.msg.Message(4)) }
+func (m Message) ChannelOpen() ChannelOpen         { return NewChannelOpen(m.msg.Message(10)) }
+func (m Message) ChannelClose() ChannelClose       { return NewChannelClose(m.msg.Message(11)) }
+func (m Message) ChannelData() ChannelData         { return NewChannelData(m.msg.Message(12)) }
+func (m Message) ChannelWindow() ChannelWindow     { return NewChannelWindow(m.msg.Message(13)) }
 
 func (m Message) HasCode() bool            { return m.msg.HasField(1) }
 func (m Message) HasConnectRequest() bool  { return m.msg.HasField(2) }
@@ -176,21 +176,21 @@ type ConnectRequest struct {
 	msg spec.Message
 }
 
-func NewConnectRequest(b []byte) ConnectRequest {
-	msg := spec.NewMessage(b)
+func NewConnectRequest(msg spec.Message) ConnectRequest {
 	return ConnectRequest{msg}
 }
 
-func NewConnectRequestErr(b []byte) (_ ConnectRequest, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenConnectRequest(b []byte) ConnectRequest {
+	msg := spec.OpenMessage(b)
+	return ConnectRequest{msg}
+}
+
+func OpenConnectRequestErr(b []byte) (_ ConnectRequest, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return ConnectRequest{msg}, nil
-}
-
-func MakeConnectRequest(msg spec.Message) ConnectRequest {
-	return ConnectRequest{msg}
 }
 
 func ParseConnectRequest(b []byte) (_ ConnectRequest, size int, err error) {
@@ -202,10 +202,10 @@ func ParseConnectRequest(b []byte) (_ ConnectRequest, size int, err error) {
 }
 
 func (m ConnectRequest) Versions() spec.TypedList[Version] {
-	return spec.NewTypedList(m.msg.FieldRaw(1), ParseVersion)
+	return spec.OpenTypedList(m.msg.FieldRaw(1), ParseVersion)
 }
 func (m ConnectRequest) Compression() spec.TypedList[ConnectCompression] {
-	return spec.NewTypedList(m.msg.FieldRaw(2), ParseConnectCompression)
+	return spec.OpenTypedList(m.msg.FieldRaw(2), ParseConnectCompression)
 }
 
 func (m ConnectRequest) HasVersions() bool    { return m.msg.HasField(1) }
@@ -227,21 +227,21 @@ type ConnectResponse struct {
 	msg spec.Message
 }
 
-func NewConnectResponse(b []byte) ConnectResponse {
-	msg := spec.NewMessage(b)
+func NewConnectResponse(msg spec.Message) ConnectResponse {
 	return ConnectResponse{msg}
 }
 
-func NewConnectResponseErr(b []byte) (_ ConnectResponse, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenConnectResponse(b []byte) ConnectResponse {
+	msg := spec.OpenMessage(b)
+	return ConnectResponse{msg}
+}
+
+func OpenConnectResponseErr(b []byte) (_ ConnectResponse, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return ConnectResponse{msg}, nil
-}
-
-func MakeConnectResponse(msg spec.Message) ConnectResponse {
-	return ConnectResponse{msg}
 }
 
 func ParseConnectResponse(b []byte) (_ ConnectResponse, size int, err error) {
@@ -317,21 +317,21 @@ type Batch struct {
 	msg spec.Message
 }
 
-func NewBatch(b []byte) Batch {
-	msg := spec.NewMessage(b)
+func NewBatch(msg spec.Message) Batch {
 	return Batch{msg}
 }
 
-func NewBatchErr(b []byte) (_ Batch, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenBatch(b []byte) Batch {
+	msg := spec.OpenMessage(b)
+	return Batch{msg}
+}
+
+func OpenBatchErr(b []byte) (_ Batch, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return Batch{msg}, nil
-}
-
-func MakeBatch(msg spec.Message) Batch {
-	return Batch{msg}
 }
 
 func ParseBatch(b []byte) (_ Batch, size int, err error) {
@@ -343,7 +343,7 @@ func ParseBatch(b []byte) (_ Batch, size int, err error) {
 }
 
 func (m Batch) List() spec.TypedList[Message] {
-	return spec.NewTypedList(m.msg.FieldRaw(1), ParseMessage)
+	return spec.OpenTypedList(m.msg.FieldRaw(1), ParseMessage)
 }
 func (m Batch) HasList() bool                       { return m.msg.HasField(1) }
 func (m Batch) IsEmpty() bool                       { return m.msg.Empty() }
@@ -358,21 +358,21 @@ type ChannelOpen struct {
 	msg spec.Message
 }
 
-func NewChannelOpen(b []byte) ChannelOpen {
-	msg := spec.NewMessage(b)
+func NewChannelOpen(msg spec.Message) ChannelOpen {
 	return ChannelOpen{msg}
 }
 
-func NewChannelOpenErr(b []byte) (_ ChannelOpen, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenChannelOpen(b []byte) ChannelOpen {
+	msg := spec.OpenMessage(b)
+	return ChannelOpen{msg}
+}
+
+func OpenChannelOpenErr(b []byte) (_ ChannelOpen, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return ChannelOpen{msg}, nil
-}
-
-func MakeChannelOpen(msg spec.Message) ChannelOpen {
-	return ChannelOpen{msg}
 }
 
 func ParseChannelOpen(b []byte) (_ ChannelOpen, size int, err error) {
@@ -407,21 +407,21 @@ type ChannelClose struct {
 	msg spec.Message
 }
 
-func NewChannelClose(b []byte) ChannelClose {
-	msg := spec.NewMessage(b)
+func NewChannelClose(msg spec.Message) ChannelClose {
 	return ChannelClose{msg}
 }
 
-func NewChannelCloseErr(b []byte) (_ ChannelClose, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenChannelClose(b []byte) ChannelClose {
+	msg := spec.OpenMessage(b)
+	return ChannelClose{msg}
+}
+
+func OpenChannelCloseErr(b []byte) (_ ChannelClose, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return ChannelClose{msg}, nil
-}
-
-func MakeChannelClose(msg spec.Message) ChannelClose {
-	return ChannelClose{msg}
 }
 
 func ParseChannelClose(b []byte) (_ ChannelClose, size int, err error) {
@@ -454,21 +454,21 @@ type ChannelData struct {
 	msg spec.Message
 }
 
-func NewChannelData(b []byte) ChannelData {
-	msg := spec.NewMessage(b)
+func NewChannelData(msg spec.Message) ChannelData {
 	return ChannelData{msg}
 }
 
-func NewChannelDataErr(b []byte) (_ ChannelData, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenChannelData(b []byte) ChannelData {
+	msg := spec.OpenMessage(b)
+	return ChannelData{msg}
+}
+
+func OpenChannelDataErr(b []byte) (_ ChannelData, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return ChannelData{msg}, nil
-}
-
-func MakeChannelData(msg spec.Message) ChannelData {
-	return ChannelData{msg}
 }
 
 func ParseChannelData(b []byte) (_ ChannelData, size int, err error) {
@@ -501,21 +501,21 @@ type ChannelWindow struct {
 	msg spec.Message
 }
 
-func NewChannelWindow(b []byte) ChannelWindow {
-	msg := spec.NewMessage(b)
+func NewChannelWindow(msg spec.Message) ChannelWindow {
 	return ChannelWindow{msg}
 }
 
-func NewChannelWindowErr(b []byte) (_ ChannelWindow, err error) {
-	msg, err := spec.NewMessageErr(b)
+func OpenChannelWindow(b []byte) ChannelWindow {
+	msg := spec.OpenMessage(b)
+	return ChannelWindow{msg}
+}
+
+func OpenChannelWindowErr(b []byte) (_ ChannelWindow, err error) {
+	msg, err := spec.OpenMessageErr(b)
 	if err != nil {
 		return
 	}
 	return ChannelWindow{msg}, nil
-}
-
-func MakeChannelWindow(msg spec.Message) ChannelWindow {
-	return ChannelWindow{msg}
 }
 
 func ParseChannelWindow(b []byte) (_ ChannelWindow, size int, err error) {
@@ -626,7 +626,7 @@ func (w MessageWriter) Build() (_ Message, err error) {
 	if err != nil {
 		return
 	}
-	return NewMessage(bytes), nil
+	return OpenMessageErr(bytes)
 }
 
 func (w MessageWriter) Unwrap() spec.MessageWriter {
@@ -675,7 +675,7 @@ func (w ConnectRequestWriter) Build() (_ ConnectRequest, err error) {
 	if err != nil {
 		return
 	}
-	return NewConnectRequest(bytes), nil
+	return OpenConnectRequestErr(bytes)
 }
 
 func (w ConnectRequestWriter) Unwrap() spec.MessageWriter {
@@ -722,7 +722,7 @@ func (w ConnectResponseWriter) Build() (_ ConnectResponse, err error) {
 	if err != nil {
 		return
 	}
-	return NewConnectResponse(bytes), nil
+	return OpenConnectResponseErr(bytes)
 }
 
 func (w ConnectResponseWriter) Unwrap() spec.MessageWriter {
@@ -767,7 +767,7 @@ func (w BatchWriter) Build() (_ Batch, err error) {
 	if err != nil {
 		return
 	}
-	return NewBatch(bytes), nil
+	return OpenBatchErr(bytes)
 }
 
 func (w BatchWriter) Unwrap() spec.MessageWriter {
@@ -811,7 +811,7 @@ func (w ChannelOpenWriter) Build() (_ ChannelOpen, err error) {
 	if err != nil {
 		return
 	}
-	return NewChannelOpen(bytes), nil
+	return OpenChannelOpenErr(bytes)
 }
 
 func (w ChannelOpenWriter) Unwrap() spec.MessageWriter {
@@ -854,7 +854,7 @@ func (w ChannelCloseWriter) Build() (_ ChannelClose, err error) {
 	if err != nil {
 		return
 	}
-	return NewChannelClose(bytes), nil
+	return OpenChannelCloseErr(bytes)
 }
 
 func (w ChannelCloseWriter) Unwrap() spec.MessageWriter {
@@ -897,7 +897,7 @@ func (w ChannelDataWriter) Build() (_ ChannelData, err error) {
 	if err != nil {
 		return
 	}
-	return NewChannelData(bytes), nil
+	return OpenChannelDataErr(bytes)
 }
 
 func (w ChannelDataWriter) Unwrap() spec.MessageWriter {
@@ -940,7 +940,7 @@ func (w ChannelWindowWriter) Build() (_ ChannelWindow, err error) {
 	if err != nil {
 		return
 	}
-	return NewChannelWindow(bytes), nil
+	return OpenChannelWindowErr(bytes)
 }
 
 func (w ChannelWindowWriter) Unwrap() spec.MessageWriter {

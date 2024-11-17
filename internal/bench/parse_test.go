@@ -61,7 +61,7 @@ func BenchmarkReadMessage(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		m, err := pkg1.NewMessageErr(bytes)
+		m, err := pkg1.OpenMessageErr(bytes)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -128,7 +128,7 @@ func BenchmarkNewMessage(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		msg := pkg1.NewMessage(bytes)
+		msg := pkg1.OpenMessage(bytes)
 		if msg.Unwrap().Len() == 0 {
 			b.Fatal()
 		}

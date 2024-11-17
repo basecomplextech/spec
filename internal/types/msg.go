@@ -23,8 +23,9 @@ type MessageType interface {
 	Unwrap() Message
 }
 
-// NewMessage returns a new message from bytes or an empty message when not a message.
-func NewMessage(b []byte) Message {
+// OpenMessage opens and returns a message from bytes, or an empty message on error.
+// The method decodes the message table, but not the fields.
+func OpenMessage(b []byte) Message {
 	table, n, err := decode.DecodeMessageTable(b)
 	if err != nil {
 		return Message{}
@@ -37,8 +38,9 @@ func NewMessage(b []byte) Message {
 	}
 }
 
-// NewMessageErr returns a new message from bytes or an error when not a message.
-func NewMessageErr(b []byte) (Message, error) {
+// OpenMessageErr opens and returns a message from bytes, or an error.
+// The method decodes the message table, but not the fields.
+func OpenMessageErr(b []byte) (Message, error) {
 	table, size, err := decode.DecodeMessageTable(b)
 	if err != nil {
 		return Message{}, err
@@ -164,7 +166,7 @@ func (m Message) TagAt(i int) (uint16, bool) {
 func (m Message) Clone() Message {
 	b := make([]byte, len(m.bytes))
 	copy(b, m.bytes)
-	return NewMessage(b)
+	return OpenMessage(b)
 }
 
 // CloneTo clones a message into a slice, allocates a new slice when needed.
@@ -176,7 +178,7 @@ func (m Message) CloneTo(b []byte) Message {
 	b = b[:ln]
 
 	copy(b, m.bytes)
-	return NewMessage(b)
+	return OpenMessage(b)
 }
 
 // CloneToArena clones a message into an arena.
@@ -184,7 +186,7 @@ func (m Message) CloneToArena(a alloc.Arena) Message {
 	n := len(m.bytes)
 	buf := alloc.Bytes(a, n)
 	copy(buf, m.bytes)
-	return NewMessage(buf)
+	return OpenMessage(buf)
 }
 
 // CloneToBuffer clones a message into a buffer, grows the buffer.
@@ -192,7 +194,7 @@ func (m Message) CloneToBuffer(buf buffer.Buffer) Message {
 	ln := len(m.bytes)
 	b := buf.Grow(ln)
 	copy(b, m.bytes)
-	return NewMessage(b)
+	return OpenMessage(b)
 }
 
 // Types
@@ -317,7 +319,7 @@ func (m Message) String(tag uint16) format.String {
 // Message decodes and returns a message or an empty message.
 func (m Message) Message(tag uint16) Message {
 	b := m.field(tag)
-	return NewMessage(b)
+	return OpenMessage(b)
 }
 
 // internal

@@ -51,22 +51,23 @@ func (w *messageWriter) def(def *model.Definition) error {
 }
 
 func (w *messageWriter) new_methods(def *model.Definition) error {
-	w.linef(`func New%v(b []byte) %v {`, def.Name, def.Name)
-	w.linef(`msg := spec.NewMessage(b)`)
+	w.linef(`func New%v(msg spec.Message) %v {`, def.Name, def.Name)
 	w.linef(`return %v{msg}`, def.Name)
 	w.linef(`}`)
 	w.line()
 
-	w.linef(`func New%vErr(b []byte) (_ %v, err error) {`, def.Name, def.Name)
-	w.linef(`msg, err := spec.NewMessageErr(b)`)
+	w.linef(`func Open%v(b []byte) %v {`, def.Name, def.Name)
+	w.linef(`msg := spec.OpenMessage(b)`)
+	w.linef(`return %v{msg}`, def.Name)
+	w.linef(`}`)
+	w.line()
+
+	w.linef(`func Open%vErr(b []byte) (_ %v, err error) {`, def.Name, def.Name)
+	w.linef(`msg, err := spec.OpenMessageErr(b)`)
 	w.line(`if err != nil {
 		return
 	}`)
 	w.linef(`return %v{msg}, nil`, def.Name)
-	w.linef(`}`)
-	w.line()
-	w.linef(`func Make%v(msg spec.Message) %v {`, def.Name, def.Name)
-	w.linef(`return %v{msg}`, def.Name)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -160,7 +161,7 @@ func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 		decodeFunc := typeDecodeRefFunc(field.Type.Element)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
-		w.writef(`return spec.NewTypedList(m.msg.FieldRaw(%d), %v)`, tag, decodeFunc)
+		w.writef(`return spec.OpenTypedList(m.msg.FieldRaw(%d), %v)`, tag, decodeFunc)
 		w.writef(`}`)
 		w.line()
 
@@ -302,7 +303,7 @@ func (w *messageWriter) writer_end(def *model.Definition) error {
 	w.linef(`if err != nil {
 		return
 	}`)
-	w.linef(`return New%v(bytes), nil`, def.Name)
+	w.linef(`return Open%vErr(bytes)`, def.Name)
 	w.linef(`}`)
 	w.line()
 

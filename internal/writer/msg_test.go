@@ -76,7 +76,7 @@ func TestMessageWriter_Copy__should_copy_message(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		msg, err = types.NewMessageErr(b)
+		msg, err = types.OpenMessageErr(b)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -92,7 +92,7 @@ func TestMessageWriter_Copy__should_copy_message(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msg1, err := types.NewMessageErr(b)
+	msg1, err := types.OpenMessageErr(b)
 	if err != nil {
 		t.Fatal(err)
 	}

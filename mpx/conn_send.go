@@ -39,7 +39,7 @@ func (c *conn) sendLoop(ctx async.Context) status.Status {
 }
 
 func (c *conn) sendMessage(b []byte) status.Status {
-	msg, err := pmpx.NewMessageErr(b)
+	msg, err := pmpx.OpenMessageErr(b)
 	if err != nil {
 		return mpxError(err)
 	}
