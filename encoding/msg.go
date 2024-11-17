@@ -15,7 +15,7 @@ const (
 	messageFieldBigSize   = 2 + 4 // tag(2) + offset(4)
 )
 
-type MessageMeta struct {
+type MessageTable struct {
 	table messageTable
 
 	data uint32 // message data size
@@ -23,39 +23,39 @@ type MessageMeta struct {
 }
 
 // Len returns the number of fields in the message.
-func (m MessageMeta) Len() int {
-	return m.table.count(m.big)
+func (t MessageTable) Len() int {
+	return t.table.count(t.big)
 }
 
 // DataSize returns the message data size.
-func (m MessageMeta) DataSize() uint32 {
-	return m.data
+func (t MessageTable) DataSize() uint32 {
+	return t.data
 }
 
 // Offset returns field end offset by a tag or -1.
-func (m MessageMeta) Offset(tag uint16) int {
-	if m.big {
-		return m.table.offset_big(tag)
+func (t MessageTable) Offset(tag uint16) int {
+	if t.big {
+		return t.table.offset_big(tag)
 	} else {
-		return m.table.offset_small(tag)
+		return t.table.offset_small(tag)
 	}
 }
 
 // OffsetByIndex returns field end offset by an index or -1.
-func (m MessageMeta) OffsetByIndex(i int) int {
-	if m.big {
-		return m.table.offsetByIndex_big(i)
+func (t MessageTable) OffsetByIndex(i int) int {
+	if t.big {
+		return t.table.offsetByIndex_big(i)
 	} else {
-		return m.table.offsetByIndex_small(i)
+		return t.table.offsetByIndex_small(i)
 	}
 }
 
 // Field returns a field by an index or false,
-func (m MessageMeta) Field(i int) (MessageField, bool) {
-	if m.big {
-		return m.table.field_big(i)
+func (t MessageTable) Field(i int) (MessageField, bool) {
+	if t.big {
+		return t.table.field_big(i)
 	} else {
-		return m.table.field_small(i)
+		return t.table.field_small(i)
 	}
 }
 

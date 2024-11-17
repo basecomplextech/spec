@@ -560,12 +560,12 @@ func TestDecodeListTable__should_return_error_when_invalid_data(t *testing.T) {
 
 // Message
 
-func TestDecodeMessageMeta__should_decode_message_meta(t *testing.T) {
+func TestDecodeMessageTable__should_decode_message_meta(t *testing.T) {
 	fields := TestFields()
 	dataSize := 100
-	b := testEncodeMessageMeta(t, dataSize, fields)
+	b := testEncodeMessageTable(t, dataSize, fields)
 
-	meta, n, err := DecodeMessageMeta(b)
+	meta, n, err := DecodeMessageTable(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -603,41 +603,41 @@ func TestDecodeMessageTable__should_decode_message_table(t *testing.T) {
 	}
 }
 
-func TestDecodeMessageMeta__should_return_error_when_invalid_type(t *testing.T) {
+func TestDecodeMessageTable__should_return_error_when_invalid_type(t *testing.T) {
 	fields := TestFields()
 	dataSize := 100
 
-	b := testEncodeMessageMeta(t, dataSize, fields)
+	b := testEncodeMessageTable(t, dataSize, fields)
 	b[len(b)-1] = byte(core.TypeList)
 
-	_, _, err := DecodeMessageMeta(b)
+	_, _, err := DecodeMessageTable(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid type")
 }
 
-func TestDecodeMessageMeta__should_return_error_when_invalid_table_size(t *testing.T) {
+func TestDecodeMessageTable__should_return_error_when_invalid_table_size(t *testing.T) {
 	b := []byte{}
 	b = append(b, 0xff)
 	b = append(b, byte(core.TypeMessage))
 
-	_, _, err := DecodeMessageMeta(b)
+	_, _, err := DecodeMessageTable(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table size")
 }
 
-func TestDecodeMessageMeta__should_return_error_when_invalid_data_size(t *testing.T) {
+func TestDecodeMessageTable__should_return_error_when_invalid_data_size(t *testing.T) {
 	big := false
 	b := []byte{}
 	b = append(b, 0xff)
 	b = appendSize(b, big, 1000)
 	b = append(b, byte(core.TypeMessage))
 
-	_, _, err := DecodeMessageMeta(b)
+	_, _, err := DecodeMessageTable(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid data size")
 }
 
-func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T) {
+func TestDecodeMessageTable__should_return_error_when_invalid_table(t *testing.T) {
 	buf := buffer.New()
 	_, err := encodeMessageTable(buf, nil, true)
 	if err != nil {
@@ -650,12 +650,12 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_table(t *testing.T)
 	b = appendSize(b, big, 1000) // table size
 	b = append(b, byte(core.TypeMessage))
 
-	_, _, err = DecodeMessageMeta(b)
+	_, _, err = DecodeMessageTable(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid table")
 }
 
-func TestDecodeMessageMeta__should_return_error_when_invalid_data(t *testing.T) {
+func TestDecodeMessageTable__should_return_error_when_invalid_data(t *testing.T) {
 	buf := buffer.New()
 
 	_, err := encodeMessageTable(buf, nil, true)
@@ -669,7 +669,7 @@ func TestDecodeMessageMeta__should_return_error_when_invalid_data(t *testing.T) 
 	b = appendSize(b, big, 0)
 	b = append(b, byte(core.TypeMessage))
 
-	_, _, err = DecodeMessageMeta(b)
+	_, _, err = DecodeMessageTable(b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid data")
 }

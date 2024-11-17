@@ -14,7 +14,7 @@ import (
 
 // Message is a raw message.
 type Message struct {
-	meta  encoding.MessageMeta
+	table encoding.MessageTable
 	bytes []byte
 }
 
@@ -25,28 +25,28 @@ type MessageType interface {
 
 // NewMessage returns a new message from bytes or an empty message when not a message.
 func NewMessage(b []byte) Message {
-	meta, n, err := encoding.DecodeMessageMeta(b)
+	table, n, err := encoding.DecodeMessageTable(b)
 	if err != nil {
 		return Message{}
 	}
 	bytes := b[len(b)-n:]
 
 	return Message{
-		meta:  meta,
+		table: table,
 		bytes: bytes,
 	}
 }
 
 // NewMessageErr returns a new message from bytes or an error when not a message.
 func NewMessageErr(b []byte) (Message, error) {
-	meta, n, err := encoding.DecodeMessageMeta(b)
+	table, size, err := encoding.DecodeMessageTable(b)
 	if err != nil {
 		return Message{}, err
 	}
-	bytes := b[len(b)-n:]
+	bytes := b[len(b)-size:]
 
 	m := Message{
-		meta:  meta,
+		table: table,
 		bytes: bytes,
 	}
 	return m, nil
@@ -54,14 +54,14 @@ func NewMessageErr(b []byte) (Message, error) {
 
 // ParseMessage recursively parses and returns a message.
 func ParseMessage(b []byte) (_ Message, size int, err error) {
-	meta, size, err := encoding.DecodeMessageMeta(b)
+	table, size, err := encoding.DecodeMessageTable(b)
 	if err != nil {
 		return Message{}, 0, err
 	}
 	bytes := b[len(b)-size:]
 
 	m := Message{
-		meta:  meta,
+		table: table,
 		bytes: bytes,
 	}
 
@@ -81,7 +81,7 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 
 // Empty returns true if bytes are empty or message has no fields.
 func (m Message) Empty() bool {
-	return len(m.bytes) == 0 || m.meta.Len() == 0
+	return len(m.bytes) == 0 || m.table.Len() == 0
 }
 
 // Len returns the length of the message bytes.
@@ -98,20 +98,20 @@ func (m Message) Raw() []byte {
 
 // Fields returns the number of fields in the message.
 func (m Message) Fields() int {
-	return m.meta.Len()
+	return m.table.Len()
 }
 
 // HasField returns true if the message contains a field.
 func (m Message) HasField(tag uint16) bool {
-	end := m.meta.Offset(tag)
-	size := m.meta.DataSize()
+	end := m.table.Offset(tag)
+	size := m.table.DataSize()
 	return end >= 0 && end <= int(size)
 }
 
 // Field returns a truncated field data as a value or nil.
 func (m Message) Field(tag uint16) Value {
-	end := m.meta.Offset(tag)
-	size := m.meta.DataSize()
+	end := m.table.Offset(tag)
+	size := m.table.DataSize()
 
 	if end < 0 || end > int(size) {
 		return nil
@@ -123,8 +123,8 @@ func (m Message) Field(tag uint16) Value {
 
 // FieldAt returns field data at an index or nil.
 func (m Message) FieldAt(i int) Value {
-	end := m.meta.OffsetByIndex(i)
-	size := m.meta.DataSize()
+	end := m.table.OffsetByIndex(i)
+	size := m.table.DataSize()
 
 	if end < 0 || end > int(size) {
 		return nil
@@ -137,8 +137,8 @@ func (m Message) FieldAt(i int) Value {
 // FieldRaw returns a raw untruncated field data by a tag or nil.
 // The data is larger than the field value, when not the first field.
 func (m Message) FieldRaw(tag uint16) []byte {
-	end := m.meta.Offset(tag)
-	size := m.meta.DataSize()
+	end := m.table.Offset(tag)
+	size := m.table.DataSize()
 
 	if end < 0 || end > int(size) {
 		return nil
@@ -151,7 +151,7 @@ func (m Message) FieldRaw(tag uint16) []byte {
 
 // TagAt returns a field tag at an index or false.
 func (m Message) TagAt(i int) (uint16, bool) {
-	field, ok := m.meta.Field(i)
+	field, ok := m.table.Field(i)
 	if !ok {
 		return 0, false
 	}
@@ -323,8 +323,8 @@ func (m Message) Message(tag uint16) Message {
 // internal
 
 func (m Message) field(tag uint16) []byte {
-	end := m.meta.Offset(tag)
-	size := m.meta.DataSize()
+	end := m.table.Offset(tag)
+	size := m.table.DataSize()
 
 	if end < 0 || end > int(size) {
 		return nil
@@ -334,8 +334,8 @@ func (m Message) field(tag uint16) []byte {
 }
 
 func (m Message) fieldAt(i int) []byte {
-	end := m.meta.OffsetByIndex(i)
-	size := m.meta.DataSize()
+	end := m.table.OffsetByIndex(i)
+	size := m.table.DataSize()
 
 	if end < 0 || end > int(size) {
 		return nil

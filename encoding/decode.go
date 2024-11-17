@@ -887,9 +887,9 @@ func decodeListTable(b []byte, size uint32, big bool) (_ listTable, err error) {
 	return v, nil
 }
 
-// MessageMeta
+// MessageTable
 
-func DecodeMessageMeta(b []byte) (_ MessageMeta, size int, err error) {
+func DecodeMessageTable(b []byte) (_ MessageTable, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -946,12 +946,12 @@ func DecodeMessageMeta(b []byte) (_ MessageMeta, size int, err error) {
 	size += int(dataSize)
 
 	// Done
-	meta := MessageMeta{
+	t := MessageTable{
 		table: table,
 		data:  dataSize,
 		big:   big,
 	}
-	return meta, size, nil
+	return t, size, nil
 }
 
 func decodeMessageTable(b []byte, size uint32, big bool) (_ messageTable, err error) {

@@ -17,7 +17,7 @@ var (
 	_ async.Context
 	_ bin.Bin128
 	_ buffer.Buffer
-	_ encoding.MessageMeta
+	_ encoding.MessageTable
 	_ pools.Pool[any]
 	_ ref.Ref
 	_ spec.Type

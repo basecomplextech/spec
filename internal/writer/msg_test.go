@@ -57,7 +57,7 @@ func TestMessageWriter__should_write_message(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, n, err := encoding.DecodeMessageMeta(b)
+	_, n, err := encoding.DecodeMessageTable(b)
 	if err != nil {
 		t.Fatal(err)
 	}

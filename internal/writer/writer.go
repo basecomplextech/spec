@@ -533,7 +533,7 @@ func (w *writer) endMessage() ([]byte, error) {
 	table := w.fields.pop(message.tableStart)
 
 	// Encode message
-	if _, err := encoding.EncodeMessageMeta(w.buf, dataSize, table); err != nil {
+	if _, err := encoding.EncodeMessageTable(w.buf, dataSize, table); err != nil {
 		return nil, w.fail(err)
 	}
 

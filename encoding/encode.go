@@ -259,9 +259,9 @@ func encodeListTable(b buffer.Buffer, table []ListElement, big bool) (int, error
 	return size, nil
 }
 
-// MessageMeta
+// MessageTable
 
-func EncodeMessageMeta(b buffer.Buffer, dataSize int, table []MessageField) (int, error) {
+func EncodeMessageTable(b buffer.Buffer, dataSize int, table []MessageField) (int, error) {
 	if dataSize > core.MaxSize {
 		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", core.MaxSize, dataSize)
 	}

@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testEncodeMessageMeta(t tests.T, dataSize int, fields []MessageField) []byte {
+func testEncodeMessageTable(t tests.T, dataSize int, fields []MessageField) []byte {
 	buf := buffer.New()
 	buf.Grow(dataSize)
 
-	_, err := EncodeMessageMeta(buf, dataSize, fields)
+	_, err := EncodeMessageTable(buf, dataSize, fields)
 	if err != nil {
 		t.Fatal(err)
 	}
