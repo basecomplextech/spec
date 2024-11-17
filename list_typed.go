@@ -9,6 +9,14 @@ type TypedList[T any] struct {
 	element func([]byte) (T, int, error)
 }
 
+// NewTypedList returns a new typed list.
+func NewTypedList[T any](list List, element func([]byte) (T, int, error)) TypedList[T] {
+	return TypedList[T]{
+		list:    list,
+		element: element,
+	}
+}
+
 // OpenTypedList opens and returns a typed list, or an empty list on error.
 func OpenTypedList[T any](b []byte, element func([]byte) (T, int, error)) TypedList[T] {
 	l := OpenList(b)

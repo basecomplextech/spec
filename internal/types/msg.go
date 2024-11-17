@@ -314,7 +314,13 @@ func (m Message) String(tag uint16) format.String {
 	return format.String(p)
 }
 
-// Message
+// List/message
+
+// List decodes and returns a list or an empty list.
+func (m Message) List(tag uint16) List {
+	b := m.field(tag)
+	return OpenList(b)
+}
 
 // Message decodes and returns a message or an empty message.
 func (m Message) Message(tag uint16) Message {

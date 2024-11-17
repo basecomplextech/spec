@@ -161,7 +161,7 @@ func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 		decodeFunc := typeDecodeRefFunc(field.Type.Element)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
-		w.writef(`return spec.OpenTypedList(m.msg.FieldRaw(%d), %v)`, tag, decodeFunc)
+		w.writef(`return spec.NewTypedList(m.msg.List(%d), %v)`, tag, decodeFunc)
 		w.writef(`}`)
 		w.line()
 
