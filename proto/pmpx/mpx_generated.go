@@ -201,11 +201,11 @@ func ParseConnectRequest(b []byte) (_ ConnectRequest, size int, err error) {
 	return ConnectRequest{msg}, size, nil
 }
 
-func (m ConnectRequest) Versions() spec.TypedList[Version] {
-	return spec.NewTypedList(m.msg.List(1), DecodeVersion)
+func (m ConnectRequest) Versions() spec.ValueList[Version] {
+	return spec.NewValueList(m.msg.List(1), DecodeVersion)
 }
-func (m ConnectRequest) Compression() spec.TypedList[ConnectCompression] {
-	return spec.NewTypedList(m.msg.List(2), DecodeConnectCompression)
+func (m ConnectRequest) Compression() spec.ValueList[ConnectCompression] {
+	return spec.NewValueList(m.msg.List(2), DecodeConnectCompression)
 }
 
 func (m ConnectRequest) HasVersions() bool    { return m.msg.HasField(1) }
@@ -342,7 +342,9 @@ func ParseBatch(b []byte) (_ Batch, size int, err error) {
 	return Batch{msg}, size, nil
 }
 
-func (m Batch) List() spec.TypedList[Message]       { return spec.NewTypedList(m.msg.List(1), ParseMessage) }
+func (m Batch) List() spec.MessageList[Message] {
+	return spec.NewMessageList(m.msg.List(1), OpenMessageErr)
+}
 func (m Batch) HasList() bool                       { return m.msg.HasField(1) }
 func (m Batch) IsEmpty() bool                       { return m.msg.Empty() }
 func (m Batch) Clone() Batch                        { return Batch{m.msg.Clone()} }

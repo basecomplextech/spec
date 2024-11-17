@@ -158,10 +158,16 @@ func (w *messageWriter) field(def *model.Definition, field *model.Field) error {
 		w.line()
 
 	case model.KindList:
+		elem := field.Type.Element
 		decodeFunc := typeDecodeRefFunc(field.Type.Element)
 
 		w.writef(`func (m %v) %v() %v {`, def.Name, fieldName, typeName)
-		w.writef(`return spec.NewTypedList(m.msg.List(%d), %v)`, tag, decodeFunc)
+		if elem.Kind == model.KindMessage {
+			w.writef(`return spec.NewMessageList(m.msg.List(%d), %v)`, tag, decodeFunc)
+		} else {
+			w.writef(`return spec.NewValueList(m.msg.List(%d), %v)`, tag, decodeFunc)
+		}
+
 		w.writef(`}`)
 		w.line()
 

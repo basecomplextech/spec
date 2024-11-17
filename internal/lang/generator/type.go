@@ -58,7 +58,10 @@ func typeName(typ *model.Type) string {
 
 	case model.KindList:
 		elem := typeName(typ.Element)
-		return fmt.Sprintf("spec.TypedList[%v]", elem)
+		if typ.Element.Kind == model.KindMessage {
+			return fmt.Sprintf("spec.MessageList[%v]", elem)
+		}
+		return fmt.Sprintf("spec.ValueList[%v]", elem)
 
 	case model.KindEnum,
 		model.KindMessage,
@@ -89,7 +92,10 @@ func typeRefName(typ *model.Type) string {
 
 	case model.KindList:
 		elem := typeRefName(typ.Element)
-		return fmt.Sprintf("spec.TypedList[%v]", elem)
+		if typ.Element.Kind == model.KindMessage {
+			return fmt.Sprintf("spec.MessageList[%v]", elem)
+		}
+		return fmt.Sprintf("spec.ValueList[%v]", elem)
 	}
 
 	return typeName(typ)
@@ -211,8 +217,12 @@ func typeDecodeFunc(typ *model.Type) string {
 		return "spec.ParseMessage"
 
 	case model.KindList:
-		elem := typeName(typ.Element)
-		return fmt.Sprintf("spec.ParseTypedList[%v]", elem)
+		elem := typ.Element
+		name := typeName(typ.Element)
+		if elem.Kind == model.KindMessage {
+			return fmt.Sprintf("spec.OpenMessageListErr[%v]", name)
+		}
+		return fmt.Sprintf("spec.OpenValueListErr[%v]", name)
 
 	case model.KindEnum,
 		model.KindStruct:
@@ -223,9 +233,9 @@ func typeDecodeFunc(typ *model.Type) string {
 
 	case model.KindMessage:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.Open%vErr", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Parse%v", typ.Name)
+		return fmt.Sprintf("Open%vErr", typ.Name)
 	}
 
 	return ""

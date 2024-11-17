@@ -147,7 +147,9 @@ func ParseRequest(b []byte) (_ Request, size int, err error) {
 	return Request{msg}, size, nil
 }
 
-func (m Request) Calls() spec.TypedList[Call]           { return spec.NewTypedList(m.msg.List(1), ParseCall) }
+func (m Request) Calls() spec.MessageList[Call] {
+	return spec.NewMessageList(m.msg.List(1), OpenCallErr)
+}
 func (m Request) HasCalls() bool                        { return m.msg.HasField(1) }
 func (m Request) IsEmpty() bool                         { return m.msg.Empty() }
 func (m Request) Clone() Request                        { return Request{m.msg.Clone()} }
