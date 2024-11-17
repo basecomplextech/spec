@@ -114,18 +114,13 @@ func typeNewFunc(typ *model.Type) string {
 		elem := typeName(typ.Element)
 		return "spec.List[]" + elem
 
-	case model.KindMessage:
+	case model.KindEnum,
+		model.KindMessage,
+		model.KindStruct:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.Open%v", typ.ImportName, typ.Name)
 		}
 		return fmt.Sprintf("Open%v", typ.Name)
-
-	case model.KindEnum,
-		model.KindStruct:
-		if typ.Import != nil {
-			return fmt.Sprintf("%v.New%v", typ.ImportName, typ.Name)
-		}
-		return fmt.Sprintf("New%v", typ.Name)
 	}
 	return ""
 }
@@ -153,8 +148,13 @@ func typeParseFunc(typ *model.Type) string {
 		return "spec.List[]" + elem
 
 	case model.KindEnum,
-		model.KindMessage,
 		model.KindStruct:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Decode%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Decode%v", typ.Name)
+
+	case model.KindMessage:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
 		}
@@ -215,8 +215,13 @@ func typeDecodeFunc(typ *model.Type) string {
 		return fmt.Sprintf("spec.ParseTypedList[%v]", elem)
 
 	case model.KindEnum,
-		model.KindMessage,
 		model.KindStruct:
+		if typ.Import != nil {
+			return fmt.Sprintf("%v.Decode%v", typ.ImportName, typ.Name)
+		}
+		return fmt.Sprintf("Decode%v", typ.Name)
+
+	case model.KindMessage:
 		if typ.Import != nil {
 			return fmt.Sprintf("%v.Parse%v", typ.ImportName, typ.Name)
 		}
@@ -290,9 +295,9 @@ func typeWriteFunc(typ *model.Type) string {
 
 	case model.KindEnum:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Write%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.Encode%vTo", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Write%v", typ.Name)
+		return fmt.Sprintf("Encode%vTo", typ.Name)
 
 	case model.KindList:
 		elem := typ.Element
@@ -309,9 +314,9 @@ func typeWriteFunc(typ *model.Type) string {
 
 	case model.KindStruct:
 		if typ.Import != nil {
-			return fmt.Sprintf("%v.Write%v", typ.ImportName, typ.Name)
+			return fmt.Sprintf("%v.Encode%vTo", typ.ImportName, typ.Name)
 		}
-		return fmt.Sprintf("Write%v", typ.Name)
+		return fmt.Sprintf("Encode%vTo", typ.Name)
 	}
 
 	return ""

@@ -26,13 +26,13 @@ func (w *enumWriter) enum(def *model.Definition) error {
 	if err := w.values(def); err != nil {
 		return err
 	}
-	if err := w.new_method(def); err != nil {
+	if err := w.open_method(def); err != nil {
 		return err
 	}
-	if err := w.parse_method(def); err != nil {
+	if err := w.decode_method(def); err != nil {
 		return err
 	}
-	if err := w.write_method(def); err != nil {
+	if err := w.encode_method(def); err != nil {
 		return err
 	}
 	if err := w.string_method(def); err != nil {
@@ -63,9 +63,9 @@ func (w *enumWriter) values(def *model.Definition) error {
 	return nil
 }
 
-func (w *enumWriter) new_method(def *model.Definition) error {
+func (w *enumWriter) open_method(def *model.Definition) error {
 	name := def.Name
-	w.linef(`func New%v(b []byte) %v {`, name, name)
+	w.linef(`func Open%v(b []byte) %v {`, name, name)
 	w.linef(`v, _, _ := spec.DecodeInt32(b)`)
 	w.linef(`return %v(v)`, name)
 	w.linef(`}`)
@@ -73,9 +73,9 @@ func (w *enumWriter) new_method(def *model.Definition) error {
 	return nil
 }
 
-func (w *enumWriter) parse_method(def *model.Definition) error {
+func (w *enumWriter) decode_method(def *model.Definition) error {
 	name := def.Name
-	w.linef(`func Parse%v(b []byte) (result %v, size int, err error) {`, name, name)
+	w.linef(`func Decode%v(b []byte) (result %v, size int, err error) {`, name, name)
 	w.linef(`v, size, err := spec.DecodeInt32(b)`)
 	w.linef(`if err != nil || size == 0 {
 		return
@@ -87,8 +87,8 @@ func (w *enumWriter) parse_method(def *model.Definition) error {
 	return nil
 }
 
-func (w *enumWriter) write_method(def *model.Definition) error {
-	w.linef(`func Write%v(b buffer.Buffer, v %v) (int, error) {`, def.Name, def.Name)
+func (w *enumWriter) encode_method(def *model.Definition) error {
+	w.linef(`func Encode%vTo(b buffer.Buffer, v %v) (int, error) {`, def.Name, def.Name)
 	w.linef(`return spec.EncodeInt32(b, int32(v))`)
 	w.linef(`}`)
 	w.line()

@@ -32,12 +32,12 @@ const (
 	Version_Version10 Version = 10
 )
 
-func NewVersion(b []byte) Version {
+func OpenVersion(b []byte) Version {
 	v, _, _ := spec.DecodeInt32(b)
 	return Version(v)
 }
 
-func ParseVersion(b []byte) (result Version, size int, err error) {
+func DecodeVersion(b []byte) (result Version, size int, err error) {
 	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
@@ -46,7 +46,7 @@ func ParseVersion(b []byte) (result Version, size int, err error) {
 	return
 }
 
-func WriteVersion(b buffer.Buffer, v Version) (int, error) {
+func EncodeVersionTo(b buffer.Buffer, v Version) (int, error) {
 	return spec.EncodeInt32(b, int32(v))
 }
 
@@ -75,12 +75,12 @@ const (
 	Code_ChannelWindow   Code = 13
 )
 
-func NewCode(b []byte) Code {
+func OpenCode(b []byte) Code {
 	v, _, _ := spec.DecodeInt32(b)
 	return Code(v)
 }
 
-func ParseCode(b []byte) (result Code, size int, err error) {
+func DecodeCode(b []byte) (result Code, size int, err error) {
 	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
@@ -89,7 +89,7 @@ func ParseCode(b []byte) (result Code, size int, err error) {
 	return
 }
 
-func WriteCode(b buffer.Buffer, v Code) (int, error) {
+func EncodeCodeTo(b buffer.Buffer, v Code) (int, error) {
 	return spec.EncodeInt32(b, int32(v))
 }
 
@@ -146,7 +146,7 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 	return Message{msg}, size, nil
 }
 
-func (m Message) Code() Code                       { return NewCode(m.msg.FieldRaw(1)) }
+func (m Message) Code() Code                       { return OpenCode(m.msg.FieldRaw(1)) }
 func (m Message) ConnectRequest() ConnectRequest   { return NewConnectRequest(m.msg.Message(2)) }
 func (m Message) ConnectResponse() ConnectResponse { return NewConnectResponse(m.msg.Message(3)) }
 func (m Message) Batch() Batch                     { return NewBatch(m.msg.Message(4)) }
@@ -202,10 +202,10 @@ func ParseConnectRequest(b []byte) (_ ConnectRequest, size int, err error) {
 }
 
 func (m ConnectRequest) Versions() spec.TypedList[Version] {
-	return spec.OpenTypedList(m.msg.FieldRaw(1), ParseVersion)
+	return spec.OpenTypedList(m.msg.FieldRaw(1), DecodeVersion)
 }
 func (m ConnectRequest) Compression() spec.TypedList[ConnectCompression] {
-	return spec.OpenTypedList(m.msg.FieldRaw(2), ParseConnectCompression)
+	return spec.OpenTypedList(m.msg.FieldRaw(2), DecodeConnectCompression)
 }
 
 func (m ConnectRequest) HasVersions() bool    { return m.msg.HasField(1) }
@@ -254,9 +254,9 @@ func ParseConnectResponse(b []byte) (_ ConnectResponse, size int, err error) {
 
 func (m ConnectResponse) Ok() bool           { return m.msg.Bool(1) }
 func (m ConnectResponse) Error() spec.String { return m.msg.String(2) }
-func (m ConnectResponse) Version() Version   { return NewVersion(m.msg.FieldRaw(10)) }
+func (m ConnectResponse) Version() Version   { return OpenVersion(m.msg.FieldRaw(10)) }
 func (m ConnectResponse) Compression() ConnectCompression {
-	return NewConnectCompression(m.msg.FieldRaw(11))
+	return OpenConnectCompression(m.msg.FieldRaw(11))
 }
 
 func (m ConnectResponse) HasOk() bool          { return m.msg.HasField(1) }
@@ -283,12 +283,12 @@ const (
 	ConnectCompression_Lz4  ConnectCompression = 1
 )
 
-func NewConnectCompression(b []byte) ConnectCompression {
+func OpenConnectCompression(b []byte) ConnectCompression {
 	v, _, _ := spec.DecodeInt32(b)
 	return ConnectCompression(v)
 }
 
-func ParseConnectCompression(b []byte) (result ConnectCompression, size int, err error) {
+func DecodeConnectCompression(b []byte) (result ConnectCompression, size int, err error) {
 	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
@@ -297,7 +297,7 @@ func ParseConnectCompression(b []byte) (result ConnectCompression, size int, err
 	return
 }
 
-func WriteConnectCompression(b buffer.Buffer, v ConnectCompression) (int, error) {
+func EncodeConnectCompressionTo(b buffer.Buffer, v ConnectCompression) (int, error) {
 	return spec.EncodeInt32(b, int32(v))
 }
 
@@ -562,7 +562,7 @@ func NewMessageWriterTo(w spec.MessageWriter) MessageWriter {
 	return MessageWriter{w}
 }
 
-func (w MessageWriter) Code(v Code) { spec.WriteField(w.w.Field(1), v, WriteCode) }
+func (w MessageWriter) Code(v Code) { spec.WriteField(w.w.Field(1), v, EncodeCodeTo) }
 func (w MessageWriter) ConnectRequest() ConnectRequestWriter {
 	w1 := w.w.Field(2).Message()
 	return NewConnectRequestWriterTo(w1)
@@ -655,11 +655,11 @@ func NewConnectRequestWriterTo(w spec.MessageWriter) ConnectRequestWriter {
 
 func (w ConnectRequestWriter) Versions() spec.ValueListWriter[Version] {
 	w1 := w.w.Field(1).List()
-	return spec.NewValueListWriter(w1, WriteVersion)
+	return spec.NewValueListWriter(w1, EncodeVersionTo)
 }
 func (w ConnectRequestWriter) Compression() spec.ValueListWriter[ConnectCompression] {
 	w1 := w.w.Field(2).List()
-	return spec.NewValueListWriter(w1, WriteConnectCompression)
+	return spec.NewValueListWriter(w1, EncodeConnectCompressionTo)
 }
 
 func (w ConnectRequestWriter) Merge(msg ConnectRequest) error {
@@ -704,9 +704,9 @@ func NewConnectResponseWriterTo(w spec.MessageWriter) ConnectResponseWriter {
 
 func (w ConnectResponseWriter) Ok(v bool)         { w.w.Field(1).Bool(v) }
 func (w ConnectResponseWriter) Error(v string)    { w.w.Field(2).String(v) }
-func (w ConnectResponseWriter) Version(v Version) { spec.WriteField(w.w.Field(10), v, WriteVersion) }
+func (w ConnectResponseWriter) Version(v Version) { spec.WriteField(w.w.Field(10), v, EncodeVersionTo) }
 func (w ConnectResponseWriter) Compression(v ConnectCompression) {
-	spec.WriteField(w.w.Field(11), v, WriteConnectCompression)
+	spec.WriteField(w.w.Field(11), v, EncodeConnectCompressionTo)
 }
 
 func (w ConnectResponseWriter) Merge(msg ConnectResponse) error {

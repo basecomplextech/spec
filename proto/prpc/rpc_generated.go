@@ -35,12 +35,12 @@ const (
 	MessageType_End       MessageType = 4
 )
 
-func NewMessageType(b []byte) MessageType {
+func OpenMessageType(b []byte) MessageType {
 	v, _, _ := spec.DecodeInt32(b)
 	return MessageType(v)
 }
 
-func ParseMessageType(b []byte) (result MessageType, size int, err error) {
+func DecodeMessageType(b []byte) (result MessageType, size int, err error) {
 	v, size, err := spec.DecodeInt32(b)
 	if err != nil || size == 0 {
 		return
@@ -49,7 +49,7 @@ func ParseMessageType(b []byte) (result MessageType, size int, err error) {
 	return
 }
 
-func WriteMessageType(b buffer.Buffer, v MessageType) (int, error) {
+func EncodeMessageTypeTo(b buffer.Buffer, v MessageType) (int, error) {
 	return spec.EncodeInt32(b, int32(v))
 }
 
@@ -100,7 +100,7 @@ func ParseMessage(b []byte) (_ Message, size int, err error) {
 	return Message{msg}, size, nil
 }
 
-func (m Message) Type() MessageType { return NewMessageType(m.msg.FieldRaw(1)) }
+func (m Message) Type() MessageType { return OpenMessageType(m.msg.FieldRaw(1)) }
 func (m Message) Req() Request      { return NewRequest(m.msg.Message(2)) }
 func (m Message) Resp() Response    { return NewResponse(m.msg.Message(3)) }
 func (m Message) Msg() spec.Bytes   { return m.msg.Bytes(4) }
@@ -306,7 +306,7 @@ func NewMessageWriterTo(w spec.MessageWriter) MessageWriter {
 	return MessageWriter{w}
 }
 
-func (w MessageWriter) Type(v MessageType) { spec.WriteField(w.w.Field(1), v, WriteMessageType) }
+func (w MessageWriter) Type(v MessageType) { spec.WriteField(w.w.Field(1), v, EncodeMessageTypeTo) }
 func (w MessageWriter) Req() RequestWriter {
 	w1 := w.w.Field(2).Message()
 	return NewRequestWriterTo(w1)
