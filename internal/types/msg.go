@@ -120,7 +120,7 @@ func (m Message) Field(tag uint16) Value {
 	}
 
 	b := m.bytes[:end]
-	return NewValue(b)
+	return OpenValue(b)
 }
 
 // FieldAt returns field data at an index or nil.
@@ -133,7 +133,7 @@ func (m Message) FieldAt(i int) Value {
 	}
 
 	b := m.bytes[:end]
-	return NewValue(b)
+	return OpenValue(b)
 }
 
 // FieldRaw returns a raw untruncated field data by a tag or nil.

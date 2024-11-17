@@ -15,8 +15,10 @@ import (
 // Value is a raw value.
 type Value []byte
 
-// NewValue returns a new value from bytes or nil when not valid.
-func NewValue(b []byte) Value {
+// OpenValue opens and returns a value from bytes, or nil on error.
+// The method only checks the type, but does not recursively parse the value.
+// See [ParseValue] for recursive parsing.
+func OpenValue(b []byte) Value {
 	_, n, err := decode.DecodeTypeSize(b)
 	switch {
 	case err != nil:
@@ -28,8 +30,10 @@ func NewValue(b []byte) Value {
 	return b[len(b)-n:]
 }
 
-// NewValueErr returns a new value from bytes or an error when not valid.
-func NewValueErr(b []byte) (Value, error) {
+// OpenValueErr opens and returns a value from bytes, or an error.
+// The method only checks the type, but does not recursively parse the value.
+// See [ParseValue] for recursive parsing.
+func OpenValueErr(b []byte) (Value, error) {
 	_, n, err := decode.DecodeTypeSize(b)
 	switch {
 	case err != nil:

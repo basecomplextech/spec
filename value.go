@@ -11,16 +11,20 @@ import (
 // Value is a raw value.
 type Value = types.Value
 
-// Value
-
-// NewValue returns a new value from bytes or nil when not valid.
-func NewValue(b []byte) Value {
-	return types.NewValue(b)
+// OpenValue opens and returns a value from bytes, or nil on error.
+//
+// The method only checks the type, but does not recursively parse the value.
+// See [ParseValue] for recursive parsing.
+func OpenValue(b []byte) Value {
+	return types.OpenValue(b)
 }
 
-// NewValueErr returns a new value from bytes or an error when not valid.
-func NewValueErr(b []byte) (Value, error) {
-	return types.NewValueErr(b)
+// OpenValueErr opens and returns a value from bytes, or an error.
+//
+// The method only checks the type, but does not recursively parse the value.
+// See [ParseValue] for recursive parsing.
+func OpenValueErr(b []byte) (Value, error) {
+	return types.OpenValueErr(b)
 }
 
 // ParseValue recursively parses and returns a value.
