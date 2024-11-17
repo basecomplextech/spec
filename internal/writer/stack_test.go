@@ -10,7 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/basecomplextech/spec/encoding"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,7 +24,7 @@ func TestWriterState_Size__should_be_lte_1kb(t *testing.T) {
 // list buffer
 
 func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
-	matrix := [][]core.ListElement{
+	matrix := [][]format.ListElement{
 		encoding.TestElementsN(1),
 		encoding.TestElementsN(10),
 		encoding.TestElementsN(100),
@@ -64,7 +64,7 @@ func TestListBuffer_push__should_append_element_to_last_list(t *testing.T) {
 // message buffer
 
 func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t *testing.T) {
-	matrix := [][]core.MessageField{
+	matrix := [][]format.MessageField{
 		encoding.TestFieldsN(1),
 		encoding.TestFieldsN(10),
 		encoding.TestFieldsN(100),
@@ -83,7 +83,7 @@ func TestMessageBuffer_Insert__should_insert_field_into_table_ordered_by_tags(t 
 		offsets = append(offsets, offset)
 
 		// Copy
-		ff := make([]core.MessageField, len(fields))
+		ff := make([]format.MessageField, len(fields))
 		copy(ff, fields)
 
 		// Shuffle

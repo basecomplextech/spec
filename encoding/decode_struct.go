@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 func DecodeStruct(b []byte) (dataSize int, size int, err error) {
@@ -22,7 +22,7 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 		err = errors.New("decode struct: invalid type")
 		return
 	}
-	if typ != core.TypeStruct {
+	if typ != format.TypeStruct {
 		err = fmt.Errorf("decode struct: invalid type, type=%v:%d", typ, typ)
 		return
 	}

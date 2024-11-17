@@ -9,7 +9,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/spec/encoding"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 // Value is a raw value.
@@ -49,50 +49,50 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 	}
 
 	switch typ {
-	case core.TypeTrue, core.TypeFalse:
+	case format.TypeTrue, format.TypeFalse:
 		// Pass
 
-	case core.TypeByte:
+	case format.TypeByte:
 		_, n, err = encoding.DecodeByte(b)
 
-	case core.TypeInt16:
+	case format.TypeInt16:
 		_, n, err = encoding.DecodeInt16(b)
-	case core.TypeInt32:
+	case format.TypeInt32:
 		_, n, err = encoding.DecodeInt32(b)
-	case core.TypeInt64:
+	case format.TypeInt64:
 		_, n, err = encoding.DecodeInt64(b)
 
-	case core.TypeUint16:
+	case format.TypeUint16:
 		_, n, err = encoding.DecodeUint16(b)
-	case core.TypeUint32:
+	case format.TypeUint32:
 		_, n, err = encoding.DecodeUint32(b)
-	case core.TypeUint64:
+	case format.TypeUint64:
 		_, n, err = encoding.DecodeUint64(b)
 
-	case core.TypeBin64:
+	case format.TypeBin64:
 		_, n, err = encoding.DecodeBin64(b)
-	case core.TypeBin128:
+	case format.TypeBin128:
 		_, n, err = encoding.DecodeBin128(b)
-	case core.TypeBin256:
+	case format.TypeBin256:
 		_, n, err = encoding.DecodeBin256(b)
 
-	case core.TypeFloat32:
+	case format.TypeFloat32:
 		_, n, err = encoding.DecodeFloat32(b)
-	case core.TypeFloat64:
+	case format.TypeFloat64:
 		_, n, err = encoding.DecodeFloat64(b)
 
-	case core.TypeBytes:
+	case format.TypeBytes:
 		_, n, err = encoding.DecodeBytes(b)
-	case core.TypeString:
+	case format.TypeString:
 		_, n, err = encoding.DecodeString(b)
 
-	case core.TypeList, core.TypeBigList:
+	case format.TypeList, format.TypeBigList:
 		_, n, err = ParseList(b)
 
-	case core.TypeMessage, core.TypeBigMessage:
+	case format.TypeMessage, format.TypeBigMessage:
 		_, n, err = ParseMessage(b)
 
-	case core.TypeStruct:
+	case format.TypeStruct:
 		_, n, err = encoding.DecodeStruct(b)
 
 	default:
@@ -108,7 +108,7 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 // Types
 
 // Type decodes and returns a type or undefined.
-func (v Value) Type() core.Type {
+func (v Value) Type() format.Type {
 	p, _, _ := encoding.DecodeType(v)
 	return p
 }
@@ -280,27 +280,27 @@ func (v Value) Bin256Err() (bin.Bin256, error) {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (v Value) Bytes() core.Bytes {
+func (v Value) Bytes() format.Bytes {
 	p, _, _ := encoding.DecodeBytes(v)
 	return p
 }
 
 // BytesErr decodes and returns bytes or an error.
-func (v Value) BytesErr() (core.Bytes, error) {
+func (v Value) BytesErr() (format.Bytes, error) {
 	p, _, err := encoding.DecodeBytes(v)
 	return p, err
 }
 
 // String decodes and returns a string or an empty string.
-func (v Value) String() core.String {
+func (v Value) String() format.String {
 	p, _, _ := encoding.DecodeString(v)
-	return core.String(p)
+	return format.String(p)
 }
 
 // StringErr decodes and returns a string or an error.
-func (v Value) StringErr() (core.String, error) {
+func (v Value) StringErr() (format.String, error) {
 	p, _, err := encoding.DecodeString(v)
-	return core.String(p), err
+	return format.String(p), err
 }
 
 // List/message

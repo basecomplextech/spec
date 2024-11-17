@@ -7,10 +7,10 @@ package encoding
 import (
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/baselibrary/tests"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func testEncodeMessageTable(t tests.T, dataSize int, fields []core.MessageField) []byte {
+func testEncodeMessageTable(t tests.T, dataSize int, fields []format.MessageField) []byte {
 	buf := buffer.New()
 	buf.Grow(dataSize)
 

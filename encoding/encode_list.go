@@ -9,19 +9,19 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func EncodeListTable(b buffer.Buffer, dataSize int, table []core.ListElement) (int, error) {
-	if dataSize > core.MaxSize {
-		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", core.MaxSize, dataSize)
+func EncodeListTable(b buffer.Buffer, dataSize int, table []format.ListElement) (int, error) {
+	if dataSize > format.MaxSize {
+		return 0, fmt.Errorf("encode: list too large, max size=%d, actual size=%d", format.MaxSize, dataSize)
 	}
 
-	// core.Type
-	big := core.IsBigList(table)
-	type_ := core.TypeList
+	// format.Type
+	big := format.IsBigList(table)
+	type_ := format.TypeList
 	if big {
-		type_ = core.TypeBigList
+		type_ = format.TypeBigList
 	}
 
 	// Write table
@@ -41,17 +41,17 @@ func EncodeListTable(b buffer.Buffer, dataSize int, table []core.ListElement) (i
 
 // private
 
-func encodeListTable(b buffer.Buffer, table []core.ListElement, big bool) (int, error) {
+func encodeListTable(b buffer.Buffer, table []format.ListElement, big bool) (int, error) {
 	// Element size
-	elemSize := core.ListElementSize_Small
+	elemSize := format.ListElementSize_Small
 	if big {
-		elemSize = core.ListElementSize_Big
+		elemSize = format.ListElementSize_Big
 	}
 
 	// Check table size
 	size := len(table) * elemSize
-	if size > core.MaxSize {
-		return 0, fmt.Errorf("encode: list table too large, max size=%d, actual size=%d", core.MaxSize, size)
+	if size > format.MaxSize {
+		return 0, fmt.Errorf("encode: list table too large, max size=%d, actual size=%d", format.MaxSize, size)
 	}
 
 	// Write table

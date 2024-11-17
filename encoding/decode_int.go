@@ -10,7 +10,7 @@ import (
 	"math"
 
 	"github.com/basecomplextech/baselibrary/encoding/compactint"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 func DecodeInt16(b []byte) (int16, int, error) {
@@ -25,7 +25,7 @@ func DecodeInt16(b []byte) (int16, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case core.TypeInt16, core.TypeInt32:
+	case format.TypeInt16, format.TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int16: invalid data")
@@ -41,7 +41,7 @@ func DecodeInt16(b []byte) (int16, int, error) {
 		n += m
 		return int16(v), n, nil
 
-	case core.TypeInt64:
+	case format.TypeInt64:
 		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int16: invalid data")
@@ -73,7 +73,7 @@ func DecodeInt32(b []byte) (int32, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case core.TypeInt16, core.TypeInt32:
+	case format.TypeInt16, format.TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int32: invalid data")
@@ -82,7 +82,7 @@ func DecodeInt32(b []byte) (int32, int, error) {
 		n += m
 		return v, n, nil
 
-	case core.TypeInt64:
+	case format.TypeInt64:
 		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int32: invalid data")
@@ -114,7 +114,7 @@ func DecodeInt64(b []byte) (int64, int, error) {
 	end := len(b) - n
 
 	switch typ {
-	case core.TypeInt16, core.TypeInt32:
+	case format.TypeInt16, format.TypeInt32:
 		v, m := compactint.ReverseInt32(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int64: invalid data")
@@ -122,7 +122,7 @@ func DecodeInt64(b []byte) (int64, int, error) {
 		n += m
 		return int64(v), n, nil
 
-	case core.TypeInt64:
+	case format.TypeInt64:
 		v, m := compactint.ReverseInt64(b[:end])
 		if m < 0 {
 			return 0, 0, errors.New("decode int64: invalid data")

@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func DecodeMessageTable(b []byte) (_ core.MessageTable, size int, err error) {
+func DecodeMessageTable(b []byte) (_ format.MessageTable, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -23,7 +23,7 @@ func DecodeMessageTable(b []byte) (_ core.MessageTable, size int, err error) {
 		return
 	}
 	switch typ {
-	case core.TypeMessage, core.TypeBigMessage:
+	case format.TypeMessage, format.TypeBigMessage:
 	default:
 		err = fmt.Errorf("decode message: invalid type, type=%v:%d", typ, typ)
 		return
@@ -32,7 +32,7 @@ func DecodeMessageTable(b []byte) (_ core.MessageTable, size int, err error) {
 	// Start
 	size = n
 	end := len(b) - size
-	big := typ == core.TypeBigMessage
+	big := typ == format.TypeBigMessage
 
 	// Table size
 	tableSize, m := decodeSize(b[:end])
@@ -68,7 +68,7 @@ func DecodeMessageTable(b []byte) (_ core.MessageTable, size int, err error) {
 	size += int(dataSize)
 
 	// Done
-	t := core.NewMessageTable(table, dataSize, big)
+	t := format.NewMessageTable(table, dataSize, big)
 	return t, size, nil
 }
 
@@ -76,9 +76,9 @@ func DecodeMessageTable(b []byte) (_ core.MessageTable, size int, err error) {
 
 func decodeMessageTable(b []byte, size uint32, big bool) (_ []byte, err error) {
 	// Field size
-	fieldSize := core.MessageFieldSize_Small
+	fieldSize := format.MessageFieldSize_Small
 	if big {
-		fieldSize = core.MessageFieldSize_Big
+		fieldSize = format.MessageFieldSize_Big
 	}
 
 	// Check offset

@@ -11,7 +11,7 @@ import (
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/baselibrary/pools"
 	"github.com/basecomplextech/spec/encoding"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 // Writer writes spec objects.
@@ -272,7 +272,7 @@ func (w *writer) element() error {
 
 	// Append element relative offset
 	offset := uint32(end - list.start)
-	element := core.ListElement{Offset: offset}
+	element := format.ListElement{Offset: offset}
 	w.elements.push(element)
 	return nil
 }
@@ -326,7 +326,7 @@ func (w *writer) endElement() ([]byte, error) {
 
 	// Append element relative offset
 	offset := uint32(end - list.start)
-	element := core.ListElement{Offset: offset}
+	element := format.ListElement{Offset: offset}
 	w.elements.push(element)
 
 	// Return data
@@ -426,7 +426,7 @@ func (w *writer) field(tag uint16) error {
 	}
 
 	// Insert field tag and relative offset
-	f := core.MessageField{
+	f := format.MessageField{
 		Tag:    tag,
 		Offset: uint32(end - message.start),
 	}
@@ -504,7 +504,7 @@ func (w *writer) endField() ([]byte, error) {
 	}
 
 	// Insert field with tag and relative offset
-	f := core.MessageField{
+	f := format.MessageField{
 		Tag:    tag,
 		Offset: uint32(end - message.start),
 	}

@@ -9,24 +9,24 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/encoding/compactint"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 // DecodeType decodes a value type.
-func DecodeType(b []byte) (core.Type, int, error) {
+func DecodeType(b []byte) (format.Type, int, error) {
 	v, n := decodeType(b)
 	if n < 0 {
 		return 0, 0, fmt.Errorf("decode type: invalid data")
 	}
 
 	size := n
-	return core.Type(v), size, nil
+	return format.Type(v), size, nil
 }
 
 // DecodeTypeSize decodes a value type and its total size, returns 0, 0 on error.
-func DecodeTypeSize(b []byte) (core.Type, int, error) {
+func DecodeTypeSize(b []byte) (format.Type, int, error) {
 	if len(b) == 0 {
-		return core.TypeUndefined, 0, nil
+		return format.TypeUndefined, 0, nil
 	}
 
 	t, n := decodeType(b)
@@ -38,10 +38,10 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 	v := b[:end]
 
 	switch t {
-	case core.TypeTrue, core.TypeFalse:
+	case format.TypeTrue, format.TypeFalse:
 		return t, n, nil
 
-	case core.TypeByte:
+	case format.TypeByte:
 		if len(v) < 1 {
 			return 0, 0, fmt.Errorf("decode byte: invalid data")
 		}
@@ -49,7 +49,7 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// Int
 
-	case core.TypeInt16, core.TypeInt32, core.TypeInt64:
+	case format.TypeInt16, format.TypeInt32, format.TypeInt64:
 		m := compactint.ReverseSize(v)
 		if m <= 0 {
 			return 0, 0, fmt.Errorf("decode int: invalid data")
@@ -58,7 +58,7 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// Uint
 
-	case core.TypeUint16, core.TypeUint32, core.TypeUint64:
+	case format.TypeUint16, format.TypeUint32, format.TypeUint64:
 		m := compactint.ReverseSize(v)
 		if m <= 0 {
 			return 0, 0, fmt.Errorf("decode uint: invalid data")
@@ -67,14 +67,14 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// Float
 
-	case core.TypeFloat32:
+	case format.TypeFloat32:
 		m := 4
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode float32: invalid data")
 		}
 		return t, n + m, nil
 
-	case core.TypeFloat64:
+	case format.TypeFloat64:
 		m := 8
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode float64: invalid data")
@@ -83,21 +83,21 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// Bin
 
-	case core.TypeBin64:
+	case format.TypeBin64:
 		m := 8
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode bin64: invalid data")
 		}
 		return t, n + m, nil
 
-	case core.TypeBin128:
+	case format.TypeBin128:
 		m := 16
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode bin128: invalid data")
 		}
 		return t, n + m, nil
 
-	case core.TypeBin256:
+	case format.TypeBin256:
 		m := 32
 		if len(v) < m {
 			return 0, 0, fmt.Errorf("decode bin256: invalid data")
@@ -106,7 +106,7 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// Bytes/string
 
-	case core.TypeBytes:
+	case format.TypeBytes:
 		dataSize, m := decodeSize(v)
 		if m < 0 {
 			return 0, 0, errors.New("decode bytes: invalid data size")
@@ -117,7 +117,7 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 		}
 		return t, size, nil
 
-	case core.TypeString:
+	case format.TypeString:
 		dataSize, m := decodeSize(v)
 		if m < 0 {
 			return 0, 0, errors.New("decode string: invalid data size")
@@ -130,7 +130,7 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// List
 
-	case core.TypeList, core.TypeBigList:
+	case format.TypeList, format.TypeBigList:
 		size := n
 
 		// Table size
@@ -156,7 +156,7 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// Message
 
-	case core.TypeMessage, core.TypeBigMessage:
+	case format.TypeMessage, format.TypeBigMessage:
 		size := n
 
 		// Table size
@@ -182,7 +182,7 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 
 	// Struct
 
-	case core.TypeStruct:
+	case format.TypeStruct:
 		size := n
 
 		// Data size
@@ -201,13 +201,13 @@ func DecodeTypeSize(b []byte) (core.Type, int, error) {
 	return 0, 0, fmt.Errorf("decode: invalid type, type=%d", t)
 }
 
-func decodeType(b []byte) (core.Type, int) {
+func decodeType(b []byte) (format.Type, int) {
 	if len(b) == 0 {
-		return core.TypeUndefined, 0
+		return format.TypeUndefined, 0
 	}
 
 	v := b[len(b)-1]
-	return core.Type(v), 1
+	return format.Type(v), 1
 }
 
 // Byte
@@ -221,7 +221,7 @@ func DecodeByte(b []byte) (byte, int, error) {
 	if n < 0 {
 		return 0, 0, errors.New("decode byte: invalid data")
 	}
-	if typ != core.TypeByte {
+	if typ != format.TypeByte {
 		return 0, 0, fmt.Errorf("decode byte: invalid type, type=%v:%d", typ, typ)
 	}
 
@@ -244,7 +244,7 @@ func DecodeBool(b []byte) (bool, int, error) {
 		return false, 0, errors.New("decode bool: invalid data")
 	}
 
-	v := typ == core.TypeTrue
+	v := typ == format.TypeTrue
 	size := n
 	return v, size, nil
 }

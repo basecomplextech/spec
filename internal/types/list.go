@@ -8,12 +8,12 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/spec/encoding"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 // List is a raw list of elements.
 type List struct {
-	table core.ListTable
+	table format.ListTable
 	bytes []byte
 }
 

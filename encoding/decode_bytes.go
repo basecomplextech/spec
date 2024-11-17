@@ -8,21 +8,21 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func DecodeBytes(b []byte) (_ core.Bytes, size int, err error) {
+func DecodeBytes(b []byte) (_ format.Bytes, size int, err error) {
 	if len(b) == 0 {
 		return nil, 0, nil
 	}
 
-	// core.Type
+	// format.Type
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode bytes: invalid data")
 		return
 	}
-	if typ != core.TypeBytes {
+	if typ != format.TypeBytes {
 		err = fmt.Errorf("decode bytes: invalid type, type=%v:%d", typ, typ)
 		return
 	}

@@ -9,7 +9,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 func DecodeFloat32(b []byte) (float32, int, error) {
@@ -53,7 +53,7 @@ func decodeFloat64(b []byte) (float64, int) {
 	}
 
 	switch t {
-	case core.TypeFloat32:
+	case format.TypeFloat32:
 		start := len(b) - 5
 		if start < 0 {
 			return 0, -1
@@ -63,7 +63,7 @@ func decodeFloat64(b []byte) (float64, int) {
 		f := math.Float32frombits(v)
 		return float64(f), 5
 
-	case core.TypeFloat64:
+	case format.TypeFloat64:
 		start := len(b) - 9
 		if start < 0 {
 			return 0, -1

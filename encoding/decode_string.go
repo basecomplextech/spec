@@ -9,21 +9,21 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func DecodeString(b []byte) (_ core.String, size int, err error) {
+func DecodeString(b []byte) (_ format.String, size int, err error) {
 	if len(b) == 0 {
 		return "", 0, nil
 	}
 
-	// core.Type
+	// format.Type
 	typ, n := decodeType(b)
 	if n < 0 {
 		err = errors.New("decode string: invalid data")
 		return
 	}
-	if typ != core.TypeString {
+	if typ != format.TypeString {
 		err = fmt.Errorf("decode string: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -47,7 +47,7 @@ func DecodeString(b []byte) (_ core.String, size int, err error) {
 	}
 
 	size += int(dataSize)
-	return core.String(data), size, nil
+	return format.String(data), size, nil
 }
 
 func DecodeStringClone(b []byte) (_ string, size int, err error) {

@@ -9,19 +9,19 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func EncodeMessageTable(b buffer.Buffer, dataSize int, table []core.MessageField) (int, error) {
-	if dataSize > core.MaxSize {
-		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", core.MaxSize, dataSize)
+func EncodeMessageTable(b buffer.Buffer, dataSize int, table []format.MessageField) (int, error) {
+	if dataSize > format.MaxSize {
+		return 0, fmt.Errorf("encode: message too large, max size=%d, actual size=%d", format.MaxSize, dataSize)
 	}
 
-	// core.Type
-	big := core.IsBigMessage(table)
-	type_ := core.TypeMessage
+	// format.Type
+	big := format.IsBigMessage(table)
+	type_ := format.TypeMessage
 	if big {
-		type_ = core.TypeBigMessage
+		type_ = format.TypeBigMessage
 	}
 
 	// Write table
@@ -39,19 +39,19 @@ func EncodeMessageTable(b buffer.Buffer, dataSize int, table []core.MessageField
 	return n, nil
 }
 
-func encodeMessageTable(b buffer.Buffer, table []core.MessageField, big bool) (int, error) {
+func encodeMessageTable(b buffer.Buffer, table []format.MessageField, big bool) (int, error) {
 	// Field size
 	var fieldSize int
 	if big {
-		fieldSize = core.MessageFieldSize_Big
+		fieldSize = format.MessageFieldSize_Big
 	} else {
-		fieldSize = core.MessageFieldSize_Small
+		fieldSize = format.MessageFieldSize_Small
 	}
 
 	// Check table size
 	size := len(table) * fieldSize
-	if size > core.MaxSize {
-		return 0, fmt.Errorf("encode: message table too large, max size=%d, actual size=%d", core.MaxSize, size)
+	if size > format.MaxSize {
+		return 0, fmt.Errorf("encode: message table too large, max size=%d, actual size=%d", format.MaxSize, size)
 	}
 
 	// Write table

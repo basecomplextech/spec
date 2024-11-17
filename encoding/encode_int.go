@@ -7,7 +7,7 @@ package encoding
 import (
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/baselibrary/encoding/compactint"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 func EncodeInt16(b buffer.Buffer, v int16) (int, error) {
@@ -17,7 +17,7 @@ func EncodeInt16(b buffer.Buffer, v int16) (int, error) {
 
 	buf := b.Grow(n + 1)
 	copy(buf[:n], p[off:])
-	buf[n] = byte(core.TypeInt16)
+	buf[n] = byte(format.TypeInt16)
 
 	return n + 1, nil
 }
@@ -29,7 +29,7 @@ func EncodeInt32(b buffer.Buffer, v int32) (int, error) {
 
 	buf := b.Grow(n + 1)
 	copy(buf[:n], p[off:])
-	buf[n] = byte(core.TypeInt32)
+	buf[n] = byte(format.TypeInt32)
 
 	return n + 1, nil
 }
@@ -41,7 +41,7 @@ func EncodeInt64(b buffer.Buffer, v int64) (int, error) {
 
 	buf := b.Grow(n + 1)
 	copy(buf[:n], p[off:])
-	buf[n] = byte(core.TypeInt64)
+	buf[n] = byte(format.TypeInt64)
 
 	return n + 1, nil
 }

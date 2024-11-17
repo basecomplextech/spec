@@ -4,7 +4,9 @@
 
 package writer
 
-import "github.com/basecomplextech/spec/internal/core"
+import (
+	"github.com/basecomplextech/spec/internal/format"
+)
 
 // listStack is a stack for encoding nested list tables.
 //
@@ -16,7 +18,7 @@ import "github.com/basecomplextech/spec/internal/core"
 //	| e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 | e0 | e1 | e2 | e3 |
 //	+-------------------+-------------------+-------------------+
 type listStack struct {
-	stack []core.ListElement
+	stack []format.ListElement
 }
 
 func (s *listStack) reset() {
@@ -35,12 +37,12 @@ func (s *listStack) len(tableOffset int) int {
 }
 
 // push appends a new element to the last list.
-func (s *listStack) push(elem core.ListElement) {
+func (s *listStack) push(elem format.ListElement) {
 	s.stack = append(s.stack, elem)
 }
 
 // pop pops a list table starting at offset.
-func (s *listStack) pop(tableOffset int) []core.ListElement {
+func (s *listStack) pop(tableOffset int) []format.ListElement {
 	table := s.stack[tableOffset:]
 	s.stack = s.stack[:tableOffset]
 	return table

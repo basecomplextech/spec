@@ -5,54 +5,54 @@
 package spec
 
 import (
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 	"github.com/basecomplextech/spec/internal/types"
 )
 
-type Type = core.Type
+type Type = format.Type
 
 const (
-	TypeUndefined = core.TypeUndefined
+	TypeUndefined = format.TypeUndefined
 
-	TypeTrue  = core.TypeTrue
-	TypeFalse = core.TypeFalse
-	TypeByte  = core.TypeByte
+	TypeTrue  = format.TypeTrue
+	TypeFalse = format.TypeFalse
+	TypeByte  = format.TypeByte
 
-	TypeInt16 = core.TypeInt16
-	TypeInt32 = core.TypeInt32
-	TypeInt64 = core.TypeInt64
+	TypeInt16 = format.TypeInt16
+	TypeInt32 = format.TypeInt32
+	TypeInt64 = format.TypeInt64
 
-	TypeUint16 = core.TypeUint16
-	TypeUint32 = core.TypeUint32
-	TypeUint64 = core.TypeUint64
+	TypeUint16 = format.TypeUint16
+	TypeUint32 = format.TypeUint32
+	TypeUint64 = format.TypeUint64
 
-	TypeFloat32 = core.TypeFloat32
-	TypeFloat64 = core.TypeFloat64
+	TypeFloat32 = format.TypeFloat32
+	TypeFloat64 = format.TypeFloat64
 
-	TypeBin64  = core.TypeBin64
-	TypeBin128 = core.TypeBin128
-	TypeBin256 = core.TypeBin256
+	TypeBin64  = format.TypeBin64
+	TypeBin128 = format.TypeBin128
+	TypeBin256 = format.TypeBin256
 
-	TypeBytes  = core.TypeBytes
-	TypeString = core.TypeString
+	TypeBytes  = format.TypeBytes
+	TypeString = format.TypeString
 
-	TypeList    = core.TypeList
-	TypeBigList = core.TypeBigList
+	TypeList    = format.TypeList
+	TypeBigList = format.TypeBigList
 
-	TypeMessage    = core.TypeMessage
-	TypeBigMessage = core.TypeBigMessage
+	TypeMessage    = format.TypeMessage
+	TypeBigMessage = format.TypeBigMessage
 
-	TypeStruct = core.TypeStruct
+	TypeStruct = format.TypeStruct
 )
 
 type (
 	// Bytes is a spec byte slice backed by a buffer.
 	// Clone it if you need to keep it around.
-	Bytes = core.Bytes
+	Bytes = format.Bytes
 
 	// String is a spec string backed by a buffer.
 	// Clone it if you need to keep it around.
-	String = core.String
+	String = format.String
 )
 
 type (

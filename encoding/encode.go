@@ -7,20 +7,20 @@ package encoding
 import (
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/baselibrary/encoding/compactint"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 type (
-	ListTable    = core.ListTable
-	MessageTable = core.MessageTable
+	ListTable    = format.ListTable
+	MessageTable = format.MessageTable
 )
 
 func EncodeBool(b buffer.Buffer, v bool) (int, error) {
 	p := b.Grow(1)
 	if v {
-		p[0] = byte(core.TypeTrue)
+		p[0] = byte(format.TypeTrue)
 	} else {
-		p[0] = byte(core.TypeFalse)
+		p[0] = byte(format.TypeFalse)
 	}
 	return 1, nil
 }
@@ -28,7 +28,7 @@ func EncodeBool(b buffer.Buffer, v bool) (int, error) {
 func EncodeByte(b buffer.Buffer, v byte) (int, error) {
 	p := b.Grow(2)
 	p[0] = v
-	p[1] = byte(core.TypeByte)
+	p[1] = byte(format.TypeByte)
 	return 2, nil
 }
 
@@ -54,7 +54,7 @@ func encodeSize(b buffer.Buffer, size uint32) int {
 	return n
 }
 
-func encodeSizeType(b buffer.Buffer, size uint32, type_ core.Type) int {
+func encodeSizeType(b buffer.Buffer, size uint32, type_ format.Type) int {
 	p := [compactint.MaxLen32]byte{}
 	n := compactint.PutReverseUint32(p[:], size)
 	off := compactint.MaxLen32 - n

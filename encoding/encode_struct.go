@@ -8,14 +8,14 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 func EncodeStruct(b buffer.Buffer, dataSize int) (int, error) {
-	if dataSize > core.MaxSize {
-		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", core.MaxSize, dataSize)
+	if dataSize > format.MaxSize {
+		return 0, fmt.Errorf("encode: struct too large, max size=%d, actual size=%d", format.MaxSize, dataSize)
 	}
 
-	n := encodeSizeType(b, uint32(dataSize), core.TypeStruct)
+	n := encodeSizeType(b, uint32(dataSize), format.TypeStruct)
 	return n, nil
 }

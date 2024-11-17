@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func DecodeListTable(b []byte) (_ core.ListTable, size int, err error) {
+func DecodeListTable(b []byte) (_ format.ListTable, size int, err error) {
 	if len(b) == 0 {
 		return
 	}
@@ -23,7 +23,7 @@ func DecodeListTable(b []byte) (_ core.ListTable, size int, err error) {
 		err = errors.New("decode list: invalid data")
 		return
 	}
-	if typ != core.TypeList && typ != core.TypeBigList {
+	if typ != format.TypeList && typ != format.TypeBigList {
 		err = fmt.Errorf("decode list: invalid type, type=%v:%d", typ, typ)
 		return
 	}
@@ -31,7 +31,7 @@ func DecodeListTable(b []byte) (_ core.ListTable, size int, err error) {
 	// Start
 	size = n
 	end := len(b) - n
-	big := typ == core.TypeBigList
+	big := typ == format.TypeBigList
 
 	// Table size
 	tableSize, n := decodeSize(b[:end])
@@ -67,7 +67,7 @@ func DecodeListTable(b []byte) (_ core.ListTable, size int, err error) {
 	size += int(dataSize)
 
 	// Done
-	t := core.NewListTable(table, dataSize, big)
+	t := format.NewListTable(table, dataSize, big)
 	return t, size, nil
 }
 
@@ -75,9 +75,9 @@ func DecodeListTable(b []byte) (_ core.ListTable, size int, err error) {
 
 func decodeListTable(b []byte, size uint32, big bool) (_ []byte, err error) {
 	// Element size
-	elemSize := core.ListElementSize_Small
+	elemSize := format.ListElementSize_Small
 	if big {
-		elemSize = core.ListElementSize_Big
+		elemSize = format.ListElementSize_Big
 	}
 
 	// Check offset

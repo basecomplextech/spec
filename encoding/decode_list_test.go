@@ -7,10 +7,10 @@ package encoding
 import (
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/baselibrary/tests"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func testEncodeListTable(t tests.T, dataSize int, elements []core.ListElement) []byte {
+func testEncodeListTable(t tests.T, dataSize int, elements []format.ListElement) []byte {
 	buf := buffer.New()
 	buf.Grow(dataSize)
 

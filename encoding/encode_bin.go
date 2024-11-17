@@ -7,33 +7,33 @@ package encoding
 import (
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 func EncodeBin64(b buffer.Buffer, v bin.Bin64) (int, error) {
 	p := b.Grow(9)
 	copy(p, v[:])
-	p[8] = byte(core.TypeBin64)
+	p[8] = byte(format.TypeBin64)
 	return 9, nil
 }
 
 func EncodeBin128(b buffer.Buffer, v bin.Bin128) (int, error) {
 	p := b.Grow(17)
 	v.MarshalTo(p)
-	p[16] = byte(core.TypeBin128)
+	p[16] = byte(format.TypeBin128)
 	return 17, nil
 }
 
 func EncodeBin128Bytes(b buffer.Buffer, v bin.Bin128) ([]byte, int, error) {
 	p := b.Grow(17)
 	v.MarshalTo(p)
-	p[16] = byte(core.TypeBin128)
+	p[16] = byte(format.TypeBin128)
 	return p, 17, nil
 }
 
 func EncodeBin256(b buffer.Buffer, v bin.Bin256) (int, error) {
 	p := b.Grow(33)
 	v.MarshalTo(p)
-	p[32] = byte(core.TypeBin256)
+	p[32] = byte(format.TypeBin256)
 	return 33, nil
 }

@@ -7,30 +7,30 @@ package encoding
 import (
 	"math"
 
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
-func TestElements() []core.ListElement {
+func TestElements() []format.ListElement {
 	return TestElementsN(10)
 }
 
-func TestElementsN(n int) []core.ListElement {
+func TestElementsN(n int) []format.ListElement {
 	return TestElementsSizeN(false, n)
 }
 
-func TestElementsSize(big bool) []core.ListElement {
+func TestElementsSize(big bool) []format.ListElement {
 	return TestElementsSizeN(big, 10)
 }
 
-func TestElementsSizeN(big bool, n int) []core.ListElement {
+func TestElementsSizeN(big bool, n int) []format.ListElement {
 	start := uint32(0)
 	if big {
 		start = math.MaxUint16 + 1
 	}
 
-	result := make([]core.ListElement, 0, n)
+	result := make([]format.ListElement, 0, n)
 	for i := 0; i < n; i++ {
-		elem := core.ListElement{
+		elem := format.ListElement{
 			Offset: start + uint32(i*10),
 		}
 		result = append(result, elem)

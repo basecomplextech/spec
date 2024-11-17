@@ -9,7 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/basecomplextech/baselibrary/buffer"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -74,7 +74,7 @@ func TestWriter_end__should_return_finished_bytes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, byte(core.TypeMessage), b[len(b)-1])
+	assert.Equal(t, byte(format.TypeMessage), b[len(b)-1])
 }
 
 func TestWriter_end__should_return_error_when_no_data(t *testing.T) {

@@ -9,12 +9,12 @@ import (
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/buffer"
 	"github.com/basecomplextech/spec/encoding"
-	"github.com/basecomplextech/spec/internal/core"
+	"github.com/basecomplextech/spec/internal/format"
 )
 
 // Message is a raw message.
 type Message struct {
-	table core.MessageTable
+	table format.MessageTable
 	bytes []byte
 }
 
@@ -299,17 +299,17 @@ func (m Message) Bin256(tag uint16) bin.Bin256 {
 // Bytes/string
 
 // Bytes decodes and returns bytes or nil.
-func (m Message) Bytes(tag uint16) core.Bytes {
+func (m Message) Bytes(tag uint16) format.Bytes {
 	b := m.field(tag)
 	p, _, _ := encoding.DecodeBytes(b)
 	return p
 }
 
 // String decodes and returns a string or an empty string.
-func (m Message) String(tag uint16) core.String {
+func (m Message) String(tag uint16) format.String {
 	b := m.field(tag)
 	p, _, _ := encoding.DecodeString(b)
-	return core.String(p)
+	return format.String(p)
 }
 
 // Message
