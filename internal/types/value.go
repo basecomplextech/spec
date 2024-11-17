@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/basecomplextech/baselibrary/bin"
-	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/decode"
 	"github.com/basecomplextech/spec/internal/format"
 )
 
@@ -17,7 +17,7 @@ type Value []byte
 
 // NewValue returns a new value from bytes or nil when not valid.
 func NewValue(b []byte) Value {
-	_, n, err := encoding.DecodeTypeSize(b)
+	_, n, err := decode.DecodeTypeSize(b)
 	switch {
 	case err != nil:
 		return nil
@@ -30,7 +30,7 @@ func NewValue(b []byte) Value {
 
 // NewValueErr returns a new value from bytes or an error when not valid.
 func NewValueErr(b []byte) (Value, error) {
-	_, n, err := encoding.DecodeTypeSize(b)
+	_, n, err := decode.DecodeTypeSize(b)
 	switch {
 	case err != nil:
 		return Value{}, err
@@ -43,7 +43,7 @@ func NewValueErr(b []byte) (Value, error) {
 
 // ParseValue recursively parses and returns a value.
 func ParseValue(b []byte) (_ Value, n int, err error) {
-	typ, n, err := encoding.DecodeType(b)
+	typ, n, err := decode.DecodeType(b)
 	if err != nil {
 		return
 	}
@@ -53,38 +53,38 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 		// Pass
 
 	case format.TypeByte:
-		_, n, err = encoding.DecodeByte(b)
+		_, n, err = decode.DecodeByte(b)
 
 	case format.TypeInt16:
-		_, n, err = encoding.DecodeInt16(b)
+		_, n, err = decode.DecodeInt16(b)
 	case format.TypeInt32:
-		_, n, err = encoding.DecodeInt32(b)
+		_, n, err = decode.DecodeInt32(b)
 	case format.TypeInt64:
-		_, n, err = encoding.DecodeInt64(b)
+		_, n, err = decode.DecodeInt64(b)
 
 	case format.TypeUint16:
-		_, n, err = encoding.DecodeUint16(b)
+		_, n, err = decode.DecodeUint16(b)
 	case format.TypeUint32:
-		_, n, err = encoding.DecodeUint32(b)
+		_, n, err = decode.DecodeUint32(b)
 	case format.TypeUint64:
-		_, n, err = encoding.DecodeUint64(b)
+		_, n, err = decode.DecodeUint64(b)
 
 	case format.TypeBin64:
-		_, n, err = encoding.DecodeBin64(b)
+		_, n, err = decode.DecodeBin64(b)
 	case format.TypeBin128:
-		_, n, err = encoding.DecodeBin128(b)
+		_, n, err = decode.DecodeBin128(b)
 	case format.TypeBin256:
-		_, n, err = encoding.DecodeBin256(b)
+		_, n, err = decode.DecodeBin256(b)
 
 	case format.TypeFloat32:
-		_, n, err = encoding.DecodeFloat32(b)
+		_, n, err = decode.DecodeFloat32(b)
 	case format.TypeFloat64:
-		_, n, err = encoding.DecodeFloat64(b)
+		_, n, err = decode.DecodeFloat64(b)
 
 	case format.TypeBytes:
-		_, n, err = encoding.DecodeBytes(b)
+		_, n, err = decode.DecodeBytes(b)
 	case format.TypeString:
-		_, n, err = encoding.DecodeString(b)
+		_, n, err = decode.DecodeString(b)
 
 	case format.TypeList, format.TypeBigList:
 		_, n, err = ParseList(b)
@@ -93,7 +93,7 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 		_, n, err = ParseMessage(b)
 
 	case format.TypeStruct:
-		_, n, err = encoding.DecodeStruct(b)
+		_, n, err = decode.DecodeStruct(b)
 
 	default:
 		n, err = 0, fmt.Errorf("unsupported type %d", typ)
@@ -109,31 +109,31 @@ func ParseValue(b []byte) (_ Value, n int, err error) {
 
 // Type decodes and returns a type or undefined.
 func (v Value) Type() format.Type {
-	p, _, _ := encoding.DecodeType(v)
+	p, _, _ := decode.DecodeType(v)
 	return p
 }
 
 // Bool decodes and returns a bool or false.
 func (v Value) Bool() bool {
-	p, _, _ := encoding.DecodeBool(v)
+	p, _, _ := decode.DecodeBool(v)
 	return p
 }
 
 // BoolErr decodes and returns a bool or an error.
 func (v Value) BoolErr() (bool, error) {
-	p, _, err := encoding.DecodeBool(v)
+	p, _, err := decode.DecodeBool(v)
 	return p, err
 }
 
 // Byte decodes and returns a byte or 0.
 func (v Value) Byte() byte {
-	p, _, _ := encoding.DecodeByte(v)
+	p, _, _ := decode.DecodeByte(v)
 	return p
 }
 
 // ByteErr decodes and returns a byte or an error.
 func (v Value) ByteErr() (byte, error) {
-	p, _, err := encoding.DecodeByte(v)
+	p, _, err := decode.DecodeByte(v)
 	return p, err
 }
 
@@ -141,37 +141,37 @@ func (v Value) ByteErr() (byte, error) {
 
 // Int16 decodes and returns an int16 or 0.
 func (v Value) Int16() int16 {
-	p, _, _ := encoding.DecodeInt16(v)
+	p, _, _ := decode.DecodeInt16(v)
 	return p
 }
 
 // Int16Err decodes and returns an int16 or an error.
 func (v Value) Int16Err() (int16, error) {
-	p, _, err := encoding.DecodeInt16(v)
+	p, _, err := decode.DecodeInt16(v)
 	return p, err
 }
 
 // Int32 decodes and returns an int32 or 0.
 func (v Value) Int32() int32 {
-	p, _, _ := encoding.DecodeInt32(v)
+	p, _, _ := decode.DecodeInt32(v)
 	return p
 }
 
 // Int32Err decodes and returns an int32 or an error.
 func (v Value) Int32Err() (int32, error) {
-	p, _, err := encoding.DecodeInt32(v)
+	p, _, err := decode.DecodeInt32(v)
 	return p, err
 }
 
 // Int64 decodes and returns an int64 or 0.
 func (v Value) Int64() int64 {
-	p, _, _ := encoding.DecodeInt64(v)
+	p, _, _ := decode.DecodeInt64(v)
 	return p
 }
 
 // Int64Err decodes and returns an int64 or an error.
 func (v Value) Int64Err() (int64, error) {
-	p, _, err := encoding.DecodeInt64(v)
+	p, _, err := decode.DecodeInt64(v)
 	return p, err
 }
 
@@ -179,37 +179,37 @@ func (v Value) Int64Err() (int64, error) {
 
 // Uint16 decodes and returns a uint16 or 0.
 func (v Value) Uint16() uint16 {
-	p, _, _ := encoding.DecodeUint16(v)
+	p, _, _ := decode.DecodeUint16(v)
 	return p
 }
 
 // Uint16Err decodes and returns a uint16 or an error.
 func (v Value) Uint16Err() (uint16, error) {
-	p, _, err := encoding.DecodeUint16(v)
+	p, _, err := decode.DecodeUint16(v)
 	return p, err
 }
 
 // Uint32 decodes and returns a uint32 or 0.
 func (v Value) Uint32() uint32 {
-	p, _, _ := encoding.DecodeUint32(v)
+	p, _, _ := decode.DecodeUint32(v)
 	return p
 }
 
 // Uint32Err decodes and returns a uint32 or an error.
 func (v Value) Uint32Err() (uint32, error) {
-	p, _, err := encoding.DecodeUint32(v)
+	p, _, err := decode.DecodeUint32(v)
 	return p, err
 }
 
 // Uint64 decodes and returns a uint64 or 0.
 func (v Value) Uint64() uint64 {
-	p, _, _ := encoding.DecodeUint64(v)
+	p, _, _ := decode.DecodeUint64(v)
 	return p
 }
 
 // Uint64Err decodes and returns a uint64 or an error.
 func (v Value) Uint64Err() (uint64, error) {
-	p, _, err := encoding.DecodeUint64(v)
+	p, _, err := decode.DecodeUint64(v)
 	return p, err
 }
 
@@ -217,25 +217,25 @@ func (v Value) Uint64Err() (uint64, error) {
 
 // Float32 decodes and returns a float32 or 0.
 func (v Value) Float32() float32 {
-	p, _, _ := encoding.DecodeFloat32(v)
+	p, _, _ := decode.DecodeFloat32(v)
 	return p
 }
 
 // Float32Err decodes and returns a float32 or an error.
 func (v Value) Float32Err() (float32, error) {
-	p, _, err := encoding.DecodeFloat32(v)
+	p, _, err := decode.DecodeFloat32(v)
 	return p, err
 }
 
 // Float64 decodes and returns a float64 or 0.
 func (v Value) Float64() float64 {
-	p, _, _ := encoding.DecodeFloat64(v)
+	p, _, _ := decode.DecodeFloat64(v)
 	return p
 }
 
 // Float64Err decodes and returns a float64 or an error.
 func (v Value) Float64Err() (float64, error) {
-	p, _, err := encoding.DecodeFloat64(v)
+	p, _, err := decode.DecodeFloat64(v)
 	return p, err
 }
 
@@ -243,37 +243,37 @@ func (v Value) Float64Err() (float64, error) {
 
 // Bin64 decodes and returns a bin64 or a zero value.
 func (v Value) Bin64() bin.Bin64 {
-	p, _, _ := encoding.DecodeBin64(v)
+	p, _, _ := decode.DecodeBin64(v)
 	return p
 }
 
 // Bin64Err decodes and returns bin96 or an error.
 func (v Value) Bin64Err() (bin.Bin64, error) {
-	p, _, err := encoding.DecodeBin64(v)
+	p, _, err := decode.DecodeBin64(v)
 	return p, err
 }
 
 // Bin128 decodes and returns a bin128 or a zero value.
 func (v Value) Bin128() bin.Bin128 {
-	p, _, _ := encoding.DecodeBin128(v)
+	p, _, _ := decode.DecodeBin128(v)
 	return p
 }
 
 // Bin128Err decodes and returns a bin128 or an error.
 func (v Value) Bin128Err() (bin.Bin128, error) {
-	p, _, err := encoding.DecodeBin128(v)
+	p, _, err := decode.DecodeBin128(v)
 	return p, err
 }
 
 // Bin256 decodes and returns a bin256 or a zero value.
 func (v Value) Bin256() bin.Bin256 {
-	p, _, _ := encoding.DecodeBin256(v)
+	p, _, _ := decode.DecodeBin256(v)
 	return p
 }
 
 // Bin256Err decodes and returns a bin256 or an error.
 func (v Value) Bin256Err() (bin.Bin256, error) {
-	p, _, err := encoding.DecodeBin256(v)
+	p, _, err := decode.DecodeBin256(v)
 	return p, err
 }
 
@@ -281,25 +281,25 @@ func (v Value) Bin256Err() (bin.Bin256, error) {
 
 // Bytes decodes and returns bytes or nil.
 func (v Value) Bytes() format.Bytes {
-	p, _, _ := encoding.DecodeBytes(v)
+	p, _, _ := decode.DecodeBytes(v)
 	return p
 }
 
 // BytesErr decodes and returns bytes or an error.
 func (v Value) BytesErr() (format.Bytes, error) {
-	p, _, err := encoding.DecodeBytes(v)
+	p, _, err := decode.DecodeBytes(v)
 	return p, err
 }
 
 // String decodes and returns a string or an empty string.
 func (v Value) String() format.String {
-	p, _, _ := encoding.DecodeString(v)
+	p, _, _ := decode.DecodeString(v)
 	return format.String(p)
 }
 
 // StringErr decodes and returns a string or an error.
 func (v Value) StringErr() (format.String, error) {
-	p, _, err := encoding.DecodeString(v)
+	p, _, err := decode.DecodeString(v)
 	return format.String(p), err
 }
 

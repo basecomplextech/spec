@@ -7,7 +7,7 @@ package types
 import (
 	"fmt"
 
-	"github.com/basecomplextech/spec/encoding"
+	"github.com/basecomplextech/spec/internal/decode"
 	"github.com/basecomplextech/spec/internal/format"
 )
 
@@ -51,7 +51,7 @@ func ParseList(b []byte) (l List, size int, err error) {
 }
 
 func decodeList(b []byte) (l List, size int, err error) {
-	table, size, err := encoding.DecodeListTable(b)
+	table, size, err := decode.DecodeListTable(b)
 	if err != nil {
 		return List{}, 0, err
 	}
