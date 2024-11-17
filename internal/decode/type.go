@@ -201,6 +201,8 @@ func DecodeTypeSize(b []byte) (format.Type, int, error) {
 	return 0, 0, fmt.Errorf("decode: invalid type, type=%d", t)
 }
 
+// internal
+
 func decodeType(b []byte) (format.Type, int) {
 	if len(b) == 0 {
 		return format.TypeUndefined, 0
@@ -209,8 +211,6 @@ func decodeType(b []byte) (format.Type, int) {
 	v := b[len(b)-1]
 	return format.Type(v), 1
 }
-
-// private
 
 func decodeSize(b []byte) (uint32, int) {
 	return compactint.ReverseUint32(b)
