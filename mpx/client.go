@@ -157,8 +157,7 @@ func (c *client) Close() status.Status {
 	c.closed_.Set()
 
 	// Stop connecting
-	if routine, ok := c.connecting.Unwrap(); ok {
-		c.connecting.Unset()
+	if routine, ok := c.connecting.Clear(); ok {
 		routine.Stop()
 	}
 
@@ -325,7 +324,7 @@ func (c *client) connect1(ctx async.Context) (internalConn, status.Status) {
 	// Clear connecting
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.connecting.Unset()
+	c.connecting.Clear()
 
 	// Return if connected
 	if st.OK() {
