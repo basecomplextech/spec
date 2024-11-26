@@ -22,7 +22,7 @@ func (w *structWriter) struct_(def *model.Definition) error {
 	if err := w.def(def); err != nil {
 		return err
 	}
-	if err := w.open_method(def); err != nil {
+	if err := w.open(def); err != nil {
 		return err
 	}
 	if err := w.decode_method(def); err != nil {
@@ -52,17 +52,28 @@ func (w *structWriter) def(def *model.Definition) error {
 	return nil
 }
 
-func (w *structWriter) open_method(def *model.Definition) error {
+func (w *structWriter) open(def *model.Definition) error {
 	w.linef(`func Open%v(b []byte) %v {`, def.Name, def.Name)
 	w.linef(`s, _, _ := Decode%v(b)`, def.Name)
 	w.line(`return s`)
+	w.line(`}`)
+	w.line()
+
+	w.linef(`func Decode%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
+	w.line(`size, err = s.Decode(b)`)
+	w.line(`return s, size, err`)
+	w.line(`}`)
+	w.line()
+
+	w.linef(`func Encode%vTo(b buffer.Buffer, s %v) (int, error) {`, def.Name, def.Name)
+	w.line(`return s.EncodeTo(b)`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
 func (w *structWriter) decode_method(def *model.Definition) error {
-	w.linef(`func Decode%v(b []byte) (s %v, size int, err error) {`, def.Name, def.Name)
+	w.linef(`func (s *%v) Decode(b []byte) (size int, err error) {`, def.Name)
 	w.line(`dataSize, size, err := spec.DecodeStruct(b)`)
 	w.line(`if err != nil || size == 0 {
 		return
@@ -71,7 +82,7 @@ func (w *structWriter) decode_method(def *model.Definition) error {
 
 	w.line(`b = b[len(b)-size:]
 	n := size - dataSize
-	off := len(b)
+	off := len(b) - n
 	`)
 	w.line()
 
@@ -87,22 +98,22 @@ func (w *structWriter) decode_method(def *model.Definition) error {
 			decodeName = "spec.DecodeStringClone"
 		}
 
-		w.line(`off -= n`)
 		w.linef(`s.%v, n, err = %v(b[:off])`, fieldName, decodeName)
 		w.line(`if err != nil {
 			return
 		}`)
+		w.line(`off -= n`)
 		w.line()
 	}
 
-	w.line(`return`)
+	w.line(`return size, err`)
 	w.line(`}`)
 	w.line()
 	return nil
 }
 
 func (w *structWriter) encode_method(def *model.Definition) error {
-	w.linef(`func Encode%vTo(b buffer.Buffer, s %v) (int, error) {`, def.Name, def.Name)
+	w.linef(`func (s %v) EncodeTo(b buffer.Buffer) (int, error) {`, def.Name)
 	w.line(`var dataSize, n int`)
 	w.line(`var err error`)
 	w.line()

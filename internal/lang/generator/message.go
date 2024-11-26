@@ -64,10 +64,7 @@ func (w *messageWriter) new_methods(def *model.Definition) error {
 
 	w.linef(`func Open%vErr(b []byte) (_ %v, err error) {`, def.Name, def.Name)
 	w.linef(`msg, err := spec.OpenMessageErr(b)`)
-	w.line(`if err != nil {
-		return
-	}`)
-	w.linef(`return %v{msg}, nil`, def.Name)
+	w.linef(`return %v{msg}, err`, def.Name)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -76,10 +73,7 @@ func (w *messageWriter) new_methods(def *model.Definition) error {
 func (w *messageWriter) parse_method(def *model.Definition) error {
 	w.linef(`func Parse%v(b []byte) (_ %v, size int, err error) {`, def.Name, def.Name)
 	w.linef(`msg, size, err := spec.ParseMessage(b)`)
-	w.line(`if err != nil || size == 0 {
-		return
-	}`)
-	w.linef(`return %v{msg}, size, nil`, def.Name)
+	w.linef(`return %v{msg}, size, err`, def.Name)
 	w.linef(`}`)
 	w.line()
 	return nil
@@ -218,11 +212,6 @@ func (w *messageWriter) has_field(def *model.Definition, field *model.Field) err
 }
 
 func (w *messageWriter) methods(def *model.Definition) error {
-	w.writef(`func (m %v) IsEmpty() bool {`, def.Name)
-	w.writef(`return m.msg.Empty()`)
-	w.writef(`}`)
-	w.line()
-
 	w.writef(`func (m %v) Clone() %v {`, def.Name, def.Name)
 	w.writef(`return %v{m.msg.Clone()}`, def.Name)
 	w.writef(`}`)
@@ -235,6 +224,13 @@ func (w *messageWriter) methods(def *model.Definition) error {
 
 	w.writef(`func (m %v) CloneToBuffer(b buffer.Buffer) %v {`, def.Name, def.Name)
 	w.writef(`return %v{m.msg.CloneToBuffer(b)}`, def.Name)
+	w.writef(`}`)
+	w.line()
+
+	w.line()
+
+	w.writef(`func (m %v) IsEmpty() bool {`, def.Name)
+	w.writef(`return m.msg.Empty()`)
 	w.writef(`}`)
 	w.line()
 
