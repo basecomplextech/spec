@@ -25,7 +25,7 @@ func DecodeMessageTable(b []byte) (_ format.MessageTable, size int, err error) {
 	switch typ {
 	case format.TypeMessage, format.TypeBigMessage:
 	default:
-		err = fmt.Errorf("decode message: invalid type, type=%v:%d", typ, typ)
+		err = fmt.Errorf("decode message: invalid type, type=%v", typ)
 		return
 	}
 

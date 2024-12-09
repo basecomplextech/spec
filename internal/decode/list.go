@@ -24,7 +24,7 @@ func DecodeListTable(b []byte) (_ format.ListTable, size int, err error) {
 		return
 	}
 	if typ != format.TypeList && typ != format.TypeBigList {
-		err = fmt.Errorf("decode list: invalid type, type=%v:%d", typ, typ)
+		err = fmt.Errorf("decode list: invalid type, type=%v", typ)
 		return
 	}
 

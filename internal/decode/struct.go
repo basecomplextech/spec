@@ -23,7 +23,7 @@ func DecodeStruct(b []byte) (dataSize int, size int, err error) {
 		return
 	}
 	if typ != format.TypeStruct {
-		err = fmt.Errorf("decode struct: invalid type, type=%v:%d", typ, typ)
+		err = fmt.Errorf("decode struct: invalid type, type=%v", typ)
 		return
 	}
 

@@ -23,7 +23,7 @@ func DecodeByte(b []byte) (byte, int, error) {
 		return 0, 0, errors.New("decode byte: invalid data")
 	}
 	if typ != format.TypeByte {
-		return 0, 0, fmt.Errorf("decode byte: invalid type, type=%v:%d", typ, typ)
+		return 0, 0, fmt.Errorf("decode byte: invalid type, type=%v", typ)
 	}
 
 	end := len(b) - 2

@@ -24,7 +24,7 @@ func DecodeString(b []byte) (_ format.String, size int, err error) {
 		return
 	}
 	if typ != format.TypeString {
-		err = fmt.Errorf("decode string: invalid type, type=%v:%d", typ, typ)
+		err = fmt.Errorf("decode string: invalid type, type=%v", typ)
 		return
 	}
 

@@ -58,7 +58,7 @@ func DecodeInt16(b []byte) (int16, int, error) {
 		return int16(v), n, nil
 	}
 
-	return 0, 0, fmt.Errorf("decode int16: invalid type, type=%v:%d", typ, typ)
+	return 0, 0, fmt.Errorf("decode int16: invalid type, type=%v", typ)
 }
 
 func DecodeInt32(b []byte) (int32, int, error) {
@@ -99,7 +99,7 @@ func DecodeInt32(b []byte) (int32, int, error) {
 		return int32(v), n, nil
 	}
 
-	return 0, 0, fmt.Errorf("decode int32: invalid type, type=%v:%d", typ, typ)
+	return 0, 0, fmt.Errorf("decode int32: invalid type, type=%v", typ)
 }
 
 func DecodeInt64(b []byte) (int64, int, error) {
@@ -131,5 +131,5 @@ func DecodeInt64(b []byte) (int64, int, error) {
 		return int64(v), n, nil
 	}
 
-	return 0, 0, fmt.Errorf("decode int64: invalid type, type=%v:%d", typ, typ)
+	return 0, 0, fmt.Errorf("decode int64: invalid type, type=%v", typ)
 }

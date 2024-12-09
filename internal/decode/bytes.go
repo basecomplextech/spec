@@ -23,7 +23,7 @@ func DecodeBytes(b []byte) (_ format.Bytes, size int, err error) {
 		return
 	}
 	if typ != format.TypeBytes {
-		err = fmt.Errorf("decode bytes: invalid type, type=%v:%d", typ, typ)
+		err = fmt.Errorf("decode bytes: invalid type, type=%v", typ)
 		return
 	}
 
