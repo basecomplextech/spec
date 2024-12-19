@@ -6,6 +6,7 @@ package rpc
 
 import (
 	"bytes"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -103,7 +104,7 @@ func TestClient_Send__should_send_client_message_to_server(t *testing.T) {
 
 func TestClient_SendEnd__should_send_end_message_to_server(t *testing.T) {
 	done := make(chan struct{})
-	ended := false
+	ended := atomic.Bool{}
 
 	handle := func(ctx Context, ch ServerChannel) (ref.R[[]byte], status.Status) {
 		msg, st := ch.Receive(ctx)
@@ -116,7 +117,7 @@ func TestClient_SendEnd__should_send_end_message_to_server(t *testing.T) {
 		assert.Equal(t, status.CodeEnd, st.Code)
 
 		close(done)
-		ended = true
+		ended.Store(true)
 		return nil, status.OK
 	}
 
@@ -148,7 +149,7 @@ func TestClient_SendEnd__should_send_end_message_to_server(t *testing.T) {
 		t.Fatal("timeout")
 	}
 
-	assert.True(t, ended)
+	assert.True(t, ended.Load())
 }
 
 // Receive

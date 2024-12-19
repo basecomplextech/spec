@@ -6,10 +6,12 @@ package rpc
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/basecomplextech/baselibrary/alloc"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/pools"
+	"github.com/basecomplextech/baselibrary/ref"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/mpx"
 	"github.com/basecomplextech/spec/proto/prpc"
@@ -62,13 +64,14 @@ type internalServerChannel interface {
 var _ ServerChannel = (*serverChannel)(nil)
 
 type serverChannel struct {
-	stateMu sync.RWMutex
-	state   *serverChannelState
+	refs  ref.Atomic32 // state refcounter
+	freed atomic.Bool  // ensures the channel is freed only once
+	state atomic.Pointer[serverChannelState]
 }
 
 type serverChannelState struct {
-	ch     mpx.Channel
-	method []byte // call method names, separated by '/'
+	ch     mpx.Channel // unowned
+	method []byte      // call method names, separated by '/'
 
 	// send
 	sendMu      sync.Mutex
@@ -89,7 +92,11 @@ func newServerChannel(ch mpx.Channel, req prpc.Request) *serverChannel {
 	s.ch = ch
 	s.method = requestMethod(s.method, req)
 	s.recvReq = req
-	return &serverChannel{state: s}
+
+	c := &serverChannel{}
+	c.refs.Init(1)
+	c.state.Store(s)
+	return c
 }
 
 func newServerChannelState() *serverChannelState {
@@ -100,22 +107,22 @@ func newServerChannelState() *serverChannelState {
 
 // Method returns a joined method name, the string is valid until the channel is freed.
 func (ch *serverChannel) Method() string {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return ""
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	return unsafeString(s.method)
 }
 
 // Context returns a channel context.
 func (ch *serverChannel) Context() Context {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return mpx.ClosedContext()
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	return s.ch.Context()
 }
@@ -124,11 +131,11 @@ func (ch *serverChannel) Context() Context {
 
 // Request returns the request, the message is valid until the next call to ReadSync.
 func (ch *serverChannel) Request(ctx async.Context) (prpc.Request, status.Status) {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return prpc.Request{}, status.Closed
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	// Lock receive
 	s.recvMu.Lock()
@@ -169,11 +176,11 @@ func (ch *serverChannel) Receive(ctx async.Context) ([]byte, status.Status) {
 // The method does not block if no messages, and returns false instead.
 // The message is valid until the next call to Receive/ReceiveAsync.
 func (ch *serverChannel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.Status) {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return nil, false, status.Closed
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	// Lock receive
 	s.recvMu.Lock()
@@ -225,11 +232,11 @@ func (ch *serverChannel) ReceiveAsync(ctx async.Context) ([]byte, bool, status.S
 
 // ReceiveWait returns a channel which is notified on a new message, or a channel close.
 func (ch *serverChannel) ReceiveWait() <-chan struct{} {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return closedChan
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	return s.ch.ReceiveWait()
 }
@@ -238,11 +245,11 @@ func (ch *serverChannel) ReceiveWait() <-chan struct{} {
 
 // Send sends a message to the channel.
 func (ch *serverChannel) Send(ctx async.Context, message []byte) status.Status {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return status.Closed
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	// Lock send
 	s.sendMu.Lock()
@@ -268,11 +275,11 @@ func (ch *serverChannel) Send(ctx async.Context, message []byte) status.Status {
 
 // SendEnd sends an end message to the channel.
 func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return status.Closed
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	// Lock send
 	s.sendMu.Lock()
@@ -299,11 +306,11 @@ func (ch *serverChannel) SendEnd(ctx async.Context) status.Status {
 
 // SendResponse sends a response and closes the channel.
 func (ch *serverChannel) SendResponse(ctx async.Context, result []byte, st status.Status) status.Status {
-	s, ok := ch.rlock()
+	s, ok := ch.acquire()
 	if !ok {
 		return status.Closed
 	}
-	defer ch.stateMu.RUnlock()
+	defer ch.release()
 
 	// Lock send
 	s.sendMu.Lock()
@@ -327,29 +334,42 @@ func (ch *serverChannel) SendResponse(ctx async.Context, result []byte, st statu
 
 // Free frees the channel.
 func (ch *serverChannel) Free() {
-	ch.stateMu.Lock()
-	defer ch.stateMu.Unlock()
-
-	if ch.state == nil {
+	if ch.freed.Swap(true) {
 		return
 	}
 
-	s := ch.state
-	ch.state = nil
-	releaseServerState(s)
+	ch.release()
 }
 
 // private
 
-func (ch *serverChannel) rlock() (*serverChannelState, bool) {
-	ch.stateMu.RLock()
-
-	if ch.state == nil {
-		ch.stateMu.RUnlock()
-		return nil, false
+func (ch *serverChannel) acquire() (*serverChannelState, bool) {
+	acquired := ch.refs.Acquire()
+	if acquired {
+		s := ch.state.Load()
+		return s, true
 	}
 
-	return ch.state, true
+	ch.release()
+	return nil, false
+}
+
+func (ch *serverChannel) release() {
+	released := ch.refs.Release()
+	if !released {
+		return
+	}
+
+	ch.free()
+}
+
+func (ch *serverChannel) free() {
+	s := ch.state.Swap(nil)
+	if s == nil {
+		return
+	}
+
+	releaseServerState(s)
 }
 
 // state
