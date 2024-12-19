@@ -10,6 +10,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/basecomplextech/baselibrary/opt"
 	"github.com/basecomplextech/baselibrary/status"
 	"github.com/basecomplextech/spec/proto/pmpx"
 	"github.com/pierrec/lz4/v4"
@@ -17,7 +18,7 @@ import (
 
 type connWriter struct {
 	dst  *bufio.Writer
-	comp *lz4.Writer // Nil when no compression
+	comp opt.Opt[*lz4.Writer]
 
 	client bool
 	head   [4]byte
@@ -39,17 +40,18 @@ func newConnWriter(w io.Writer, client bool, bufferSize int) *connWriter {
 }
 
 func (w *connWriter) initLZ4() status.Status {
-	if w.comp != nil {
+	if w.comp.Valid {
 		return status.OK
 	}
 
-	w.comp = lz4.NewWriter(w.dst)
-	err := w.comp.Apply(lz4.BlockSizeOption(lz4.Block1Mb))
+	comp := lz4.NewWriter(w.dst)
+	err := comp.Apply(lz4.BlockSizeOption(lz4.Block256Kb))
 	if err != nil {
 		return mpxError(err)
 	}
 
-	w.writer = w.comp
+	w.comp = opt.New(comp)
+	w.writer = comp
 	return status.OK
 }
 
