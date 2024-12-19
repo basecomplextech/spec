@@ -60,9 +60,8 @@ func (c *conn) receiveOpen(msg pmpx.Message) status.Status {
 	}
 
 	// Start handler
-	workerPool.Go(func() {
-		c.channelHandler(ch)
-	})
+	h := newChannelHandler(c, ch)
+	workerPool.Run(h)
 
 	c.maybeChannelsReached()
 	return status.OK
