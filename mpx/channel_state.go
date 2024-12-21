@@ -9,7 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/alloc/bytequeue"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/bin"
 	"github.com/basecomplextech/baselibrary/pools"
@@ -34,7 +34,7 @@ type channelState struct {
 	sendWindowWait chan struct{} // wait for send window increment
 	sender         channelSender
 
-	recvQueue alloc.ByteQueue // data queue
+	recvQueue bytequeue.Queue // data queue
 	recvBytes atomic.Int32    // number of received byte, sent as window delta when >= initWindow/2
 }
 
@@ -216,7 +216,7 @@ var channelStatePool = pools.NewPoolFunc(
 	func() *channelState {
 		return &channelState{
 			sendWindowWait: make(chan struct{}, 1),
-			recvQueue:      alloc.NewByteQueue(),
+			recvQueue:      bytequeue.New(),
 		}
 	},
 )

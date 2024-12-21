@@ -8,7 +8,7 @@ import (
 	"net"
 	"sync/atomic"
 
-	"github.com/basecomplextech/baselibrary/alloc"
+	"github.com/basecomplextech/baselibrary/alloc/bytequeue"
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/async/asyncmap"
 	"github.com/basecomplextech/baselibrary/bin"
@@ -117,7 +117,7 @@ type conn struct {
 	// reader/writer
 	reader *connReader
 	writer *connWriter
-	writeq alloc.ByteQueue
+	writeq bytequeue.Queue
 
 	// channels
 	channels        asyncmap.AtomicMap[bin.Bin128, internalChannel]
@@ -150,7 +150,7 @@ func newConn(
 
 		reader: newConnReader(nc, client, int(opts.ReadBufferSize)),
 		writer: newConnWriter(nc, client, int(opts.WriteBufferSize)),
-		writeq: alloc.NewByteQueueCap(int(opts.WriteQueueSize)),
+		writeq: bytequeue.NewCap(int(opts.WriteQueueSize)),
 
 		channels:        asyncmap.NewAtomicMap[bin.Bin128, internalChannel](),
 		closedListeners: asyncmap.NewAtomicMap[int64, func()](),
