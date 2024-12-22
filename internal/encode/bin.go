@@ -12,7 +12,7 @@ import (
 
 func EncodeBin64(b buffer.Buffer, v bin.Bin64) (int, error) {
 	p := b.Grow(9)
-	copy(p, v[:])
+	v.MarshalTo(p)
 	p[8] = byte(format.TypeBin64)
 	return 9, nil
 }
