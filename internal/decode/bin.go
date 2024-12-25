@@ -14,7 +14,7 @@ import (
 
 func DecodeBin64(b []byte) (_ bin.Bin64, size int, err error) {
 	if len(b) == 0 {
-		return 0, 0, nil
+		return bin.Bin64{}, 0, nil
 	}
 
 	typ, n := decodeType(b)
