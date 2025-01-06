@@ -62,6 +62,8 @@ func (f *StructField) validate() error {
 		return nil
 	case t.Kind == KindStruct:
 		return nil
+	case t.Kind == KindEnum:
+		return nil
 	}
 
 	return fmt.Errorf("%v: structs support only value types or other structs, actual=%v",
