@@ -164,6 +164,10 @@ func (m Message) TagAt(i int) (uint16, bool) {
 
 // Message returns a message clone.
 func (m Message) Clone() Message {
+	if len(m.bytes) == 0 {
+		return Message{}
+	}
+
 	b := make([]byte, len(m.bytes))
 	copy(b, m.bytes)
 	return OpenMessage(b)
@@ -171,11 +175,15 @@ func (m Message) Clone() Message {
 
 // CloneTo clones a message into a slice, allocates a new slice when needed.
 func (m Message) CloneTo(b []byte) Message {
-	ln := len(m.bytes)
-	if cap(b) < ln {
-		b = make([]byte, ln)
+	if len(m.bytes) == 0 {
+		return Message{}
 	}
-	b = b[:ln]
+
+	n := len(m.bytes)
+	if cap(b) < n {
+		b = make([]byte, n)
+	}
+	b = b[:n]
 
 	copy(b, m.bytes)
 	return OpenMessage(b)
@@ -183,6 +191,10 @@ func (m Message) CloneTo(b []byte) Message {
 
 // CloneToArena clones a message into an arena.
 func (m Message) CloneToArena(a alloc.Arena) Message {
+	if len(m.bytes) == 0 {
+		return Message{}
+	}
+
 	n := len(m.bytes)
 	buf := alloc.Bytes(a, n)
 	copy(buf, m.bytes)
@@ -191,6 +203,10 @@ func (m Message) CloneToArena(a alloc.Arena) Message {
 
 // CloneToBuffer clones a message into a buffer, grows the buffer.
 func (m Message) CloneToBuffer(buf buffer.Buffer) Message {
+	if len(m.bytes) == 0 {
+		return Message{}
+	}
+
 	ln := len(m.bytes)
 	b := buf.Grow(ln)
 	copy(b, m.bytes)
