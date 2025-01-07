@@ -12,6 +12,7 @@ import (
 
 	"github.com/basecomplextech/baselibrary/async"
 	"github.com/basecomplextech/baselibrary/logging"
+	"github.com/basecomplextech/baselibrary/opt"
 	"github.com/basecomplextech/baselibrary/status"
 )
 
@@ -48,7 +49,7 @@ type server struct {
 	listening async.MutFlag
 
 	mu sync.Mutex
-	ln net.Listener
+	ln opt.Opt[net.Listener]
 }
 
 func newServer(address string, handler Handler, logger logging.Logger, opts Options) *server {
@@ -70,10 +71,11 @@ func (s *server) Address() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.ln == nil {
+	ln, ok := s.ln.Unwrap()
+	if !ok {
 		return s.address
 	}
-	return s.ln.Addr().String()
+	return ln.Addr().String()
 }
 
 // Listening indicates that the server is listening.
@@ -90,18 +92,20 @@ func (s *server) Options() Options {
 
 func (s *server) run(ctx async.Context) (st status.Status) {
 	s.logger.Debug("Server started")
-	defer s.stop()
+	defer s.listening.Unset()
+	defer s.logger.Debug("Server stopped")
 
 	// Listen
 	if st := s.listen(); !st.OK() {
 		s.logger.ErrorStatus("Server failed to listen to address", st)
 		return st
 	}
+	defer s.closeListener()
 
 	// Serve
-	server := async.Go(s.serve)
+	server := async.RunVoid(s.serve)
 	defer async.StopWait(server)
-	defer s.ln.Close() // double close is OK
+	defer s.closeListener() // double close is OK
 
 	// Wait
 	select {
@@ -120,10 +124,7 @@ func (s *server) run(ctx async.Context) (st status.Status) {
 	return st
 }
 
-func (s *server) stop() {
-	s.listening.Unset()
-	s.logger.Debug("Server stopped")
-}
+// listen
 
 func (s *server) listen() status.Status {
 	s.mu.Lock()
@@ -135,19 +136,43 @@ func (s *server) listen() status.Status {
 	}
 
 	addr := ln.Addr().String()
-	s.ln = ln
+	s.ln = opt.New(ln)
 	s.listening.Set()
 	s.logger.Notice("Server listening", "address", addr)
 	return status.OK
 }
 
+func (s *server) closeListener() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.listening.Unset()
+
+	ln, ok := s.ln.Clear()
+	if !ok {
+		return
+	}
+	addr := ln.Addr().String()
+
+	err := ln.Close()
+	if err != nil {
+		st := status.WrapError(err)
+		s.logger.ErrorStatus("Server closed listener with error", st, "address", addr)
+		return
+	}
+
+	s.logger.Notice("Server closed listener", "address", addr)
+}
+
+// serve
+
 func (s *server) serve(ctx async.Context) status.Status {
+	ln := s.ln.MustUnwrap()
 	delay := time.Duration(0)
 	timeout := false
 
 	for {
 		// Accept conn
-		nc, err := s.ln.Accept()
+		nc, err := ln.Accept()
 		if err == nil {
 			delay = 0
 			timeout = false
@@ -179,9 +204,7 @@ func (s *server) serve(ctx async.Context) status.Status {
 		} else {
 			delay *= 2
 		}
-		if max := time.Second; delay > max {
-			delay = max
-		}
+		delay = min(delay, time.Second)
 
 		t := time.NewTimer(delay)
 		select {

@@ -251,8 +251,8 @@ func (c *conn) run() status.Status {
 	}
 
 	// Run loops
-	recv := async.Go(c.receiveLoop)
-	send := async.Go(c.sendLoop)
+	recv := async.RunVoid(c.receiveLoop)
+	send := async.RunVoid(c.sendLoop)
 	defer async.StopWaitAll(recv, send)
 	defer c.close()
 

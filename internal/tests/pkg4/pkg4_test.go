@@ -21,16 +21,14 @@ func testServer(t tests.T, logger logging.Logger, service Service) rpc.Server {
 	handler := NewServiceHandler(service)
 	server := rpc.NewServer("localhost:0", handler, logger, opts)
 
-	routine, st := server.Start()
+	st := server.Start()
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
 	cleanup := func() {
-		routine.Stop()
-
 		select {
-		case <-routine.Wait():
+		case <-server.Stop():
 		case <-time.After(time.Second):
 			t.Fatal("server not stopped")
 		}

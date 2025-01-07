@@ -24,7 +24,7 @@ func testServerOpts(t tests.T, handle HandleFunc, opts Options) *server {
 	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", handle, logger, opts)
 
-	_, st := server.Start()
+	st := server.Start()
 	if !st.OK() {
 		t.Fatal(st)
 	}

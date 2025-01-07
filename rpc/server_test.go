@@ -24,16 +24,14 @@ func testServer(t tests.T, handle HandleFunc) *server {
 	logger := logging.TestLogger(t)
 	server := newServer("localhost:0", handle, logger, opts)
 
-	routine, st := server.Start()
+	st := server.Start()
 	if !st.OK() {
 		t.Fatal(st)
 	}
 
 	cleanup := func() {
-		routine.Stop()
-
 		select {
-		case <-routine.Wait():
+		case <-server.Stop():
 		case <-time.After(time.Second):
 			t.Fatal("server not stopped")
 		}

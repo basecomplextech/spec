@@ -7,7 +7,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/basecomplextech/baselibrary/collect/orderedmap"
+	"github.com/basecomplextech/baselibrary/collect"
 	"github.com/basecomplextech/spec/internal/lang/syntax"
 )
 
@@ -16,7 +16,7 @@ type Struct struct {
 	File    *File
 	Def     *Definition
 
-	Fields *orderedmap.Map[string, *StructField]
+	Fields collect.OrderedMap[string, *StructField]
 }
 
 func parseStruct(pkg *Package, file *File, def *Definition, ps *syntax.Struct) (*Struct, error) {
@@ -25,7 +25,7 @@ func parseStruct(pkg *Package, file *File, def *Definition, ps *syntax.Struct) (
 		File:    file,
 		Def:     def,
 
-		Fields: orderedmap.New[string, *StructField](),
+		Fields: collect.NewOrderedMap[string, *StructField](),
 	}
 
 	if err := s.parseFields(ps); err != nil {

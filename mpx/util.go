@@ -21,4 +21,4 @@ var closedChan = func() chan struct{} {
 //	BenchmarkTable_Get_Parallel-10:
 //	goroutines		144731 ops	568 B/op	23 allocs/op
 //	goroutine pool	184801 ops	558 B/op	23 allocs/op
-var workerPool = async.NewRoutinePool()
+var workerPool = async.NewPool()
