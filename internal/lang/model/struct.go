@@ -56,7 +56,7 @@ func (s *Struct) parseField(pfield *syntax.StructField) error {
 		return fmt.Errorf("%v.%v: duplicate field", s.Def.Name, field.Name)
 	}
 
-	s.Fields.Put(field.Name, field)
+	s.Fields.Set(field.Name, field)
 	return nil
 }
 
