@@ -66,6 +66,11 @@ func (m *MessageWriter) End() error {
 	return err
 }
 
+// Unwrap returns the underlying writer.
+func (m MessageWriter) Unwrap() Writer {
+	return m.w
+}
+
 // WriteField writes a generic field using the given write function.
 func WriteField[T any](w FieldWriter, value T, write WriteFunc[T]) error {
 	if err := WriteValue(w.w, value, write); err != nil {
