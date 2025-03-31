@@ -97,7 +97,7 @@ func BenchmarkClient_Request_Parallel(b *testing.B) {
 
 	ctx := async.NoContext()
 	opts := Default()
-	opts.ClientMaxConns = 4
+	opts.ClientMaxConns = 2
 
 	server := testServerOpts(b, handle, opts)
 	client := testClient(b, server)
@@ -140,7 +140,7 @@ func BenchmarkClient_Request_Parallel(b *testing.B) {
 
 	sec := b.Elapsed().Seconds()
 	ops := float64(b.N) / sec
-	conns := float64(len(client.conns))
+	conns := float64(client.conns.Load().len())
 	latency := time.Duration(totalDuration) / time.Duration(b.N)
 
 	b.ReportMetric(ops, "ops")

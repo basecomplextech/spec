@@ -5,13 +5,12 @@
 package mpx
 
 import (
-	"math/rand/v2"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/basecomplextech/baselibrary/async"
-	"github.com/basecomplextech/baselibrary/collect/slices2"
 	"github.com/basecomplextech/baselibrary/logging"
 	"github.com/basecomplextech/baselibrary/opt"
 	"github.com/basecomplextech/baselibrary/status"
@@ -85,7 +84,7 @@ type client struct {
 	disconnected_ async.MutFlag
 
 	mu    sync.Mutex
-	conns []internalConn
+	conns atomic.Pointer[clientConns]
 
 	connecting     opt.Opt[async.Routine[internalConn]]
 	connectAttempt int // current connect attempt
@@ -110,6 +109,7 @@ func newClientDialer(addr string, mode ClientMode, dialer *net.Dialer, logger lo
 		disconnected_: async.SetFlag(),
 	}
 	c.connector = newConnector(dialer, c /* delegate */, logger, opts)
+	c.conns.Store(newClientConns())
 
 	if mode == ClientMode_AutoConnect {
 		c.connect()
@@ -162,10 +162,11 @@ func (c *client) Close() status.Status {
 	}
 
 	// Close connections
-	for _, conn := range c.conns {
+	conns := c.conns.Load()
+	for _, conn := range conns.conns {
 		conn.Close()
 	}
-	c.conns = nil
+	c.conns.Store(newClientConns())
 
 	// Update flags
 	c.connected_.Unset()
@@ -234,8 +235,9 @@ func (c *client) onConnClosed(conn internalConn) {
 	defer c.mu.Unlock()
 
 	// Delete connection
-	c.conns = slices2.Remove(c.conns, conn)
-	if len(c.conns) > 0 {
+	conns := c.conns.Load().remove(conn)
+	c.conns.Store(conns)
+	if conns.len() > 0 {
 		return
 	}
 
@@ -261,7 +263,7 @@ func (c *client) onConnChannelsReached(conn internalConn) {
 		return
 	}
 
-	num := len(c.conns)
+	num := c.conns.Load().len()
 	if num < max {
 		c.connect()
 	}
@@ -270,23 +272,29 @@ func (c *client) onConnChannelsReached(conn internalConn) {
 // private
 
 func (c *client) conn() (internalConn, async.Future[internalConn], status.Status) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	// Check closed
 	if c.closed_.IsSet() {
 		return nil, nil, status.Closedf("mpx client closed")
 	}
 
-	// Round-robin connections
-	for len(c.conns) > 0 {
-		i := rand.IntN(len(c.conns))
-		conn := c.conns[i]
-		closed := conn.Closed().IsSet()
-		if closed {
-			c.conns = slices2.RemoveAt(c.conns, i, 1)
-			continue
-		}
+	// Random conn
+	conn, ok := c.conns.Load().roundRobin()
+	if ok {
+		return conn, nil, status.OK
+	}
+
+	// Slow path
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Check again
+	if c.closed_.IsSet() {
+		return nil, nil, status.Closedf("mpx client closed")
+	}
+
+	// Random conn
+	conn, ok = c.conns.Load().roundRobin()
+	if ok {
 		return conn, nil, status.OK
 	}
 
@@ -394,7 +402,8 @@ func (c *client) connectRecover(ctx async.Context) (_ internalConn, st status.St
 		return nil, status.Closedf("mpx client closed")
 	}
 
-	c.conns = append(c.conns, conn)
+	conns := c.conns.Load().add(conn)
+	c.conns.Store(conns)
 	c.connectAttempt = 0
 
 	c.connected_.Set()

@@ -45,7 +45,7 @@ type Options struct {
 // Default returns the default options.
 func Default() Options {
 	return Options{
-		ClientMaxConns:     4,
+		ClientMaxConns:     2,
 		ClientConnChannels: 128,
 		ClientDialTimeout:  2 * time.Second,
 

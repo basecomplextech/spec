@@ -223,7 +223,7 @@ func TestClient_Conn__should_open_more_connections_when_channels_target_reached(
 	time.Sleep(50 * time.Millisecond)
 
 	client.mu.Lock()
-	n := len(client.conns)
+	n := client.conns.Load().len()
 	client.mu.Unlock()
 
 	assert.Equal(t, 2, n)
